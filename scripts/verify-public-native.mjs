@@ -30,6 +30,7 @@ try{
   await page.getByRole('button',{name:'Настройки и история',exact:true}).click();
   assert(await page.getByRole('button',{name:'Подготовить пилот: 0.004 AR и 30 минут',exact:true}).isDisabled(),'Viewer cannot activate pilot window');
   await page.getByRole('heading',{name:'Одна согласованная ручная загрузка',exact:true}).waitFor();
+  assert(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth),'Pilot settings must fit mobile viewport');
   await page.getByRole('button',{name:'Кошельки',exact:true}).click();
   for(const name of ['Основная казна SEJIRE','Фонд памяти поколений','AR-резерв хранения'])await page.getByRole('heading',{name,exact:true}).waitFor();
   assert(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth));
