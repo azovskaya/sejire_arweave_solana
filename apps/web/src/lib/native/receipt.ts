@@ -4,8 +4,9 @@ import { retrieveNative } from './arweave';
 import { parseEnvelope, MAX_BACKUP_BYTES } from '../crypto/envelope';
 export type NativeReceipt={schema:'sejire/native-receipt/v1';protocol:'sejire/v0.3';encryption:'sejire/envelope/v1';arweaveNetwork:'arweave.N.1';transactionId:string;digest:string;bytes:number;orderId:string;paymentSignature:string;rewardWinston:string;createdAt:string};
 export function nativeReceipt(job:NativeJob):NativeReceipt {
- if(!job.arPlan||!job.order.archive||!job.paymentSignature)throw Error('no_native_receipt');
- return {schema:'sejire/native-receipt/v1',protocol:'sejire/v0.3',encryption:'sejire/envelope/v1',arweaveNetwork:'arweave.N.1',transactionId:job.arPlan.id,digest:job.order.archive.digest,bytes:job.order.archive.bytes,orderId:job.order.id,paymentSignature:job.paymentSignature,rewardWinston:job.arPlan.rewardWinston,createdAt:new Date().toISOString()};
+ const signature=job.paymentSignature??job.reconciledSignature;
+ if(!job.arPlan||!job.order.archive||!signature)throw Error('no_native_receipt');
+ return {schema:'sejire/native-receipt/v1',protocol:'sejire/v0.3',encryption:'sejire/envelope/v1',arweaveNetwork:'arweave.N.1',transactionId:job.arPlan.id,digest:job.order.archive.digest,bytes:job.order.archive.bytes,orderId:job.order.id,paymentSignature:signature,rewardWinston:job.arPlan.rewardWinston,createdAt:new Date().toISOString()};
 }
 export function parseNativeReceipt(value:unknown):NativeReceipt {
  const r=value as NativeReceipt;exactKeys(r,['schema','protocol','encryption','arweaveNetwork','transactionId','digest','bytes','orderId','paymentSignature','rewardWinston','createdAt']);

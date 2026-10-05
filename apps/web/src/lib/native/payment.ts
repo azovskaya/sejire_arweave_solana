@@ -82,7 +82,7 @@ export function validateAttempt(job:NativeJob) {
 }
 /** Never obtains another signature: optional retry is only the exact journaled bytes. */
 export async function resumeSignedPayment(c:Config,job:NativeJob) {
- await validateJob(job,c);if(!job.signedPayment||!job.paymentSignature||!job.attempt)throw Error('legacy_attempt_cannot_be_rebroadcast');
+ await validateJob(job,c);if(!job.signedPayment||!job.paymentSignature||!job.attempt)throw Error('legacy_attempt_cannot_be_rebroadcast');if(Date.now()>=job.order.expiresAt)throw Error('signed_payment_expired_not_broadcast');
  return onRpc(c,async url=>{const status=await rpc<{value:({err:unknown}|null)[]}>(url,'getSignatureStatuses',[[job.paymentSignature],{searchTransactionHistory:true}]);if(status.value?.[0]!==null)return;
  const height=await rpc<number>(url,'getBlockHeight',[{commitment:'finalized'}]);if(!Number.isSafeInteger(height)||height>job.attempt!.lastValidBlockHeight)throw Error('signed_message_expired_requires_reconciliation');
  await rpc(url,'sendTransaction',[job.signedPayment,{encoding:'base64',skipPreflight:false,maxRetries:1}]);job.attempt!.phase='broadcast';await saveJob(job);

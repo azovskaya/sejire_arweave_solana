@@ -1,3 +1,4 @@
+import { nativeReceipt } from '../lib/native/receipt';
 import { parseEnvelope, serializeEnvelope } from '../lib/crypto/envelope';
 import { envelopeDigest } from '../lib/solana/policy';
 import { findPaymentByReference } from '../lib/native/rpc';
@@ -47,6 +48,7 @@ export function NativeCheckoutPanel({envelope,onBack,onBusy,treeName,resume=fals
  {job?.signingStarted&&!job.paymentSignature&&!job.reconciledSignature&&<p role="note">{job.attempt?'Результат ответа кошелька требует сверки.':'Старая попытка: данные message и срока blockhash отсутствуют. Безопасное завершение не установлено.'}</p>}
  </section>
  <details className="saving-details"><summary>Подробнее · резервирование и диагностика</summary>
+ {stored&&job&&<button className="btn ghost" onClick={()=>downloadJson(nativeReceipt(job),`sejire-native-receipt-${job.order.id}.json`)}>Скачать квитанцию</button>}
  <p>Ручной пилот без Turbo и обязательного облака. SOL оплачивает SEJIRE; отдельный AR-резерв владельца оплачивает Arweave. Автоматического SOL→AR нет.</p>
  <p>{c?.environment==='devnet'?'Solana Devnet: только тестовые SOL. Arweave-загрузка относится к другой сети и требует отдельного разрешения.':'Сеть определяется проверенной конфигурацией; mainnet-оплата выключена по умолчанию.'}</p>
  {archive&&<button className="btn ghost" onClick={()=>downloadEnvelope(archive)}>Скачать зашифрованную резервную копию</button>}
