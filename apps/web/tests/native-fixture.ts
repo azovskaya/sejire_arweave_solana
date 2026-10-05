@@ -37,3 +37,13 @@ export async function stoppedSetup() {
  v.chain.versions[0]={config:v.config,signatures:[sign(v.config)],acceptance:[sign(acceptancePayload(v.config))]};
  return {...v,anchor:await configHash(v.config)};
 }
+/** Full local browser journey: synthetic RSA owner and public RPC fixtures; never a real wallet. */
+export async function journeySetup() {
+ const v=await setup();const {default:Arweave}=await import('arweave');const ar=Arweave.init({host:'arweave.net',protocol:'https',port:443});const jwk=await ar.wallets.generate();v.config.wallets.arReserve=await ar.wallets.jwkToAddress(jwk);v.chain.versions[0]={config:v.config,signatures:[sign(v.config)],acceptance:[sign(acceptancePayload(v.config))]};v.anchor=await configHash(v.config);
+ Object.assign(window,{arweaveWallet:{async connect(){},async getActiveAddress(){return v.config.wallets.arReserve;},async getActivePublicKey(){return jwk.n;},async sign(raw:unknown){const tx=ar.transactions.fromRaw(raw as never);await ar.transactions.sign(tx,jwk);return tx.toJSON();}}});
+ const {trustChain}=await import('../src/lib/native/session');await trustChain(v.chain,v.anchor);return v;
+}
+export async function legacyUnknownFixture() {
+ const v=await setup(),wallet=solWallet();const job=await newJob(v.config,key.publicKey.toBase58(),'0',v.family.envelope,wallet);job.signingStarted=true;
+ const {trustChain}=await import('../src/lib/native/session');const {saveJob,writeCache}=await import('../src/lib/native/cache');await trustChain(v.chain,v.anchor);await saveJob(job);await writeCache('active-saving',job.order.id);return {...v,job};
+}

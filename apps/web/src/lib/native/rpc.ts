@@ -72,3 +72,12 @@ export async function walletHistory(c:Config,address:string) {
  return {balance,signatures,movements,rpc:url};
  });
 }
+/** Bounded discovery. Empty/partial RPC history never clears an unknown signing attempt. */
+export async function findPaymentByReference(c:Config,order:Order) {
+ return onRpc(c,async url=>{
+  const rows=await rpc<{signature:string;err:unknown}[]>(url,'getSignaturesForAddress',[order.reference,{commitment:'finalized',limit:20}]);
+  if(!Array.isArray(rows))throw Error('missing_metadata');const rejected:string[]=[];
+  for(const row of rows.slice(0,3)){try{const result=await verifyPaymentRpc(c,order,row.signature);return {signature:row.signature,result,pageComplete:false,checkedAt:Date.now(),endpoint:url};}catch(e){rejected.push(e instanceof Error?e.message:'invalid_candidate');}}
+  return {signature:undefined,rejected,pageComplete:rows.length<20&&rows.length<=3,checkedAt:Date.now(),endpoint:url};
+ });
+}

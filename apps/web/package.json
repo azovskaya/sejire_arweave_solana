@@ -34,7 +34,8 @@
     "test:checkout-browser": "playwright test",
     "test:native": "tsx src/lib/native/native.selftest.ts",
     "test:native-browser": "playwright test --config playwright.native.config.ts",
-    "test:native-pilot-browser": "playwright test --config playwright.pilot.config.ts"
+    "test:native-pilot-browser": "playwright test --config playwright.pilot.config.ts",
+    "test:native-journey": "playwright test --config playwright.journey.config.ts"
   },
   "dependencies": {
     "@ardrive/turbo-sdk": "2.1.0",

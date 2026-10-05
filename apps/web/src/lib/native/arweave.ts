@@ -95,7 +95,9 @@ export async function retrieveNative(nodes:string[],id:string,digest:string,byte
 }
 export async function nativeStatus(nodes:string[],id:string) {
  if(!/^[A-Za-z0-9_-]{43}$/.test(id))throw Error('invalid_transaction_id');
- return arNode(nodes,async(ar,node)=>({node,...await ar.transactions.getStatus(id)}));
+ let best:{node:string;status:number;confirmed:{block_height:number;block_indep_hash:string;number_of_confirmations:number}|null}|undefined;let last:unknown;
+ for(const node of nodes)try{const result=await arNode([node],async ar=>({node,...await ar.transactions.getStatus(id)}));if(result.status===200&&result.confirmed)return result;if(!best||result.status===202)best=result;}catch(e){last=e;}
+ if(best)return best;throw last??Error('arweave_unavailable');
 }
 export async function discoverConfig(nodes:string[],id:string) {
  if(!/^[A-Za-z0-9_-]{43}$/.test(id))throw Error('invalid_configuration_id');

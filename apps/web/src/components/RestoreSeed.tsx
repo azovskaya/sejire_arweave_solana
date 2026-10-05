@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { FormEvent } from "react";
 import { isValidMnemonic, normalizeMnemonic } from "../lib/crypto/bip39";
 import { deriveKeysFromMnemonic, fingerprintVaultId } from "../lib/crypto/keys";
 import { parsePortableBackup, type PortableBackup } from "../lib/crypto/backup";
+import { readCache } from "../lib/native/cache";
 import { retrieveNativeReceipt } from "../lib/native/receipt";
 import { DATA_GATEWAYS } from "../lib/arweave/gateways";
 import { retrieveReceiptEnvelope } from "../lib/solana/receipt";
@@ -55,6 +56,8 @@ export function RestoreSeed({ onRestored, onBack }: Props) {
   const [vaultId, setVaultId] = useState<string | null>(null);
   const [picker, setPicker] = useState<PickerItem[] | null>(null);
   const [openingId, setOpeningId] = useState<string | null>(null);
+
+  useEffect(()=>{if(!location.hash.startsWith('#/restore?saved=1'))return;let live=true;void readCache<{id:string;serialized:string}>('retrieved-saving').then(value=>{if(!value||!live)return;const parsed=parsePortableBackup(value.serialized);if(parsed.kind==='words')throw Error('invalid_envelope');setBackup({name:'Arweave '+value.id,...parsed});setShowFile(true);setStatus('Архив получен и проверен. Введите свои слова SEJIRE для расшифровки.');}).catch(()=>{if(live)setError(t.restore.badFile);});return()=>{live=false;};},[]);
 
   async function finishWithVault(
     vault: VaultV1,

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Welcome } from "./components/Welcome";
 import { Workspace } from "./components/Workspace";
 import { RestoreSeed } from "./components/RestoreSeed";
+import { NativeCheckoutPanel } from "./components/NativeCheckoutPanel";
 import { NativeAdminDesk as AdminDesk } from "./components/NativeAdminDesk";
 import { closeOpsHash, isOpsHash, openOpsHash } from "./lib/opsDesk/route";
 import type { TreeStore } from "./lib/types";
@@ -22,12 +23,14 @@ import {
   shouldResumeDraft,
 } from "./lib/lastScreen";
 
-type Screen = "welcome" | "work" | "restore" | "admin";
+type Screen = "welcome" | "work" | "restore" | "admin" | "saving";
 
 function bootApp(): { screen: Screen; store: TreeStore | null; guide: GuideState } {
   if (typeof location !== "undefined" && isOpsHash(location.hash)) {
     return { screen: "admin", store: null, guide: defaultGuide() };
   }
+  if(typeof location!=="undefined"&&location.hash.startsWith("#/save"))return {screen:"saving",store:loadDraftTree(),guide:loadGuide()??defaultGuide()};
+  if(typeof location!=="undefined"&&location.hash.startsWith("#/restore"))return {screen:"restore",store:null,guide:defaultGuide()};
   const draft = loadDraftTree();
   if (shouldResumeDraft(readLastScreen(), Boolean(draft)) && draft) {
     return {
@@ -52,6 +55,7 @@ export default function App() {
       return;
     }
     if (screen === "admin") closeOpsHash();
+    if(screen==="saving")history.replaceState(null,"",location.pathname+location.search);
     rememberScreen(next === "work" || next === "welcome" || next === "restore" ? next : "welcome");
     setScreen(next);
   }
@@ -59,7 +63,9 @@ export default function App() {
   useEffect(() => {
     function onHash() {
       if (isOpsHash(location.hash)) setScreen("admin");
-      else if (screen === "admin") setScreen("welcome");
+      else if(location.hash.startsWith("#/save"))setScreen("saving");
+      else if(location.hash.startsWith("#/restore"))setScreen("restore");
+      else if (screen === "admin"||screen === "saving") setScreen("welcome");
     }
     window.addEventListener("hashchange", onHash);
     return () => window.removeEventListener("hashchange", onHash);
@@ -97,6 +103,7 @@ export default function App() {
         />
       )}
 
+      {screen === "saving" && <main className="landing"><NativeCheckoutPanel resume treeName={store?.meta.title} onBack={() => go(store?"work":"welcome")} /></main>}
       {screen === "admin" && <AdminDesk onHome={() => go("welcome")} />}
 
       {screen === "restore" && (

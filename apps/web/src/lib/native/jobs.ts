@@ -8,21 +8,25 @@ import { envelopeDigest } from '../solana/policy';
 import { configHash, verifyChain, verifySignatures, walletSignature, exactKeys, type ConfigChain, type Config, type Signature, type MessageWallet } from './config';
 import { arQuote, winston, type ArPlan } from './arweave';
 import { verifyPaymentRpc } from './rpc';
+export type PaymentAttempt={id:string;phase:'prepared'|'wallet_pending'|'rejected'|'signature_unknown'|'signed'|'broadcast'|'finalized'|'failed'|'expired_unexecuted';message:string;blockhash:string;lastValidBlockHeight:number;at:number;error?:string};
 export type NativeJob = {
  schema:'sejire/native-job/v1'; configHash:string; order:Order; signatures:Signature[]; ciphertext?:string;
  paymentSignature?:string; signedPayment?:string; signingStarted?:boolean;
+ supersedes?:string;
+ attempt?:PaymentAttempt; reconciledSignature?:string;
  arSigningStarted?:boolean;
  arPlan?:ArPlan; // untrusted on import until signature + byte binding verified
 };
-export const orderPayload=(job:NativeJob)=>({domain:'sejire/native-order/v1',configHash:job.configHash,order:job.order});
+export const orderPayload=(job:NativeJob)=>({domain:'sejire/native-order/v1',configHash:job.configHash,order:job.order,...(job.supersedes?{supersedes:job.supersedes}:{})});
 export async function configForJob(chain:ConfigChain,job:NativeJob,trusted:string) {
  await verifyChain(chain,trusted);
  for(const v of chain.versions)if(await configHash(v.config)===job.configHash)return v.config;
  throw Error('unknown_order_configuration');
 }
 export async function validateJob(job:NativeJob,c:Config) {
- const fields=['schema','configHash','order','signatures','ciphertext','paymentSignature','signedPayment','signingStarted','arPlan','arSigningStarted'];
+ const fields=['schema','configHash','order','signatures','ciphertext','paymentSignature','signedPayment','signingStarted','arPlan','arSigningStarted','attempt','reconciledSignature','supersedes'];
  if(!job||typeof job!=='object'||Object.keys(job).some(k=>!fields.includes(k))||job.schema!=='sejire/native-job/v1'||job.configHash!==await configHash(c))throw Error('invalid_native_job');
+ if(job.supersedes!==undefined&&(!/^[a-f0-9]{32}$/.test(job.supersedes)||job.supersedes===job.order.id))throw Error('invalid_predecessor');
  if(job.arSigningStarted!==undefined&&typeof job.arSigningStarted!=='boolean')throw Error('invalid_native_job');
  assertOrder(job.order);const o=job.order;
  if(canonical(o)!==canonical(createOrder({...o,asset:o.asset.symbol}))||o.network!==c.environment||o.asset.symbol!=='SOL'||o.policyVersion!==`config-${c.version}`||o.servicePayment.recipient!==c.wallets.service||o.fundContribution.recipient!==c.wallets.fund||o.servicePayment.amount!==(o.kind==='preservation'?c.serviceLamports:'0'))throw Error('order_policy_binding');
@@ -31,12 +35,14 @@ export async function validateJob(job:NativeJob,c:Config) {
   if(typeof job.ciphertext!=='string'||new TextEncoder().encode(job.ciphertext).length!==o.archive!.bytes||o.archive!.bytes>c.upload.maxBytes||o.archive!.bytes>MAX_BACKUP_BYTES||await envelopeDigest(job.ciphertext)!==o.archive!.digest)throw Error('archive_binding');
   parseEnvelope(JSON.parse(job.ciphertext));
  } else if(job.ciphertext!==undefined||job.arPlan!==undefined)throw Error('donation_archive_forbidden');
+ if(job.attempt){const {validateAttempt}=await import('./payment');validateAttempt(job);}
+ if(job.reconciledSignature!==undefined){const {assertBase58}=await import('../../../../../packages/checkout/order');assertBase58(job.reconciledSignature,64);}
  if(job.paymentSignature!==undefined){const {assertBase58}=await import('../../../../../packages/checkout/order');assertBase58(job.paymentSignature,64);const {validateSignedPayment}=await import('./payment');validateSignedPayment(job);}
  if(job.arPlan&&(job.arPlan.address!==c.wallets.arReserve||BigInt(job.arPlan.rewardWinston)>BigInt(c.upload.maxRewardWinston)))throw Error('upload_executor_or_budget');
 }
-export async function newJob(c:Config,payer:string,contribution:string,envelope:EnvelopeV1|undefined,wallet:MessageWallet):Promise<NativeJob> {
+export async function newJob(c:Config,payer:string,contribution:string,envelope:EnvelopeV1|undefined,wallet:MessageWallet,supersedes?:string):Promise<NativeJob> {
  const ciphertext=envelope?serializeEnvelope(envelope):undefined,now=Date.now();
- const job:NativeJob={schema:'sejire/native-job/v1',configHash:await configHash(c),signatures:[],order:createOrder({id:crypto.randomUUID().replace(/-/g,''),kind:envelope?'preservation':'contribution',network:c.environment,asset:'SOL',payer,reference:(await import('bs58')).default.encode(crypto.getRandomValues(new Uint8Array(32))),createdAt:now,expiresAt:now+30*60*1000,policyVersion:`config-${c.version}`,servicePayment:{recipient:c.wallets.service,amount:envelope?c.serviceLamports:'0'},fundContribution:{recipient:c.wallets.fund,amount:parseAmount(contribution,9)},...(ciphertext?{archive:{digest:await envelopeDigest(ciphertext),bytes:new TextEncoder().encode(ciphertext).length}}:{})}),...(ciphertext?{ciphertext}:{})};
+ const job:NativeJob={schema:'sejire/native-job/v1',configHash:await configHash(c),...(supersedes?{supersedes}:{}),signatures:[],order:createOrder({id:crypto.randomUUID().replace(/-/g,''),kind:envelope?'preservation':'contribution',network:c.environment,asset:'SOL',payer,reference:(await import('bs58')).default.encode(crypto.getRandomValues(new Uint8Array(32))),createdAt:now,expiresAt:now+30*60*1000,policyVersion:`config-${c.version}`,servicePayment:{recipient:c.wallets.service,amount:envelope?c.serviceLamports:'0'},fundContribution:{recipient:c.wallets.fund,amount:parseAmount(contribution,9)},...(ciphertext?{archive:{digest:await envelopeDigest(ciphertext),bytes:new TextEncoder().encode(ciphertext).length}}:{})}),...(ciphertext?{ciphertext}:{})};
  if(payer!==wallet.publicKey?.toString())throw Error('payer_changed');
  if(envelope)await readyForOrder(c,job.order.archive!.bytes,job.order.archive!.digest);
  job.signatures=[await walletSignature(orderPayload(job),wallet)];await validateJob(job,c);return job;
@@ -56,9 +62,9 @@ export function archiveTags(job:NativeJob) {
 }
 export async function reconcileJob(job:NativeJob,c:Config,otherJobs:NativeJob[]) {
  await validateJob(job,c);
- if(!job.paymentSignature)throw Error('no_pending_payment');
- if(otherJobs.some(j=>j.order.id!==job.order.id&&j.paymentSignature===job.paymentSignature))throw Error('transaction_reuse');
- return verifyPaymentRpc(c,job.order,job.paymentSignature);
+ const signature=job.paymentSignature??job.reconciledSignature;if(!signature)throw Error('no_pending_payment');
+ if(otherJobs.some(j=>j.order.id!==job.order.id&&(j.paymentSignature??j.reconciledSignature)===signature))throw Error('transaction_reuse');
+ return verifyPaymentRpc(c,job.order,signature);
 }
 export type JobPackage={schema:'sejire/native-job-package/v1';chain:ConfigChain;job:NativeJob};
 export function parsePackage(text:string):JobPackage {
