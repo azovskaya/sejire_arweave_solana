@@ -27,6 +27,7 @@ export async function validateJob(job:NativeJob,c:Config) {
  const fields=['schema','configHash','order','signatures','ciphertext','paymentSignature','signedPayment','signingStarted','arPlan','arSigningStarted','attempt','reconciledSignature','supersedes'];
  if(!job||typeof job!=='object'||Object.keys(job).some(k=>!fields.includes(k))||job.schema!=='sejire/native-job/v1'||job.configHash!==await configHash(c))throw Error('invalid_native_job');
  if(job.supersedes!==undefined&&(!/^[a-f0-9]{32}$/.test(job.supersedes)||job.supersedes===job.order.id))throw Error('invalid_predecessor');
+ if(job.signingStarted!==undefined&&typeof job.signingStarted!=='boolean')throw Error('invalid_native_job');
  if(job.arSigningStarted!==undefined&&typeof job.arSigningStarted!=='boolean')throw Error('invalid_native_job');
  assertOrder(job.order);const o=job.order;
  if(canonical(o)!==canonical(createOrder({...o,asset:o.asset.symbol}))||o.network!==c.environment||o.asset.symbol!=='SOL'||o.policyVersion!==`config-${c.version}`||o.servicePayment.recipient!==c.wallets.service||o.fundContribution.recipient!==c.wallets.fund||o.servicePayment.amount!==(o.kind==='preservation'?c.serviceLamports:'0'))throw Error('order_policy_binding');
