@@ -594,7 +594,7 @@ export function PublishSeedModal({
         </p>
 
         {mode === "solana" && sealedEnvelope && (
-          <SolanaSavePanel {...(import.meta.env.VITE_NATIVE_AR_ENABLED === "1" ? {treeName:store.meta.title} : {})} envelope={sealedEnvelope} parentTxId={publishParentTx}
+          <SolanaSavePanel {...(import.meta.env.VITE_NATIVE_AR_ENABLED === "1" ? {treeName:store.meta.title,recoveryKeyInMemory:isValidMnemonic(normalizeMnemonic(mnemonic))} : {})} envelope={sealedEnvelope} parentTxId={publishParentTx}
             onAccepted={recordSolana}
             onBusy={(busy) => { solanaBusy.current = busy; }}
             onBack={() => setMode(solanaReturnMode.current)}
