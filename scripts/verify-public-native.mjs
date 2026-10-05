@@ -23,6 +23,7 @@ try{
   const response=await page.goto(base+'#/admin',{waitUntil:'networkidle'});assert.equal(response.status(),200);
   await page.getByRole('heading',{name:'Центр управления',exact:true}).waitFor();
   await page.getByRole('heading',{name:'Настроим SEJIRE',exact:true}).waitFor();
+  for(const name of ['Обзор','Сохранения','Кошельки','Настройки'])assert(await page.getByRole('button',{name,exact:true}).isVisible());
   assert(!(await page.getByLabel('JSON конфигурации',{exact:true}).isVisible()));
   assert(await page.getByText('Режим просмотра',{exact:true}).isVisible());
   assert((await page.getByRole('article').filter({has:page.getByRole('heading',{name:'Цена хранения',exact:true})}).innerText()).includes('0.03 SOL'));
