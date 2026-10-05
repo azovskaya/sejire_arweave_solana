@@ -57,6 +57,12 @@ jobs:
       - run: npm run test:native-browser
       - run: npm run test:native-pilot-browser --prefix apps/web
       - run: npm run test:native-journey --prefix apps/web
+      - name: Preserve synthetic MVP screens (no recovery words or wallet secrets)
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-mvp-screens
+          path: apps/web/test-results/mvp-screens
+          if-no-files-found: error
       - name: Read-only live Solana requests from public Pages browser
         run: node scripts/verify-public-sol-balances.mjs
       - uses: actions/upload-artifact@v4

@@ -66,7 +66,7 @@ export async function walletHistory(c:Config,address:string) {
  const keys=[...message.accountKeys,...((meta.loadedAddresses as {writable?:unknown[]})?.writable??[]),...((meta.loadedAddresses as {readonly?:unknown[]})?.readonly??[])];
  const index=keys.indexOf(address),before=meta.preBalances[index],after=meta.postBalances[index];
  if(index<0||!Number.isSafeInteger(before)||!Number.isSafeInteger(after)||!Number.isSafeInteger(meta.fee))throw Error('unsafe_balance_metadata');
- return {signature:item.signature,success:meta.err===null,balanceDeltaLamports:(BigInt(after)-BigInt(before)).toString(),networkFeeLamports:String(meta.fee),note:'Изменение баланса включает комиссию плательщика; это не service/fund credit.'};
+ return {signature:item.signature,at:typeof tx.blockTime==='number'&&Number.isSafeInteger(tx.blockTime)?tx.blockTime*1000:undefined,success:meta.err===null,balanceDeltaLamports:(BigInt(after)-BigInt(before)).toString(),networkFeeLamports:String(meta.fee),note:'Изменение баланса включает комиссию плательщика; это не service/fund credit.'};
  }catch{return {signature:item.signature,status:'requires_reconciliation'};}
  }));
  return {balance,signatures,movements,rpc:url};
