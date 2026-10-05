@@ -1,3 +1,4 @@
+import { pilotEnabled, assertPilotConfig, assertPilotBinding } from './pilot';
 import { canonical } from '../../../../../packages/protocol/wire';
 import { createOrder, assertOrder, type Order } from '../../../../../packages/checkout/order';
 import { parseAmount } from '../../../../../packages/checkout/amounts';
@@ -35,11 +36,13 @@ export async function newJob(c:Config,payer:string,contribution:string,envelope:
  const ciphertext=envelope?serializeEnvelope(envelope):undefined,now=Date.now();
  const job:NativeJob={schema:'sejire/native-job/v1',configHash:await configHash(c),signatures:[],order:createOrder({id:crypto.randomUUID().replace(/-/g,''),kind:envelope?'preservation':'contribution',network:c.environment,asset:'SOL',payer,reference:(await import('bs58')).default.encode(crypto.getRandomValues(new Uint8Array(32))),createdAt:now,expiresAt:now+30*60*1000,policyVersion:`config-${c.version}`,servicePayment:{recipient:c.wallets.service,amount:envelope?c.serviceLamports:'0'},fundContribution:{recipient:c.wallets.fund,amount:parseAmount(contribution,9)},...(ciphertext?{archive:{digest:await envelopeDigest(ciphertext),bytes:new TextEncoder().encode(ciphertext).length}}:{})}),...(ciphertext?{ciphertext}:{})};
  if(payer!==wallet.publicKey?.toString())throw Error('payer_changed');
- if(envelope)await readyForOrder(c,job.order.archive!.bytes);
+ if(envelope)await readyForOrder(c,job.order.archive!.bytes,job.order.archive!.digest);
  job.signatures=[await walletSignature(orderPayload(job),wallet)];await validateJob(job,c);return job;
 }
-export async function readyForOrder(c:Config,bytes:number) {
- if(c.upload.acceptingUntil<=Date.now())throw Error('manual_executor_not_accepting_orders');
+export async function readyForOrder(c:Config,bytes:number,digest?:string) {
+ if(!c.upload.acceptingUntil)throw Error('manual_executor_not_accepting_orders');
+ if(c.upload.acceptingUntil<=Date.now())throw Error('manual_executor_window_expired');
+ if(pilotEnabled()){assertPilotConfig(c);assertPilotBinding(c.wallets.arReserve,digest??'',bytes,c.upload.maxRewardWinston);}
  if(bytes>c.upload.maxBytes)throw Error('archive_size_not_supported');
  const quote=await arQuote(c.arweaveNodes,c.wallets.arReserve,bytes);
  if(winston(quote.balanceWinston)<winston(quote.rewardWinston)||winston(quote.rewardWinston)>winston(c.upload.maxRewardWinston))throw Error('ar_budget_unavailable');

@@ -18,7 +18,7 @@ export function solWallet():NativeSolWallet {
 export async function preparePayment(c:Config,job:NativeJob) {
  await validateJob(job,c);if(job.paymentSignature||job.signingStarted)throw Error('previous_payment_requires_reconciliation');
  if(job.order.expiresAt<=Date.now())throw Error('order_expired');
- if(job.order.archive)await readyForOrder(c,job.order.archive.bytes);
+ if(job.order.archive)await readyForOrder(c,job.order.archive.bytes,job.order.archive.digest);
  return onRpc(c,async url=>{
  const block=await rpc<{value:{blockhash:string;lastValidBlockHeight:number}}>(url,'getLatestBlockhash',[{commitment:'finalized'}]);
  const tx=new Transaction({feePayer:new PublicKey(job.order.payer),recentBlockhash:block.value.blockhash});
@@ -39,7 +39,7 @@ export async function signAndBroadcast(c:Config,job:NativeJob,wallet:NativeSolWa
  const existing=(await cachedJobs()).find(j=>j.order.id===job.order.id);
  if(existing?.paymentSignature||existing?.signingStarted||job.paymentSignature||job.signingStarted)throw Error('previous_payment_requires_reconciliation');
  if(wallet.publicKey?.toString()!==job.order.payer||Date.now()>job.order.expiresAt)throw Error('payer_changed_or_expired');
- if(job.order.archive)await readyForOrder(c,job.order.archive.bytes);
+ if(job.order.archive)await readyForOrder(c,job.order.archive.bytes,job.order.archive.digest);
  const before=prepared.transaction.serializeMessage().toString('base64');
  job.signingStarted=true;await saveJob(job);
  let signed:Transaction;

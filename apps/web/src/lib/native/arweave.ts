@@ -1,3 +1,4 @@
+import { pilotEnabled, assertPilotData } from './pilot';
 import type Arweave from 'arweave';
 import { resolveArweaveStatic } from '../arweave/client';
 import type Transaction from 'arweave/web/lib/transaction';
@@ -45,6 +46,7 @@ export async function validateArPlan(plan:ArPlan,data:string,tags:{name:string;v
 }
 /** Only wallet extension sees its key. This prepares a signature, NEVER submits the transaction. */
 export async function signNative(nodes:string[],wallet:ArWallet,address:string,data:string,tags:{name:string;value:string}[],maximum:string):Promise<ArPlan> {
+ if(pilotEnabled()){await assertPilotData(address,data,maximum);if(tags.find(t=>t.name==='Type')?.value!=='vault-envelope')throw Error('archive_not_authorized_for_pilot');}
  if(await wallet.getActiveAddress()!==address)throw Error('wrong_ar_wallet');
  const bytes=new TextEncoder().encode(data),quote=await arQuote(nodes,address,bytes.length);
  if(winston(quote.rewardWinston)>winston(maximum)||winston(quote.balanceWinston)<winston(quote.rewardWinston))throw Error('insufficient_ar_or_reward_limit');
@@ -61,7 +63,8 @@ export async function signNative(nodes:string[],wallet:ArWallet,address:string,d
 }
 /** Caller MUST persist signedTx before this call. Resume sends the same signature/ID, no wallet required. */
 export async function uploadNative(nodes:string[],plan:ArPlan,data:string,tags:{name:string;value:string}[],persist:(plan:ArPlan)=>Promise<void>,allowBroadcast:boolean) {
- if(!allowBroadcast)throw Error('mainnet_broadcast_disabled_pending_owner_approval');
+ if(pilotEnabled()){await assertPilotData(plan.address,data,plan.rewardWinston);if(tags.find(t=>t.name==='Type')?.value!=='vault-envelope')throw Error('archive_not_authorized_for_pilot');}
+ else if(!allowBroadcast)throw Error('mainnet_broadcast_disabled_pending_owner_approval');
  await validateArPlan(plan,data,tags);
  return arNode(nodes,async ar=>{
   const tx=ar.transactions.fromRaw(plan.signedTx);

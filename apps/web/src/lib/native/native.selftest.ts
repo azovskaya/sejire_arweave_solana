@@ -1,3 +1,5 @@
+import { PILOT, assertPilotBinding, assertPilotConfig, assertPilotData, importPilotArchive } from './pilot';
+import { readyForOrder } from './jobs';
 /** Synthetic signatures + real arweave-js format-2/chunk uploader against localhost fixtures. No live funds. */
 import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
@@ -39,6 +41,10 @@ await test('donation only no archive or service fee',()=>assert.deepEqual(splitT
 await test('below price rejected',()=>assert.throws(()=>splitTotal('29999999','30000000')));
 await test('large lamports integer precision',()=>assert.equal(splitTotal('18446744073709551615','30000000').fundContribution,'18446744073679551615'));
 await test('technical u64 bound not commercial cap',()=>assert.throws(()=>splitTotal('18446744073709551616','30000000')));
+await test('one archive authorization exact payer digest bytes and integer ceiling',()=>{assertPilotBinding(PILOT.address,PILOT.digest,PILOT.bytes,PILOT.maximum);for(const args of [['A'.repeat(43),PILOT.digest,PILOT.bytes,PILOT.maximum],[PILOT.address,'0'.repeat(64),PILOT.bytes,PILOT.maximum],[PILOT.address,PILOT.digest,PILOT.bytes+1,PILOT.maximum],[PILOT.address,PILOT.digest,PILOT.bytes,'4000000001']] as [string,string,number,string][])assert.throws(()=>assertPilotBinding(...args));});
+await test('pilot policy binds manager devnet treasury reserve and budget',()=>{const approved:Config={...c,managers:[PILOT.manager],wallets:{service:PILOT.service,fund:PILOT.fund,arReserve:PILOT.address},upload:{...c.upload,maxRewardWinston:PILOT.maximum}};assertPilotConfig(approved);assert.throws(()=>assertPilotConfig({...approved,environment:'mainnet-beta'}));assert.throws(()=>assertPilotConfig({...approved,managers:[key]}));assert.throws(()=>assertPilotConfig({...approved,upload:{...approved.upload,maxRewardWinston:'0'}}));assert.throws(()=>assertPilotConfig({...approved,wallets:{...approved.wallets,fund:PILOT.service}}));});
+await test('disabled and expired executor stop before RPC or order signature',async()=>{await assert.rejects(()=>readyForOrder(c,PILOT.bytes,PILOT.digest),/manual_executor_not_accepting_orders/);await assert.rejects(()=>readyForOrder({...c,upload:{...c.upload,acceptingUntil:1}},PILOT.bytes,PILOT.digest),/manual_executor_window_expired/);});
+await test('ciphertext or config publication cannot use single archive permission',async()=>{await assert.rejects(()=>assertPilotData(PILOT.address,JSON.stringify(chain),PILOT.maximum),/archive_not_authorized/);await assert.rejects(()=>importPilotArchive({size:PILOT.fileBytes,text:async()=>'{"tampered":true}'} as File),/pilot_file_mismatch/);});
 const words=createMnemonic(),keys=deriveKeysFromMnemonic(words);let vault=emptyVault(keys.vaultId);
 for(let t=0;t<2;t++){let tree=upsertPersonFields(createTree('Synthetic '+t),{id:'parent',name:'Synthetic parent',parents:[]});tree=upsertPersonFields(tree,{id:'child',name:'Synthetic child',parents:['parent'],notes:'Synthetic note '.repeat(12000)});tree=commitDraft(tree,'Synthetic initial');tree=commitDraft(upsertPersonFields(tree,{id:'child',name:'Synthetic corrected',parents:['parent']}),'Synthetic correction');vault=putTree(vault,tree);}
 const envelope=await encryptJson(keys.encKey,keys.vaultId,vault),data=JSON.stringify(envelope),tags=[{name:'Content-Type',value:'application/json'},{name:'App-Name',value:'SEJIRE'}];

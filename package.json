@@ -39,7 +39,7 @@
     "continuation:package": "node scripts/build-continuation.mjs",
     "test:continuation": "apps/sponsor/node_modules/.bin/tsx scripts/continuation.selftest.mts",
     "native:dev": "VITE_NATIVE_AR_ENABLED=1 VITE_NATIVE_AR_BROADCAST=0 VITE_NATIVE_SOL_MAINNET=0 npm run solana:dev",
-    "native:build": "VITE_NATIVE_AR_ENABLED=1 VITE_NATIVE_AR_BROADCAST=0 VITE_NATIVE_SOL_MAINNET=0 npm run solana:build",
+    "native:build": "VITE_NATIVE_AR_PILOT=1 VITE_NATIVE_AR_ENABLED=1 VITE_NATIVE_AR_BROADCAST=0 VITE_NATIVE_SOL_MAINNET=0 npm run solana:build",
     "test:native-browser": "npm run test:native-browser --prefix apps/web"
   },
   "devDependencies": {

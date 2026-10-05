@@ -31,3 +31,9 @@ export async function decodeBroadcast(raw:string) {
  const tx=Transaction.from(Buffer.from(raw,'base64')),m=tx.compileMessage();
  return {version:'legacy',slot:100,blockTime:Math.ceil(Date.now()/1000),meta:{err:null,fee:5000,innerInstructions:[],preBalances:m.accountKeys.map(()=>1000000000),postBalances:m.accountKeys.map(()=>1000000000),preTokenBalances:[],postTokenBalances:[]},transaction:{signatures:[bs58.encode(tx.signature!)],message:{header:m.header,accountKeys:m.accountKeys.map(k=>k.toBase58()),recentBlockhash:m.recentBlockhash,instructions:m.instructions}}};
 }
+/** Signed synthetic stopped policy: proves readiness rejects before any order signature. */
+export async function stoppedSetup() {
+ const v=await setup();v.config.upload.acceptingUntil=0;
+ v.chain.versions[0]={config:v.config,signatures:[sign(v.config)],acceptance:[sign(acceptancePayload(v.config))]};
+ return {...v,anchor:await configHash(v.config)};
+}
