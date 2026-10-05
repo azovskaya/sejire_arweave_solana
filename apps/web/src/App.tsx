@@ -44,6 +44,7 @@ function bootApp(): { screen: Screen; store: TreeStore | null; guide: GuideState
 
 export default function App() {
   const [boot] = useState(bootApp);
+  const [savingRoute, setSavingRoute] = useState(() => location.hash);
   const [screen, setScreen] = useState<Screen>(boot.screen);
   const [store, setStore] = useState<TreeStore | null>(boot.store);
   const [guide, setGuide] = useState<GuideState>(boot.guide);
@@ -63,7 +64,7 @@ export default function App() {
   useEffect(() => {
     function onHash() {
       if (isOpsHash(location.hash)) setScreen("admin");
-      else if(location.hash.startsWith("#/save"))setScreen("saving");
+      else if(location.hash.startsWith("#/save")){setSavingRoute(location.hash);setScreen("saving");}
       else if(location.hash.startsWith("#/restore"))setScreen("restore");
       else if (screen === "admin"||screen === "saving") setScreen("welcome");
     }
@@ -103,7 +104,7 @@ export default function App() {
         />
       )}
 
-      {screen === "saving" && <main className="landing"><NativeCheckoutPanel resume treeName={store?.meta.title} onBack={() => go(store?"work":"welcome")} /></main>}
+      {screen === "saving" && <main className="landing"><NativeCheckoutPanel key={savingRoute} resume treeName={store?.meta.title} onBack={() => go(store?"work":"welcome")} /></main>}
       {screen === "admin" && <AdminDesk onHome={() => go("welcome")} />}
 
       {screen === "restore" && (
