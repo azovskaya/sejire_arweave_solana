@@ -39,7 +39,7 @@ export async function stoppedSetup() {
 }
 /** Full local browser journey: synthetic RSA owner and public RPC fixtures; never a real wallet. */
 export async function journeySetup() {
- const v=await setup();const {default:Arweave}=await import('arweave');const ar=Arweave.init({host:'arweave.net',protocol:'https',port:443});const jwk=await ar.wallets.generate();v.config.wallets.arReserve=await ar.wallets.jwkToAddress(jwk);v.chain.versions[0]={config:v.config,signatures:[sign(v.config)],acceptance:[sign(acceptancePayload(v.config))]};v.anchor=await configHash(v.config);
+ const v=await setup();const {arClient}=await import('../src/lib/native/arweave');const ar=arClient('https://arweave.net');const jwk=await ar.wallets.generate();v.config.wallets.arReserve=await ar.wallets.jwkToAddress(jwk);v.chain.versions[0]={config:v.config,signatures:[sign(v.config)],acceptance:[sign(acceptancePayload(v.config))]};v.anchor=await configHash(v.config);
  Object.assign(window,{arweaveWallet:{async connect(){},async getActiveAddress(){return v.config.wallets.arReserve;},async getActivePublicKey(){return jwk.n;},async sign(raw:unknown){const tx=ar.transactions.fromRaw(raw as never);await ar.transactions.sign(tx,jwk);return tx.toJSON();}}});
  const {trustChain}=await import('../src/lib/native/session');await trustChain(v.chain,v.anchor);return v;
 }
