@@ -28,7 +28,10 @@ export default defineConfig({
     alias: [{ find: "@sejire/payment-panels", replacement: resolve(__dirname, process.env.VITE_NATIVE_AR_ENABLED === "1" ? "src/components/paymentPanels.native.ts" : "src/components/paymentPanels.legacy.ts") }, { find: /^arweave$/, replacement: resolve(__dirname, "node_modules/arweave/web/index.js") }],
   },
   optimizeDeps: {
-    include: ["arweave/web/index.js", "node-forge", "@scure/bip39", "@noble/hashes", "@noble/curves/ed25519"],
+    // Dev-only fixture discovery must finish before the first browser imports its software signer.
+    // Does not add test entrypoints to the production Rollup build.
+    entries: ["index.html", "tests/*fixture.ts"],
+    include: ["arweave/web/index.js", "node-forge", "@scure/bip39", "@noble/hashes", "@noble/curves/ed25519", "@solana/web3.js", "bs58", "buffer"],
   },
   build: {
     commonjsOptions: {

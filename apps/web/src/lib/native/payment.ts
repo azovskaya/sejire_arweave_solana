@@ -75,6 +75,7 @@ function validatePaymentTemplate(tx:Transaction,job:NativeJob) {
 export function validateAttempt(job:NativeJob) {
  const a=job.attempt;if(!a)return;
  if(Object.keys(a).some(k=>!['id','phase','message','blockhash','lastValidBlockHeight','at','error'].includes(k))||typeof a.id!=='string'||!['prepared','wallet_pending','rejected','signature_unknown','signed','broadcast','finalized','failed','expired_unexecuted'].includes(a.phase)||!Number.isSafeInteger(a.lastValidBlockHeight)||a.lastValidBlockHeight<1||!Number.isSafeInteger(a.at)||typeof a.message!=='string'||a.message.length>5000)throw Error('invalid_payment_attempt');
+ if(['wallet_pending','signature_unknown','signed','broadcast','finalized','failed'].includes(a.phase)&&job.signingStarted!==true)throw Error('invalid_payment_attempt');
  const tx=Transaction.populate(Message.from(Buffer.from(a.message,'base64')));
  if(tx.feePayer?.toBase58()!==job.order.payer||tx.recentBlockhash!==a.blockhash)throw Error('payment_attempt_binding');validatePaymentTemplate(tx,job);
  if(job.signedPayment&&Transaction.from(Buffer.from(job.signedPayment,'base64')).serializeMessage().toString('base64')!==a.message)throw Error('payment_attempt_binding');

@@ -21,7 +21,7 @@ export async function setup() {
 export async function jobFixture(withFund=false,donation=false) {
  const result=await setup(),wallet=solWallet();
  const job=await newJob(result.config,key.publicKey.toBase58(),withFund||donation?'0.005':'0',donation?undefined:result.family.envelope,wallet);
- const prep=await preparePayment(result.config,job);prep.transaction.sign(key);job.signedPayment=prep.transaction.serialize().toString('base64');job.paymentSignature=bs58.encode(prep.transaction.signature!);
+ const prep=await preparePayment(result.config,job);prep.transaction.sign(key);job.signedPayment=prep.transaction.serialize().toString('base64');job.paymentSignature=bs58.encode(prep.transaction.signature!);job.signingStarted=true;job.attempt!.phase='signed';
  const compiled=prep.transaction.compileMessage();
  const tx={version:'legacy',slot:100,blockTime:Math.ceil(job.order.createdAt/1000),meta:{err:null,fee:5000,innerInstructions:[],preBalances:compiled.accountKeys.map(()=>1000000000),postBalances:compiled.accountKeys.map(()=>1000000000),preTokenBalances:[],postTokenBalances:[]},transaction:{signatures:[job.paymentSignature],message:{header:compiled.header,accountKeys:compiled.accountKeys.map(k=>k.toBase58()),recentBlockhash:compiled.recentBlockhash,instructions:compiled.instructions}}};
  return {...result,job,tx,package:{schema:'sejire/native-job-package/v1',chain:result.chain,job}};
