@@ -45,7 +45,7 @@ export async function validateArPlan(plan:ArPlan,data:string,tags:{name:string;v
  return tx;
 }
 /** Only wallet extension sees its key. This prepares a signature, NEVER submits the transaction. */
-export async function signNative(nodes:string[],wallet:ArWallet,address:string,data:string,tags:{name:string;value:string}[],maximum:string):Promise<ArPlan> {
+export async function signNative(nodes:string[],wallet:ArWallet,address:string,data:string,tags:{name:string;value:string}[],maximum:string,beforeSign?:()=>Promise<void>):Promise<ArPlan> {
  if(pilotEnabled()){await assertPilotData(address,data,maximum);if(tags.find(t=>t.name==='Type')?.value!=='vault-envelope')throw Error('archive_not_authorized_for_pilot');}
  if(await wallet.getActiveAddress()!==address)throw Error('wrong_ar_wallet');
  const bytes=new TextEncoder().encode(data),quote=await arQuote(nodes,address,bytes.length);
@@ -54,6 +54,7 @@ export async function signNative(nodes:string[],wallet:ArWallet,address:string,d
   const owner=await wallet.getActivePublicKey();if(await ar.wallets.ownerToAddress(owner)!==address)throw Error('wrong_ar_wallet');
   const tx=await ar.createTransaction({data:bytes,owner,reward:quote.rewardWinston});
   for(const tag of tags)tx.addTag(tag.name,tag.value);
+  await beforeSign?.();
   const raw=await wallet.sign(tx,{name:'SEJIRE direct encrypted preservation'});
   const signed=ar.transactions.fromRaw(raw as ReturnType<Transaction['toJSON']>);
   if(signed.reward!==quote.rewardWinston)throw Error('wallet_changed_reward');

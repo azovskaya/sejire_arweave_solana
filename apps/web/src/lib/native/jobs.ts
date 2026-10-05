@@ -11,6 +11,7 @@ import { verifyPaymentRpc } from './rpc';
 export type NativeJob = {
  schema:'sejire/native-job/v1'; configHash:string; order:Order; signatures:Signature[]; ciphertext?:string;
  paymentSignature?:string; signedPayment?:string; signingStarted?:boolean;
+ arSigningStarted?:boolean;
  arPlan?:ArPlan; // untrusted on import until signature + byte binding verified
 };
 export const orderPayload=(job:NativeJob)=>({domain:'sejire/native-order/v1',configHash:job.configHash,order:job.order});
@@ -20,8 +21,9 @@ export async function configForJob(chain:ConfigChain,job:NativeJob,trusted:strin
  throw Error('unknown_order_configuration');
 }
 export async function validateJob(job:NativeJob,c:Config) {
- const fields=['schema','configHash','order','signatures','ciphertext','paymentSignature','signedPayment','signingStarted','arPlan'];
+ const fields=['schema','configHash','order','signatures','ciphertext','paymentSignature','signedPayment','signingStarted','arPlan','arSigningStarted'];
  if(!job||typeof job!=='object'||Object.keys(job).some(k=>!fields.includes(k))||job.schema!=='sejire/native-job/v1'||job.configHash!==await configHash(c))throw Error('invalid_native_job');
+ if(job.arSigningStarted!==undefined&&typeof job.arSigningStarted!=='boolean')throw Error('invalid_native_job');
  assertOrder(job.order);const o=job.order;
  if(canonical(o)!==canonical(createOrder({...o,asset:o.asset.symbol}))||o.network!==c.environment||o.asset.symbol!=='SOL'||o.policyVersion!==`config-${c.version}`||o.servicePayment.recipient!==c.wallets.service||o.fundContribution.recipient!==c.wallets.fund||o.servicePayment.amount!==(o.kind==='preservation'?c.serviceLamports:'0'))throw Error('order_policy_binding');
  verifySignatures(orderPayload(job),job.signatures,[o.payer],1);

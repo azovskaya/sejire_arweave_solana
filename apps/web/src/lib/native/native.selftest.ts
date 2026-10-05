@@ -62,8 +62,9 @@ const server=createServer(async(req,res)=>{
  res.statusCode=404;res.end('{}');
 });
 await new Promise<void>(ok=>server.listen(0,'127.0.0.1',ok));const addressInfo=server.address();assert(addressInfo&&typeof addressInfo!=='string');const url=`http://127.0.0.1:${addressInfo.port}`;
-const wallet={async connect(){},async getActiveAddress(){return address;},async getActivePublicKey(){return jwk.n;},async sign(raw:unknown){const tx=ar.transactions.fromRaw(raw as never);await ar.transactions.sign(tx,jwk);return tx.toJSON();}};
+let signatureCalls=0;const wallet={async connect(){},async getActiveAddress(){return address;},async getActivePublicKey(){return jwk.n;},async sign(raw:unknown){signatureCalls++;const tx=ar.transactions.fromRaw(raw as never);await ar.transactions.sign(tx,jwk);return tx.toJSON();}};
 try{
+ await test('write-ahead failure stops before wallet signature',async()=>{await assert.rejects(()=>signNative([url],wallet,address,data,tags,'1000',async()=>{throw Error('cache_commit_failed');}),/cache_commit_failed/);assert.equal(signatureCalls,0);assert.equal(txPosts,0);});
  let plan=await signNative([url],wallet,address,data,tags,'1000');
  await test('real SDK format-2 preparation with synthetic RSA signer',async()=>{assert.equal(plan.signedTx.format,2);assert.equal(plan.bytes,new TextEncoder().encode(data).length);await validateArPlan(plan,data,tags);});
  await test('insufficient operational budget rejects',()=>assert.rejects(()=>signNative([url],wallet,address,data,tags,'999')));
