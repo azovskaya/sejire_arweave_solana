@@ -47,3 +47,7 @@ test('expired unsigned order is preserved and explicit owner consent links a suc
 test('signed bytes cannot be rebroadcast after their signed order deadline',async({page})=>{
  const f=await fixtures(page);await page.goto('/');const result=await page.evaluate(async()=>{const v=await(await import('/tests/native-fixture.ts')).jobFixture();const now=Date.now.bind(Date);Date.now=()=>v.job.order.expiresAt+1;try{await(await import('/src/lib/native/payment.ts')).resumeSignedPayment(v.config,v.job);return 'unexpected broadcast';}catch(e){return e.message;}finally{Date.now=now;}});expect(result).toBe('signed_payment_expired_not_broadcast');expect(f.network.sends).toBe(0);
 });
+
+test('closing and reopening the saving window keeps the exact prepared ciphertext before any order exists',async({page})=>{
+ const {f}=await start(page);await expect(page.getByRole('button',{name:'Подключить Phantom',exact:true})).toBeEnabled();const before=await page.evaluate(async()=>(await import('/src/lib/native/cache.ts')).readCache('saving-ciphertext'));await page.getByRole('button',{name:'Назад',exact:true}).click();await page.getByRole('button',{name:'Сохранить через Solana',exact:true}).click();await expect(page.getByRole('status')).toContainText('Его байты сохранены');const after=await page.evaluate(async()=>(await import('/src/lib/native/cache.ts')).readCache('saving-ciphertext'));expect(after).toBe(before);expect(f.network.sends).toBe(0);
+});
