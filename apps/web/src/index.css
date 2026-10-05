@@ -1984,3 +1984,26 @@ a {
 }
 
 .checkout-panel { min-width: 0; overflow-wrap: anywhere; }
+
+/* The pilot has two roles, one consistent visual hierarchy, and no trade-terminal styling. */
+.admin-center,.saving-screen { font-size:16px; line-height:1.55; color:#23392d; }
+.admin-center button,.saving-screen button,.admin-center input,.saving-screen input,.admin-center select { min-height:44px; font-size:16px; }
+.admin-center .admin-sidebar button,.admin-center table,.admin-center .admin-status { font-size:16px; }
+.admin-content { min-width:0; }
+.attention-panel { border-left:4px solid #52896b; }
+.attention-item { padding:1rem 0; border-top:1px solid #dce3d7; }
+.attention-item h3 { margin:0; }
+.saving-screen { max-width:760px; width:100%; margin:auto; padding:1rem; box-sizing:border-box; }
+.saving-screen h3 { font-size:1.65rem; margin:.4rem 0 1rem; }
+.saving-summary { background:#fafbf7; border:1px solid #dce3d7; border-radius:16px; padding:1.2rem; }
+.saving-total { display:grid; grid-template-columns:1fr auto; gap:.75rem; }
+.saving-total dd { margin:0; text-align:right; font-weight:600; }
+.saving-stage { border-left:3px solid #52896b; padding:.8rem; background:#eef4ee; }
+.saving-primary { width:100%; margin:.7rem 0; }
+.saving-uncertain { padding:1rem; background:#fff7e8; border-radius:12px; }
+.saving-screen input:not([type=checkbox]) { display:block; width:100%; box-sizing:border-box; padding:.7rem; margin:.4rem 0; }
+.saving-detail section { padding:.6rem 0; border-top:1px solid #dce3d7; }
+.saving-detail h4 { margin:.4rem 0; font-size:1.1rem; }
+.settings-review { border:1px solid #8aab97; padding:1rem; border-radius:12px; background:#f7faf5; }
+.admin-center .admin-card,.admin-center dd,.admin-center a { overflow-wrap:anywhere; min-width:0; }
+@media(max-width:760px) { .saving-screen { padding:.5rem; } .saving-summary { padding:.85rem; } .admin-center .admin-sidebar { display:grid; grid-template-columns:1fr 1fr; } .saving-total { grid-template-columns:1fr; gap:.2rem; } .saving-total dd { text-align:left; margin-bottom:.5rem; } }

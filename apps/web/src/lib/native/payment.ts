@@ -47,7 +47,13 @@ export async function signAndBroadcast(c:Config,job:NativeJob,wallet:NativeSolWa
  validateAttempt(job);
  job.signingStarted=true;job.attempt.phase='wallet_pending';await saveJob(job);
  let signed:Transaction;
- try{signed=await wallet.signTransaction(prepared.transaction);}catch(e){const rejected=Boolean(e&&typeof e==='object'&&'code'in e&&e.code===4001);job.attempt.phase=rejected?'rejected':'signature_unknown';job.attempt.error=rejected?'wallet_rejected':'wallet_response_unknown';if(rejected)job.signingStarted=false;await saveJob(job,rejected);throw e;}
+ const signing=wallet.signTransaction(prepared.transaction);let timer:ReturnType<typeof setTimeout>|undefined;
+ try{signed=await Promise.race([signing,new Promise<never>((_,reject)=>{timer=setTimeout(()=>reject(Error('wallet_response_timeout')),60000);})]);}
+ catch(e){const rejected=Boolean(e&&typeof e==='object'&&'code'in e&&e.code===4001);job.attempt.phase=rejected?'rejected':'signature_unknown';job.attempt.error=rejected?'wallet_rejected':e instanceof Error?e.message:'wallet_response_unknown';if(rejected)job.signingStarted=false;await saveJob(job,rejected);
+ // A late signature is retained, but NEVER broadcast by the timed-out action.
+ if(e instanceof Error&&e.message==='wallet_response_timeout')void signing.then(async late=>{if(late.serializeMessage().toString('base64')!==before||!late.signatures[0]?.signature||wallet.publicKey?.toString()!==job.order.payer)return;job.paymentSignature=bs58.encode(late.signatures[0].signature);job.signedPayment=late.serialize().toString('base64');job.attempt!.phase='signed';validateSignedPayment(job);await saveJob(job);}).catch(()=>{});
+ throw e;}finally{if(timer)clearTimeout(timer);}
+
  if(signed.serializeMessage().toString('base64')!==before||!signed.signatures[0]?.signature||wallet.publicKey?.toString()!==job.order.payer)throw Error('wallet_changed_transaction');
  job.paymentSignature=bs58.encode(signed.signatures[0].signature);job.signedPayment=signed.serialize().toString('base64');job.attempt.phase='signed';await saveJob(job);
  if(Date.now()>job.order.expiresAt)throw Error('signed_payment_expired_not_broadcast');
