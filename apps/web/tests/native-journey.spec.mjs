@@ -101,7 +101,12 @@ for(const failure of ['message_unsupported','message_rejected','message_invalid'
  if(failure==='payment_prepare')await page.route('https://api.devnet.solana.com',async r=>{if(r.request().postDataJSON().method==='getLatestBlockhash')return r.fulfill({status:503,json:{error:'fixture unavailable'}});return r.fallback();});
  page.on('dialog',d=>d.accept());await page.getByRole('button',{name:'Начать новый тест',exact:true}).click();await expect(page.getByRole('alert')).toBeVisible();expect(await page.evaluate(()=>window.fixtureWallet.signCount)).toBe(0);expect(f.network.sends).toBe(0);
  const result=await page.evaluate(async()=>{const c=await import('/src/lib/native/cache.ts');return {jobs:await c.cachedJobs(),diagnostics:await c.readCache('saving-diagnostics')};});expect(result.diagnostics.at(-1).stage).toBe(failure==='payment_prepare'?'payment_prepare':failure==='successor_persist'?'successor_persist':'order_signature');expect(JSON.stringify(result.diagnostics)).not.toContain(v.job.ciphertext);expect(result.jobs.find(j=>j.order.id===v.job.order.id)).toEqual(v.job);
- if(failure==='payment_prepare'){expect(result.jobs).toHaveLength(2);const next=result.jobs.find(j=>j.supersedes===v.job.order.id);await expect(page).toHaveURL(new RegExp('order='+next.order.id));await page.reload();await expect(page.getByRole('button',{name:'Продолжить сохранение',exact:true})).toBeVisible();expect(await page.evaluate(()=>window.fixtureWallet.signCount)).toBe(0);}
+ if(failure==='payment_prepare'){
+  expect(result.jobs).toHaveLength(2);const next=result.jobs.find(j=>j.supersedes===v.job.order.id);await expect(page).toHaveURL(new RegExp('order='+next.order.id));
+  let reloadSignatures=0;await page.exposeFunction('recordReloadPaymentSignature',()=>{reloadSignatures++;});
+  await page.addInitScript(payer=>{window.phantom={solana:{publicKey:{toString:()=>payer},async signTransaction(){await window.recordReloadPaymentSignature();throw Error('unexpected automatic payment signature');}}};},v.job.order.payer);
+  await page.reload();await expect(page.getByRole('button',{name:'Продолжить сохранение',exact:true})).toBeVisible();expect(reloadSignatures).toBe(0);expect(f.network.sends).toBe(0);
+ }
  else if(failure==='successor_persist'){expect(result.jobs).toHaveLength(1);await page.evaluate(()=>{IDBObjectStore.prototype.put=window.originalPut;});await page.getByRole('button',{name:'Начать новый тест',exact:true}).click();await expect(page.getByRole('heading',{name:'Теперь подтвердите оплату',exact:true})).toBeVisible();expect(await page.evaluate(()=>window.creationSignatures)).toBe(1);expect(await page.evaluate(async()=>(await(await import('/src/lib/native/cache.ts')).cachedJobs()).length)).toBe(2);}
  else expect(result.jobs).toHaveLength(1);
 });
