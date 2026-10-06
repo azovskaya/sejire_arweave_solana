@@ -1,6 +1,7 @@
 import {cachedJobs,readCache,saveJob,writeCache} from './cache';
 import {configForJob,newJob,readyForOrder,validateJob,type NativeJob} from './jobs';
 import {parseEnvelope,serializeEnvelope} from '../crypto/envelope';
+import {onRpc} from './rpc';
 import {canStartDevnetRiskTest} from './presentation';
 import {nativeSession} from './session';
 type NativeSession=NonNullable<ReturnType<typeof nativeSession>>;
@@ -17,7 +18,8 @@ export async function devnetSuccessor(session:NativeSession,previous:NativeJob,w
   stage('archive_binding');const oldConfig=await configForJob(session.chain,previous,session.trusted);await validateJob(previous,oldConfig);
   if(!previous.ciphertext||!previous.order.archive)throw Error('archive_binding');
   const envelope=parseEnvelope(JSON.parse(previous.ciphertext));if(serializeEnvelope(envelope)!==previous.ciphertext)throw Error('archive_binding');
-  stage('readiness_check');await readyForOrder(session.config,previous.order.archive.bytes,previous.order.archive.digest);
+  if(session.config.serviceLamports!=='30000000'||previous.order.fundContribution.amount!=='0')throw Error('order_policy_binding');
+  stage('readiness_check');await onRpc(session.config,async()=>true);await readyForOrder(session.config,previous.order.archive.bytes,previous.order.archive.digest);
   stage('wallet_connect');await wallet.connect();const payer=wallet.publicKey?.toString();if(payer!==previous.order.payer)throw Error('payer_changed');if(!session.config.managers.includes(payer))throw Error('manager_not_authorized');
   stage('risk_consent_persist');await writeCache('devnet-risk-consent-'+previous.order.id,{schema:'sejire/devnet-risk-consent/v1',previousOrder:previous.order.id,archiveDigest:previous.order.archive.digest,at:Date.now(),manager:payer});
   stage('successor_create');const next=await newJob(session.config,payer,'0',envelope,wallet,previous.order.id,stage);

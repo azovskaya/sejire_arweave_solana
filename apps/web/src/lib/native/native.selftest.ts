@@ -1,4 +1,4 @@
-import { PILOT, assertPilotBinding, assertPilotConfig, assertPilotData, importPilotArchive } from './pilot';
+import { PILOT, assertPilotBinding, assertPilotConfig, assertPilotData, importPilotArchive, nativeMessage, nativeReadMessage } from './pilot';
 import { readyForOrder } from './jobs';
 /** Synthetic signatures + real arweave-js format-2/chunk uploader against localhost fixtures. No live funds. */
 import assert from 'node:assert/strict';
@@ -24,6 +24,14 @@ const secret=new Uint8Array(32).fill(19),key=bs58.encode(ed25519.getPublicKey(se
 const sign=(value:unknown,k=secret)=>({publicKey:bs58.encode(ed25519.getPublicKey(k)),signature:bs58.encode(ed25519.sign(new TextEncoder().encode(canonical(value)),k))});
 const c:Config={domain:CONFIG_DOMAIN,project:'SEJIRE',version:1,previous:null,environment:'devnet',createdAt:1,nonce:'a'.repeat(32),serviceLamports:'30000000',wallets:{service:bs58.encode(new Uint8Array(32).fill(2)),fund:bs58.encode(new Uint8Array(32).fill(3)),arReserve:'A'.repeat(43)},managers:[key],threshold:1,solanaRpcs:['https://api.devnet.solana.com'],arweaveNodes:['https://arweave.net'],arweaveNetwork:'arweave.N.1',upload:{maxBytes:1048576,maxRewardWinston:'100000',acceptingUntil:0},identifiers:{protocol:null,release:null}};
 const chain:ConfigChain={schema:'sejire/config-chain/v1',versions:[{config:c,signatures:[sign(c)],acceptance:[sign(acceptancePayload(c))]}]},anchor=await configHash(c);
+await test('read-only network errors never imply an unknown payment',()=>{
+ assert.equal(nativeReadMessage('rpc-timeout'),'Сеть не ответила вовремя. Попробуйте ещё раз.');
+ assert.equal(nativeReadMessage('rpc_timeout'),nativeReadMessage('rpc-timeout'));
+ assert.notEqual(nativeReadMessage('rpc-rate-limited'),nativeReadMessage('rpc-timeout'));
+ assert.match(nativeMessage('wallet_response_timeout'),/новая оплата не запускается/i);
+ assert.match(nativeMessage('requires_reconciliation'),/новый платёж не создаётся/);
+ assert.doesNotMatch(nativeReadMessage('rpc-unavailable'),/оплат|подпис/i);
+});
 await test('three distinct wallet roles and signed genesis',async()=>assert.deepEqual(await verifyChain(chain,anchor),c));
 await test('fake signature rejected',async()=>{const bad=structuredClone(chain);bad.versions[0].signatures[0].signature=bs58.encode(new Uint8Array(64));await assert.rejects(()=>verifyChain(bad,anchor));});
 await test('untrusted initial visitor rejected',()=>assert.rejects(()=>verifyChain(chain,'0'.repeat(64))));

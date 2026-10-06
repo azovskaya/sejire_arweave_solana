@@ -1,5 +1,16 @@
 import { test, expect } from '@playwright/test';
 import bs58 from 'bs58';
+
+test('owner preparation diagnostics never connect or sign',async({page})=>{
+ const f=await fixtures(page);await page.goto('/#/admin');
+ const v=await page.evaluate(async()=>(await import('/tests/native-fixture.ts')).jobFixture());
+ f.network.tx=v.tx;await importJob(page,v);
+ await page.evaluate(()=>{window.probeCalls=0;const w=window.phantom.solana;for(const name of ['connect','signMessage','signTransaction'])w[name]=async()=>{window.probeCalls++;throw Error('must not call wallet');};});
+ await advanced(page);await page.getByRole('button',{name:'Проверить подготовку без подписи',exact:true}).click();
+ await expect(page.getByRole('status')).toContainText('Проверка без подписи завершена');
+ await expect(page.locator('pre').filter({hasText:'non_signing_preflight'})).toContainText('"broadcast": false');
+ expect(await page.evaluate(()=>window.probeCalls)).toBe(0);expect(f.network.sends).toBe(0);
+});
 const genesis='EtWTRABZaYq6iMfeYKouRu166VU2xqa1wcaWoxPkrZBG';
 async function fixtures(page) {
  const forbidden=[],network={tx:null,sends:0,loseResponse:false};
@@ -57,7 +68,7 @@ test('public balances never wait for history and history failure preserves them'
  await fixtures(page);const v=await setup(page);await importConfig(page,v);let history=0;
  await page.route('https://api.devnet.solana.com*',async route=>{const p=route.request().postDataJSON();if(p.method==='getSignaturesForAddress'){history++;return;}await route.fallback();});
  await page.getByRole('button',{name:'Проверить состояние системы',exact:true}).click();const card=page.getByRole('region',{name:'Баланс основной казны',exact:true});await expect(card).toContainText('1 SOL');expect(history).toBe(0);
- await advanced(page);await page.getByRole('button',{name:'Загрузить историю основной казны',exact:true}).click();await expect(page.getByRole('alert')).toContainText('Сеть не ответила вовремя',{timeout:15000});await page.getByRole('button',{name:'Обзор',exact:true}).click();await expect(card).toContainText('1 SOL');expect(history).toBe(1);
+ await advanced(page);await page.getByRole('button',{name:'Загрузить историю основной казны',exact:true}).click();await expect(page.getByRole('alert')).toHaveText('Сеть не ответила вовремя. Попробуйте ещё раз.',{timeout:15000});await page.getByRole('button',{name:'Обзор',exact:true}).click();await expect(card).toContainText('1 SOL');expect(history).toBe(1);
 });
 test('HTTP 429 is diagnosed separately; other treasury and AR remain visible',async({page})=>{
  await fixtures(page);const v=await setup(page);await importConfig(page,v);

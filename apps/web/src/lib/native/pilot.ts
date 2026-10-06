@@ -29,6 +29,17 @@ export async function importPilotArchive(file:File) {
  const raw=await file.text();if(await envelopeDigest(raw)!==PILOT.fileDigest)throw Error('pilot_file_mismatch');
  const envelope=parseEnvelope(JSON.parse(raw));await assertPilotData(PILOT.address,serializeEnvelope(envelope),PILOT.maximum);return envelope;
 }
+/** Read-only failures cannot imply that a wallet operation or payment has started. */
+export function nativeReadMessage(message:string) {
+ const code=message.replaceAll('-', '_');
+ const messages:Record<string,string>={
+  rpc_timeout:'Сеть не ответила вовремя. Попробуйте ещё раз.',
+  rpc_rate_limited:'Сеть временно ограничила число запросов. Попробуйте ещё раз позже.',
+  rpc_unavailable:'Сеть временно недоступна. Попробуйте ещё раз.',
+  wrong_network:'Узел отвечает из другой сети. Данные не приняты.'
+ };
+ return messages[code]??(/[А-Яа-яЁё]/.test(message)?message:'Не удалось получить данные. Ранее проверенные данные сохранены; попробуйте ещё раз.');
+}
 export function nativeMessage(message:string) {
  const messages:Record<string,string>={
   "message_signature_not_supported": "Phantom не поддерживает подпись создания сохранения. Оплата не запускалась.",

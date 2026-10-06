@@ -54,6 +54,8 @@ jobs:
           name: native-admin-build
           path: apps/web/dist/
           retention-days: 14
+      - name: Wallet history timeout regression (read-only, balance preserved)
+        run: npm run test:native-browser --prefix apps/web -- --grep 'public balances never wait for history'
       - run: npm run test:native-browser
       - run: npm run test:native-pilot-browser --prefix apps/web
       - run: npm run test:native-journey --prefix apps/web
