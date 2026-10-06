@@ -115,4 +115,10 @@ await test('every payment-signing marker forbids orphan replacement',()=>{
  const base={} as import('./jobs').NativeJob;assert(prePaymentOnly(base));
  for(const extra of [{signingStarted:true},{paymentSignature:'x'},{reconciledSignature:'x'},{signedPayment:'x'},...['wallet_pending','signature_unknown','signed','broadcast','finalized','rejected','failed'].map(phase=>({attempt:{phase}}))])assert.equal(prePaymentOnly({...base,...extra} as import('./jobs').NativeJob),false);
 });
+await test('stale authorization preserves a recoverable signed mirror before overwriting cache',async()=>{
+ const persisted=(await readCache<{chain:ConfigChain}>('trusted-session'))!.chain,previous=persisted.versions.at(-1)!.config;
+ const cfg={...structuredClone(previous),version:previous.version+1,previous:await configHash(previous),nonce:'6'.repeat(32),createdAt:6};
+ const mirror={...persisted,versions:[...persisted.versions,{config:cfg,signatures:[sign(cfg)],acceptance:[]}]};await writeCache('chain',mirror);
+ const restored=await trustChain(persisted,anchor);assert.equal(restored.config.version,6);assert.equal((await readCache<{chain:ConfigChain}>('trusted-session'))!.chain.versions.length,6);
+});
 console.log('PASS '+count+' native tests including monotonic configuration / orphan guards; LOCAL fixtures only');

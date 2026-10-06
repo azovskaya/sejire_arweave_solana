@@ -26,6 +26,11 @@ export async function trustChain(chain:ConfigChain,trusted:string) {
  await verifyChain(chain,trusted);if(!navigator.locks)throw Error('exclusive_browser_lock_unavailable');
  return navigator.locks.request('sejire-trusted-session',async()=>{
   const persisted=await persistentSession();let newest=chain;
+  // An older release may have left the only signed extension in the mirror cache.
+  // Validate it against the existing pin before any mirror overwrite.
+  const mirror=await readCache<ConfigChain>('chain');let verifiedMirror:ConfigChain|undefined;
+  if(mirror)try{await verifyChain(mirror,trusted);verifiedMirror=mirror;}catch{/* Untrusted/unsigned cache is never an authority. */}
+  if(verifiedMirror)newest=await latestChain(verifiedMirror,newest,trusted);
   for(const old of [persisted,session])if(old){if(old.trusted!==trusted)throw Error('different_trust_anchor');newest=await latestChain(old.chain,newest,trusted);}
   const config=await verifyChain(newest,trusted),record={schema:'sejire/trusted-session/v1',chain:structuredClone(newest),trusted};
   const history=await readCache<Record[]>('trusted-chain-history')??[];
