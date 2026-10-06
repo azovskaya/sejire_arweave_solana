@@ -4,7 +4,8 @@ import type { NativeJob } from './jobs';
 import type { ConfigChain } from './config';
 async function db() {return new Promise<IDBDatabase>((ok,fail)=>{const r=indexedDB.open('sejire-native-pilot',1);r.onupgradeneeded=()=>r.result.createObjectStore('cache');r.onsuccess=()=>ok(r.result);r.onerror=()=>fail(Error('cache_unavailable'));});}
 export async function readCache<T>(key:string):Promise<T|undefined> {const d=await db();try{return await new Promise((ok,fail)=>{const r=d.transaction('cache').objectStore('cache').get(key);r.onsuccess=()=>ok(r.result);r.onerror=()=>fail(Error('cache_unavailable'));});}finally{d.close();}}
-export async function writeCache(key:string,value:unknown) {const d=await db();try{await new Promise<void>((ok,fail)=>{const tx=d.transaction('cache','readwrite');tx.objectStore('cache').put(value,key);tx.oncomplete=()=>ok();tx.onerror=tx.onabort=()=>fail(Error('cache_commit_failed'));});}catch{throw Error('cache_commit_failed');}finally{d.close();}}
+export async function writeCacheEntries(entries:[string,unknown][]) {const d=await db();try{await new Promise<void>((ok,fail)=>{const tx=d.transaction('cache','readwrite');try{for(const [key,value] of entries)tx.objectStore('cache').put(value,key);}catch{tx.abort();fail(Error('cache_commit_failed'));return;}tx.oncomplete=()=>ok();tx.onerror=tx.onabort=()=>fail(Error('cache_commit_failed'));});}catch{throw Error('cache_commit_failed');}finally{d.close();}}
+export async function writeCache(key:string,value:unknown) {await writeCacheEntries([[key,value]]);}
 export const cachedChain=()=>readCache<ConfigChain>('chain');
 export const cachedJobs=async()=>await readCache<NativeJob[]>('jobs')??[];
 export async function saveJob(job:NativeJob,walletRejected=false) {

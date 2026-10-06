@@ -49,3 +49,18 @@ export async function legacyUnknownFixture() {
 }
 /** Signed inactive successor policy; original unknown order remains bound to version 1. */
 export async function expiredSuccessorFixture(){const v=await legacyUnknownFixture();const c:Config={...v.config,version:2,previous:await configHash(v.config),nonce:'b'.repeat(32),createdAt:Date.now(),upload:{...v.config.upload,acceptingUntil:0}};v.chain.versions.push({config:c,signatures:[sign(c)],acceptance:[sign(acceptancePayload(c))]});await(await import('../src/lib/native/session')).trustChain(v.chain,v.anchor);return v;}
+/** Synthetic signed historical chains for cross-tab/configuration recovery regressions. */
+export async function chainThrough(v:Awaited<ReturnType<typeof setup>>,count:number) {
+ const chain=structuredClone(v.chain);
+ while(chain.versions.length<count){const previous=chain.versions.at(-1)!.config,config:Config={...structuredClone(previous),version:previous.version+1,previous:await configHash(previous),nonce:String(previous.version+1).repeat(32),createdAt:previous.createdAt+1};chain.versions.push({config,signatures:[sign(config)],acceptance:[]});}
+ return chain;
+}
+export async function linkedFixture(mode='historical') {
+ const v=await legacyUnknownFixture(),chain=await chainThrough(v,2),config=chain.versions[1].config;
+ const job=structuredClone(await newJob(config,key.publicKey.toBase58(),'0',v.family.envelope,solWallet(),v.job.order.id));job.order.id='8a035690c52449418afdd14dc7ec342b';job.signatures=[sign(orderPayload(job))];
+ if(mode==='signing')job.signingStarted=true;
+ const cache=await import('../src/lib/native/cache');await cache.saveJob(job);
+ if(mode==='historical')await(await import('../src/lib/native/session')).trustChain(chain,v.anchor);
+ if(mode==='cached')await cache.writeCache('chain',chain);
+ return {...v,linked:job,extended:chain};
+}

@@ -17,6 +17,7 @@ export function solWallet():NativeSolWallet {
   signTransaction:tx=>provider.signTransaction(tx)};
 }
 export async function preparePayment(c:Config,job:NativeJob) {
+ if(await (await import('./cache')).readCache('retired-prepayment-'+job.order.id))throw Error('saving_replaced');
  await validateJob(job,c);if(job.paymentSignature||job.reconciledSignature||job.signingStarted)throw Error('previous_payment_requires_reconciliation');
  if(job.order.expiresAt<=Date.now())throw Error('order_expired');
  if(job.order.archive)await readyForOrder(c,job.order.archive.bytes,job.order.archive.digest);
@@ -38,6 +39,8 @@ export async function signAndBroadcast(c:Config,job:NativeJob,wallet:NativeSolWa
  if(c.environment==='mainnet-beta'&&!allowMainnet)throw Error('mainnet_payment_disabled');
  if(!navigator.locks)throw Error('exclusive_browser_lock_unavailable');
  await navigator.locks.request('sejire-native-payment-'+job.order.id,async()=>{
+ if(await (await import('./cache')).readCache('retired-prepayment-'+job.order.id))throw Error('saving_replaced');
+
  const existing=(await cachedJobs()).find(j=>j.order.id===job.order.id);
  if(existing?.paymentSignature||existing?.signingStarted||job.paymentSignature||job.signingStarted)throw Error('previous_payment_requires_reconciliation');
  if(wallet.publicKey?.toString()!==job.order.payer||Date.now()>job.order.expiresAt)throw Error('payer_changed_or_expired');

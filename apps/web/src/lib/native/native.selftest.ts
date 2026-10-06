@@ -92,3 +92,27 @@ try{
  await test('custom endpoint supported by real SDK',()=>assert.equal(arClient(url).api.config.host,'127.0.0.1'));
 }finally{await new Promise<void>((ok,fail)=>server.close(e=>e?fail(e):ok()));}
 console.log(`PASS ${count} native admin / Arweave tests; LOCAL fixtures, no live transaction or permanent settlement`);
+
+// Same stale-memory/persistent-cache split as two browser tabs. No wallet or network.
+const {indexedDB}=await import('fake-indexeddb');Object.assign(globalThis,{indexedDB});
+Object.defineProperty(globalThis,'navigator',{value:{locks:{request:async(_name:string,action:()=>Promise<unknown>)=>action()}},configurable:true});
+const {trustChain,restoreJobSession}=await import('./session');const {writeCache,readCache}=await import('./cache');
+const {prePaymentOnly}=await import('./successor');
+const four=structuredClone(chain);
+for(let version=2;version<=4;version++){const cfg={...structuredClone(c),version,previous:await configHash(four.versions.at(-1)!.config),nonce:String(version).repeat(32),createdAt:version};four.versions.push({config:cfg,signatures:[sign(cfg)],acceptance:[]});}
+const three={...four,versions:four.versions.slice(0,3)};
+await test('stale tab v3 adopts persistent v4 and cannot roll back',async()=>{
+ await trustChain(three,anchor);await writeCache('trusted-session',{schema:'sejire/trusted-session/v1',chain:four,trusted:anchor});
+ const adopted=await trustChain(three,anchor);assert.equal(adopted.config.version,4);assert.equal((await readCache<{chain:ConfigChain}>('trusted-session'))!.chain.versions.length,4);
+});
+await test('trusted fork rejected without changing persistent history',async()=>{const fork=structuredClone(four);fork.versions[3].config.nonce='f'.repeat(32);fork.versions[3].signatures=[sign(fork.versions[3].config)];await assert.rejects(()=>trustChain(fork,anchor),/configuration_conflict_or_rollback/);assert.equal(await configHash((await readCache<{chain:ConfigChain}>('trusted-session'))!.chain.versions[3].config),await configHash(four.versions[3].config));});
+await test('exact missing job configuration recovered only from signed historical extension',async()=>{
+ const cfg={...structuredClone(c),version:5,previous:await configHash(four.versions[3].config),nonce:'5'.repeat(32),createdAt:5};const five={...four,versions:[...four.versions,{config:cfg,signatures:[sign(cfg)],acceptance:[]}]};await writeCache('chain',five);
+ const restored=await restoreJobSession({configHash:await configHash(cfg)} as import('./jobs').NativeJob);assert.equal(restored.config.version,5);assert.equal((await readCache<{chain:ConfigChain}>('trusted-session'))!.chain.versions.length,5);
+ await assert.rejects(()=>restoreJobSession({configHash:'0'.repeat(64)} as import('./jobs').NativeJob),/unknown_order_configuration/);
+});
+await test('every payment-signing marker forbids orphan replacement',()=>{
+ const base={} as import('./jobs').NativeJob;assert(prePaymentOnly(base));
+ for(const extra of [{signingStarted:true},{paymentSignature:'x'},{reconciledSignature:'x'},{signedPayment:'x'},...['wallet_pending','signature_unknown','signed','broadcast','finalized','rejected','failed'].map(phase=>({attempt:{phase}}))])assert.equal(prePaymentOnly({...base,...extra} as import('./jobs').NativeJob),false);
+});
+console.log('PASS '+count+' native tests including monotonic configuration / orphan guards; LOCAL fixtures only');
