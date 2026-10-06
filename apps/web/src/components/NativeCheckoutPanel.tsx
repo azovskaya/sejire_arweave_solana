@@ -27,7 +27,7 @@ export function NativeCheckoutPanel({envelope,onBack,onBusy,treeName,recoveryKey
  const c=nativeSession()?.config;
  const display=savingState(job,paid,stored);
  const cleanDemoSource=job?.signingStarted&&!job.paymentSignature&&!job.reconciledSignature&&job.order.archive?.digest===PILOT.digest&&job.order.archive.bytes===PILOT.bytes?job:pending.find(j=>j.signingStarted&&!j.paymentSignature&&!j.reconciledSignature&&!j.signedPayment&&!j.arPlan&&!j.arSigningStarted&&j.order.network==='devnet'&&j.order.archive?.digest===PILOT.digest&&j.order.archive.bytes===PILOT.bytes);
- const cleanDemoAvailable=Boolean(pilotEnabled()&&c?.environment==='devnet'&&archive&&pilotArchiveMatch&&cleanDemoSource&&job?.order.id!==cleanDemoId);
+ const cleanDemoAvailable=Boolean(pilotEnabled()&&c?.environment==='devnet'&&archive&&pilotArchiveMatch&&cleanDemoSource&&(!job||Boolean(job.signingStarted&&!job.paymentSignature&&!job.reconciledSignature))&&job?.order.id!==cleanDemoId);
  const cleanDemoNeedsReadiness=Boolean(cleanDemoAvailable&&!job&&availability==='unavailable');
  useEffect(()=>{void readCache<string>('clean-demo-order').then(v=>{if(v)setCleanDemoId(v);}).catch(()=>{});},[]);
  useEffect(()=>{let live=true;if(!pilotEnabled()||!archive){setPilotArchiveMatch(false);return()=>{live=false;};}const serialized=serializeEnvelope(archive),bytes=new TextEncoder().encode(serialized).length;void envelopeDigest(serialized).then(digest=>{if(live)setPilotArchiveMatch(archive.vault_id===PILOT.vaultId&&bytes===PILOT.bytes&&digest===PILOT.digest);}).catch(()=>{if(live)setPilotArchiveMatch(false);});return()=>{live=false;};},[archive]);
