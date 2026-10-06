@@ -7,12 +7,13 @@ import { validateJob, readyForOrder } from './jobs';
 import { onRpc, rpc } from './rpc';
 import { cachedJobs, saveJob } from './cache';
 export type NativeSolWallet = MessageWallet & { connect():Promise<unknown>; signTransaction(tx:Transaction):Promise<Transaction> };
+async function walletDeadline<T>(promise:Promise<T>,code:string):Promise<T>{let timer:ReturnType<typeof setTimeout>|undefined;try{return await Promise.race([promise,new Promise<never>((_,reject)=>{timer=setTimeout(()=>reject(Error(code)),60000);})]);}finally{if(timer)clearTimeout(timer);}}
 export function solWallet():NativeSolWallet {
  type Provider=Omit<NativeSolWallet,'signMessage'> & {signMessage:(bytes:Uint8Array,display?:string)=>Promise<Uint8Array|{signature:Uint8Array;publicKey?:{toString():string}}>};
  const w=window as unknown as {phantom?:{solana?:Provider};solana?:Provider};
  const provider=w.phantom?.solana??w.solana;if(!provider)throw Error('phantom_not_found');if(typeof provider.signTransaction!=='function')throw Error('wallet_transaction_signing_unavailable');
- return {get publicKey(){return provider.publicKey;},connect:()=>provider.connect(),
-  async signMessage(bytes){const address=provider.publicKey?.toString();if(!address)throw Error('wallet_not_connected');const result=await provider.signMessage(bytes,'utf8');if(provider.publicKey?.toString()!==address||!(result instanceof Uint8Array)&&result.publicKey&&result.publicKey.toString()!==address)throw Error('wallet_changed');const signature=result instanceof Uint8Array?result:result.signature;if(!(signature instanceof Uint8Array)||signature.length!==64)throw Error('invalid_message_signature');return signature;},
+ return {get publicKey(){return provider.publicKey;},connect:()=>walletDeadline(provider.connect(),'wallet_connect_timeout'),
+  async signMessage(bytes){if(typeof provider.signMessage!=='function')throw Error('message_signature_not_supported');const address=provider.publicKey?.toString();if(!address)throw Error('wallet_not_connected');const result=await walletDeadline(provider.signMessage(bytes,'utf8'),'wallet_message_timeout');if(!result||typeof result!=='object')throw Error('invalid_message_signature');if(provider.publicKey?.toString()!==address||!(result instanceof Uint8Array)&&result.publicKey&&result.publicKey.toString()!==address)throw Error('wallet_changed');const signature=result instanceof Uint8Array?result:result.signature;if(!(signature instanceof Uint8Array)||signature.length!==64)throw Error('invalid_message_signature');return signature;},
   signTransaction:tx=>provider.signTransaction(tx)};
 }
 export async function preparePayment(c:Config,job:NativeJob) {

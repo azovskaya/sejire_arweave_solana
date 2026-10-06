@@ -4,7 +4,7 @@ import bs58 from 'bs58';
 import { Keypair } from '@solana/web3.js';
 import { canonical } from '../../../packages/protocol/wire';
 import { configHash, CONFIG_DOMAIN, acceptancePayload, type Config } from '../src/lib/native/config';
-import { newJob } from '../src/lib/native/jobs';
+import { newJob,orderPayload } from '../src/lib/native/jobs';
 import { preparePayment, solWallet } from '../src/lib/native/payment';
 import { installWallet, fixture } from './browser-fixture';
 const seed=new Uint8Array(32).fill(17),key=Keypair.fromSeed(seed);
@@ -44,6 +44,6 @@ export async function journeySetup() {
  const {trustChain}=await import('../src/lib/native/session');await trustChain(v.chain,v.anchor);return v;
 }
 export async function legacyUnknownFixture() {
- const v=await setup(),wallet=solWallet();const job=await newJob(v.config,key.publicKey.toBase58(),'0',v.family.envelope,wallet);job.signingStarted=true;
+ const v=await setup(),wallet=solWallet();const job=await newJob(v.config,key.publicKey.toBase58(),'0',v.family.envelope,wallet);job.order.id='9bb9b792bbb948fe88935a1aa4a2cd51';job.signatures=[sign(orderPayload(job))];job.signingStarted=true;
  const {trustChain}=await import('../src/lib/native/session');const {saveJob,writeCache}=await import('../src/lib/native/cache');await trustChain(v.chain,v.anchor);await saveJob(job);await writeCache('active-saving',job.order.id);return {...v,job};
 }

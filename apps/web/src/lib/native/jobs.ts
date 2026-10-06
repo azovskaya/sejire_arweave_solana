@@ -41,12 +41,12 @@ export async function validateJob(job:NativeJob,c:Config) {
  if(job.paymentSignature!==undefined){const {assertBase58}=await import('../../../../../packages/checkout/order');assertBase58(job.paymentSignature,64);const {validateSignedPayment}=await import('./payment');validateSignedPayment(job);}
  if(job.arPlan&&(job.arPlan.address!==c.wallets.arReserve||BigInt(job.arPlan.rewardWinston)>BigInt(c.upload.maxRewardWinston)))throw Error('upload_executor_or_budget');
 }
-export async function newJob(c:Config,payer:string,contribution:string,envelope:EnvelopeV1|undefined,wallet:MessageWallet,supersedes?:string):Promise<NativeJob> {
+export async function newJob(c:Config,payer:string,contribution:string,envelope:EnvelopeV1|undefined,wallet:MessageWallet,supersedes?:string,onStage?:(stage:'readiness_check'|'order_signature')=>void):Promise<NativeJob> {
  const ciphertext=envelope?serializeEnvelope(envelope):undefined,now=Date.now();
  const job:NativeJob={schema:'sejire/native-job/v1',configHash:await configHash(c),...(supersedes?{supersedes}:{}),signatures:[],order:createOrder({id:crypto.randomUUID().replace(/-/g,''),kind:envelope?'preservation':'contribution',network:c.environment,asset:'SOL',payer,reference:(await import('bs58')).default.encode(crypto.getRandomValues(new Uint8Array(32))),createdAt:now,expiresAt:now+30*60*1000,policyVersion:`config-${c.version}`,servicePayment:{recipient:c.wallets.service,amount:envelope?c.serviceLamports:'0'},fundContribution:{recipient:c.wallets.fund,amount:parseAmount(contribution,9)},...(ciphertext?{archive:{digest:await envelopeDigest(ciphertext),bytes:new TextEncoder().encode(ciphertext).length}}:{})}),...(ciphertext?{ciphertext}:{})};
  if(payer!==wallet.publicKey?.toString())throw Error('payer_changed');
- if(envelope)await readyForOrder(c,job.order.archive!.bytes,job.order.archive!.digest);
- job.signatures=[await walletSignature(orderPayload(job),wallet)];await validateJob(job,c);return job;
+ if(envelope){onStage?.('readiness_check');await readyForOrder(c,job.order.archive!.bytes,job.order.archive!.digest);}
+ onStage?.('order_signature');job.signatures=[await walletSignature(orderPayload(job),wallet)];await validateJob(job,c);return job;
 }
 export async function readyForOrder(c:Config,bytes:number,digest?:string) {
  if(!c.upload.acceptingUntil)throw Error('manual_executor_not_accepting_orders');
