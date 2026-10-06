@@ -47,3 +47,5 @@ export async function legacyUnknownFixture() {
  const v=await setup(),wallet=solWallet();const job=await newJob(v.config,key.publicKey.toBase58(),'0',v.family.envelope,wallet);job.order.id='9bb9b792bbb948fe88935a1aa4a2cd51';job.signatures=[sign(orderPayload(job))];job.signingStarted=true;
  const {trustChain}=await import('../src/lib/native/session');const {saveJob,writeCache}=await import('../src/lib/native/cache');await trustChain(v.chain,v.anchor);await saveJob(job);await writeCache('active-saving',job.order.id);return {...v,job};
 }
+/** Signed inactive successor policy; original unknown order remains bound to version 1. */
+export async function expiredSuccessorFixture(){const v=await legacyUnknownFixture();const c:Config={...v.config,version:2,previous:await configHash(v.config),nonce:'b'.repeat(32),createdAt:Date.now(),upload:{...v.config.upload,acceptingUntil:0}};v.chain.versions.push({config:c,signatures:[sign(c)],acceptance:[sign(acceptancePayload(c))]});await(await import('../src/lib/native/session')).trustChain(v.chain,v.anchor);return v;}
