@@ -51,11 +51,17 @@ export async function validateSigned(session: SaveSession): Promise<Transaction>
       tx.data_size !== String(P.archiveBytes) || new TextDecoder().decode(tx.data) !== session.archiveText ||
       await ar.wallets.ownerToAddress(tx.owner) !== P.arReserve || !await ar.transactions.verify(tx))
     throw Error('signed_ar_transaction_mismatch');
-  if (tx.tags.length !== 3 ||
-      tx.tags[0].get('name',{decode:true,string:true}) !== 'App-Name' || tx.tags[0].get('value',{decode:true,string:true}) !== 'SEJIRE' ||
-      tx.tags[1].get('name',{decode:true,string:true}) !== 'Type' || tx.tags[1].get('value',{decode:true,string:true}) !== 'vault-envelope' ||
-      tx.tags[2].get('name',{decode:true,string:true}) !== 'Save-Id' || tx.tags[2].get('value',{decode:true,string:true}) !== session.saveId)
+  const tags=tx.tags.map(tag=>({name:tag.get('name',{decode:true,string:true}),value:tag.get('value',{decode:true,string:true})}));
+  const names=tags.map(tag=>tag.name);
+  if (new Set(names).size!==names.length) throw Error('signed_ar_tags_mismatch');
+  const required=new Map([['App-Name','SEJIRE'],['Type','vault-envelope'],['Save-Id',session.saveId]]);
+  for(const [name,value] of required)if(tags.find(tag=>tag.name===name)?.value!==value)throw Error('signed_ar_tags_mismatch');
+  for(const tag of tags){
+    if(required.has(tag.name))continue;
+    if(tag.name==='Signing-Client' && ['Wander','Wander Connect'].includes(tag.value))continue;
+    if(tag.name==='Signing-Client-Version' && tag.value.length>0 && tag.value.length<=64)continue;
     throw Error('signed_ar_tags_mismatch');
+  }
   const copy = ar.transactions.fromRaw({...session.arSignedTransaction, data_root:''});
   await copy.prepareChunks(tx.data);
   if (copy.data_root !== tx.data_root) throw Error('signed_ar_data_root_mismatch');
