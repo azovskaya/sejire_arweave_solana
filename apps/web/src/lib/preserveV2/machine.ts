@@ -28,7 +28,8 @@ export const productionServices: MachineServices = {
 if(import.meta.env?.VITE_PRESERVATION_V2_TEST==='1' && typeof window!=='undefined')
   Object.assign(productionServices,(window as Window & {__SEJIRE_V2_TEST_DRIVER__?:Partial<MachineServices>}).__SEJIRE_V2_TEST_DRIVER__);
 
-const safeErrors = new Set(['ar_confirmation_pending','ar_retrieval_pending','retrieved_archive_mismatch',
+const safeErrors = new Set(['ar_confirmation_pending','ar_retrieval_pending','ar_retrieval_failed',
+  'retrieved_archive_mismatch','retrieved_archive_too_large','retrieved_vault_mismatch',
   'payment_not_finalized','payment_transaction_failed','wrong_solana_network','reference_history_not_complete','wrong_arweave_network',
   'unexpected_value_transfer','missing_or_duplicate_service_transfer','signed_ar_transaction_mismatch',
   'phantom_response_timeout','wander_response_timeout','solana_reader_timeout','insufficient_solana_readers']);

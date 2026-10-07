@@ -134,6 +134,16 @@ test('gateway payload with wrong SHA never shows COMPLETE',async({page})=>{
   await expect(page.getByText('✓ Семейная история сохранена навсегда')).toHaveCount(0);
 });
 
+test('retrieval failure has a clear status and retries the same Arweave ID automatically',async({page})=>{
+  await start(page);await payOnce(page);await set(page,'retrievalFailed','1');await signOnce(page);
+  await expect.poll(async()=>(await saved(page)).lastError).toBe('ar_retrieval_failed');
+  await expect(page.getByText('Архив пока не удалось скачать из Arweave. Повторяем проверку автоматически.')).toBeVisible();
+  const before=await saved(page);await set(page,'retrievalFailed','0');
+  await expect(page.getByText('✓ Семейная история сохранена навсегда')).toBeVisible();
+  expect((await saved(page)).arTransactionId).toBe(before.arTransactionId);
+  expect(await count(page,'phantomCalls')).toBe(1);expect(await count(page,'wanderSigns')).toBe(1);
+});
+
 test('lost Wander response before persistence allows a safe same-session retry',async({page})=>{
   await start(page);await payOnce(page);await set(page,'wanderLost','1');await signOnce(page);
   await expect.poll(async()=>(await saved(page)).arSigningStarted).toBe(true);

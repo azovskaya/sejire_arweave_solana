@@ -100,20 +100,35 @@ export async function uploadSigned(session: SaveSession, persist: (progress: Sav
   }
 }
 
+export async function retrieveVerifiedArchive(
+  transactionId: string,
+  gateway = NODE,
+  expected: Parameters<typeof verifyRetrievedArchive>[1] = P,
+): Promise<void> {
+  let response: Response;
+  try {
+    response = await fetch(`${gateway}/${transactionId}`, {credentials:'omit', referrerPolicy:'no-referrer', redirect:'follow', signal:AbortSignal.timeout(15_000)});
+  } catch { throw Error('ar_retrieval_failed'); }
+  if (response.status === 404 || response.status === 202) throw Error('ar_retrieval_pending');
+  if (!response.ok || !response.body) throw Error('ar_retrieval_failed');
+  const reader = response.body.getReader(); const chunks: Uint8Array[] = []; let length = 0;
+  try { for (;;) { const next = await reader.read(); if (next.done) break;
+    length += next.value.length; if (length > expected.archiveBytes) { await reader.cancel(); throw Error('retrieved_archive_too_large'); }
+    chunks.push(next.value);
+  } } catch(error) {
+    if (error instanceof Error && error.message === 'retrieved_archive_too_large') throw error;
+    throw Error('ar_retrieval_failed');
+  } finally { reader.releaseLock(); }
+  const bytes = new Uint8Array(length); let offset=0;
+  for (const chunk of chunks) { bytes.set(chunk,offset); offset += chunk.length; }
+  await verifyRetrievedArchive(bytes,expected);
+}
+
 export async function verifyArweave(session: SaveSession): Promise<void> {
   if (!session.arTransactionId) throw Error('missing_ar_transaction');
   const ar = client(); await assertNetwork(ar);
   const status = await ar.transactions.getStatus(session.arTransactionId);
   if (status.status !== 200 || !status.confirmed || status.confirmed.number_of_confirmations < 1)
     throw Error('ar_confirmation_pending');
-  const response = await fetch(`${NODE}/${session.arTransactionId}`, {credentials:'omit', referrerPolicy:'no-referrer', redirect:'error', signal:AbortSignal.timeout(15_000)});
-  if (!response.ok || !response.body) throw Error('ar_retrieval_pending');
-  const reader = response.body.getReader(); const chunks: Uint8Array[] = []; let length = 0;
-  try { for (;;) { const next = await reader.read(); if (next.done) break;
-    length += next.value.length; if (length > P.archiveBytes) { await reader.cancel(); throw Error('retrieved_archive_too_large'); }
-    chunks.push(next.value);
-  } } finally { reader.releaseLock(); }
-  const bytes = new Uint8Array(length); let offset=0;
-  for (const chunk of chunks) { bytes.set(chunk,offset); offset += chunk.length; }
-  await verifyRetrievedArchive(bytes);
+  await retrieveVerifiedArchive(session.arTransactionId);
 }

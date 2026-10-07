@@ -111,7 +111,11 @@ export function PreservationV2({envelope,treeName,onBack,onBusy}: Props) {
       <p>Архив: {P.archiveBytes} байт · SHA-256: {P.archiveDigest}</p>
       <button className="btn" disabled={busy || !reward || Boolean(session?.arSigningStarted)} onClick={()=>void saveNow()}>Сохранить навсегда</button>
     </>}
-    {(state==='AR_SIGNED'||state==='AR_UPLOADING'||state==='AR_PENDING_CONFIRMATION') && <p>{state==='AR_PENDING_CONFIRMATION'?'Проверяем Arweave и скачанный архив...':'Загрузка зашифрованного архива...'}</p>}
+    {(state==='AR_SIGNED'||state==='AR_UPLOADING'||state==='AR_PENDING_CONFIRMATION') && <p>{state==='AR_PENDING_CONFIRMATION'
+      ? session?.lastError==='ar_retrieval_failed'
+        ? 'Архив пока не удалось скачать из Arweave. Повторяем проверку автоматически.'
+        : 'Проверяем Arweave и скачанный архив...'
+      : 'Загрузка зашифрованного архива...'}</p>}
     {stored && <><p>✓ Семейная история сохранена навсегда</p><a className="btn" href="#/restore">Проверить восстановление</a></>}
     {state==='BLOCKED' && <p role="alert">{blockedAfterPayment?'Оплата подтверждена. Проверяем уже подписанную транзакцию Wander; новая оплата и новая подпись не запускаются.':'Сохранение остановлено для предотвращения повторного расхода. Нужна проверка операции.'}</p>}
     {info && state!=='BLOCKED' && <p role="status">{info}</p>}{error && <p role="alert">{error}</p>}

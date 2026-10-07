@@ -45,6 +45,7 @@ export function installV2Mock() {
     verifyAr:async(session)=>{
       add('verifyCalls');
       if(get('confirmed')==='0')throw Error('ar_confirmation_pending');
+      if(get('retrievalFailed')==='1')throw Error('ar_retrieval_failed');
       if(get('uploadedId')!==session.arTransactionId)throw Error('ar_retrieval_pending');
       const bytes=new TextEncoder().encode(get('gatewayPayload')??'');
       const digest=[...new Uint8Array(await crypto.subtle.digest('SHA-256',bytes))]
