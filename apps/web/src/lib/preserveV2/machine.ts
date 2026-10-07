@@ -1,12 +1,15 @@
-import { PRESERVATION_V2_PILOT_POLICY as P, saveId } from './policy';
+import { PRESERVATION_V2_PILOT_POLICY as P, assertArchive, saveId } from './policy';
 import { readSession, startSession, updateSession, withSessionLock } from './store';
 import { assertDevnet, buildPayment, discoverPayment, isUserRejection, phantom, solanaReader, SOLANA_RPC_URLS } from './solana';
 import { verifyPayment } from './verify';
-import { quoteArchive, signArchive, uploadSigned, verifyArweave, wander } from './arweave';
+import { quoteArchive, signArchive, uploadSigned, validateSigned, verifyArweave, wander } from './arweave';
 import type { SaveSession } from './types';
 
 const readers = () => SOLANA_RPC_URLS.map(solanaReader);
-const errorCode = (error: unknown) => error instanceof Error ? error.message : 'unknown_error';
+const safeErrors = new Set(['ar_confirmation_pending','ar_retrieval_pending','retrieved_archive_mismatch',
+  'payment_not_finalized','wrong_solana_network','reference_history_not_complete','wrong_arweave_network',
+  'unexpected_value_transfer','missing_or_duplicate_service_transfer','signed_ar_transaction_mismatch']);
+const errorCode = (error: unknown) => error instanceof Error && safeErrors.has(error.message) ? error.message : 'operation_pending';
 
 export async function currentSession(): Promise<SaveSession | undefined> { return readSession(await saveId()); }
 export async function beginSave(text: string): Promise<SaveSession> { return startSession(text); }
@@ -32,6 +35,7 @@ export async function reconcileSave(): Promise<SaveSession | undefined> {
   return withSessionLock(id, async () => {
     let session = await readSession(id);
     if (!session) return undefined;
+    await assertArchive(session.archiveText);
     if (session.state === 'SOLANA_PENDING') session = await checkSolana(session);
     if (session.state === 'AR_READY' && session.arSigningStarted && !session.arSignedTransaction)
       session = await updateSession(id, old => ({...old, state:'BLOCKED', lastError:'wander_response_lost'}));
@@ -54,6 +58,7 @@ export async function pay(): Promise<SaveSession> {
   return withSessionLock(id, async () => {
     let session = await readSession(id);
     if (!session) throw Error('archive_required');
+    await assertArchive(session.archiveText);
     if (session.state === 'SOLANA_PENDING') return checkSolana(session);
     if (!['READY', 'SOLANA_PREPARED'].includes(session.state)) return session;
     if (session.solanaAttempted) throw Error('payment_requires_reconciliation');
@@ -93,6 +98,7 @@ export async function prepareArweave(): Promise<{session: SaveSession; reward: s
   return withSessionLock(id, async () => {
     let session = await readSession(id);
     if (!session || !['SOLANA_PAID', 'AR_READY'].includes(session.state)) throw Error('solana_payment_required');
+    await assertArchive(session.archiveText);
     const wallet = wander();
     await wallet.connect(['ACCESS_ADDRESS', 'ACCESS_PUBLIC_KEY', 'SIGN_TRANSACTION']);
     const address = await wallet.getActiveAddress();
@@ -105,6 +111,8 @@ export async function prepareArweave(): Promise<{session: SaveSession; reward: s
 
 async function continueUpload(session: SaveSession): Promise<SaveSession> {
   const id = session.saveId;
+  try { await validateSigned(session); }
+  catch { return updateSession(id, old => ({...old, state:'BLOCKED', lastError:'signed_ar_transaction_mismatch'})); }
   if (session.state === 'AR_SIGNED') session = await updateSession(id, old => ({...old, state:'AR_UPLOADING'}));
   try {
     await uploadSigned(session, async progress => {
@@ -121,6 +129,7 @@ export async function saveToArweave(expectedReward: string): Promise<SaveSession
   return withSessionLock(id, async () => {
     let session = await readSession(id);
     if (!session || session.state !== 'AR_READY' || session.arSigningStarted) throw Error('ar_not_ready');
+    await assertArchive(session.archiveText);
     const wallet = wander();
     if (await wallet.getActiveAddress() !== P.arReserve) throw Error('wrong_wander_address');
     // This durable flag prevents a second signature if the browser loses the wallet response.
@@ -133,6 +142,8 @@ export async function saveToArweave(expectedReward: string): Promise<SaveSession
       if (isUserRejection(error)) return updateSession(id, old => ({...old, arSigningStarted:false, lastError:'wander_rejected'}));
       return updateSession(id, old => ({...old, state:'BLOCKED', lastError:errorCode(error)}));
     }
+    try { await validateSigned(session); }
+    catch { return updateSession(id, old => ({...old, state:'BLOCKED', lastError:'signed_ar_transaction_mismatch'})); }
     return continueUpload(session);
   });
 }

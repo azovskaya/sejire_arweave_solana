@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Welcome } from "./components/Welcome";
 import { Workspace } from "./components/Workspace";
 import { RestoreSeed } from "./components/RestoreSeed";
+import { NativeCheckoutPanel } from "./components/NativeCheckoutPanel";
 import { PreservationV2 } from "./components/PreservationV2";
 import { NativeAdminDesk as AdminDesk } from "./components/NativeAdminDesk";
 import { closeOpsHash, isOpsHash, openOpsHash } from "./lib/opsDesk/route";
@@ -105,7 +106,9 @@ export default function App() {
         />
       )}
 
-      {screen === "saving" && <main className="landing"><PreservationV2 key={savingRoute+':'+savingNavigation} treeName={store?.meta.title} onBack={() => go(store?"work":"welcome")} /></main>}
+      {screen === "saving" && <main className="landing">{import.meta.env.VITE_PRESERVATION_V2_ENABLED === "1"
+        ? <PreservationV2 key={savingRoute+':'+savingNavigation} treeName={store?.meta.title} onBack={() => go(store?"work":"welcome")} />
+        : <NativeCheckoutPanel key={savingRoute+':'+savingNavigation} resume treeName={store?.meta.title} onBack={() => go(store?"work":"welcome")} />}</main>}
       {screen === "admin" && <AdminDesk onHome={() => go("welcome")} />}
 
       {screen === "restore" && (

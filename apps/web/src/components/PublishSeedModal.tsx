@@ -45,6 +45,7 @@ import {
 } from "../lib/vaultSession/localArchive";
 import { useI18n } from "../lib/i18n/I18nProvider";
 
+import { NativeCheckoutPanel } from './NativeCheckoutPanel';
 import { PreservationV2 } from './PreservationV2';
 import { CheckoutPublishPanel, SolanaPublishPanel } from '@sejire/payment-panels';
 import { solanaMessages } from "../lib/solana/messages";
@@ -94,7 +95,7 @@ export function PublishSeedModal({
 }: Props) {
   const { t, locale } = useI18n();
   const st = solanaMessages[locale];
-  const SolanaSavePanel = import.meta.env.VITE_CHECKOUT_ENABLED === "1" ? CheckoutPublishPanel : SolanaPublishPanel;
+  const SolanaSavePanel = import.meta.env.VITE_NATIVE_AR_ENABLED === "1" ? NativeCheckoutPanel : import.meta.env.VITE_CHECKOUT_ENABLED === "1" ? CheckoutPublishPanel : SolanaPublishPanel;
   const solanaBusy = useRef(false);
   const freshKey = useRef(false);
   const solanaReturnMode = useRef<Mode>("create-ready");
@@ -593,12 +594,12 @@ export function PublishSeedModal({
           {!demoOn && !sponsorOn && treasuryOn && t.publish.leadTreasury}
         </p>
 
-        {mode === "solana" && sealedEnvelope && import.meta.env.VITE_NATIVE_AR_ENABLED === "1" && (
+        {mode === "solana" && sealedEnvelope && import.meta.env.VITE_PRESERVATION_V2_ENABLED === "1" && (
           <PreservationV2 envelope={sealedEnvelope} treeName={store.meta.title}
             onBusy={(busy) => { solanaBusy.current = busy; }}
             onBack={() => setMode(solanaReturnMode.current)} />
         )}
-        {mode === "solana" && sealedEnvelope && import.meta.env.VITE_NATIVE_AR_ENABLED !== "1" && (
+        {mode === "solana" && sealedEnvelope && import.meta.env.VITE_PRESERVATION_V2_ENABLED !== "1" && (
           <SolanaSavePanel {...(import.meta.env.VITE_NATIVE_AR_ENABLED === "1" ? {treeName:store.meta.title,recoveryKeyInMemory:isValidMnemonic(normalizeMnemonic(mnemonic))} : {})} envelope={sealedEnvelope} parentTxId={publishParentTx}
             onAccepted={recordSolana}
             onBusy={(busy) => { solanaBusy.current = busy; }}

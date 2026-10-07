@@ -74,8 +74,7 @@ export async function signArchive(session: SaveSession, wallet: Wander, expected
   tx.addTag('App-Name', 'SEJIRE'); tx.addTag('Type', 'vault-envelope'); tx.addTag('Save-Id', session.saveId);
   const result = await wallet.sign(tx, {name:'SEJIRE encrypted archive preservation'});
   const signed = ar.transactions.fromRaw(result as ReturnType<Transaction['toJSON']>);
-  const candidate = {...session, arTransactionId:signed.id, arRewardWinston:signed.reward, arSignedTransaction:signed.toJSON()};
-  await validateSigned(candidate);
+  // Return the exact wallet result promptly. The caller journals it before validation or any upload.
   return {id:signed.id, reward:signed.reward, signed:signed.toJSON()};
 }
 

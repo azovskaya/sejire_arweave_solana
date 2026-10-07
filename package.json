@@ -38,8 +38,8 @@
     "protocol:dev": "VITE_CHECKOUT_API_URL=http://127.0.0.1:8787 VITE_CHECKOUT_ENABLED=1 npm run solana:dev",
     "continuation:package": "node scripts/build-continuation.mjs",
     "test:continuation": "apps/sponsor/node_modules/.bin/tsx scripts/continuation.selftest.mts",
-    "native:dev": "VITE_NATIVE_AR_ENABLED=1 VITE_NATIVE_AR_BROADCAST=0 VITE_NATIVE_SOL_MAINNET=0 npm run solana:dev",
-    "native:build": "VITE_NATIVE_AR_PILOT=1 VITE_NATIVE_AR_ENABLED=1 VITE_NATIVE_AR_BROADCAST=0 VITE_NATIVE_SOL_MAINNET=0 npm run solana:build",
+    "native:dev": "VITE_PRESERVATION_V2_ENABLED=1 VITE_NATIVE_AR_ENABLED=1 VITE_NATIVE_AR_BROADCAST=0 VITE_NATIVE_SOL_MAINNET=0 npm run solana:dev",
+    "native:build": "VITE_PRESERVATION_V2_ENABLED=1 VITE_NATIVE_AR_PILOT=1 VITE_NATIVE_AR_ENABLED=1 VITE_NATIVE_AR_BROADCAST=0 VITE_NATIVE_SOL_MAINNET=0 npm run solana:build",
     "test:native-browser": "npm run test:native-browser --prefix apps/web"
   },
   "devDependencies": {
