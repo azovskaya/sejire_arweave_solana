@@ -40,8 +40,10 @@ export function PreservationV2({envelope,treeName,onBack,onBusy}: Props) {
 
   // Pending network work is always reconciled from the durable session, including after reload.
   useEffect(()=>{
+    const recoverableBlocked=session?.state==='BLOCKED' && session.lastError==='signed_ar_transaction_mismatch' &&
+      Boolean(session.arSignedTransaction&&session.arTransactionId);
     if(!['SOLANA_PENDING','AR_SIGNED','AR_UPLOADING','AR_PENDING_CONFIRMATION'].includes(session?.state??'') &&
-       !(session?.state==='AR_READY'&&session.arSigningStarted))return;
+       !(session?.state==='AR_READY'&&session.arSigningStarted) && !recoverableBlocked)return;
     let active=true,timer:ReturnType<typeof setTimeout>,attempt=0;
     const tick=async()=>{
       try{const next=await reconcileSave();if(active&&next){setSession(next);setError('');}}
@@ -90,7 +92,8 @@ export function PreservationV2({envelope,treeName,onBack,onBusy}: Props) {
     });
   }
   const state=session?.state;
-  const paid=Boolean(state && !['READY','SOLANA_PREPARED','SOLANA_PENDING','BLOCKED'].includes(state));
+  const blockedAfterPayment=state==='BLOCKED' && Boolean(session?.arSignedTransaction||session?.arTransactionId||session?.arSigningStarted);
+  const paid=Boolean(state && (!['READY','SOLANA_PREPARED','SOLANA_PENDING','BLOCKED'].includes(state) || blockedAfterPayment));
   const stored=state==='COMPLETE';
   return <section className="native-checkout" aria-label="Сохранить семейную историю">
     <h1>Сохранить семейную историю</h1>
@@ -110,8 +113,8 @@ export function PreservationV2({envelope,treeName,onBack,onBusy}: Props) {
     </>}
     {(state==='AR_SIGNED'||state==='AR_UPLOADING'||state==='AR_PENDING_CONFIRMATION') && <p>{state==='AR_PENDING_CONFIRMATION'?'Проверяем Arweave и скачанный архив...':'Загрузка зашифрованного архива...'}</p>}
     {stored && <><p>✓ Семейная история сохранена навсегда</p><a className="btn" href="#/restore">Проверить восстановление</a></>}
-    {state==='BLOCKED' && <p role="alert">Сохранение остановлено для предотвращения повторного расхода. Нужна проверка операции.</p>}
-    {info && <p role="status">{info}</p>}{error && <p role="alert">{error}</p>}
+    {state==='BLOCKED' && <p role="alert">{blockedAfterPayment?'Оплата подтверждена. Проверяем уже подписанную транзакцию Wander; новая оплата и новая подпись не запускаются.':'Сохранение остановлено для предотвращения повторного расхода. Нужна проверка операции.'}</p>}
+    {info && state!=='BLOCKED' && <p role="status">{info}</p>}{error && <p role="alert">{error}</p>}
     {onBack && <button className="btn ghost" disabled={busy} onClick={onBack}>Назад</button>}
   </section>;
 }
