@@ -41,6 +41,19 @@ export async function quoteArchive(address: string, bytes: number = P.archiveByt
   return {reward, balance};
 }
 
+export function assertSignedArTags(tags:{name:string;value:string}[],saveId:string):void {
+  const names=tags.map(tag=>tag.name);
+  if (new Set(names).size!==names.length) throw Error('signed_ar_tags_mismatch');
+  const required=new Map([['App-Name','SEJIRE'],['Type','vault-envelope'],['Save-Id',saveId]]);
+  for(const [name,value] of required)if(tags.find(tag=>tag.name===name)?.value!==value)throw Error('signed_ar_tags_mismatch');
+  for(const tag of tags){
+    if(required.has(tag.name))continue;
+    if(tag.name==='Signing-Client' && ['Wander','Wander Connect'].includes(tag.value))continue;
+    if(tag.name==='Signing-Client-Version' && tag.value.length>0 && tag.value.length<=64)continue;
+    throw Error('signed_ar_tags_mismatch');
+  }
+}
+
 export async function validateSigned(session: SaveSession): Promise<Transaction> {
   await assertArchive(session.archiveText);
   if (!session.arSignedTransaction || !session.arTransactionId || !session.arRewardWinston) throw Error('unsigned_ar_transaction');
@@ -52,16 +65,7 @@ export async function validateSigned(session: SaveSession): Promise<Transaction>
       await ar.wallets.ownerToAddress(tx.owner) !== P.arReserve || !await ar.transactions.verify(tx))
     throw Error('signed_ar_transaction_mismatch');
   const tags=tx.tags.map(tag=>({name:tag.get('name',{decode:true,string:true}),value:tag.get('value',{decode:true,string:true})}));
-  const names=tags.map(tag=>tag.name);
-  if (new Set(names).size!==names.length) throw Error('signed_ar_tags_mismatch');
-  const required=new Map([['App-Name','SEJIRE'],['Type','vault-envelope'],['Save-Id',session.saveId]]);
-  for(const [name,value] of required)if(tags.find(tag=>tag.name===name)?.value!==value)throw Error('signed_ar_tags_mismatch');
-  for(const tag of tags){
-    if(required.has(tag.name))continue;
-    if(tag.name==='Signing-Client' && ['Wander','Wander Connect'].includes(tag.value))continue;
-    if(tag.name==='Signing-Client-Version' && tag.value.length>0 && tag.value.length<=64)continue;
-    throw Error('signed_ar_tags_mismatch');
-  }
+  assertSignedArTags(tags,session.saveId);
   const copy = ar.transactions.fromRaw({...session.arSignedTransaction, data_root:''});
   await copy.prepareChunks(tx.data);
   if (copy.data_root !== tx.data_root) throw Error('signed_ar_data_root_mismatch');
