@@ -35,11 +35,11 @@ export async function verifyPayment(session: SaveSession, signature: string, rpc
   if (transfers !== 1) throw Error('missing_or_duplicate_service_transfer');
 }
 
-export async function verifyRetrievedArchive(bytes: Uint8Array): Promise<void> {
-  if (bytes.length !== P.archiveBytes || await sha256(bytes) !== P.archiveDigest)
+export async function verifyRetrievedArchive(bytes: Uint8Array, expected: {archiveBytes:number;archiveDigest:string;vaultId:string} = P): Promise<void> {
+  if (bytes.length !== expected.archiveBytes || await sha256(bytes) !== expected.archiveDigest)
     throw Error('retrieved_archive_mismatch');
   const parsed = parseEnvelope(JSON.parse(new TextDecoder('utf-8', {fatal: true}).decode(bytes)));
-  if (parsed.vault_id !== P.vaultId) throw Error('retrieved_vault_mismatch');
+  if (parsed.vault_id !== expected.vaultId) throw Error('retrieved_vault_mismatch');
 }
 
 export function paymentDebugSummary(tx: ParsedTransactionWithMeta): {slot: number; feeLamports: number} {

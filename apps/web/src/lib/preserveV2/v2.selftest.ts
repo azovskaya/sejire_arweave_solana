@@ -3,7 +3,7 @@ import { webcrypto } from 'node:crypto';
 import 'fake-indexeddb/auto';
 import bs58 from 'bs58';
 import { ComputeBudgetProgram, PublicKey, SystemProgram } from '@solana/web3.js';
-import { PRESERVATION_V2_PILOT_POLICY as P, saveId } from './policy';
+import { PRESERVATION_V2_PILOT_POLICY as P, saveId, sha256 } from './policy';
 import { assertArQuote } from './arweave';
 import { buildPayment, discoverPayment, isUserRejection, type SolanaReader } from './solana';
 import { verifyPayment, verifyRetrievedArchive } from './verify';
@@ -58,6 +58,12 @@ await test('wrong Wander address rejected before signing',()=>assert.throws(()=>
 await test('wrong archive size rejected before signing',()=>assert.throws(()=>assertArQuote(P.arReserve,P.archiveBytes+1,'1','1')));
 await test('insufficient AR balance rejected',()=>assert.throws(()=>assertArQuote(P.arReserve,P.archiveBytes,'2','1')));
 await test('retrieved wrong SHA is never complete',()=>assert.rejects(()=>verifyRetrievedArchive(new Uint8Array(P.archiveBytes))));
+await test('synthetic retrieved envelope with exact SHA and vault ID verifies',async()=>{
+ const bytes=new TextEncoder().encode(JSON.stringify({schema:'sejire/envelope/v1',vault_id:P.vaultId,cipher:'aes-gcm-256',kdf:'hkdf-sha256',iv:'AAAAAAAAAAAAAAAA',ciphertext:'AAAAAAAAAAAAAAAAAAAAAAAA',protocol:'sejire/v0.3'}));
+ const expected={archiveBytes:bytes.length,archiveDigest:await sha256(bytes),vaultId:P.vaultId};
+ await verifyRetrievedArchive(bytes,expected);
+ await assert.rejects(()=>verifyRetrievedArchive(bytes,{...expected,vaultId:'0'.repeat(32)}));
+});
 await test('atomic session transition persists after reload',async()=>{
  const db=await new Promise<IDBDatabase>((resolve,reject)=>{const r=indexedDB.open('sejire-preservation-v2',1);r.onupgradeneeded=()=>r.result.createObjectStore('sessions',{keyPath:'saveId'});r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error);});
  await new Promise<void>((resolve,reject)=>{const t=db.transaction('sessions','readwrite');t.objectStore('sessions').put(sample);t.oncomplete=()=>resolve();t.onerror=()=>reject(t.error);});db.close();
