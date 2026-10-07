@@ -1,4 +1,4 @@
-import { PublicKey, Transaction, TransactionInstruction, Message } from '@solana/web3.js';
+import { PublicKey, Transaction, TransactionInstruction, Message, ComputeBudgetProgram } from '@solana/web3.js';
 import { Buffer } from 'buffer';
 import bs58 from 'bs58';
 import type { Config, MessageWallet } from './config';
@@ -7,6 +7,9 @@ import { validateJob, readyForOrder } from './jobs';
 import { findPaymentByReference, onRpc, rpc } from './rpc';
 import { cachedJobs, saveJob } from './cache';
 export type NativeSolWallet = MessageWallet & { connect():Promise<unknown>; signTransaction(tx:Transaction):Promise<Transaction> };
+const COMPUTE_UNIT_LIMIT=50000;
+const PRIORITY_MICROLAMPORTS=1000;
+const budgetInstructions=()=>[ComputeBudgetProgram.setComputeUnitLimit({units:COMPUTE_UNIT_LIMIT}),ComputeBudgetProgram.setComputeUnitPrice({microLamports:PRIORITY_MICROLAMPORTS})];
 async function walletDeadline<T>(promise:Promise<T>,code:string):Promise<T>{let timer:ReturnType<typeof setTimeout>|undefined;try{return await Promise.race([promise,new Promise<never>((_,reject)=>{timer=setTimeout(()=>reject(Error(code)),60000);})]);}finally{if(timer)clearTimeout(timer);}}
 function paymentSemantics(tx:Transaction){return JSON.stringify({feePayer:tx.feePayer?.toBase58()??null,recentBlockhash:tx.recentBlockhash??null,instructions:tx.instructions.map(ix=>({programId:ix.programId.toBase58(),data:Buffer.from(ix.data).toString('base64'),keys:ix.keys.map(k=>({pubkey:k.pubkey.toBase58(),isSigner:k.isSigner,isWritable:k.isWritable}))}))});}
 function expectedAttemptTransaction(job:NativeJob){if(!job.attempt)throw Error('prepared_attempt_required');return Transaction.populate(Message.from(Buffer.from(job.attempt.message,'base64')));}
@@ -27,6 +30,7 @@ export async function preparePayment(c:Config,job:NativeJob) {
  return onRpc(c,async url=>{
  const block=await rpc<{value:{blockhash:string;lastValidBlockHeight:number}}>(url,'getLatestBlockhash',[{commitment:'finalized'}]);
  const tx=new Transaction({feePayer:new PublicKey(job.order.payer),recentBlockhash:block.value.blockhash});
+ for(const ix of budgetInstructions())tx.add(ix);
  for(const part of [job.order.servicePayment,job.order.fundContribution])if(part.amount!=='0'){
  const data=Buffer.alloc(12);data.writeUInt32LE(2);data.writeBigUInt64LE(BigInt(part.amount),4);
  tx.add(new TransactionInstruction({programId:new PublicKey('11111111111111111111111111111111'),data,keys:[{pubkey:new PublicKey(job.order.payer),isSigner:true,isWritable:true},{pubkey:new PublicKey(part.recipient),isSigner:false,isWritable:true},{pubkey:new PublicKey(job.order.reference),isSigner:false,isWritable:false}]}));
@@ -76,11 +80,12 @@ export function validateSignedPayment(job:NativeJob) {
  if(tx.signatures.length!==1||!tx.verifySignatures()||tx.signatures[0]?.publicKey.toBase58()!==job.order.payer||!tx.signatures[0]?.signature||bs58.encode(tx.signatures[0].signature)!==job.paymentSignature||tx.feePayer?.toBase58()!==job.order.payer)throw Error('invalid_signed_payment');
  validatePaymentTemplate(tx,job);if(job.attempt){const unsigned=Transaction.populate(Message.from(Buffer.from(job.attempt.message,'base64')));if(paymentSemantics(tx)!==paymentSemantics(unsigned))throw Error('payment_attempt_binding');}
 }
+function sameInstruction(a:TransactionInstruction,b:TransactionInstruction){return a.programId.equals(b.programId)&&Buffer.from(a.data).equals(Buffer.from(b.data))&&a.keys.length===b.keys.length&&a.keys.every((k,i)=>k.pubkey.equals(b.keys[i].pubkey)&&k.isSigner===b.keys[i].isSigner&&k.isWritable===b.keys[i].isWritable);}
 function validatePaymentTemplate(tx:Transaction,job:NativeJob) {
- const expected=[job.order.servicePayment,job.order.fundContribution].filter(p=>p.amount!=='0');
- if(tx.instructions.length!==expected.length)throw Error('unexpected_payment_instructions');
- for(let i=0;i<expected.length;i++){
- const ix=tx.instructions[i],part=expected[i];
+ const transfers=[job.order.servicePayment,job.order.fundContribution].filter(p=>p.amount!=='0'),budget=budgetInstructions();
+ if(tx.instructions.length!==budget.length+transfers.length||!sameInstruction(tx.instructions[0],budget[0])||!sameInstruction(tx.instructions[1],budget[1]))throw Error('unexpected_payment_instructions');
+ for(let i=0;i<transfers.length;i++){
+ const ix=tx.instructions[i+budget.length],part=transfers[i];
  if(ix.programId.toBase58()!=='11111111111111111111111111111111'||ix.data.length!==12||ix.data.readUInt32LE(0)!==2||ix.data.readBigUInt64LE(4).toString()!==part.amount||ix.keys.length!==3||ix.keys[0].pubkey.toBase58()!==job.order.payer||!ix.keys[0].isSigner||!ix.keys[0].isWritable||ix.keys[1].pubkey.toBase58()!==part.recipient||ix.keys[1].isSigner||!ix.keys[1].isWritable||ix.keys[2].pubkey.toBase58()!==job.order.reference||ix.keys[2].isSigner||ix.keys[2].isWritable)throw Error('signed_payment_template_mismatch');
  }
 }
