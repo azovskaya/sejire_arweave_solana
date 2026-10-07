@@ -29,9 +29,12 @@ jobs:
       - name: AO readiness signer selftest (offline, no secrets or network)
         run: node scripts/ao-live-readiness.mjs --selftest
       - name: Local Lua boundary checks (not a live AO process)
+        timeout-minutes: 4
         run: |
-          sudo apt-get update
-          sudo apt-get install -y lua5.4
+          if ! command -v lua5.4 >/dev/null; then
+            sudo apt-get update -o Acquire::Retries=0 -o Acquire::http::Timeout=20 -o Acquire::https::Timeout=20
+            sudo apt-get install -y lua5.4
+          fi
           lua5.4 ao/modules/local_checks.lua
       - run: npm run test:preservation
       - run: npm run lint --prefix apps/web
