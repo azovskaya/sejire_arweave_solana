@@ -2,6 +2,8 @@ import assert from 'node:assert/strict';
 import { PublicKey } from '@solana/web3.js';
 import { PRESERVATION_V2_PILOT_POLICY as P } from './policy';
 import { pay, prepareArweave, reconcileSave, saveToArweave, productionServices, type MachineServices } from './machine';
+import { sha256 } from './policy';
+import { verifyRetrievedArchive } from './verify';
 import type { SaveSession } from './types';
 
 const signature='1'.repeat(88), reference=new PublicKey(new Uint8Array(32).fill(7)).toBase58();
@@ -64,6 +66,12 @@ await test('L reload SOLANA_PREPARED preserves same reference',async()=>{const {
  assert.equal((await reconcileSave(d))?.state,'SOLANA_PREPARED');assert.equal(c.session.solanaReference,ref);});
 await test('L reload AR_READY with lost signature response blocks',async()=>{const {c,d}=harness();c.session.state='AR_READY';c.session.arSigningStarted=true;
  assert.equal((await reconcileSave(d))?.state,'BLOCKED');assert.equal(c.wanderCalls,0);});
+await test('L reload SOLANA_PAID and AR_READY preserves the next action',async()=>{for(const state of ['SOLANA_PAID','AR_READY'] as const){
+ const {c,d}=harness();c.session.state=state;assert.equal((await reconcileSave(d))?.state,state);assert.equal(c.phantomCalls,0);assert.equal(c.wanderCalls,0);}});
+await test('L reload AR_SIGNED resumes same signed ID without Wander',async()=>{const {c,d}=harness();c.session.state='AR_SIGNED';c.session.arTransactionId='A'.repeat(43);c.session.arSignedTransaction={format:2} as never;
+ assert.equal((await reconcileSave(d))?.state,'COMPLETE');assert.equal(c.wanderCalls,0);assert.equal(c.session.arTransactionId,'A'.repeat(43));});
+await test('L reload COMPLETE and BLOCKED cannot start a new payment',async()=>{for(const state of ['COMPLETE','BLOCKED'] as const){
+ const {c,d}=harness();c.session.state=state;assert.equal((await reconcileSave(d))?.state,state);await pay(d);assert.equal(c.phantomCalls,0);}});
 await test('M Wander rejection leaves no signed plan and permits retry',async()=>{const {c,d}=harness({rejectWander:true});c.session.state='AR_READY';
  assert.equal((await saveToArweave('1000',d)).state,'AR_READY');assert.equal(c.session.arTransactionId,undefined);
  c.rejectWander=false;assert.equal((await saveToArweave('1000',d)).state,'AR_PENDING_CONFIRMATION');assert.equal(c.wanderCalls,2);});
@@ -81,6 +89,8 @@ await test('R wrong Wander address blocks signature',async()=>{const {c,d}=harne
  await assert.rejects(()=>saveToArweave('1000',d));assert.equal(c.wanderCalls,0);});
 await test('S retrieval hash mismatch never reaches COMPLETE',async()=>{const {c,d}=harness({wrongHash:true});c.session.state='AR_PENDING_CONFIRMATION';
  assert.equal((await reconcileSave(d))?.state,'AR_PENDING_CONFIRMATION');});
-await test('T successful confirmed retrieval reaches COMPLETE',async()=>{const {c,d}=harness();c.session.state='AR_PENDING_CONFIRMATION';
+await test('T successful confirmed retrieval with exact SHA reaches COMPLETE',async()=>{const {c,d}=harness();c.session.state='AR_PENDING_CONFIRMATION';
+ const bytes=new TextEncoder().encode(JSON.stringify({schema:'sejire/envelope/v1',vault_id:P.vaultId,cipher:'aes-gcm-256',kdf:'hkdf-sha256',iv:'AAAAAAAAAAAAAAAA',ciphertext:'AAAAAAAAAAAAAAAAAAAAAAAA',protocol:'sejire/v0.3'}));
+ d.verifyAr=async()=>verifyRetrievedArchive(bytes,{archiveBytes:bytes.length,archiveDigest:await sha256(bytes),vaultId:P.vaultId});
  assert.equal((await reconcileSave(d))?.state,'COMPLETE');});
 console.log(`V2 machine assertions: ${passed}`);
