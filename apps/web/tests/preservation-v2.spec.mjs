@@ -27,8 +27,11 @@ test('V2 route shows the three stages and exact pilot limits without wallet acce
   await page.goto('/#/save');
   await expect(page.getByRole('heading',{name:'Сохранить семейную историю'})).toBeVisible();
   await expect(page.getByText('Solana Devnet · комиссия сети отдельно')).toBeVisible();
+  await expect(page.getByText('Хранение: Arweave Mainnet')).toBeVisible();
   await expect(page.getByText('Реальные AR · до 0.004 AR')).toBeVisible();
-  await expect(page.getByRole('list',{name:'Ход сохранения'}).locator('li')).toHaveCount(3);
+  await expect(page.getByRole('list',{name:'Ход сохранения'}).locator('li')).toHaveText(['Оплата','Сохранение','Готово']);
+  await expect(page.getByRole('heading',{name:'Центр управления'})).toHaveCount(0);
+  await expect(page.getByRole('button',{name:'Начать новый тест'})).toHaveCount(0);
   await expect(page.getByRole('button',{name:'Оплатить 0.03 SOL'})).toHaveCount(0);
   walletCalls=await page.evaluate(()=>window.__walletCalls??0);expect(walletCalls).toBe(0);
 });
@@ -46,6 +49,8 @@ test('V2 diagnostics are read-only and do not expose the legacy operator',async(
   await expect(page.getByRole('button',{name:'На главную'})).toBeVisible();
   await expect(page.getByRole('button')).toHaveCount(1);
   await expect(page.getByText('Сохранение V2 на этом устройстве не найдено.')).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Центр управления'})).toHaveCount(0);
+  await expect(page.getByRole('button',{name:'Подготовить это сохранение'})).toHaveCount(0);
 });
 
 test('full V2 browser journey completes automatically with one Phantom and one Wander signature',async({page})=>{
@@ -71,6 +76,15 @@ test('reload after Phantom broadcast discovers the same payment without another 
   const before=await saved(page);await page.reload();
   await expect(page.getByText('✓ Оплата подтверждена')).toBeVisible();
   const after=await saved(page);expect(after.saveId).toBe(before.saveId);expect(after.solanaReference).toBe(before.solanaReference);
+  expect(await count(page,'phantomCalls')).toBe(1);
+});
+
+test('Phantom timeout keeps pending and auto-recovers without a second payment',async({page})=>{
+  await start(page);await set(page,'walletTimeoutMs','25');await set(page,'finalized','0');await page.reload();
+  await set(page,'phantomLost','1');await page.getByRole('button',{name:'Оплатить 0.03 SOL'}).click();
+  await expect.poll(async()=>(await saved(page)).lastError).toBe('phantom_response_timeout');
+  expect((await saved(page)).state).toBe('SOLANA_PENDING');
+  await set(page,'finalized','1');await expect(page.getByText('✓ Оплата подтверждена')).toBeVisible();
   expect(await count(page,'phantomCalls')).toBe(1);
 });
 
@@ -129,4 +143,15 @@ test('lost Wander response before persistence allows a safe same-session retry',
   await set(page,'wanderLost','0');await signOnce(page);
   await expect(page.getByText('✓ Семейная история сохранена навсегда')).toBeVisible();
   expect((await saved(page)).saveId).toBe(before.saveId);expect(await count(page,'phantomCalls')).toBe(1);
+});
+
+test('Wander timeout resets signing flag and retries before any upload',async({page})=>{
+  await start(page);await payOnce(page);await set(page,'walletTimeoutMs','25');await page.reload();
+  await set(page,'wanderLost','1');await signOnce(page);
+  await expect.poll(async()=>(await saved(page)).lastError).toBe('wander_response_timeout');
+  expect((await saved(page)).arSigningStarted).toBe(false);
+  expect((await saved(page)).arSignedTransaction).toBeUndefined();expect(await count(page,'uploads')).toBe(0);
+  await set(page,'wanderLost','0');await signOnce(page);
+  await expect(page.getByText('✓ Семейная история сохранена навсегда')).toBeVisible();
+  expect(await count(page,'wanderSigns')).toBe(2);expect(await count(page,'uploads')).toBe(1);
 });

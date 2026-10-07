@@ -3,6 +3,7 @@ import type Transaction from 'arweave/web/lib/transaction';
 import { resolveArweaveStatic } from '../arweave/client';
 import { PRESERVATION_V2_PILOT_POLICY as P, assertArchive } from './policy';
 import { verifyRetrievedArchive } from './verify';
+import { withTimeout } from './timeout';
 import type { SaveSession } from './types';
 
 const NODE = 'https://arweave.net';
@@ -62,7 +63,7 @@ export async function validateSigned(session: SaveSession): Promise<Transaction>
 }
 
 /** Caller persists signing intent before this function and signed result immediately after it. */
-export async function signArchive(session: SaveSession, wallet: Wander, expectedReward: string, beforeSign?:()=>Promise<void>): Promise<{id: string; reward: string; signed: ReturnType<Transaction['toJSON']>}> {
+export async function signArchive(session: SaveSession, wallet: Wander, expectedReward: string, beforeSign?:()=>Promise<void>, signTimeoutMs=60_000): Promise<{id: string; reward: string; signed: ReturnType<Transaction['toJSON']>}> {
   await assertArchive(session.archiveText);
   if (await wallet.getActiveAddress() !== P.arReserve) throw Error('wrong_wander_address');
   const ar = client(); await assertNetwork(ar);
@@ -73,7 +74,7 @@ export async function signArchive(session: SaveSession, wallet: Wander, expected
   const tx = await ar.createTransaction({data:new TextEncoder().encode(session.archiveText), owner, reward:quote.reward});
   tx.addTag('App-Name', 'SEJIRE'); tx.addTag('Type', 'vault-envelope'); tx.addTag('Save-Id', session.saveId);
   await beforeSign?.();
-  const result = await wallet.sign(tx, {name:'SEJIRE encrypted archive preservation'});
+  const result = await withTimeout(wallet.sign(tx, {name:'SEJIRE encrypted archive preservation'}),signTimeoutMs,'wander_response_timeout');
   const signed = ar.transactions.fromRaw(result as ReturnType<Transaction['toJSON']>);
   // Return the exact wallet result promptly. The caller journals it before validation or any upload.
   return {id:signed.id, reward:signed.reward, signed:signed.toJSON()};

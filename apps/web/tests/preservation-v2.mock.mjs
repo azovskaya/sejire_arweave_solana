@@ -13,6 +13,7 @@ export function installV2Mock() {
     getSignaturesForAddress:async()=>[],getParsedTransaction:async()=>null,
   };
   window.__SEJIRE_V2_TEST_DRIVER__={
+    walletTimeoutMs:Number(get('walletTimeoutMs')??60_000),
     rpc:()=>reader,readers:()=>[reader,reader],devnet:async()=>{},
     phantom:()=>({isPhantom:true,publicKey:{toBase58:()=>payer},
       connect:async()=>({publicKey:{toBase58:()=>payer}}),
@@ -26,9 +27,9 @@ export function installV2Mock() {
     quoteAr:async()=>{add('quoteCalls');return {reward:'1000',balance:'2000'};},
     wander:()=>({connect:async()=>{add('wanderConnects');},getActiveAddress:async()=>reserve,
       getActivePublicKey:async()=> 'synthetic-public-key',sign:async()=>{throw Error('unexpected direct sign');}}),
-    signAr:async(_session,_wallet,reward,beforeSign)=>{
+    signAr:async(_session,_wallet,reward,beforeSign,timeoutMs)=>{
       await beforeSign?.();add('wanderSigns');
-      if(get('wanderLost')==='1')return new Promise(()=>{});
+      if(get('wanderLost')==='1')return new Promise((_resolve,reject)=>setTimeout(()=>reject(Error('wander_response_timeout')),timeoutMs));
       return {id:arId,reward,signed:{format:2,id:arId,synthetic:true}};
     },
     validateAr:async(session)=>{if(session.arTransactionId!==arId||!session.arSignedTransaction)throw Error('unsigned_ar_transaction');return {};},

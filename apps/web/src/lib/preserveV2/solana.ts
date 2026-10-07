@@ -1,6 +1,7 @@
 import { ComputeBudgetProgram, Connection, PublicKey, SystemProgram, Transaction } from '@solana/web3.js';
 import { PRESERVATION_V2_PILOT_POLICY as P } from './policy';
 import type { SaveSession } from './types';
+import { withTimeout } from './timeout';
 
 export type PhantomProvider = {
   isPhantom?: boolean; publicKey?: PublicKey;
@@ -14,7 +15,11 @@ export function phantom(): PhantomProvider {
   return provider;
 }
 
-export const SOLANA_RPC_URLS = ['https://api.devnet.solana.com', 'https://rpc.ankr.com/solana_devnet'];
+export const SOLANA_RPC_URLS = [
+  'https://api.devnet.solana.com',
+  'https://solana-devnet.api.onfinality.io/public',
+  'https://solana-devnet.drpc.org',
+];
 export type SolanaReader = {
   getGenesisHash(): Promise<string>;
   getLatestBlockhash(commitment?: 'finalized'): Promise<{blockhash: string; lastValidBlockHeight: number}>;
@@ -41,31 +46,29 @@ export function buildPayment(session: SaveSession, blockhash: string): Transacti
 }
 
 export type PaymentDiscovery = {signature?: string; failedSignatures: string[]; absent: boolean};
-export async function discoverPayment(session: SaveSession, readers: SolanaReader[]): Promise<PaymentDiscovery> {
+export async function discoverPayment(session: SaveSession, readers: SolanaReader[], readerTimeoutMs=15_000): Promise<PaymentDiscovery> {
   if (!session.solanaBlockhash || session.solanaLastValidBlockHeight === undefined)
     return {failedSignatures:[],absent:false};
-  const histories: Array<Array<{signature:string;err:unknown}>> = [];
-  let allExpired = true;
-  for (const rpc of readers) {
+  const results = await Promise.allSettled(readers.map(rpc=>withTimeout((async()=>{
     await assertDevnet(rpc);
     const [history, height, oldest] = await Promise.all([
       rpc.getSignaturesForAddress(new PublicKey(session.solanaReference), {limit: 1000}, 'finalized'),
       rpc.getBlockHeight('finalized'),
       rpc.getMinimumLedgerSlot(),
     ]);
-    if (session.solanaPreparedSlot === undefined || oldest > session.solanaPreparedSlot)
+    if (session.solanaPreparedSlot === undefined || oldest > session.solanaPreparedSlot || history.length >= 1000 ||
+        (session.solanaFailedSignatures??[]).some(sig=>!history.some(x=>x.signature===sig&&x.err)))
       throw Error('reference_history_not_complete');
-    if (history.length >= 1000 || (session.solanaFailedSignatures??[]).some(sig=>!history.some(x=>x.signature===sig&&x.err)))
-      throw Error('reference_history_not_complete');
-    histories.push(history);
-    if (height <= session.solanaLastValidBlockHeight) allExpired = false;
-  }
-  const successful = [...new Set(histories.flat().filter(x=>!x.err).map(x=>x.signature))];
+    return {history,height};
+  })(),readerTimeoutMs,'solana_reader_timeout')));
+  const valid = results.filter((r):r is PromiseFulfilledResult<{history:{signature:string;err:unknown}[];height:number}>=>r.status==='fulfilled').map(r=>r.value);
+  if (valid.length < 2) throw Error('insufficient_solana_readers');
+  const successful = [...new Set(valid.flatMap(r=>r.history).filter(x=>!x.err).map(x=>x.signature))];
   if (successful.length > 1) throw Error('conflicting_reference_history');
-  const failedSets = histories.map(h=>h.filter(x=>x.err).map(x=>x.signature).sort());
-  const agreed = failedSets.every(s=>JSON.stringify(s)===JSON.stringify(failedSets[0]));
-  return {signature:successful[0],failedSignatures:agreed?failedSets[0]??[]:[],
-    absent:!successful[0] && agreed && allExpired && readers.length>=2};
+  const expired = valid.filter(r=>r.height > session.solanaLastValidBlockHeight!);
+  const failedSets = expired.map(r=>r.history.filter(x=>x.err).map(x=>x.signature).sort());
+  const agreed = failedSets.find(set=>failedSets.filter(other=>JSON.stringify(other)===JSON.stringify(set)).length>=2);
+  return {signature:successful[0],failedSignatures:agreed??[],absent:!successful[0] && Boolean(agreed)};
 }
 
 export function isUserRejection(error: unknown): boolean {

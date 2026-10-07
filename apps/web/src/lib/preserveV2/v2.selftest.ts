@@ -5,7 +5,7 @@ import bs58 from 'bs58';
 import { ComputeBudgetProgram, PublicKey, SystemProgram } from '@solana/web3.js';
 import { PRESERVATION_V2_PILOT_POLICY as P, saveId, sha256 } from './policy';
 import { assertArQuote } from './arweave';
-import { buildPayment, discoverPayment, isUserRejection, type SolanaReader } from './solana';
+import { buildPayment, discoverPayment, isUserRejection, SOLANA_RPC_URLS, type SolanaReader } from './solana';
 import { verifyPayment, verifyRetrievedArchive } from './verify';
 import { readSession, updateSession, withSessionLock } from './store';
 import type { SaveSession } from './types';
@@ -46,7 +46,22 @@ await test('inner value effects rejected',()=>assert.rejects(()=>verifyPayment(s
 await test('failed finalized transaction rejected',()=>assert.rejects(()=>verifyPayment(sample,'sig',reader({...tx(),meta:{...tx().meta,err:{InstructionError:[0,'Custom']}}}))));
 await test('wrong Solana network rejected',()=>assert.rejects(()=>verifyPayment(sample,'sig',{...reader(),getGenesisHash:async()=> 'wrong'})));
 await test('lost wallet response discovered by reference',async()=>assert.deepEqual(await discoverPayment(sample,[reader(tx(),[{signature:'sig',err:null}]),reader(tx(),[{signature:'sig',err:null}])]),{signature:'sig',failedSignatures:[],absent:false}));
+await test('recovery uses the three approved public devnet RPC URLs',()=>assert.deepEqual(SOLANA_RPC_URLS,[
+ 'https://api.devnet.solana.com','https://solana-devnet.api.onfinality.io/public','https://solana-devnet.drpc.org']));
 await test('RPC timeout never proves absence',()=>assert.rejects(()=>discoverPayment(sample,[reader(),{...reader(),getBlockHeight:async()=>{throw Error('timeout');}}])));
+await test('two valid readers recover payment while one reader fails',async()=>assert.deepEqual(
+ await discoverPayment(sample,[reader(tx(),[{signature:'sig',err:null}]),{...reader(),getBlockHeight:async()=>{throw Error('timeout');}},reader(tx(),[{signature:'sig',err:null}])]),
+ {signature:'sig',failedSignatures:[],absent:false}));
+await test('two valid readers prove expiry and absence while one reader fails',async()=>assert.deepEqual(
+ await discoverPayment(sample,[reader(),{...reader(),getGenesisHash:async()=>{throw Error('unavailable');}},reader()]),
+ {signature:undefined,failedSignatures:[],absent:true}));
+await test('a hanging third reader cannot block two valid readers',async()=>assert.equal(
+ (await discoverPayment(sample,[reader(),{...reader(),getGenesisHash:()=>new Promise(()=>{})},reader()],5)).absent,true));
+await test('one remaining valid reader cannot authorize retry',()=>assert.rejects(()=>discoverPayment(sample,[reader(),
+ {...reader(),getGenesisHash:async()=>{throw Error('down');}},{...reader(),getBlockHeight:async()=>{throw Error('down');}}])));
+await test('successful transaction on third valid reader blocks retry',async()=>assert.deepEqual(
+ await discoverPayment(sample,[reader(),reader(),reader(tx(),[{signature:'sig',err:null}])]),
+ {signature:'sig',failedSignatures:[],absent:false}));
 await test('expired blockhash with complete empty history allows same-reference preparation',async()=>assert.deepEqual(await discoverPayment(sample,[reader(),reader()]),{signature:undefined,failedSignatures:[],absent:true}));
 await test('failed finalized transaction with expired blockhash permits same-reference retry',async()=>assert.deepEqual(await discoverPayment(sample,[reader(tx(),[{signature:'failed',err:{InstructionError:[0,'Custom']}}]),reader(tx(),[{signature:'failed',err:{InstructionError:[0,'Custom']}}])]),{signature:undefined,failedSignatures:['failed'],absent:true}));
 await test('failed history mismatch cannot authorize another payment',async()=>assert.equal((await discoverPayment(sample,[reader(tx(),[{signature:'failed',err:{InstructionError:[0,'Custom']}}]),reader()])).absent,false));

@@ -3,6 +3,7 @@ import { readSession, startSession, updateSession, withSessionLock } from './sto
 import { assertDevnet, buildPayment, discoverPayment, isUserRejection, phantom, solanaReader, SOLANA_RPC_URLS } from './solana';
 import { verifyPayment } from './verify';
 import { quoteArchive, signArchive, uploadSigned, validateSigned, verifyArweave, wander } from './arweave';
+import { withTimeout } from './timeout';
 import type { SaveSession } from './types';
 
 /** Narrow drivers let tests exercise the real state machine without network or wallets. */
@@ -13,6 +14,7 @@ export type MachineServices = {
   verifySolana: typeof verifyPayment; phantom: typeof phantom;
   wander: typeof wander; quoteAr: typeof quoteArchive; signAr: typeof signArchive;
   validateAr: typeof validateSigned; uploadAr: typeof uploadSigned; verifyAr: typeof verifyArweave;
+  walletTimeoutMs: number;
 };
 export const productionServices: MachineServices = {
   id:saveId, read:readSession, update:updateSession, lock:withSessionLock, archive:assertArchive,
@@ -20,6 +22,7 @@ export const productionServices: MachineServices = {
   build:buildPayment, discover:discoverPayment, verifySolana:verifyPayment, phantom,
   wander, quoteAr:quoteArchive, signAr:signArchive, validateAr:validateSigned,
   uploadAr:uploadSigned, verifyAr:verifyArweave,
+  walletTimeoutMs:60_000,
 };
 // Browser fixture hook is compiled out of the owner build (native:build forces TEST=0).
 if(import.meta.env?.VITE_PRESERVATION_V2_TEST==='1' && typeof window!=='undefined')
@@ -27,7 +30,8 @@ if(import.meta.env?.VITE_PRESERVATION_V2_TEST==='1' && typeof window!=='undefine
 
 const safeErrors = new Set(['ar_confirmation_pending','ar_retrieval_pending','retrieved_archive_mismatch',
   'payment_not_finalized','payment_transaction_failed','wrong_solana_network','reference_history_not_complete','wrong_arweave_network',
-  'unexpected_value_transfer','missing_or_duplicate_service_transfer','signed_ar_transaction_mismatch']);
+  'unexpected_value_transfer','missing_or_duplicate_service_transfer','signed_ar_transaction_mismatch',
+  'phantom_response_timeout','wander_response_timeout','solana_reader_timeout','insufficient_solana_readers']);
 const errorCode = (error: unknown) => error instanceof Error && safeErrors.has(error.message) ? error.message : 'operation_pending';
 const invalidPayment = new Set(['payment_identity_mismatch','unexpected_value_transfer',
   'unexpected_inner_instructions','unexpected_payment_instruction','unrecognized_compute_budget',
@@ -42,7 +46,7 @@ async function checkSolana(session: SaveSession, d: MachineServices): Promise<Sa
   const sources = d.readers();
   const verify = async(signature:string) => {
     let last:unknown=Error('payment_not_finalized');
-    for(const rpc of sources)try{await d.verifySolana(session,signature,rpc);return true;}
+    for(const rpc of sources)try{await withTimeout(d.verifySolana(session,signature,rpc),15_000,'solana_reader_timeout');return true;}
     catch(error){last=error;if(error instanceof Error&&invalidPayment.has(error.message))throw error;
       if(error instanceof Error&&error.message==='payment_transaction_failed')throw error;}
     throw last;
@@ -113,7 +117,7 @@ export async function pay(d: MachineServices = productionServices): Promise<Save
       solanaLastValidBlockHeight:latest.lastValidBlockHeight, solanaPreparedSlot:slot, lastError:undefined}));
     session = await d.update(id, old => ({...old, state:'SOLANA_PENDING', solanaAttempted:true}));
     try {
-      const response = await wallet.signAndSendTransaction(tx);
+      const response = await withTimeout(wallet.signAndSendTransaction(tx),d.walletTimeoutMs,'phantom_response_timeout');
       const signature = typeof response === 'string' ? response : response.signature;
       if (!signature || !/^[1-9A-HJ-NP-Za-km-z]{80,90}$/.test(signature)) throw Error('invalid_phantom_signature');
       session = await d.update(id, old => ({...old, solanaSignature:signature}));
@@ -174,7 +178,7 @@ export async function saveToArweave(expectedReward: string,d: MachineServices = 
       const signed = await d.signAr(session, wallet, expectedReward, async()=>{
         // Durably mark the precise signing boundary after all quote/preflight checks.
         session = await d.update(id, old => ({...old, arSigningStarted:true}));
-      });
+      },d.walletTimeoutMs);
       session = await d.update(id, old => ({...old, state:'AR_SIGNED',
         arTransactionId:signed.id, arSignedTransaction:signed.signed, arRewardWinston:signed.reward}));
     } catch (error) {
