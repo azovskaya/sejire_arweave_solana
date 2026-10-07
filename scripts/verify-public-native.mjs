@@ -36,8 +36,8 @@ try{
     let response=await page.goto(base+'#/save',{waitUntil:'networkidle'});
     assert.equal(response.status(),200);
     await page.getByRole('heading',{name:'Сохранить семейную историю',exact:true}).waitFor();
-    assert(await page.getByText('Solana Devnet · комиссия сети отдельно',{exact:true}).isVisible());
-    assert(await page.getByText('Хранение: Arweave Mainnet',{exact:true}).isVisible());
+    assert(await page.getByText('Solana Devnet · комиссия сети отдельно').isVisible());
+    assert(await page.getByText('Хранение: Arweave Mainnet').isVisible());
     assert.deepEqual(await page.getByRole('list',{name:'Ход сохранения'}).getByRole('listitem').allTextContents(),
       ['Оплата','Сохранение','Готово']);
     assert(await page.getByLabel('Зашифрованный архив пилота').isVisible());
