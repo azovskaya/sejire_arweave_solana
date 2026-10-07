@@ -58,8 +58,8 @@ jobs:
         run: npm run test:native-browser --prefix apps/web -- --grep 'public balances never wait for history'
       - run: npm run test:native-browser
       - run: npm run test:native-pilot-browser --prefix apps/web
-      - run: npm run test:native-journey --prefix apps/web
       - run: npm run test:v2-browser --prefix apps/web
+      - run: npm run test:native-journey --prefix apps/web
       - name: Preserve synthetic MVP screens (no recovery words or wallet secrets)
         uses: actions/upload-artifact@v4
         with:
