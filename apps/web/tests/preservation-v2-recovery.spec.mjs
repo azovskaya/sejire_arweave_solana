@@ -63,10 +63,10 @@ async function cleanRecovery(browser,preparer,mode='success') {
   expect(before.local).toEqual([]);
   expect(before.session).toBe(0);
   expect(before.databases).not.toContain('sejire-preservation-v2');
-  await fresh.getByRole('button',{name:'Открыть по 12 словам',exact:true}).click();
+  await fresh.getByRole('button',{name:'Открыть по 12 словам',exact:true}).click({timeout:5000});
   await fresh.getByRole('textbox',{name:'12 слов восстановления SEJIRE'}).fill(
     mode==='wrong-words'?'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about':family.words);
-  await fresh.getByRole('button',{name:'Восстановить архив',exact:true}).click();
+  await fresh.getByRole('button',{name:'Открыть',exact:true}).click({timeout:5000});
   return {context,fresh,family,counts};
 }
 
