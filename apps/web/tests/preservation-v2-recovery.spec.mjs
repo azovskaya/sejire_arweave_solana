@@ -74,10 +74,10 @@ test('clean browser recovers legacy V2 Save-Id TX from raw fallback with only 12
   const {context,fresh,family,counts}=await cleanRecovery(browser,page);
   try{
     await expect(fresh.getByRole('button',{name:'Сохранить',exact:true}).first()).toBeVisible();
-    await expect(fresh.getByText('Synthetic family A',{exact:true})).toBeVisible();
     const restored=await fresh.evaluate(async words=>
       (await import('/tests/browser-fixture.ts')).recovered(words),family.words);
     expect(restored?.trees).toEqual(family.vault.trees);
+    expect(restored?.active_tree_id).toBe(family.vault.active_tree_id);
     expect(counts.vaultQueries).toBe(1);expect(counts.saveQueries).toBe(1);
     expect(counts.rawPrimary).toBeGreaterThan(0);expect(counts.rawFallback).toBeGreaterThan(0);
     expect(counts.rendered).toBe(0);expect(counts.writes).toBe(0);
