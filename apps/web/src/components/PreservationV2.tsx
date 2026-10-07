@@ -60,7 +60,7 @@ export function PreservationV2({envelope,treeName,onBack,onBusy}: Props) {
       if(active){setSession(next);setReward(price);setError('');}
     }).catch(e=>{if(active)setError(message(e));});
     return()=>{active=false;};
-  },[session?.state,reward,busy]);
+  },[session?.state,session?.arSigningStarted,reward,busy]);
 
   async function run(action:()=>Promise<SaveSession | void>) {
     if(running.current) return;
