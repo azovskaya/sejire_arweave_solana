@@ -111,6 +111,15 @@ test('reload while awaiting Arweave confirmation completes automatically after i
   expect(after.saveId).toBe(before.saveId);expect(await count(page,'wanderSigns')).toBe(1);
 });
 
+test('gateway payload with wrong SHA never shows COMPLETE',async({page})=>{
+  await start(page);await payOnce(page);await set(page,'confirmed','0');await signOnce(page);
+  await expect.poll(async()=>(await saved(page)).state).toBe('AR_PENDING_CONFIRMATION');
+  await set(page,'gatewayPayload','{"tampered":true}');await set(page,'confirmed','1');
+  await expect.poll(async()=>(await saved(page)).lastError).toBe('retrieved_archive_mismatch');
+  expect((await saved(page)).state).toBe('AR_PENDING_CONFIRMATION');
+  await expect(page.getByText('✓ Семейная история сохранена навсегда')).toHaveCount(0);
+});
+
 test('lost Wander response before persistence allows a safe same-session retry',async({page})=>{
   await start(page);await payOnce(page);await set(page,'wanderLost','1');await signOnce(page);
   await expect.poll(async()=>(await saved(page)).arSigningStarted).toBe(true);

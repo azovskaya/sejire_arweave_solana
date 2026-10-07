@@ -32,20 +32,24 @@ export function installV2Mock() {
       return {id:arId,reward,signed:{format:2,id:arId,synthetic:true}};
     },
     validateAr:async(session)=>{if(session.arTransactionId!==arId||!session.arSignedTransaction)throw Error('unsigned_ar_transaction');return {};},
-    uploadAr:async(_session,persist)=>{
+    uploadAr:async(session,persist)=>{
       add('uploads');
       if(get('uploadMode')==='pause-before')return new Promise(()=>{});
+      if(get('uploadedId') && get('uploadedId')!==session.arTransactionId)throw Error('duplicate_ar_transaction');
+      set('uploadedId',session.arTransactionId);
+      set('gatewayPayload',session.archiveText);
       await persist({chunkIndex:1,synthetic:true});
       if(get('uploadMode')==='pause-mid')return new Promise(()=>{});
     },
     verifyAr:async(session)=>{
       add('verifyCalls');
       if(get('confirmed')==='0')throw Error('ar_confirmation_pending');
-      const bytes=new TextEncoder().encode(session.archiveText);
+      if(get('uploadedId')!==session.arTransactionId)throw Error('ar_retrieval_pending');
+      const bytes=new TextEncoder().encode(get('gatewayPayload')??'');
       const digest=[...new Uint8Array(await crypto.subtle.digest('SHA-256',bytes))]
         .map(x=>x.toString(16).padStart(2,'0')).join('');
       if(bytes.length!==session.archiveBytes||digest!==session.archiveDigest||
-        JSON.parse(session.archiveText).vault_id!==session.vaultId)throw Error('retrieved_archive_mismatch');
+        JSON.parse(new TextDecoder().decode(bytes)).vault_id!==session.vaultId)throw Error('retrieved_archive_mismatch');
     },
   };
 }
