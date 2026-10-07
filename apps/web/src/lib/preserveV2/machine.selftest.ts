@@ -105,6 +105,13 @@ await test('lost Wander response before persistence permits same-session retry',
  assert.equal((await saveToArweave('1000',d)).state,'AR_READY');assert.equal(c.session.arSignedTransaction,undefined);
  assert.equal(c.session.arSigningStarted,false);const ref=c.session.solanaReference;await reconcileSave(d);
  assert.equal(c.session.solanaReference,ref);});
+await test('legacy false-negative BLOCKED Wander signature is revalidated and resumed without re-signing',async()=>{
+ const {c,d}=harness();c.session.state='BLOCKED';c.session.lastError='signed_ar_transaction_mismatch';
+ c.session.arSigningStarted=true;c.session.arTransactionId='A'.repeat(43);c.session.arRewardWinston='1000';
+ c.session.arSignedTransaction={format:2} as never;
+ assert.equal((await reconcileSave(d))?.state,'COMPLETE');
+ assert.equal(c.wanderCalls,0);assert.equal(c.uploadCalls,1);assert.equal(c.session.arTransactionId,'A'.repeat(43));
+});
 await test('N signed transaction survives reload before upload',async()=>{const {c,d}=harness({uploadTimeout:true});c.session.state='AR_READY';
  assert.equal((await saveToArweave('1000',d)).state,'AR_UPLOADING');const arId=c.session.arTransactionId;c.uploadTimeout=false;
  assert.equal((await reconcileSave(d))?.state,'COMPLETE');assert.equal(c.session.arTransactionId,arId);assert.equal(c.wanderCalls,1);});
