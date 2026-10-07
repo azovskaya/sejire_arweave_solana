@@ -4,7 +4,7 @@ import 'fake-indexeddb/auto';
 import bs58 from 'bs58';
 import { ComputeBudgetProgram, PublicKey, SystemProgram } from '@solana/web3.js';
 import { PRESERVATION_V2_PILOT_POLICY as P, saveId, sha256 } from './policy';
-import { assertArQuote, assertSignedArTags } from './arweave';
+import { assertArQuote, assertSignedArTags, preservationV2Tags } from './arweave';
 import { buildPayment, discoverPayment, isUserRejection, SOLANA_RPC_URLS, type SolanaReader } from './solana';
 import { verifyPayment, verifyRetrievedArchive } from './verify';
 import { readSession, updateSession, withSessionLock } from './store';
@@ -71,15 +71,19 @@ await test('conflicting reference signatures block a second payment',()=>assert.
 await test('only explicit wallet rejection enables safe retry',()=>{assert(isUserRejection({code:4001}));assert(!isUserRejection(Error('timeout')));});
 await test('Wander signing metadata is accepted without weakening SEJIRE tag binding',()=>{
  const tags=[
-  {name:'App-Name',value:'SEJIRE'},
-  {name:'Type',value:'vault-envelope'},
-  {name:'Save-Id',value:id},
+  ...preservationV2Tags(sample),
   {name:'Signing-Client',value:'Wander'},
   {name:'Signing-Client-Version',value:'1.2.3'},
  ];
- assert.doesNotThrow(()=>assertSignedArTags(tags,id));
- assert.throws(()=>assertSignedArTags([...tags,{name:'Unexpected',value:'x'}],id));
- assert.throws(()=>assertSignedArTags(tags.map(t=>t.name==='Save-Id'?{...t,value:'other'}:t),id));
+ assert.equal(tags.find(t=>t.name==='Vault-Id')?.value,sample.vaultId);
+ assert.doesNotThrow(()=>assertSignedArTags(tags,id,sample.vaultId));
+ assert.throws(()=>assertSignedArTags([...tags,{name:'Unexpected',value:'x'}],id,sample.vaultId));
+ assert.throws(()=>assertSignedArTags(tags.map(t=>t.name==='Save-Id'?{...t,value:'other'}:t),id,sample.vaultId));
+ assert.throws(()=>assertSignedArTags(tags.map(t=>t.name==='Vault-Id'?{...t,value:'0'.repeat(32)}:t),id,sample.vaultId));
+ assert.throws(()=>assertSignedArTags(tags.filter(t=>t.name!=='Vault-Id'),id,sample.vaultId));
+ const legacy=tags.filter(t=>t.name!=='Vault-Id');
+ assert.doesNotThrow(()=>assertSignedArTags(legacy,id,sample.vaultId,true));
+ assert.throws(()=>assertSignedArTags(legacy.map(t=>t.name==='Save-Id'?{...t,value:'other'}:t),id,sample.vaultId,true));
 });
 await test('Arweave exact quote and balance accepted',()=>assertArQuote(P.arReserve,P.archiveBytes,'4000000000','4000000000'));
 await test('Arweave quote above cap rejected',()=>assert.throws(()=>assertArQuote(P.arReserve,P.archiveBytes,'4000000001','5000000000')));

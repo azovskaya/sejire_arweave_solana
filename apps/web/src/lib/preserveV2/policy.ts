@@ -55,7 +55,10 @@ export async function envelopeText(envelope: EnvelopeV1): Promise<string> {
   return text;
 }
 
-export async function saveId(): Promise<string> {
-  const p = PRESERVATION_V2_PILOT_POLICY;
+export async function saveIdForPolicy(p: {version:string;vaultId:string;archiveDigest:string;payer:string}): Promise<string> {
   return sha256(new TextEncoder().encode(`sejire-preservation-v2\0${p.version}\0${p.vaultId}\0${p.archiveDigest}\0${p.payer}`));
+}
+
+export async function saveId(): Promise<string> {
+  return saveIdForPolicy(PRESERVATION_V2_PILOT_POLICY);
 }

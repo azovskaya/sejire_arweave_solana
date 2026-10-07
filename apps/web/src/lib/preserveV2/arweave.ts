@@ -4,6 +4,7 @@ import { resolveArweaveStatic } from '../arweave/client';
 import { PRESERVATION_V2_PILOT_POLICY as P, assertArchive } from './policy';
 import { verifyRetrievedArchive } from './verify';
 import { withTimeout } from './timeout';
+import { LEGACY_V2_PILOT_TX_ID } from './legacyPilot';
 import type { SaveSession } from './types';
 
 const NODE = 'https://arweave.net';
@@ -42,10 +43,16 @@ export async function quoteArchive(address: string, bytes: number = P.archiveByt
   return {reward, balance};
 }
 
-export function assertSignedArTags(tags:{name:string;value:string}[],saveId:string):void {
+export function preservationV2Tags(session: Pick<SaveSession,'saveId'|'vaultId'>): {name:string;value:string}[] {
+  return [{name:'App-Name',value:'SEJIRE'},{name:'Type',value:'vault-envelope'},
+    {name:'Save-Id',value:session.saveId},{name:'Vault-Id',value:session.vaultId}];
+}
+
+export function assertSignedArTags(tags:{name:string;value:string}[],saveId:string,vaultId:string,allowMissingVaultId=false):void {
   const names=tags.map(tag=>tag.name);
   if (new Set(names).size!==names.length) throw Error('signed_ar_tags_mismatch');
-  const required=new Map([['App-Name','SEJIRE'],['Type','vault-envelope'],['Save-Id',saveId]]);
+  const required=new Map(preservationV2Tags({saveId,vaultId}).map(tag=>[tag.name,tag.value]));
+  if (allowMissingVaultId && !tags.some(tag=>tag.name==='Vault-Id')) required.delete('Vault-Id');
   for(const [name,value] of required)if(tags.find(tag=>tag.name===name)?.value!==value)throw Error('signed_ar_tags_mismatch');
   for(const tag of tags){
     if(required.has(tag.name))continue;
@@ -66,7 +73,7 @@ export async function validateSigned(session: SaveSession): Promise<Transaction>
       await ar.wallets.ownerToAddress(tx.owner) !== P.arReserve || !await ar.transactions.verify(tx))
     throw Error('signed_ar_transaction_mismatch');
   const tags=tx.tags.map(tag=>({name:tag.get('name',{decode:true,string:true}),value:tag.get('value',{decode:true,string:true})}));
-  assertSignedArTags(tags,session.saveId);
+  assertSignedArTags(tags,session.saveId,session.vaultId,session.arTransactionId===LEGACY_V2_PILOT_TX_ID);
   const copy = ar.transactions.fromRaw({...session.arSignedTransaction, data_root:''});
   await copy.prepareChunks(tx.data);
   if (copy.data_root !== tx.data_root) throw Error('signed_ar_data_root_mismatch');
@@ -83,7 +90,7 @@ export async function signArchive(session: SaveSession, wallet: Wander, expected
   const owner = await wallet.getActivePublicKey();
   if (await ar.wallets.ownerToAddress(owner) !== P.arReserve) throw Error('wrong_wander_address');
   const tx = await ar.createTransaction({data:new TextEncoder().encode(session.archiveText), owner, reward:quote.reward});
-  tx.addTag('App-Name', 'SEJIRE'); tx.addTag('Type', 'vault-envelope'); tx.addTag('Save-Id', session.saveId);
+  for (const tag of preservationV2Tags(session)) tx.addTag(tag.name,tag.value);
   await beforeSign?.();
   const result = await withTimeout(wallet.sign(tx, {name:'SEJIRE encrypted archive preservation'}),signTimeoutMs,'wander_response_timeout');
   const signed = ar.transactions.fromRaw(result as ReturnType<Transaction['toJSON']>);

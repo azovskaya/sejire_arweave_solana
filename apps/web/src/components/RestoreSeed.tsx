@@ -14,7 +14,7 @@ import {
   fetchVaultEnvelope,
   formatVersionWhen,
   isGatewayUnavailable,
-  listVaultVersions,
+  listRecoverableVaultVersions,
   type VaultVersionMeta,
 } from "../lib/arweave/fetch";
 import { saveDraftTree, loadDraftTree } from "../lib/draftStorage";
@@ -124,13 +124,13 @@ export function RestoreSeed({ onRestored, onBack }: Props) {
       let versions: VaultVersionMeta[] = [];
       let networkError: string | null = null;
       try {
-        versions = await listVaultVersions(keys.vaultId);
+        versions = await listRecoverableVaultVersions(keys.vaultId);
       } catch (e) {
         networkError = isGatewayUnavailable(e)
           ? e instanceof Error
             ? e.message
             : t.restore.arweaveDown
-          : t.restore.arweaveFail;
+          : e instanceof Error ? e.message : t.restore.arweaveFail;
       }
       const archive = listLocalVaultVersions(keys.vaultId);
       const networkIds = new Set(versions.map((v) => v.txId));

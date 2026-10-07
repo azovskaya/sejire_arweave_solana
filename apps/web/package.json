@@ -31,6 +31,7 @@
     "test": "npm run test:engine && npm run test:crypto && npm run test:kinship && npm run test:pedigree && npm run test:lineage && npm run test:thirteen && npm run test:dates && npm run test:json && npm run test:zhuz && npm run test:sponsor && npm run test:loadVault && npm run test:mirror && npm run test:lastScreen && npm run test:fetch && npm run test:gateways && npm run test:storage && npm run test:archive && npm run test:protocol && npm run test:i18n && npm run test:opsDesk && npm run test:solana && npm run test:native && npm run test:v2",
     "test:v2": "tsx src/lib/preserveV2/v2.selftest.ts && tsx src/lib/preserveV2/machine.selftest.ts",
     "test:v2-browser": "playwright test --config playwright.v2.config.ts",
+    "test:v2-recovery-browser": "playwright test --config playwright.v2-recovery.config.ts",
     "test:solana": "tsx src/lib/solana/policy.selftest.ts && tsx src/lib/solana/wallet.selftest.ts && tsx src/lib/solana/upload.selftest.ts && tsx src/lib/solana/receipt.selftest.ts && tsx src/lib/solana/boundaries.selftest.ts",
     "test:solana:live": "tsx src/lib/solana/devnet.e2e.ts",
     "test:checkout-browser": "playwright test",
