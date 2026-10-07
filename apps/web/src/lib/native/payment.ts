@@ -8,6 +8,8 @@ import { findPaymentByReference, onRpc, rpc } from './rpc';
 import { cachedJobs, saveJob } from './cache';
 export type NativeSolWallet = MessageWallet & { connect():Promise<unknown>; signTransaction(tx:Transaction):Promise<Transaction> };
 async function walletDeadline<T>(promise:Promise<T>,code:string):Promise<T>{let timer:ReturnType<typeof setTimeout>|undefined;try{return await Promise.race([promise,new Promise<never>((_,reject)=>{timer=setTimeout(()=>reject(Error(code)),60000);})]);}finally{if(timer)clearTimeout(timer);}}
+function paymentSemantics(tx:Transaction){return JSON.stringify({feePayer:tx.feePayer?.toBase58()??null,recentBlockhash:tx.recentBlockhash??null,instructions:tx.instructions.map(ix=>({programId:ix.programId.toBase58(),data:Buffer.from(ix.data).toString('base64'),keys:ix.keys.map(k=>({pubkey:k.pubkey.toBase58(),isSigner:k.isSigner,isWritable:k.isWritable}))}))});}
+function validateWalletSignedResult(signed:Transaction,unsigned:Transaction,job:NativeJob){if(signed.signatures.length!==1||signed.signatures[0]?.publicKey.toBase58()!==job.order.payer||!signed.signatures[0]?.signature||!signed.verifySignatures())throw Error('wallet_changed_transaction');if(paymentSemantics(signed)!==paymentSemantics(unsigned))throw Error('wallet_changed_transaction');validatePaymentTemplate(signed,job);}
 export function solWallet():NativeSolWallet {
  type Provider=Omit<NativeSolWallet,'signMessage'> & {signMessage:(bytes:Uint8Array,display?:string)=>Promise<Uint8Array|{signature:Uint8Array;publicKey?:{toString():string}}>};
  const w=window as unknown as {phantom?:{solana?:Provider};solana?:Provider};
@@ -55,11 +57,11 @@ export async function signAndBroadcast(c:Config,job:NativeJob,wallet:NativeSolWa
  try{signed=await Promise.race([signing,new Promise<never>((_,reject)=>{timer=setTimeout(()=>reject(Error('wallet_response_timeout')),60000);})]);}
  catch(e){const rejected=Boolean(e&&typeof e==='object'&&'code'in e&&e.code===4001);job.attempt.phase=rejected?'rejected':'signature_unknown';job.attempt.error=rejected?'wallet_rejected':e instanceof Error?e.message:'wallet_response_unknown';if(rejected)job.signingStarted=false;await saveJob(job,rejected);
  // A late signature is retained, but NEVER broadcast by the timed-out action.
- if(e instanceof Error&&e.message==='wallet_response_timeout')void signing.then(async late=>{if(late.serializeMessage().toString('base64')!==before||!late.signatures[0]?.signature||wallet.publicKey?.toString()!==job.order.payer)return;job.paymentSignature=bs58.encode(late.signatures[0].signature);job.signedPayment=late.serialize().toString('base64');job.attempt!.phase='signed';validateSignedPayment(job);await saveJob(job);}).catch(()=>{});
+ if(e instanceof Error&&e.message==='wallet_response_timeout')void signing.then(async late=>{if(wallet.publicKey?.toString()!==job.order.payer)return;try{validateWalletSignedResult(late,prepared.transaction,job);}catch{return;}job.paymentSignature=bs58.encode(late.signatures[0].signature!);job.signedPayment=late.serialize().toString('base64');job.attempt!.phase='signed';if(late.serializeMessage().toString('base64')!==before)job.attempt!.error='wallet_message_reencoded_semantically_equal';validateSignedPayment(job);await saveJob(job);}).catch(()=>{});
  throw e;}finally{if(timer)clearTimeout(timer);}
 
- if(signed.serializeMessage().toString('base64')!==before||!signed.signatures[0]?.signature||wallet.publicKey?.toString()!==job.order.payer)throw Error('wallet_changed_transaction');
- job.paymentSignature=bs58.encode(signed.signatures[0].signature);job.signedPayment=signed.serialize().toString('base64');job.attempt.phase='signed';await saveJob(job);
+ try{if(wallet.publicKey?.toString()!==job.order.payer)throw Error('wallet_account_changed');validateWalletSignedResult(signed,prepared.transaction,job);}catch(e){job.attempt.phase='signature_unknown';job.attempt.error=e instanceof Error?e.message:'wallet_changed_transaction';await saveJob(job);throw e;}
+ const reencoded=signed.serializeMessage().toString('base64')!==before;job.paymentSignature=bs58.encode(signed.signatures[0].signature!);job.signedPayment=signed.serialize().toString('base64');job.attempt.phase='signed';job.attempt.error=reencoded?'wallet_message_reencoded_semantically_equal':undefined;validateSignedPayment(job);await saveJob(job);
  if(Date.now()>job.order.expiresAt)throw Error('signed_payment_expired_not_broadcast');
  // One broadcast only. Lost response remains journaled; repeat means reconcile, never a new payment.
  await onRpc(c,async url=>{if(url!==prepared.rpc)throw Error('recheck_original_rpc');return rpc(url,'sendTransaction',[job.signedPayment,{encoding:'base64',skipPreflight:false,maxRetries:2}]);});job.attempt.phase='broadcast';await saveJob(job);
@@ -70,8 +72,8 @@ export async function signAndBroadcast(c:Config,job:NativeJob,wallet:NativeSolWa
 export function validateSignedPayment(job:NativeJob) {
  if(!job.signedPayment||!job.paymentSignature)throw Error('signed_payment_bytes_required');
  const tx=Transaction.from(Buffer.from(job.signedPayment,'base64'));
- if(!tx.verifySignatures()||!tx.signatures[0]?.signature||bs58.encode(tx.signatures[0].signature)!==job.paymentSignature||tx.feePayer?.toBase58()!==job.order.payer)throw Error('invalid_signed_payment');
- validatePaymentTemplate(tx,job);
+ if(tx.signatures.length!==1||!tx.verifySignatures()||tx.signatures[0]?.publicKey.toBase58()!==job.order.payer||!tx.signatures[0]?.signature||bs58.encode(tx.signatures[0].signature)!==job.paymentSignature||tx.feePayer?.toBase58()!==job.order.payer)throw Error('invalid_signed_payment');
+ validatePaymentTemplate(tx,job);if(job.attempt){const unsigned=Transaction.populate(Message.from(Buffer.from(job.attempt.message,'base64')));if(paymentSemantics(tx)!==paymentSemantics(unsigned))throw Error('payment_attempt_binding');}
 }
 function validatePaymentTemplate(tx:Transaction,job:NativeJob) {
  const expected=[job.order.servicePayment,job.order.fundContribution].filter(p=>p.amount!=='0');
@@ -103,7 +105,7 @@ export function validateAttempt(job:NativeJob) {
  if(['wallet_pending','signature_unknown','signed','broadcast','finalized','failed'].includes(a.phase)&&job.signingStarted!==true)throw Error('invalid_payment_attempt');
  const tx=Transaction.populate(Message.from(Buffer.from(a.message,'base64')));
  if(tx.feePayer?.toBase58()!==job.order.payer||tx.recentBlockhash!==a.blockhash)throw Error('payment_attempt_binding');validatePaymentTemplate(tx,job);
- if(job.signedPayment&&Transaction.from(Buffer.from(job.signedPayment,'base64')).serializeMessage().toString('base64')!==a.message)throw Error('payment_attempt_binding');
+ if(job.signedPayment){const signed=Transaction.from(Buffer.from(job.signedPayment,'base64'));if(paymentSemantics(signed)!==paymentSemantics(tx))throw Error('payment_attempt_binding');}
 }
 /** Never obtains another signature: optional retry is only the exact journaled bytes. */
 export async function resumeSignedPayment(c:Config,job:NativeJob) {
