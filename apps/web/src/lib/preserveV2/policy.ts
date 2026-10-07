@@ -16,6 +16,14 @@ export const PRESERVATION_V2_PILOT_POLICY = Object.freeze({
   archiveDigest: '19133b897f69e1f0d43a55217a00adee6b6dfefb73f0f6228008f5c8a702e6c8',
   fileBytes: 28_394,
   fileDigest: '003dcc12544779dce94db4e2f2395059f43bc160fff76272658ae5b6702dbdb8',
+  ...(import.meta.env?.VITE_PRESERVATION_V2_TEST === '1' ? {
+    version: 'synthetic-browser-test-only',
+    vaultId: '00000000000000000000000000000000',
+    archiveBytes: 249,
+    archiveDigest: '153818e19fc43908bda29666c07fdd31791eabf112a19ad6918e89b50dba48e7',
+    fileBytes: 249,
+    fileDigest: '153818e19fc43908bda29666c07fdd31791eabf112a19ad6918e89b50dba48e7',
+  } : {}),
 });
 
 export async function sha256(bytes: Uint8Array): Promise<string> {

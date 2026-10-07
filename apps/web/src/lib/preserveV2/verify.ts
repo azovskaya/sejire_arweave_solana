@@ -9,7 +9,8 @@ import type { SaveSession } from './types';
 export async function verifyPayment(session: SaveSession, signature: string, rpc: SolanaReader): Promise<void> {
   await assertDevnet(rpc);
   const tx = await rpc.getParsedTransaction(signature, {commitment: 'finalized', maxSupportedTransactionVersion: 0});
-  if (!tx || tx.meta?.err || !tx.meta || !tx.transaction.signatures.includes(signature)) throw Error('payment_not_finalized');
+  if (!tx || !tx.meta || !tx.transaction.signatures.includes(signature)) throw Error('payment_not_finalized');
+  if (tx.meta.err) throw Error('payment_transaction_failed');
   const keys = tx.transaction.message.accountKeys;
   if (keys[0]?.pubkey.toBase58() !== P.payer || !keys[0].signer ||
       !keys.some(k => k.pubkey.toBase58() === session.solanaReference)) throw Error('payment_identity_mismatch');

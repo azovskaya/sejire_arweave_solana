@@ -21,11 +21,18 @@ export const productionServices: MachineServices = {
   wander, quoteAr:quoteArchive, signAr:signArchive, validateAr:validateSigned,
   uploadAr:uploadSigned, verifyAr:verifyArweave,
 };
+// Browser fixture hook is compiled out of the owner build (native:build forces TEST=0).
+if(import.meta.env?.VITE_PRESERVATION_V2_TEST==='1' && typeof window!=='undefined')
+  Object.assign(productionServices,(window as Window & {__SEJIRE_V2_TEST_DRIVER__?:Partial<MachineServices>}).__SEJIRE_V2_TEST_DRIVER__);
 
 const safeErrors = new Set(['ar_confirmation_pending','ar_retrieval_pending','retrieved_archive_mismatch',
-  'payment_not_finalized','wrong_solana_network','reference_history_not_complete','wrong_arweave_network',
+  'payment_not_finalized','payment_transaction_failed','wrong_solana_network','reference_history_not_complete','wrong_arweave_network',
   'unexpected_value_transfer','missing_or_duplicate_service_transfer','signed_ar_transaction_mismatch']);
 const errorCode = (error: unknown) => error instanceof Error && safeErrors.has(error.message) ? error.message : 'operation_pending';
+const invalidPayment = new Set(['payment_identity_mismatch','unexpected_value_transfer',
+  'unexpected_inner_instructions','unexpected_payment_instruction','unrecognized_compute_budget',
+  'invalid_compute_budget','compute_limit_too_high','priority_fee_too_high',
+  'unsupported_compute_budget','missing_or_duplicate_service_transfer']);
 
 export async function currentSession(d: MachineServices = productionServices): Promise<SaveSession | undefined> { return d.read(await d.id()); }
 export async function beginSave(text: string): Promise<SaveSession> { return startSession(text); }
@@ -33,16 +40,34 @@ export async function beginSave(text: string): Promise<SaveSession> { return sta
 async function checkSolana(session: SaveSession, d: MachineServices): Promise<SaveSession> {
   if (session.state !== 'SOLANA_PENDING') return session;
   const sources = d.readers();
-  const discovered = session.solanaSignature ? undefined : await d.discover(session, sources);
-  const signature = session.solanaSignature ?? discovered?.signature;
-  if (signature) {
-    await d.verifySolana(session, signature, sources[0]);
-    return d.update(session.saveId, old => ({...old, solanaSignature:signature, state:'SOLANA_PAID', lastError:undefined}));
+  const verify = async(signature:string) => {
+    let last:unknown=Error('payment_not_finalized');
+    for(const rpc of sources)try{await d.verifySolana(session,signature,rpc);return true;}
+    catch(error){last=error;if(error instanceof Error&&invalidPayment.has(error.message))throw error;
+      if(error instanceof Error&&error.message==='payment_transaction_failed')throw error;}
+    throw last;
+  };
+  let knownFailed=false;
+  if(session.solanaSignature)try{
+    await verify(session.solanaSignature);
+    return d.update(session.saveId,old=>({...old,state:'SOLANA_PAID',lastError:undefined}));
+  }catch(error){
+    if(error instanceof Error&&invalidPayment.has(error.message))
+      return d.update(session.saveId,old=>({...old,state:'BLOCKED',lastError:'payment_invalid'}));
+    knownFailed=error instanceof Error&&error.message==='payment_transaction_failed';
+    if(!knownFailed&&!(error instanceof Error&&error.message==='payment_not_finalized'))throw error;
   }
-  if (discovered?.absent) {
-    return d.update(session.saveId, old => ({...old, state:'SOLANA_PREPARED', solanaAttempted:false,
-      lastError:'Previous blockhash expired; no finalized transaction found on both RPC readers.'}));
+  const discovered=await d.discover(session,sources);
+  if(discovered.signature){
+    try{await verify(discovered.signature);}
+    catch(error){if(error instanceof Error&&invalidPayment.has(error.message))
+      return d.update(session.saveId,old=>({...old,state:'BLOCKED',lastError:'payment_invalid'}));throw error;}
+    return d.update(session.saveId,old=>({...old,solanaSignature:discovered.signature,state:'SOLANA_PAID',lastError:undefined}));
   }
+  if(discovered.absent&&(!knownFailed||discovered.failedSignatures.includes(session.solanaSignature!)))
+    return d.update(session.saveId,old=>({...old,state:'SOLANA_PREPARED',solanaAttempted:false,
+      solanaSignature:undefined,solanaFailedSignatures:[...new Set([...(old.solanaFailedSignatures??[]),...discovered.failedSignatures])],
+      lastError:discovered.failedSignatures.length?'payment_transaction_failed':'payment_not_sent'}));
   return session;
 }
 
@@ -54,7 +79,7 @@ export async function reconcileSave(d: MachineServices = productionServices): Pr
     await d.archive(session.archiveText);
     if (session.state === 'SOLANA_PENDING') session = await checkSolana(session,d);
     if (session.state === 'AR_READY' && session.arSigningStarted && !session.arSignedTransaction)
-      session = await d.update(id, old => ({...old, state:'BLOCKED', lastError:'wander_response_lost'}));
+      session = await d.update(id, old => ({...old, arSigningStarted:false, lastError:'wander_response_lost_before_upload'}));
     if (session.state === 'AR_SIGNED' || session.state === 'AR_UPLOADING') {
       session = await continueUpload(session,d);
     }
@@ -92,9 +117,8 @@ export async function pay(d: MachineServices = productionServices): Promise<Save
       const signature = typeof response === 'string' ? response : response.signature;
       if (!signature || !/^[1-9A-HJ-NP-Za-km-z]{80,90}$/.test(signature)) throw Error('invalid_phantom_signature');
       session = await d.update(id, old => ({...old, solanaSignature:signature}));
-      if (wallet.publicKey?.toBase58() !== P.payer) {
-        return d.update(id, old => ({...old, state:'BLOCKED', lastError:'phantom_account_changed'}));
-      }
+      if (wallet.publicKey?.toBase58() !== P.payer)
+        session = await d.update(id, old => ({...old, lastError:'phantom_account_changed'}));
     } catch (error) {
       if (isUserRejection(error)) {
         // Explicit wallet rejection before broadcast can be retried with the same session/reference.
@@ -115,10 +139,7 @@ export async function prepareArweave(d: MachineServices = productionServices): P
     let session = await d.read(id);
     if (!session || !['SOLANA_PAID', 'AR_READY'].includes(session.state)) throw Error('solana_payment_required');
     await d.archive(session.archiveText);
-    const wallet = d.wander();
-    await wallet.connect(['ACCESS_ADDRESS', 'ACCESS_PUBLIC_KEY', 'SIGN_TRANSACTION']);
-    const address = await wallet.getActiveAddress();
-    const quote = await d.quoteAr(address, session.archiveBytes);
+    const quote = await d.quoteAr(P.arReserve, session.archiveBytes);
     if (session.state === 'SOLANA_PAID') session = await d.update(id, old => ({...old, state:'AR_READY'}));
     if (session.arSigningStarted) throw Error('ar_signature_requires_reconciliation');
     return {session, reward:quote.reward};
@@ -147,6 +168,7 @@ export async function saveToArweave(expectedReward: string,d: MachineServices = 
     if (!session || session.state !== 'AR_READY' || session.arSigningStarted) throw Error('ar_not_ready');
     await d.archive(session.archiveText);
     const wallet = d.wander();
+    await wallet.connect(['ACCESS_ADDRESS', 'ACCESS_PUBLIC_KEY', 'SIGN_TRANSACTION']);
     if (await wallet.getActiveAddress() !== P.arReserve) throw Error('wrong_wander_address');
     try {
       const signed = await d.signAr(session, wallet, expectedReward, async()=>{
@@ -156,9 +178,10 @@ export async function saveToArweave(expectedReward: string,d: MachineServices = 
       session = await d.update(id, old => ({...old, state:'AR_SIGNED',
         arTransactionId:signed.id, arSignedTransaction:signed.signed, arRewardWinston:signed.reward}));
     } catch (error) {
-      if (isUserRejection(error)) return d.update(id, old => ({...old, arSigningStarted:false, lastError:'wander_rejected'}));
-      if (!(await d.read(id))?.arSigningStarted) return d.update(id, old => ({...old, lastError:errorCode(error)}));
-      return d.update(id, old => ({...old, state:'BLOCKED', lastError:errorCode(error)}));
+      const latest=await d.read(id);
+      if(latest?.arSignedTransaction)return continueUpload(latest,d);
+      return d.update(id, old => ({...old, arSigningStarted:false,
+        lastError:isUserRejection(error)?'wander_rejected':errorCode(error)}));
     }
     try { await d.validateAr(session); }
     catch { return d.update(id, old => ({...old, state:'BLOCKED', lastError:'signed_ar_transaction_mismatch'})); }

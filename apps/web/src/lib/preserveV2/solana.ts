@@ -40,9 +40,11 @@ export function buildPayment(session: SaveSession, blockhash: string): Transacti
   );
 }
 
-export async function discoverPayment(session: SaveSession, readers: SolanaReader[]): Promise<{signature?: string; absent: boolean}> {
-  if (!session.solanaBlockhash || session.solanaLastValidBlockHeight === undefined) return {absent: false};
-  let found: string | undefined;
+export type PaymentDiscovery = {signature?: string; failedSignatures: string[]; absent: boolean};
+export async function discoverPayment(session: SaveSession, readers: SolanaReader[]): Promise<PaymentDiscovery> {
+  if (!session.solanaBlockhash || session.solanaLastValidBlockHeight === undefined)
+    return {failedSignatures:[],absent:false};
+  const histories: Array<Array<{signature:string;err:unknown}>> = [];
   let allExpired = true;
   for (const rpc of readers) {
     await assertDevnet(rpc);
@@ -53,15 +55,17 @@ export async function discoverPayment(session: SaveSession, readers: SolanaReade
     ]);
     if (session.solanaPreparedSlot === undefined || oldest > session.solanaPreparedSlot)
       throw Error('reference_history_not_complete');
-    if (history.length > 0) {
-      const valid = history.filter(x => !x.err);
-      if (valid.length !== 1 || history.length !== 1 || (found && found !== valid[0].signature))
-        throw Error('conflicting_reference_history');
-      found = valid[0].signature;
-    }
+    if (history.length >= 1000 || (session.solanaFailedSignatures??[]).some(sig=>!history.some(x=>x.signature===sig&&x.err)))
+      throw Error('reference_history_not_complete');
+    histories.push(history);
     if (height <= session.solanaLastValidBlockHeight) allExpired = false;
   }
-  return {signature: found, absent: !found && allExpired && readers.length >= 2};
+  const successful = [...new Set(histories.flat().filter(x=>!x.err).map(x=>x.signature))];
+  if (successful.length > 1) throw Error('conflicting_reference_history');
+  const failedSets = histories.map(h=>h.filter(x=>x.err).map(x=>x.signature).sort());
+  const agreed = failedSets.every(s=>JSON.stringify(s)===JSON.stringify(failedSets[0]));
+  return {signature:successful[0],failedSignatures:agreed?failedSets[0]??[]:[],
+    absent:!successful[0] && agreed && allExpired && readers.length>=2};
 }
 
 export function isUserRejection(error: unknown): boolean {

@@ -45,9 +45,11 @@ await test('unsafe compute budget rejected',()=>assert.rejects(()=>verifyPayment
 await test('inner value effects rejected',()=>assert.rejects(()=>verifyPayment(sample,'sig',reader({...tx(),meta:{...tx().meta,innerInstructions:[{instructions:[transfer]}]}}))));
 await test('failed finalized transaction rejected',()=>assert.rejects(()=>verifyPayment(sample,'sig',reader({...tx(),meta:{...tx().meta,err:{InstructionError:[0,'Custom']}}}))));
 await test('wrong Solana network rejected',()=>assert.rejects(()=>verifyPayment(sample,'sig',{...reader(),getGenesisHash:async()=> 'wrong'})));
-await test('lost wallet response discovered by reference',async()=>assert.deepEqual(await discoverPayment(sample,[reader(tx(),[{signature:'sig',err:null}]),reader(tx(),[{signature:'sig',err:null}])]),{signature:'sig',absent:false}));
+await test('lost wallet response discovered by reference',async()=>assert.deepEqual(await discoverPayment(sample,[reader(tx(),[{signature:'sig',err:null}]),reader(tx(),[{signature:'sig',err:null}])]),{signature:'sig',failedSignatures:[],absent:false}));
 await test('RPC timeout never proves absence',()=>assert.rejects(()=>discoverPayment(sample,[reader(),{...reader(),getBlockHeight:async()=>{throw Error('timeout');}}])));
-await test('expired blockhash with complete empty history allows same-reference preparation',async()=>assert.deepEqual(await discoverPayment(sample,[reader(),reader()]),{signature:undefined,absent:true}));
+await test('expired blockhash with complete empty history allows same-reference preparation',async()=>assert.deepEqual(await discoverPayment(sample,[reader(),reader()]),{signature:undefined,failedSignatures:[],absent:true}));
+await test('failed finalized transaction with expired blockhash permits same-reference retry',async()=>assert.deepEqual(await discoverPayment(sample,[reader(tx(),[{signature:'failed',err:{InstructionError:[0,'Custom']}}]),reader(tx(),[{signature:'failed',err:{InstructionError:[0,'Custom']}}])]),{signature:undefined,failedSignatures:['failed'],absent:true}));
+await test('failed history mismatch cannot authorize another payment',async()=>assert.equal((await discoverPayment(sample,[reader(tx(),[{signature:'failed',err:{InstructionError:[0,'Custom']}}]),reader()])).absent,false));
 await test('live blockhash blocks a second payment',async()=>assert.equal((await discoverPayment(sample,[reader(tx(),[],100),reader()])).absent,false));
 await test('pruned history blocks a second payment',()=>assert.rejects(()=>discoverPayment(sample,[reader(tx(),[],101,51),reader()])));
 await test('conflicting reference signatures block a second payment',()=>assert.rejects(()=>discoverPayment(sample,[reader(tx(),[{signature:'one',err:null}]),reader(tx(),[{signature:'two',err:null}])])));

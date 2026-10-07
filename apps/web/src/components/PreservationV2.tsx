@@ -24,18 +24,43 @@ export function PreservationV2({envelope,treeName,onBack,onBusy}: Props) {
   const [busy,setBusy] = useState(false);
   const [error,setError] = useState('');
   const [info,setInfo] = useState('');
+  const [reward,setReward] = useState<string>();
   const running = useRef(false);
   useEffect(() => {
     let live=true;
     void (async()=>{
       try {
         if (envelope) await beginSave(await envelopeText(envelope));
-        const next=await reconcileSave() ?? await currentSession();
+        const next=await currentSession();
         if(live) setSession(next);
       } catch(e) { if(live) setError(message(e)); }
     })();
     return()=>{live=false;};
   },[envelope]);
+
+  // Pending network work is always reconciled from the durable session, including after reload.
+  useEffect(()=>{
+    if(!['SOLANA_PENDING','AR_SIGNED','AR_UPLOADING','AR_PENDING_CONFIRMATION'].includes(session?.state??'') &&
+       !(session?.state==='AR_READY'&&session.arSigningStarted))return;
+    let active=true,timer:ReturnType<typeof setTimeout>,attempt=0;
+    const tick=async()=>{
+      try{const next=await reconcileSave();if(active&&next){setSession(next);setError('');}}
+      catch(e){if(active)setError(message(e));}
+      if(active)timer=setTimeout(()=>void tick(),Math.min(10_000,1_500+attempt++*1_000));
+    };
+    timer=setTimeout(()=>void tick(),250);
+    return()=>{active=false;clearTimeout(timer);};
+  },[session?.state,session?.arSigningStarted]);
+
+  useEffect(()=>{
+    if(session?.state!=='SOLANA_PAID'&&session?.state!=='AR_READY')return;
+    if(session.arSigningStarted || (session.state==='AR_READY'&&reward))return;
+    let active=true;
+    void prepareArweave().then(({session:next,reward:price})=>{
+      if(active){setSession(next);setReward(price);setError('');}
+    }).catch(e=>{if(active)setError(message(e));});
+    return()=>{active=false;};
+  },[session?.state,reward]);
 
   async function run(action:()=>Promise<SaveSession | void>) {
     if(running.current) return;
@@ -56,13 +81,12 @@ export function PreservationV2({envelope,treeName,onBack,onBusy}: Props) {
     });
   }
   async function saveNow() {
+    if(!reward)return;
+    const confirmedReward=reward;
+    setReward(undefined);
+    setInfo('Загрузка зашифрованного архива...');
     await run(async()=>{
-      const {reward}=await prepareArweave();
-      const ar=(Number(BigInt(reward))/1e12).toFixed(12);
-      if(!window.confirm(`Arweave Mainnet · реальные AR\nТекущая цена: ${ar} AR\nМаксимум: 0.004 AR\nАрхив: ${P.archiveBytes} байт\nSHA-256: ${P.archiveDigest}\n\nПодписать эту транзакцию в Wander и отправить тот же подписанный архив?`))
-        return currentSession();
-      setInfo('Загрузка зашифрованного архива...');
-      return saveToArweave(reward);
+      return saveToArweave(confirmedReward);
     });
   }
   const state=session?.state;
@@ -77,10 +101,14 @@ export function PreservationV2({envelope,treeName,onBack,onBusy}: Props) {
     <ol aria-label="Ход сохранения"><li>{paid?'✓ ':''}Оплата</li><li>{stored?'✓ ':''}Сохранение</li><li>{stored?'✓ ':''}Готово</li></ol>
     {!session && <label>Зашифрованный архив пилота<input type="file" accept="application/json,.json" onChange={e=>void choose(e.target.files?.[0])}/></label>}
     {session && !paid && state!=='BLOCKED' && <button className="btn" disabled={busy || state==='SOLANA_PENDING'} onClick={()=>void payNow()}>Оплатить 0.03 SOL</button>}
-    {state==='SOLANA_PENDING' && <><p>Проверяем оплату. Повторный платёж заблокирован.</p><button className="btn ghost" disabled={busy} onClick={()=>void run(async()=>reconcileSave())}>Проверить статус</button></>}
+    {state==='SOLANA_PENDING' && <p>Проверяем оплату в Solana. Повторного платежа нет.</p>}
     {paid && !stored && <p>✓ Оплата подтверждена</p>}
-    {(state==='SOLANA_PAID'||state==='AR_READY') && <button className="btn" disabled={busy || Boolean(session?.arSigningStarted)} onClick={()=>void saveNow()}>Сохранить навсегда</button>}
-    {(state==='AR_SIGNED'||state==='AR_UPLOADING'||state==='AR_PENDING_CONFIRMATION') && <><p>{state==='AR_PENDING_CONFIRMATION'?'Проверяем Arweave и скачанный архив...':'Загрузка зашифрованного архива...'}</p><button className="btn ghost" disabled={busy} onClick={()=>void run(async()=>reconcileSave())}>Проверить статус</button></>}
+    {(state==='SOLANA_PAID'||state==='AR_READY') && <>
+      <p>{reward?`Текущая цена хранения: ${(Number(BigInt(reward))/1e12).toFixed(12)} AR. Максимум 0.004 AR.`:'Проверяем текущую цену Arweave...'}</p>
+      <p>Архив: {P.archiveBytes} байт · SHA-256: {P.archiveDigest}</p>
+      <button className="btn" disabled={busy || !reward || Boolean(session?.arSigningStarted)} onClick={()=>void saveNow()}>Сохранить навсегда</button>
+    </>}
+    {(state==='AR_SIGNED'||state==='AR_UPLOADING'||state==='AR_PENDING_CONFIRMATION') && <p>{state==='AR_PENDING_CONFIRMATION'?'Проверяем Arweave и скачанный архив...':'Загрузка зашифрованного архива...'}</p>}
     {stored && <><p>✓ Семейная история сохранена навсегда</p><a className="btn" href="#/restore">Проверить восстановление</a></>}
     {state==='BLOCKED' && <p role="alert">Сохранение остановлено для предотвращения повторного расхода. Нужна проверка операции.</p>}
     {info && <p role="status">{info}</p>}{error && <p role="alert">{error}</p>}

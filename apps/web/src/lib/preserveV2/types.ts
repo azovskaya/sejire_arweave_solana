@@ -9,6 +9,7 @@ export type SaveSession = {
   saveId: string; vaultId: string; archiveDigest: string; archiveBytes: number;
   archiveText: string; payer: string; solanaReference: string;
   solanaSignature?: string; solanaBlockhash?: string; solanaLastValidBlockHeight?: number;
+  solanaFailedSignatures?: string[];
   solanaPreparedSlot?: number;
   solanaAttempted?: boolean; solanaRejected?: boolean;
   arTransactionId?: string; arSignedTransaction?: ReturnType<Transaction['toJSON']>;

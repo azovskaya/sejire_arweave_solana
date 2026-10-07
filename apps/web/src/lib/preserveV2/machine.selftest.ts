@@ -31,7 +31,7 @@ function harness(change:Partial<Control>={}) {
   archive:async()=>{}, rpc:()=>({getGenesisHash:async()=>'',getLatestBlockhash:async()=>({blockhash:'new-blockhash',lastValidBlockHeight:100}),
    getSlot:async()=>50,getBlockHeight:async()=>101,getMinimumLedgerSlot:async()=>0,getSignaturesForAddress:async()=>[],getParsedTransaction:async()=>null}),
   readers:()=>[productionServices.rpc(),productionServices.rpc()],devnet:async()=>{},phantom:()=>wallet,
-  discover:async()=>{if(c.rpcTimeout)throw Error('synthetic RPC timeout');return {signature:c.sent?signature:undefined,absent:Boolean(!c.sent&&c.expired)};},
+  discover:async()=>{if(c.rpcTimeout)throw Error('synthetic RPC timeout');return {signature:c.sent?signature:undefined,failedSignatures:[],absent:Boolean(!c.sent&&c.expired)};},
   verifySolana:async(_session,sig)=>{assert.equal(sig,signature);},
   wander:()=>arWallet, quoteAr:async()=>({reward:'1000',balance:'2000'}),
   signAr:async(_session,_wallet,_reward,beforeSign)=>{await beforeSign?.();c.wanderCalls++;if(c.rejectWander)throw {code:4001};return {id:'A'.repeat(43),reward:'1000',signed:{format:2} as never};},
@@ -53,19 +53,27 @@ await test('A happy path uses one payment, one signing, upload, retrieval verifi
 await test('B double click serializes to one Phantom invocation',async()=>{const {c,d}=harness();await Promise.all([pay(d),pay(d)]);assert.equal(c.phantomCalls,1);});
 await test('C explicit Phantom rejection retains same session/reference for retry',async()=>{const {c,d}=harness({rejectPhantom:true});const id=c.session.saveId,ref=c.session.solanaReference;
  assert.equal((await pay(d)).state,'READY');c.rejectPhantom=false;assert.equal((await pay(d)).state,'SOLANA_PAID');assert.equal(c.session.saveId,id);assert.equal(c.session.solanaReference,ref);});
-await test('G Phantom account switch blocks without another payment',async()=>{const {c,d}=harness({walletChanged:true});assert.equal((await pay(d)).state,'BLOCKED');await pay(d);assert.equal(c.phantomCalls,1);});
+await test('G account switch after broadcast still accepts correct finalized payment',async()=>{const {c,d}=harness({walletChanged:true});assert.equal((await pay(d)).state,'SOLANA_PAID');await pay(d);assert.equal(c.phantomCalls,1);});
 await test('H lost wallet response discovered after reload by reference',async()=>{const {c,d}=harness({lostResponse:true});assert.equal((await pay(d)).state,'SOLANA_PENDING');assert.equal((await reconcileSave(d))?.state,'SOLANA_PAID');assert.equal(c.phantomCalls,1);});
 await test('I RPC timeout keeps pending payment and prevents another Phantom call',async()=>{const {c,d}=harness({lostResponse:true,rpcTimeout:true});assert.equal((await pay(d)).state,'SOLANA_PENDING');await assert.rejects(()=>reconcileSave(d));assert.equal(c.phantomCalls,1);});
 await test('J expired absent payment retries same session and reference',async()=>{const {c,d}=harness({lostResponse:true,expired:true});c.session.state='SOLANA_PENDING';c.session.solanaAttempted=true;
  const id=c.session.saveId,ref=c.session.solanaReference;assert.equal((await reconcileSave(d))?.state,'SOLANA_PREPARED');
  c.lostResponse=false;assert.equal((await pay(d)).state,'SOLANA_PAID');assert.equal(c.session.saveId,id);assert.equal(c.session.solanaReference,ref);});
+await test('J finalized failed payment retries same session and reference after expiry',async()=>{const {c,d}=harness();c.session.state='SOLANA_PENDING';
+ c.session.solanaSignature=signature;c.session.solanaAttempted=true;c.session.solanaBlockhash='old';c.session.solanaLastValidBlockHeight=100;
+ d.verifySolana=async()=>{throw Error('payment_transaction_failed');};
+ d.discover=async()=>({failedSignatures:[signature],absent:true});
+ const ref=c.session.solanaReference,id=c.session.saveId;
+ assert.equal((await reconcileSave(d))?.state,'SOLANA_PREPARED');assert.deepEqual(c.session.solanaFailedSignatures,[signature]);
+ d.verifySolana=async()=>{};d.discover=async()=>({signature,failedSignatures:[signature],absent:false});
+ assert.equal((await pay(d)).state,'SOLANA_PAID');assert.equal(c.session.solanaReference,ref);assert.equal(c.session.saveId,id);});
 await test('K uncertain previous payment remains pending',async()=>{const {c,d}=harness();c.session.state='SOLANA_PENDING';c.session.solanaAttempted=true;
  assert.equal((await reconcileSave(d))?.state,'SOLANA_PENDING');await pay(d);assert.equal(c.phantomCalls,0);});
 await test('L reload READY does not open wallets',async()=>{const {c,d}=harness();assert.equal((await reconcileSave(d))?.state,'READY');assert.equal(c.phantomCalls,0);assert.equal(c.wanderCalls,0);});
 await test('L reload SOLANA_PREPARED preserves same reference',async()=>{const {c,d}=harness();c.session.state='SOLANA_PREPARED';const ref=c.session.solanaReference;
  assert.equal((await reconcileSave(d))?.state,'SOLANA_PREPARED');assert.equal(c.session.solanaReference,ref);});
-await test('L reload AR_READY with lost signature response blocks',async()=>{const {c,d}=harness();c.session.state='AR_READY';c.session.arSigningStarted=true;
- assert.equal((await reconcileSave(d))?.state,'BLOCKED');assert.equal(c.wanderCalls,0);});
+await test('L reload AR_READY with lost signature response permits safe retry',async()=>{const {c,d}=harness();c.session.state='AR_READY';c.session.arSigningStarted=true;
+ assert.equal((await reconcileSave(d))?.state,'AR_READY');assert.equal(c.session.arSigningStarted,false);assert.equal(c.wanderCalls,0);});
 await test('L reload SOLANA_PAID and AR_READY preserves the next action',async()=>{for(const state of ['SOLANA_PAID','AR_READY'] as const){
  const {c,d}=harness();c.session.state=state;assert.equal((await reconcileSave(d))?.state,state);assert.equal(c.phantomCalls,0);assert.equal(c.wanderCalls,0);}});
 await test('L reload AR_SIGNED resumes same signed ID without Wander',async()=>{const {c,d}=harness();c.session.state='AR_SIGNED';c.session.arTransactionId='A'.repeat(43);c.session.arSignedTransaction={format:2} as never;
@@ -78,6 +86,11 @@ await test('M Wander rejection leaves no signed plan and permits retry',async()=
 await test('quote movement before Wander signature permits safe re-quote',async()=>{const {c,d}=harness();c.session.state='AR_READY';
  d.signAr=async()=>{throw Error('ar_quote_changed');};assert.equal((await saveToArweave('1000',d)).state,'AR_READY');
  assert.equal(c.session.arSigningStarted,undefined);assert.equal(c.wanderCalls,0);});
+await test('lost Wander response before persistence permits same-session retry',async()=>{const {c,d}=harness();c.session.state='AR_READY';
+ d.signAr=async(_s,_w,_r,beforeSign)=>{await beforeSign?.();c.wanderCalls++;throw Error('synthetic lost response');};
+ assert.equal((await saveToArweave('1000',d)).state,'AR_READY');assert.equal(c.session.arSignedTransaction,undefined);
+ assert.equal(c.session.arSigningStarted,false);const ref=c.session.solanaReference;await reconcileSave(d);
+ assert.equal(c.session.solanaReference,ref);});
 await test('N signed transaction survives reload before upload',async()=>{const {c,d}=harness({uploadTimeout:true});c.session.state='AR_READY';
  assert.equal((await saveToArweave('1000',d)).state,'AR_UPLOADING');const arId=c.session.arTransactionId;c.uploadTimeout=false;
  assert.equal((await reconcileSave(d))?.state,'COMPLETE');assert.equal(c.session.arTransactionId,arId);assert.equal(c.wanderCalls,1);});
