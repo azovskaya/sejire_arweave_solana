@@ -7,6 +7,7 @@ import { withTimeout } from './timeout';
 import type { SaveSession } from './types';
 
 const NODE = 'https://arweave.net';
+const RAW_GATEWAYS = [NODE, 'https://ar-io.net', 'https://g8way.io'] as const;
 export type Wander = {
   connect(permissions: string[]): Promise<void>;
   getActiveAddress(): Promise<string>;
@@ -102,12 +103,32 @@ export async function uploadSigned(session: SaveSession, persist: (progress: Sav
 
 export async function retrieveVerifiedArchive(
   transactionId: string,
-  gateway = NODE,
+  gateways: string | readonly string[] = RAW_GATEWAYS,
   expected: Parameters<typeof verifyRetrievedArchive>[1] = P,
+): Promise<void> {
+  let pending = false;
+  let verificationError: Error | undefined;
+  for (const gateway of typeof gateways === 'string' ? [gateways] : gateways) {
+    try {
+      await retrieveFromGateway(transactionId, gateway, expected);
+      return;
+    } catch (error) {
+      if (error instanceof Error && error.message === 'ar_retrieval_pending') pending = true;
+      else if (error instanceof Error && error.message !== 'ar_retrieval_failed') verificationError ??= error;
+    }
+  }
+  if (verificationError) throw verificationError;
+  throw Error(pending ? 'ar_retrieval_pending' : 'ar_retrieval_failed');
+}
+
+async function retrieveFromGateway(
+  transactionId: string,
+  gateway: string,
+  expected: NonNullable<Parameters<typeof verifyRetrievedArchive>[1]>,
 ): Promise<void> {
   let response: Response;
   try {
-    response = await fetch(`${gateway}/${transactionId}`, {credentials:'omit', referrerPolicy:'no-referrer', redirect:'follow', signal:AbortSignal.timeout(15_000)});
+    response = await fetch(`${gateway.replace(/\/+$/, '')}/raw/${transactionId}`, {credentials:'omit', referrerPolicy:'no-referrer', redirect:'follow', signal:AbortSignal.timeout(15_000)});
   } catch { throw Error('ar_retrieval_failed'); }
   if (response.status === 404 || response.status === 202) throw Error('ar_retrieval_pending');
   if (!response.ok || !response.body) throw Error('ar_retrieval_failed');

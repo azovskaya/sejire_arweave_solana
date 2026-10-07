@@ -133,10 +133,11 @@ await test('gateway redirect retrieves exact archive before COMPLETE and keeps t
  const bytes=new TextEncoder().encode(JSON.stringify({schema:'sejire/envelope/v1',vault_id:P.vaultId,cipher:'aes-gcm-256',kdf:'hkdf-sha256',iv:'AAAAAAAAAAAAAAAA',ciphertext:'AAAAAAAAAAAAAAAAAAAAAAAA',protocol:'sejire/v0.3'}));
  const expected={archiveBytes:bytes.length,archiveDigest:await sha256(bytes),vaultId:P.vaultId};
  const tampered=bytes.slice();tampered[tampered.length-1]^=1;
- let mode:'unavailable'|'tampered'|'good'='unavailable',redirects=0,retrievals=0;
+ let mode:'unavailable'|'tampered'|'good'='unavailable',redirects=0,retrievals=0,renderedHits=0;
  const server=createServer((request,response)=>{
-  if(request.url===`/${arId}`){redirects++;response.writeHead(302,{Location:`/sandbox/${arId}`});response.end();return;}
-  if(request.url===`/sandbox/${arId}`){retrievals++;
+  if(request.url===`/${arId}`){renderedHits++;response.writeHead(503);response.end();return;}
+  if(request.url===`/raw/${arId}`){redirects++;response.writeHead(302,{Location:`/sandbox/raw/${arId}`});response.end();return;}
+  if(request.url===`/sandbox/raw/${arId}`){retrievals++;
    if(mode==='unavailable'){response.writeHead(503);response.end();return;}
    response.writeHead(200,{'Content-Type':'application/json'});response.end(Buffer.from(mode==='tampered'?tampered:bytes));return;}
   response.writeHead(404);response.end();
@@ -149,7 +150,28 @@ await test('gateway redirect retrieves exact archive before COMPLETE and keeps t
   assert.equal((await reconcileSave(d))?.state,'AR_PENDING_CONFIRMATION');assert.equal(c.session.lastError,'ar_retrieval_failed');
   mode='tampered';assert.equal((await reconcileSave(d))?.state,'AR_PENDING_CONFIRMATION');assert.equal(c.session.lastError,'retrieved_archive_mismatch');
   mode='good';assert.equal((await reconcileSave(d))?.state,'COMPLETE');
-  assert.equal(c.session.arTransactionId,arId);assert.equal(redirects,3);assert.equal(retrievals,3);
+  assert.equal(c.session.arTransactionId,arId);assert.equal(redirects,3);assert.equal(retrievals,3);assert.equal(renderedHits,0);
+  assert.equal(c.phantomCalls,0);assert.equal(c.wanderCalls,0);
+ }finally{await new Promise<void>((resolve,reject)=>server.close(error=>error?reject(error):resolve()));}
+});
+await test('raw gateway fallback verifies archive when rendered endpoint is unavailable',async()=>{
+ const {c,d}=harness();const arId='A'.repeat(43);c.session.state='AR_PENDING_CONFIRMATION';c.session.arTransactionId=arId;
+ const bytes=new TextEncoder().encode(JSON.stringify({schema:'sejire/envelope/v1',vault_id:P.vaultId,cipher:'aes-gcm-256',kdf:'hkdf-sha256',iv:'AAAAAAAAAAAAAAAA',ciphertext:'AAAAAAAAAAAAAAAAAAAAAAAA',protocol:'sejire/v0.3'}));
+ const expected={archiveBytes:bytes.length,archiveDigest:await sha256(bytes),vaultId:P.vaultId};
+ let renderedHits=0,failedRawHits=0,goodRawHits=0;
+ const server=createServer((request,response)=>{
+  if(request.url===`/primary/${arId}`||request.url===`/fallback/${arId}`){renderedHits++;response.writeHead(302,{Location:'/unavailable'});response.end();return;}
+  if(request.url===`/primary/raw/${arId}`){failedRawHits++;response.writeHead(503);response.end();return;}
+  if(request.url===`/fallback/raw/${arId}`){goodRawHits++;response.writeHead(200,{'Content-Type':'application/octet-stream'});response.end(Buffer.from(bytes));return;}
+  response.writeHead(404);response.end();
+ });
+ await new Promise<void>(resolve=>server.listen(0,'127.0.0.1',resolve));
+ try{
+  const address=server.address();if(!address||typeof address==='string')throw Error('test_server_address');
+  const base=`http://127.0.0.1:${address.port}`;
+  d.verifyAr=async(session)=>retrieveVerifiedArchive(session.arTransactionId!,[`${base}/primary`,`${base}/fallback`],expected);
+  assert.equal((await reconcileSave(d))?.state,'COMPLETE');
+  assert.equal(c.session.arTransactionId,arId);assert.equal(renderedHits,0);assert.equal(failedRawHits,1);assert.equal(goodRawHits,1);
   assert.equal(c.phantomCalls,0);assert.equal(c.wanderCalls,0);
  }finally{await new Promise<void>((resolve,reject)=>server.close(error=>error?reject(error):resolve()));}
 });
