@@ -45,7 +45,12 @@ export async function updateSession(id: string, update: (s: SaveSession) => Save
         if (next.saveId !== old.saveId || next.schema !== old.schema || next.archiveDigest !== old.archiveDigest ||
             next.archiveText !== old.archiveText || next.payer !== old.payer || next.solanaReference !== old.solanaReference)
           throw Error('immutable_session_binding');
-        if (next.state !== old.state && !transitions[old.state].includes(next.state)) throw Error('invalid_state_transition');
+        const recoverSignedAr=old.state==='BLOCKED' && old.lastError==='signed_ar_transaction_mismatch' &&
+          next.state==='AR_SIGNED' && Boolean(old.arSignedTransaction) && Boolean(old.arTransactionId) &&
+          next.arTransactionId===old.arTransactionId && next.arRewardWinston===old.arRewardWinston &&
+          JSON.stringify(next.arSignedTransaction)===JSON.stringify(old.arSignedTransaction);
+        if (next.state !== old.state && !transitions[old.state].includes(next.state) && !recoverSignedAr)
+          throw Error('invalid_state_transition');
         next.revision = old.revision + 1; next.updatedAt = Date.now();
         table.put(next);
       } catch (error) { tx.abort(); reject(error); }
