@@ -4,7 +4,7 @@ import bs58 from 'bs58';
 import type { Config, MessageWallet } from './config';
 import type { NativeJob } from './jobs';
 import { validateJob, readyForOrder } from './jobs';
-import { onRpc, rpc } from './rpc';
+import { findPaymentByReference, onRpc, rpc } from './rpc';
 import { cachedJobs, saveJob } from './cache';
 export type NativeSolWallet = MessageWallet & { connect():Promise<unknown>; signTransaction(tx:Transaction):Promise<Transaction> };
 async function walletDeadline<T>(promise:Promise<T>,code:string):Promise<T>{let timer:ReturnType<typeof setTimeout>|undefined;try{return await Promise.race([promise,new Promise<never>((_,reject)=>{timer=setTimeout(()=>reject(Error(code)),60000);})]);}finally{if(timer)clearTimeout(timer);}}
@@ -80,6 +80,21 @@ function validatePaymentTemplate(tx:Transaction,job:NativeJob) {
  const ix=tx.instructions[i],part=expected[i];
  if(ix.programId.toBase58()!=='11111111111111111111111111111111'||ix.data.length!==12||ix.data.readUInt32LE(0)!==2||ix.data.readBigUInt64LE(4).toString()!==part.amount||ix.keys.length!==3||ix.keys[0].pubkey.toBase58()!==job.order.payer||!ix.keys[0].isSigner||!ix.keys[0].isWritable||ix.keys[1].pubkey.toBase58()!==part.recipient||ix.keys[1].isSigner||!ix.keys[1].isWritable||ix.keys[2].pubkey.toBase58()!==job.order.reference||ix.keys[2].isSigner||ix.keys[2].isWritable)throw Error('signed_payment_template_mismatch');
  }
+}
+
+export type UnknownPaymentResolution={state:'found';signature:string}|{state:'expired_unexecuted'}|{state:'unknown'};
+/** DEVNET-only escape hatch for a wallet request that never returned signed bytes.
+ * It never assumes absence from one read means no payment: the reference must have no finalized candidate,
+ * no confirmed signature may exist, and the original blockhash must already be expired. */
+export async function resolveUnknownPaymentAttempt(c:Config,job:NativeJob):Promise<UnknownPaymentResolution> {
+ await validateJob(job,c);
+ const known=job.paymentSignature??job.reconciledSignature;if(known)return {state:'found',signature:known};
+ if(c.environment!=='devnet'||job.order.network!=='devnet'||!job.signingStarted||job.signedPayment||!job.attempt||!['wallet_pending','signature_unknown'].includes(job.attempt.phase))return {state:'unknown'};
+ const found=await findPaymentByReference(c,job.order);if(found.signature){job.reconciledSignature=found.signature;await saveJob(job);return {state:'found',signature:found.signature};}
+ if(found.pageComplete!==true)return {state:'unknown'};
+ const safe=await onRpc(c,async url=>{const confirmed=await rpc<{signature:string}[]>(url,'getSignaturesForAddress',[job.order.reference,{commitment:'confirmed',limit:1}]);if(!Array.isArray(confirmed))throw Error('missing_metadata');if(confirmed.length)return false;const height=await rpc<number>(url,'getBlockHeight',[{commitment:'finalized'}]);if(!Number.isSafeInteger(height))throw Error('missing_metadata');return height>job.attempt!.lastValidBlockHeight;});
+ if(!safe)return {state:'unknown'};
+ job.attempt.phase='expired_unexecuted';job.attempt.error='wallet_response_missing_blockhash_expired';job.signingStarted=false;await saveJob(job,false,true);return {state:'expired_unexecuted'};
 }
 
 export function validateAttempt(job:NativeJob) {

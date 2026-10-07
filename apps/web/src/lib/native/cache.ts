@@ -8,11 +8,12 @@ export async function writeCacheEntries(entries:[string,unknown][]) {const d=awa
 export async function writeCache(key:string,value:unknown) {await writeCacheEntries([[key,value]]);}
 export const cachedChain=()=>readCache<ConfigChain>('chain');
 export const cachedJobs=async()=>await readCache<NativeJob[]>('jobs')??[];
-export async function saveJob(job:NativeJob,walletRejected=false) {
+export async function saveJob(job:NativeJob,walletRejected=false,expiredUnexecuted=false) {
  if(!navigator.locks)throw Error('exclusive_browser_lock_unavailable');
  await navigator.locks.request('sejire-native-jobs',async()=>{
  const jobs=await cachedJobs(),old=jobs.find(j=>j.order.id===job.order.id);
- if(old?.signingStarted&&!job.signingStarted&&!walletRejected)throw Error('unknown_attempt_cannot_be_cleared');
+ const safeExpiredReset=Boolean(expiredUnexecuted&&job.order.network==='devnet'&&old?.signingStarted===true&&job.signingStarted===false&&old.attempt&&job.attempt&&old.attempt.id===job.attempt.id&&old.attempt.blockhash===job.attempt.blockhash&&old.attempt.lastValidBlockHeight===job.attempt.lastValidBlockHeight&&['wallet_pending','signature_unknown'].includes(old.attempt.phase)&&job.attempt.phase==='expired_unexecuted'&&!job.paymentSignature&&!job.reconciledSignature&&!job.signedPayment);
+ if(old?.signingStarted&&!job.signingStarted&&!walletRejected&&!safeExpiredReset)throw Error('unknown_attempt_cannot_be_cleared');
  if(old&&(canonical(old.order)!==canonical(job.order)||old.configHash!==job.configHash||old.paymentSignature&&old.paymentSignature!==job.paymentSignature||old.reconciledSignature&&old.reconciledSignature!==job.reconciledSignature||old.arPlan&&old.arPlan.id!==job.arPlan?.id))throw Error('immutable_operation_conflict');
  if((job.paymentSignature||job.reconciledSignature)&&jobs.some(j=>j.order.id!==job.order.id&&(j.paymentSignature??j.reconciledSignature)===(job.paymentSignature??job.reconciledSignature)))throw Error('transaction_reuse');
  await writeCache('jobs',[...jobs.filter(j=>j.order.id!==job.order.id),structuredClone(job)]);
