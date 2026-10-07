@@ -45,8 +45,8 @@ try{
     assert.equal(await page.getByRole('button',{name:'Начать новый тест'}).count(),0);
     await page.screenshot({path:`.pages-evidence/v2-save-${i}.png`,fullPage:true});
 
-    response=await page.goto(base+'#/admin',{waitUntil:'networkidle'});
-    assert.equal(response.status(),200);
+    await page.goto(base+'#/admin',{waitUntil:'networkidle'});
+    assert.equal(new URL(page.url()).hash,'#/admin');
     await page.getByRole('heading',{name:'Диагностика сохранения V2',exact:true}).waitFor();
     assert(await page.getByText('Сохранение V2 на этом устройстве не найдено.',{exact:true}).isVisible());
     assert.equal(await page.getByRole('button').count(),1);
