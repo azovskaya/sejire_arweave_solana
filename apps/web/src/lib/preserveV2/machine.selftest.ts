@@ -85,7 +85,7 @@ await test('M Wander rejection leaves no signed plan and permits retry',async()=
  c.rejectWander=false;assert.equal((await saveToArweave('1000',d)).state,'AR_PENDING_CONFIRMATION');assert.equal(c.wanderCalls,2);});
 await test('quote movement before Wander signature permits safe re-quote',async()=>{const {c,d}=harness();c.session.state='AR_READY';
  d.signAr=async()=>{throw Error('ar_quote_changed');};assert.equal((await saveToArweave('1000',d)).state,'AR_READY');
- assert.equal(c.session.arSigningStarted,undefined);assert.equal(c.wanderCalls,0);});
+ assert.equal(c.session.arSigningStarted,false);assert.equal(c.wanderCalls,0);});
 await test('lost Wander response before persistence permits same-session retry',async()=>{const {c,d}=harness();c.session.state='AR_READY';
  d.signAr=async(_s,_w,_r,beforeSign)=>{await beforeSign?.();c.wanderCalls++;throw Error('synthetic lost response');};
  assert.equal((await saveToArweave('1000',d)).state,'AR_READY');assert.equal(c.session.arSignedTransaction,undefined);

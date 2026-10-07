@@ -53,14 +53,14 @@ export function PreservationV2({envelope,treeName,onBack,onBusy}: Props) {
   },[session?.state,session?.arSigningStarted]);
 
   useEffect(()=>{
-    if(session?.state!=='SOLANA_PAID'&&session?.state!=='AR_READY')return;
+    if(busy || (session?.state!=='SOLANA_PAID'&&session?.state!=='AR_READY'))return;
     if(session.arSigningStarted || (session.state==='AR_READY'&&reward))return;
     let active=true;
     void prepareArweave().then(({session:next,reward:price})=>{
       if(active){setSession(next);setReward(price);setError('');}
     }).catch(e=>{if(active)setError(message(e));});
     return()=>{active=false;};
-  },[session?.state,reward]);
+  },[session?.state,reward,busy]);
 
   async function run(action:()=>Promise<SaveSession | void>) {
     if(running.current) return;
