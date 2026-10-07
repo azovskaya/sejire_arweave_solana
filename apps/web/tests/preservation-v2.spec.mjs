@@ -21,3 +21,11 @@ test('wrong file is rejected before either wallet',async({page})=>{
   await expect(page.getByRole('alert')).toContainText('Файл архива не совпадает');
   await expect(page.getByRole('button',{name:'Оплатить 0.03 SOL'})).toHaveCount(0);
 });
+
+test('V2 diagnostics are read-only and do not expose the legacy operator',async({page})=>{
+  await page.goto('/#/admin');
+  await expect(page.getByRole('heading',{name:'Диагностика сохранения V2'})).toBeVisible();
+  await expect(page.getByRole('button',{name:'На главную'})).toBeVisible();
+  await expect(page.getByRole('button')).toHaveCount(1);
+  await expect(page.getByText('Сохранение V2 на этом устройстве не найдено.')).toBeVisible();
+});

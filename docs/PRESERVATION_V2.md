@@ -11,7 +11,7 @@ Branch: `feat/preservation-v2-simple`. The V2 user path is enabled in the native
 5. `AR_READY → AR_SIGNED → AR_UPLOADING → AR_PENDING_CONFIRMATION → COMPLETE`: after finalized SOL, quote Arweave Mainnet and check the exact reserve, 28,365 byte archive, SHA and 4,000,000,000 winston ceiling. Show exact current reward before Wander. Persist exact signed transaction and ID before upload. On timeout/reload only those signed bytes are resumed; a lost signing response without persisted bytes blocks re-signing.
 6. After upload, require confirmed inclusion, retrieve the encrypted payload from a public gateway, compare size and SHA-256 and parse the envelope with the expected vault ID. Only then show Complete. Recovery words are entered locally on the separate restore screen after completion.
 
-The UI shows only Payment, Preservation and Complete. It never requests wallet seed phrases, wallet private keys or SEJIRE words during payment/upload. This pilot is bound to the one archive, payer and reserve approved by the owner. No real SOL/AR action is part of automated tests or CI.
+The UI shows only Payment, Preservation and Complete. `#/admin` in the V2 build is read-only public metadata, with no legacy operator actions or archive bytes. It never requests wallet seed phrases, wallet private keys or SEJIRE words during payment/upload. This pilot is bound to the one archive, payer and reserve approved by the owner. No real SOL/AR action is part of automated tests or CI.
 
 ## Verification and limitations
 
