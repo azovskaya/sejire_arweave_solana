@@ -82,6 +82,15 @@ export async function reconcileSave(d: MachineServices = productionServices): Pr
     if (!session) return undefined;
     await d.archive(session.archiveText);
     if (session.state === 'SOLANA_PENDING') session = await checkSolana(session,d);
+    if (session.state === 'BLOCKED' && session.lastError==='signed_ar_transaction_mismatch' &&
+        session.arSignedTransaction && session.arTransactionId && session.arRewardWinston) {
+      try {
+        await d.validateAr(session);
+        session = await d.update(id, old => ({...old,state:'AR_SIGNED',lastError:undefined}));
+      } catch {
+        return session;
+      }
+    }
     if (session.state === 'AR_READY' && session.arSigningStarted && !session.arSignedTransaction)
       session = await d.update(id, old => ({...old, arSigningStarted:false, lastError:'wander_response_lost_before_upload'}));
     if (session.state === 'AR_SIGNED' || session.state === 'AR_UPLOADING') {
