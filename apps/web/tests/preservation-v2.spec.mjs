@@ -145,6 +145,24 @@ test('lost Wander response before persistence allows a safe same-session retry',
   expect((await saved(page)).saveId).toBe(before.saveId);expect(await count(page,'phantomCalls')).toBe(1);
 });
 
+test('published fix recovers an already-signed Wander transaction without another signature',async({page})=>{
+  await start(page);await payOnce(page);
+  await page.evaluate(async()=>{
+    const policy=await import('/src/lib/preserveV2/policy.ts');
+    const store=await import('/src/lib/preserveV2/store.ts');
+    const id=await policy.saveId();
+    await store.updateSession(id,s=>({...s,state:'BLOCKED',lastError:'signed_ar_transaction_mismatch',
+      arSigningStarted:true,arTransactionId:'A'.repeat(43),arRewardWinston:'1000',
+      arSignedTransaction:{format:2,id:'A'.repeat(43),synthetic:true}}));
+  });
+  await page.reload();
+  await expect(page.getByText('✓ Оплата подтверждена')).toBeVisible();
+  await expect(page.getByText('✓ Семейная история сохранена навсегда')).toBeVisible();
+  expect(await count(page,'wanderSigns')).toBe(0);
+  expect(await count(page,'uploads')).toBe(1);
+  expect((await saved(page)).state).toBe('COMPLETE');
+});
+
 test('Wander timeout resets signing flag and retries before any upload',async({page})=>{
   await start(page);await payOnce(page);await set(page,'walletTimeoutMs','25');await page.reload();
   await set(page,'wanderLost','1');await signOnce(page);
