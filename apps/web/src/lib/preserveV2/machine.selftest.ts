@@ -34,7 +34,7 @@ function harness(change:Partial<Control>={}) {
   discover:async()=>{if(c.rpcTimeout)throw Error('synthetic RPC timeout');return {signature:c.sent?signature:undefined,absent:Boolean(!c.sent&&c.expired)};},
   verifySolana:async(_session,sig)=>{assert.equal(sig,signature);},
   wander:()=>arWallet, quoteAr:async()=>({reward:'1000',balance:'2000'}),
-  signAr:async()=>{c.wanderCalls++;if(c.rejectWander)throw {code:4001};return {id:'A'.repeat(43),reward:'1000',signed:{format:2} as never};},
+  signAr:async(_session,_wallet,_reward,beforeSign)=>{await beforeSign?.();c.wanderCalls++;if(c.rejectWander)throw {code:4001};return {id:'A'.repeat(43),reward:'1000',signed:{format:2} as never};},
   validateAr:async()=>{assert(c.session.arSignedTransaction);return {} as never;},
   uploadAr:async(_session,persist)=>{c.uploadCalls++;c.signedBeforeUpload=Boolean(c.session.arSignedTransaction);
     await persist(undefined);if(c.uploadTimeout)throw Error('synthetic upload timeout');},
@@ -75,6 +75,9 @@ await test('L reload COMPLETE and BLOCKED cannot start a new payment',async()=>{
 await test('M Wander rejection leaves no signed plan and permits retry',async()=>{const {c,d}=harness({rejectWander:true});c.session.state='AR_READY';
  assert.equal((await saveToArweave('1000',d)).state,'AR_READY');assert.equal(c.session.arTransactionId,undefined);
  c.rejectWander=false;assert.equal((await saveToArweave('1000',d)).state,'AR_PENDING_CONFIRMATION');assert.equal(c.wanderCalls,2);});
+await test('quote movement before Wander signature permits safe re-quote',async()=>{const {c,d}=harness();c.session.state='AR_READY';
+ d.signAr=async()=>{throw Error('ar_quote_changed');};assert.equal((await saveToArweave('1000',d)).state,'AR_READY');
+ assert.equal(c.session.arSigningStarted,undefined);assert.equal(c.wanderCalls,0);});
 await test('N signed transaction survives reload before upload',async()=>{const {c,d}=harness({uploadTimeout:true});c.session.state='AR_READY';
  assert.equal((await saveToArweave('1000',d)).state,'AR_UPLOADING');const arId=c.session.arTransactionId;c.uploadTimeout=false;
  assert.equal((await reconcileSave(d))?.state,'COMPLETE');assert.equal(c.session.arTransactionId,arId);assert.equal(c.wanderCalls,1);});

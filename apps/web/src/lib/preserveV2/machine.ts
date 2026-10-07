@@ -148,14 +148,16 @@ export async function saveToArweave(expectedReward: string,d: MachineServices = 
     await d.archive(session.archiveText);
     const wallet = d.wander();
     if (await wallet.getActiveAddress() !== P.arReserve) throw Error('wrong_wander_address');
-    // This durable flag prevents a second signature if the browser loses the wallet response.
-    session = await d.update(id, old => ({...old, arSigningStarted:true}));
     try {
-      const signed = await d.signAr(session, wallet, expectedReward);
+      const signed = await d.signAr(session, wallet, expectedReward, async()=>{
+        // Durably mark the precise signing boundary after all quote/preflight checks.
+        session = await d.update(id, old => ({...old, arSigningStarted:true}));
+      });
       session = await d.update(id, old => ({...old, state:'AR_SIGNED',
         arTransactionId:signed.id, arSignedTransaction:signed.signed, arRewardWinston:signed.reward}));
     } catch (error) {
       if (isUserRejection(error)) return d.update(id, old => ({...old, arSigningStarted:false, lastError:'wander_rejected'}));
+      if (!(await d.read(id))?.arSigningStarted) return d.update(id, old => ({...old, lastError:errorCode(error)}));
       return d.update(id, old => ({...old, state:'BLOCKED', lastError:errorCode(error)}));
     }
     try { await d.validateAr(session); }
