@@ -4,7 +4,7 @@ import 'fake-indexeddb/auto';
 import bs58 from 'bs58';
 import { ComputeBudgetProgram, PublicKey, SystemProgram } from '@solana/web3.js';
 import { PRESERVATION_V2_PILOT_POLICY as P, saveId, sha256 } from './policy';
-import { assertArQuote } from './arweave';
+import { assertArQuote, assertSignedArTags } from './arweave';
 import { buildPayment, discoverPayment, isUserRejection, SOLANA_RPC_URLS, type SolanaReader } from './solana';
 import { verifyPayment, verifyRetrievedArchive } from './verify';
 import { readSession, updateSession, withSessionLock } from './store';
@@ -69,6 +69,18 @@ await test('live blockhash blocks a second payment',async()=>assert.equal((await
 await test('pruned history blocks a second payment',()=>assert.rejects(()=>discoverPayment(sample,[reader(tx(),[],101,51),reader()])));
 await test('conflicting reference signatures block a second payment',()=>assert.rejects(()=>discoverPayment(sample,[reader(tx(),[{signature:'one',err:null}]),reader(tx(),[{signature:'two',err:null}])])));
 await test('only explicit wallet rejection enables safe retry',()=>{assert(isUserRejection({code:4001}));assert(!isUserRejection(Error('timeout')));});
+await test('Wander signing metadata is accepted without weakening SEJIRE tag binding',()=>{
+ const tags=[
+  {name:'App-Name',value:'SEJIRE'},
+  {name:'Type',value:'vault-envelope'},
+  {name:'Save-Id',value:id},
+  {name:'Signing-Client',value:'Wander'},
+  {name:'Signing-Client-Version',value:'1.2.3'},
+ ];
+ assert.doesNotThrow(()=>assertSignedArTags(tags,id));
+ assert.throws(()=>assertSignedArTags([...tags,{name:'Unexpected',value:'x'}],id));
+ assert.throws(()=>assertSignedArTags(tags.map(t=>t.name==='Save-Id'?{...t,value:'other'}:t),id));
+});
 await test('Arweave exact quote and balance accepted',()=>assertArQuote(P.arReserve,P.archiveBytes,'4000000000','4000000000'));
 await test('Arweave quote above cap rejected',()=>assert.throws(()=>assertArQuote(P.arReserve,P.archiveBytes,'4000000001','5000000000')));
 await test('wrong Wander address rejected before signing',()=>assert.throws(()=>assertArQuote('A'.repeat(43),P.archiveBytes,'1','1')));
