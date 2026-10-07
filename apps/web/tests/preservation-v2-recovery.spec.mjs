@@ -16,7 +16,7 @@ async function cleanRecovery(browser,preparer,mode='success') {
     archiveDigest:sha(mode==='wrong-vault'?raw:original),archiveBytes:Buffer.byteLength(mode==='wrong-vault'?raw:original),
     payer:PAYER,txId:TX_ID};
   const saveId=sha(['sejire-preservation-v2',pilot.version,pilot.vaultId,pilot.archiveDigest,pilot.payer].join('\0'));
-  const context=await browser.newContext();
+  const context=await browser.newContext({locale:'ru-RU'});
   expect((await context.storageState()).origins).toEqual([]);
   const fresh=await context.newPage();
   const counts={vaultQueries:0,saveQueries:0,idQueries:0,rawPrimary:0,rawFallback:0,rendered:0,writes:0};
