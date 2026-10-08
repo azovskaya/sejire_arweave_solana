@@ -4,23 +4,24 @@ import {firstUsable,timedFetch} from './gateways';
 import {gatewayHost} from './diagnostics';
 import type {GatewayPool,HeadCandidate,RecoveryContext,SafeRecoveryDiagnostics} from './types';
 
-export type TxMetadata={tags:{name:string;value:string}[];blockHeight:number|null;blockTimestamp:number|null};
+export type TxMetadata={id:string;tags:{name:string;value:string}[];blockHeight:number|null;blockTimestamp:number|null};
 function decodeBase64Url(value:string):string {
   const base=value.replace(/-/g,'+').replace(/_/g,'/');
   return new TextDecoder('utf-8',{fatal:true}).decode(Uint8Array.from(atob(base.padEnd(Math.ceil(base.length/4)*4,'=')),c=>c.charCodeAt(0)));
 }
 function parseMetadata(raw:unknown):TxMetadata {
   if(!raw||typeof raw!=='object')throw Error('bad_metadata');
-  const tx=raw as {tags?:{name:string;value:string}[];block?:{height?:number;timestamp?:number};blockHeight?:number;blockTimestamp?:number};
-  if(!Array.isArray(tx.tags)||tx.tags.length>40)throw Error('bad_metadata');
+  const tx=raw as {id?:string;tags?:{name:string;value:string}[];block?:{height?:number;timestamp?:number};blockHeight?:number;blockTimestamp?:number};
+  if(!tx.id||!/^[A-Za-z0-9_-]{43}$/.test(tx.id)||!Array.isArray(tx.tags)||tx.tags.length>40)throw Error('bad_metadata');
   const tags=tx.tags.map(tag=>({name:decodeBase64Url(tag.name),value:decodeBase64Url(tag.value)}));
-  return {tags,blockHeight:tx.block?.height??tx.blockHeight??null,blockTimestamp:tx.block?.timestamp??tx.blockTimestamp??null};
+  return {id:tx.id,tags,blockHeight:tx.block?.height??tx.blockHeight??null,blockTimestamp:tx.block?.timestamp??tx.blockTimestamp??null};
 }
 export function tagValue(meta:TxMetadata,name:string):string|null {
   const matches=meta.tags.filter(tag=>tag.name===name);if(matches.length>1)throw new RecoveryFailure('METADATA_MISMATCH');
   return matches[0]?.value??null;
 }
 export function validateMetadata(meta:TxMetadata,candidate:HeadCandidate,vaultId:string):void {
+  if(meta.id!==candidate.txId)throw new RecoveryFailure('METADATA_MISMATCH');
   if(tagValue(meta,'App-Name')!=='SEJIRE'||tagValue(meta,'Type')!=='vault-envelope')throw new RecoveryFailure('METADATA_MISMATCH');
   const taggedVault=tagValue(meta,'Vault-Id');
   if(taggedVault!==null&&taggedVault!==vaultId)throw new RecoveryFailure('VAULT_ID_MISMATCH');
