@@ -28,7 +28,7 @@
     "test:protocol": "tsx src/lib/ao/protocol.selftest.ts",
     "test:i18n": "tsx src/lib/i18n/i18n.selftest.ts",
     "test:opsDesk": "tsx src/lib/opsDesk/store.selftest.ts",
-    "test": "npm run test:engine && npm run test:crypto && npm run test:kinship && npm run test:pedigree && npm run test:lineage && npm run test:thirteen && npm run test:dates && npm run test:json && npm run test:zhuz && npm run test:sponsor && npm run test:loadVault && npm run test:mirror && npm run test:lastScreen && npm run test:fetch && npm run test:gateways && npm run test:storage && npm run test:archive && npm run test:protocol && npm run test:i18n && npm run test:opsDesk && npm run test:solana && npm run test:native && npm run test:v2",
+    "test": "npm run test:engine && npm run test:crypto && npm run test:kinship && npm run test:pedigree && npm run test:lineage && npm run test:thirteen && npm run test:dates && npm run test:json && npm run test:zhuz && npm run test:sponsor && npm run test:loadVault && npm run test:mirror && npm run test:lastScreen && npm run test:fetch && npm run test:gateways && npm run test:storage && npm run test:archive && npm run test:protocol && npm run test:i18n && npm run test:opsDesk && npm run test:solana && npm run test:native && npm run test:v2 && npm run test:recovery",
     "test:v2": "tsx src/lib/preserveV2/v2.selftest.ts && tsx src/lib/preserveV2/machine.selftest.ts",
     "test:v2-browser": "playwright test --config playwright.v2.config.ts",
     "test:v2-recovery-browser": "playwright test --config playwright.v2-recovery.config.ts",
@@ -38,7 +38,8 @@
     "test:native": "tsx src/lib/native/native.selftest.ts",
     "test:native-browser": "playwright test --config playwright.native.config.ts",
     "test:native-pilot-browser": "playwright test --config playwright.pilot.config.ts",
-    "test:native-journey": "playwright test --config playwright.journey.config.ts"
+    "test:native-journey": "playwright test --config playwright.journey.config.ts",
+    "test:recovery": "tsx src/lib/recovery/recovery.selftest.ts"
   },
   "dependencies": {
     "@ardrive/turbo-sdk": "2.1.0",

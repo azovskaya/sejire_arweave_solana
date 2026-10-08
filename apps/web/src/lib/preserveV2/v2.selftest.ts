@@ -76,14 +76,16 @@ await test('Wander signing metadata is accepted without weakening SEJIRE tag bin
   {name:'Signing-Client-Version',value:'1.2.3'},
  ];
  assert.equal(tags.find(t=>t.name==='Vault-Id')?.value,sample.vaultId);
- assert.doesNotThrow(()=>assertSignedArTags(tags,id,sample.vaultId));
- assert.throws(()=>assertSignedArTags([...tags,{name:'Unexpected',value:'x'}],id,sample.vaultId));
- assert.throws(()=>assertSignedArTags(tags.map(t=>t.name==='Save-Id'?{...t,value:'other'}:t),id,sample.vaultId));
- assert.throws(()=>assertSignedArTags(tags.map(t=>t.name==='Vault-Id'?{...t,value:'0'.repeat(32)}:t),id,sample.vaultId));
- assert.throws(()=>assertSignedArTags(tags.filter(t=>t.name!=='Vault-Id'),id,sample.vaultId));
- const legacy=tags.filter(t=>t.name!=='Vault-Id');
- assert.doesNotThrow(()=>assertSignedArTags(legacy,id,sample.vaultId,true));
- assert.throws(()=>assertSignedArTags(legacy.map(t=>t.name==='Save-Id'?{...t,value:'other'}:t),id,sample.vaultId,true));
+ assert.doesNotThrow(()=>assertSignedArTags(tags,sample));
+ assert.throws(()=>assertSignedArTags([...tags,{name:'Unexpected',value:'x'}],sample));
+ assert.throws(()=>assertSignedArTags(tags.map(t=>t.name==='Save-Id'?{...t,value:'other'}:t),sample));
+ for(const name of ['Vault-Id','Archive-SHA256','Archive-Bytes','Schema','Protocol-Version']){
+   assert.throws(()=>assertSignedArTags(tags.map(t=>t.name===name?{...t,value:'wrong'}:t),sample));
+   assert.throws(()=>assertSignedArTags(tags.filter(t=>t.name!==name),sample));
+ }
+ const legacy=tags.filter(t=>!['Vault-Id','Archive-SHA256','Archive-Bytes','Schema','Protocol-Version'].includes(t.name));
+ assert.doesNotThrow(()=>assertSignedArTags(legacy,sample,true));
+ assert.throws(()=>assertSignedArTags(legacy.map(t=>t.name==='Save-Id'?{...t,value:'other'}:t),sample,true));
 });
 await test('Arweave exact quote and balance accepted',()=>assertArQuote(P.arReserve,P.archiveBytes,'4000000000','4000000000'));
 await test('Arweave quote above cap rejected',()=>assert.throws(()=>assertArQuote(P.arReserve,P.archiveBytes,'4000000001','5000000000')));

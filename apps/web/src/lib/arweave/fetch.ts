@@ -1,7 +1,5 @@
 import type { EnvelopeV1 } from "../crypto/encrypt";
-import { PRESERVATION_V2_PILOT_POLICY as P, saveIdForPolicy } from "../preserveV2/policy";
-import { LEGACY_V2_PILOT_TX_ID } from "../preserveV2/legacyPilot";
-import { fetchTxJson, GatewayUnavailableError, graphqlQuery, RawEnvelopeMismatchError } from "./gateways";
+import { fetchTxJson, GatewayUnavailableError, graphqlQuery } from "./gateways";
 
 export { GatewayUnavailableError, isGatewayUnavailable } from "./gateways";
 
@@ -45,60 +43,8 @@ export async function fetchEnvelopeByTx(txId: string): Promise<EnvelopeV1 | null
   return fetchTxJson(txId);
 }
 
-type PilotBinding = {version:string;vaultId:string;archiveDigest:string;archiveBytes:number;payer:string;txId:string};
-function pilotBinding(): PilotBinding {
-  if (import.meta.env?.VITE_PRESERVATION_V2_TEST === '1' && typeof window !== 'undefined') {
-    const fixture=(window as Window & {__SEJIRE_V2_RECOVERY_TEST_PILOT__?:PilotBinding}).__SEJIRE_V2_RECOVERY_TEST_PILOT__;
-    if (fixture) return fixture;
-  }
-  return {...P,txId:LEGACY_V2_PILOT_TX_ID};
-}
-
-function exactTag(tags:GqlTag[]|undefined,name:string,value:string):boolean {
-  return tags?.filter(tag=>tag.name===name).length===1 && tagValue(tags,name)===value;
-}
-
-async function legacyPilotVersions(vaultId:string):Promise<VaultVersionMeta[]> {
-  const pilot=pilotBinding();
-  if (vaultId!==pilot.vaultId) return [];
-  const saveId=await saveIdForPolicy(pilot);
-  const fields='edges { node { id block { timestamp height } tags { name value } } }';
-  const bySaveId=`query ($saveId: String!) { transactions(first: 10, tags: [
-    {name:"App-Name",values:["SEJIRE"]}, {name:"Type",values:["vault-envelope"]},
-    {name:"Save-Id",values:[$saveId]}], sort: HEIGHT_DESC) { ${fields} } }`;
-  const indexed=await graphqlQuery<{transactions?:{edges:GqlEdge[]}}>(bySaveId,{saveId});
-  if (!Array.isArray(indexed.transactions?.edges)) throw new GatewayUnavailableError();
-  let edges=indexed.transactions.edges;
-  // The pilot TX is confirmed but public tag indexes can lag. Its ID is only a hint:
-  // the returned tags, raw bytes, SHA-256 and vault ID still have to match.
-  if (edges.length===0) {
-    const byId=`query ($ids: [ID!]!) { transactions(ids:$ids) { ${fields} } }`;
-    const direct=await graphqlQuery<{transactions?:{edges:GqlEdge[]}}>(byId,{ids:[pilot.txId]});
-    if (!Array.isArray(direct.transactions?.edges)) throw new GatewayUnavailableError();
-    edges=direct.transactions.edges;
-  }
-  const candidates=edges.filter(edge=>
-    /^[A-Za-z0-9_-]{43}$/.test(edge.node.id) && edge.node.block &&
-    exactTag(edge.node.tags,'App-Name','SEJIRE') &&
-    exactTag(edge.node.tags,'Type','vault-envelope') &&
-    exactTag(edge.node.tags,'Save-Id',saveId) &&
-    !edge.node.tags?.some(tag=>tag.name==='Vault-Id'));
-  const verified:VaultVersionMeta[]=[];
-  for (const edge of candidates) {
-    const envelope=await fetchTxJson(edge.node.id,{bytes:pilot.archiveBytes,sha256:pilot.archiveDigest});
-    if (!envelope) throw new GatewayUnavailableError();
-    if (envelope.vault_id!==vaultId) throw new RawEnvelopeMismatchError();
-    verified.push(...mapVaultVersionEdges([edge]));
-  }
-  if (verified.length>1) throw new Error('ambiguous_legacy_pilot');
-  return verified;
-}
-
-/** Restore only: ordinary Vault-Id discovery, then the exact immutable V2 pilot. */
-export async function listRecoverableVaultVersions(vaultId:string,opts?:{limit?:number}):Promise<VaultVersionMeta[]> {
-  const versions=await listVaultVersions(vaultId,opts);
-  return versions.length?versions:legacyPilotVersions(vaultId);
-}
+/** Compatibility alias for ordinary Vault-Id discovery. */
+export const listRecoverableVaultVersions = listVaultVersions;
 
 /**
  * List SEJIRE vault envelopes for vaultId (newest first).

@@ -58,7 +58,7 @@ const originalFetchForTags = globalThis.fetch;
 try {
   const { listRecoverableVaultVersions } = await import('./fetch');
   const { preservationV2Tags } = await import('../preserveV2/arweave');
-  const vaultId='b'.repeat(32), tags=preservationV2Tags({saveId:'future-save',vaultId});
+  const vaultId='b'.repeat(32), tags=preservationV2Tags({saveId:'future-save',vaultId,archiveDigest:'a'.repeat(64),archiveBytes:100});
   let queries=0;
   globalThis.fetch=async (_input,init)=>{
     queries++;

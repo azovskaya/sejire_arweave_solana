@@ -59,6 +59,9 @@ export async function publishEnvelope(
         tx.addTag("Type", "vault-envelope");
         tx.addTag("Vault-Id", envelope.vault_id);
         tx.addTag("Schema", envelope.schema);
+        tx.addTag("Protocol-Version", envelope.protocol);
+        tx.addTag("Archive-Bytes", String(new TextEncoder().encode(data).length));
+        tx.addTag("Archive-SHA256", [...new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(data)))].map(byte=>byte.toString(16).padStart(2,'0')).join(''));
         tx.addTag("Updated-At", opts?.updatedAt ?? new Date().toISOString());
         if (opts?.parentTxId) {
           tx.addTag("Parent-Tx", opts.parentTxId);

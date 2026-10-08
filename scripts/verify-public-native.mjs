@@ -56,6 +56,11 @@ try{
     assert.equal(new URL(page.url()).hash,'#/admin');
     await page.getByRole('heading',{name:'Диагностика сохранения V2',exact:true}).waitFor();
     await page.screenshot({path:`.pages-evidence/v2-admin-${i}.png`,fullPage:true});
+    await page.goto(base+'#/restore?diagnostics=1',{waitUntil:'networkidle'});
+    await page.getByRole('textbox',{name:'12 слов восстановления SEJIRE'}).waitFor();
+    assert(await page.getByRole('button',{name:'Открыть',exact:true}).isVisible());
+    assert.equal(await page.getByRole('button',{name:'Оплатить 0.03 SOL'}).count(),0);
+    await page.screenshot({path:`.pages-evidence/recovery-${i}.png`,fullPage:true});
     await context.close();
   }
   assert.deepEqual(local,[],'Requests to owner computer');
@@ -63,6 +68,6 @@ try{
   assert.deepEqual(failed,[],'Failed public resources');
   assert.deepEqual(errors,[],'Browser errors');
   writeFileSync('.pages-evidence/result.json',JSON.stringify({status:'PASS',base,sourceCommit:sha,cleanContexts:2,
-    routes:['#/save','#/admin'],errors,failed,local,forbidden,walletConnected:false},null,2));
-  console.log('PASS public V2 save and diagnostics in desktop and mobile browsers; no legacy UI or wallet actions.');
+    routes:['#/save','#/admin','#/restore?diagnostics=1'],errors,failed,local,forbidden,walletConnected:false},null,2));
+  console.log('PASS public V2 save, diagnostics and recovery entry in desktop and mobile browsers; no wallet actions.');
 }finally{await browser.close();}
