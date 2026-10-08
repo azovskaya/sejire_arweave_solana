@@ -18,7 +18,7 @@ const query=await provider.discover({...ctx,fetcher:async (_url,init)=>{
 }});
 assert.equal(query.status,'responded');assert.equal(query.candidates.length,1);
 assert.equal((await provider.discover({...ctx,fetcher:async()=>{throw Error('timeout');}})).status,'unavailable');
-const meta:TxMetadata={tags:[{name:'App-Name',value:'SEJIRE'},{name:'Type',value:'vault-envelope'},{name:'Vault-Id',value:vaultId},{name:'Archive-SHA256',value:'a'.repeat(64)},{name:'Archive-Bytes',value:'100'},{name:'Schema',value:'sejire/envelope/v1'}],blockHeight:42,blockTimestamp:123};
+const meta:TxMetadata={tags:[{name:'App-Name',value:'SEJIRE'},{name:'Type',value:'vault-envelope'},{name:'Vault-Id',value:vaultId},{name:'Archive-SHA256',value:'a'.repeat(64)},{name:'Archive-Bytes',value:'100'},{name:'Schema',value:'sejire/envelope/v1'},{name:'Protocol-Version',value:'sejire/v0.3'}],blockHeight:42,blockTimestamp:123};
 assert.doesNotThrow(()=>validateMetadata(meta,{txId:id,source:'test'},vaultId));
 assert.throws(()=>validateMetadata(meta,{txId:id,source:'test'},'b'.repeat(32)),(error:unknown)=>error instanceof RecoveryFailure&&error.code==='VAULT_ID_MISMATCH');
 assert.throws(()=>validateMetadata({...meta,tags:meta.tags.filter(t=>t.name!=='Vault-Id')},{txId:id,source:'test'},vaultId));
