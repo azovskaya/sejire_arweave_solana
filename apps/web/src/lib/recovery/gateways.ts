@@ -18,12 +18,13 @@ export async function timedFetch(fetcher:typeof fetch,url:string,init:RequestIni
 }
 export class WayfinderGatewayPool implements GatewayPool {
   private dynamic:string[]=[];
+  private discovered=false;
   private readonly preferred:string[];
   constructor(preferred:string[]=[]){this.preferred=preferred;}
   async candidates(ctx:RecoveryContext):Promise<GatewayTarget[]>{
     // Thin adapter for Wayfinder TrustedPeersGatewaysProvider. A peer list is a hint,
     // never a trust root. Limit peers and keep independent emergency gateways.
-    if(!this.dynamic.length){
+    if(!this.discovered){
       const peers=await Promise.allSettled(PEER_SEEDS.map(async base=>{
         const response=await timedFetch(ctx.fetcher,`${base}/ar-io/peers`,{},3500,ctx.signal);
         if(!response.ok)throw Error('peers_unavailable');
@@ -31,6 +32,7 @@ export class WayfinderGatewayPool implements GatewayPool {
         return Object.values(body.gateways??{}).map(peer=>safeUrl(peer.url??'')).filter((url):url is string=>url!==null).slice(0,15);
       }));
       this.dynamic=peers.flatMap(item=>item.status==='fulfilled'?item.value:[]);
+      this.discovered=true;
     }
     const ranked=[...new Set([...this.preferred,...health.keys(),...this.dynamic,...EMERGENCY].map(safeUrl).filter((url):url is string=>url!==null))];
     ranked.sort((a,b)=>{

@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import type { FormEvent } from "react";
 import { isValidMnemonic, normalizeMnemonic } from "../lib/crypto/bip39";
-import { deriveKeysFromMnemonic, fingerprintVaultId } from "../lib/crypto/keys";
+import { deriveKeysFromMnemonic } from "../lib/crypto/keys";
 import { parsePortableBackup, type PortableBackup } from "../lib/crypto/backup";
 import { readCache } from "../lib/native/cache";
 import { retrieveNativeReceipt } from "../lib/native/receipt";
@@ -262,7 +262,7 @@ export function RestoreSeed({ onRestored, onBack }: Props) {
         </button>
         <div className="panel" style={{ textAlign: "left", width: "100%" }}>
           <h2>{t.restore.pickTitle}</h2>
-          <p className="sub">{t.restore.pickHint(fingerprintVaultId(vaultId))}</p>
+          <p className="sub">Найдено несколько проверенных сохранений. Выберите нужную версию.</p>
           <ul className="vault-version-list">
             {picker.map((item) => {
               if (item.kind === "local") {
@@ -318,7 +318,7 @@ export function RestoreSeed({ onRestored, onBack }: Props) {
                         {openingId === item.version.txId ? "…" : ""}
                     </span>
                     <span className="vault-version-meta">
-                        {item.version.blockHeight??t.restore.unknownTime} · {item.version.txId.slice(0, 10)}…
+                        {item.version.blockHeight!=null?`Блок ${item.version.blockHeight}`:t.restore.unknownTime}
                     </span>
                   </button>
                 </li>
