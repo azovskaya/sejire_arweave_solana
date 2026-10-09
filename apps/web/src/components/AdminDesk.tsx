@@ -3,6 +3,7 @@ import { useI18n } from "../lib/i18n/I18nProvider";
 import { formatUiDateTime } from "../lib/i18n/messages";
 import { LanguageSwitch } from "./LanguageSwitch";
 import { fetchNetworkSaves, mergeOpsOverview } from "../lib/opsDesk/feed";
+import { fetchAdminNetworkOverview, type NetworkOverview } from "../lib/opsDesk/networkOverview";
 import {
   activateOpsPassword,
   applyOpsKeyPatch,
@@ -49,6 +50,7 @@ export function AdminDesk({ onHome, v2Diagnostics=false }: Props) {
   const [pass, setPass] = useState("");
   const [pass2, setPass2] = useState("");
   const [overview, setOverview] = useState<OpsOverview | null>(null);
+  const [networkOverview,setNetworkOverview]=useState<NetworkOverview|null>(null);
   const [keys, setKeys] = useState<RedactedOpsKeys | null>(null);
   const [turboPaste, setTurboPaste] = useState("");
   const [sitePaste, setSitePaste] = useState("");
@@ -109,7 +111,7 @@ export function AdminDesk({ onHome, v2Diagnostics=false }: Props) {
     setPrice(withBal.publishPriceMinor);
     setCurrency(withBal.publishCurrency);
     let network: Awaited<ReturnType<typeof fetchNetworkSaves>> = [];
-    try {
+    if(!v2Diagnostics)try {
       network = await fetchNetworkSaves();
     } catch {
       network = [];
@@ -117,7 +119,7 @@ export function AdminDesk({ onHome, v2Diagnostics=false }: Props) {
     setOverview(
       mergeOpsOverview({
         network,
-        movements: listOpsMovements(),
+        movements: v2Diagnostics?[]:listOpsMovements(),
         treasuryAddress: withBal.treasuryAddress,
         treasuryReady: withBal.treasuryConfigured,
         kaspiReady: withBal.kaspiTokenConfigured,
@@ -125,6 +127,11 @@ export function AdminDesk({ onHome, v2Diagnostics=false }: Props) {
         currency: withBal.publishCurrency,
       })
     );
+    if(v2Diagnostics){
+      try{setNetworkOverview(await fetchAdminNetworkOverview());}
+      catch{setNetworkOverview({archives:null,trees:null,saves:null,payments:null,paidCount:null,
+        receivedLamports:null,arweaveError:true,solanaError:true});}
+    }
     setTurboPaste("");
     setSitePaste("");
     setKaspiPaste("");
@@ -245,7 +252,7 @@ export function AdminDesk({ onHome, v2Diagnostics=false }: Props) {
 
   function leave() {
     logoutOps();
-    setPass('');setPass2('');setKeys(null);setOverview(null);setTab('overview');setShowPassword(false);
+    setPass('');setPass2('');setKeys(null);setOverview(null);setNetworkOverview(null);setTab('overview');setShowPassword(false);
     setTurboPaste('');setSitePaste('');setKaspiPaste('');setOnceJwk(null);setOnceAddr(null);
     if(v2Diagnostics)setPhase('login');
     else onHome();
@@ -316,7 +323,34 @@ export function AdminDesk({ onHome, v2Diagnostics=false }: Props) {
 
             {v2Diagnostics&&tab==='diagnostics'&&<PreservationV2Diagnostics embedded />}
 
-            {tab === "overview" && overview && (
+            {v2Diagnostics&&tab==='overview'&&(
+              <div data-testid="admin-network-overview">
+                <p className="sub">Solana Devnet</p>
+                {!networkOverview&&<p>Загружаем сетевые данные…</p>}
+                {networkOverview&&(networkOverview.arweaveError||networkOverview.solanaError)&&
+                  <p role="status">{networkOverview.solanaError?'Не удалось проверить Solana':'Сетевые данные временно недоступны'}</p>}
+                <div className="ops-desk-cards">
+                  <div className="ops-desk-card"><em>Деревьев</em><strong>{networkOverview?.trees??'—'}</strong></div>
+                  <div className="ops-desk-card"><em>Сохранений</em><strong>{networkOverview?.saves??'—'}</strong></div>
+                  <div className="ops-desk-card"><em>Оплат подтверждено</em><strong>{networkOverview?.paidCount??'—'}</strong></div>
+                  <div className="ops-desk-card"><em>Получено</em><strong>{networkOverview?.receivedLamports==null?'—':`${(networkOverview.receivedLamports/1e9).toFixed(2)} SOL`}</strong></div>
+                </div>
+                <h2>Arweave</h2>
+                <table className="ops-desk-table"><thead><tr><th>Время</th><th>Сейф</th><th>TX</th><th>Статус</th></tr></thead>
+                  <tbody>{networkOverview?.archives?.map(row=><tr key={row.txId}>
+                    <td>{formatUiDateTime(row.at,locale,'—')}</td><td>{row.vaultFp}</td>
+                    <td><a href={`https://viewblock.io/arweave/tx/${row.txId}`} target="_blank" rel="noreferrer">{row.txId.slice(0,6)}…{row.txId.slice(-4)}</a></td>
+                    <td>{row.status}</td></tr>)}</tbody></table>
+                <h2>Solana</h2>
+                <table className="ops-desk-table"><thead><tr><th>Время</th><th>Сумма</th><th>Плательщик</th><th>Signature</th><th>Статус</th></tr></thead>
+                  <tbody>{networkOverview?.payments?.map(row=><tr key={row.signature}>
+                    <td>{formatUiDateTime(row.at,locale,'—')}</td><td>{(row.lamports/1e9).toFixed(2)} SOL</td>
+                    <td>{row.payer.slice(0,6)}…{row.payer.slice(-4)}</td>
+                    <td><a href={`https://explorer.solana.com/tx/${row.signature}?cluster=devnet`} target="_blank" rel="noreferrer">{row.signature.slice(0,6)}…{row.signature.slice(-4)}</a></td>
+                    <td>{row.status}</td></tr>)}</tbody></table>
+              </div>
+            )}
+            {!v2Diagnostics&&tab === "overview" && overview && (
               <div>
                 <p className="sub">
                   {a.treasury}: {overview.treasuryReady ? a.has : a.none}

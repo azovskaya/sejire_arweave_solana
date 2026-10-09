@@ -137,3 +137,18 @@ test('protected diagnostics and AES-GCM wrapped local admin key',async({page})=>
   await page.getByRole('button',{name:'Выйти'}).click();
   expect(await page.evaluate(async()=> (await import('/src/lib/opsDesk/store.ts')).getHotTreasury())).toBeNull();
 });
+test('network overview RPC failure shows unknown values and performs no wallet or write calls',async({page})=>{
+  const requests=await isolate(page);
+  await page.addInitScript(()=>{
+    window.__walletCalls=0;
+    Object.defineProperty(window,'phantom',{get(){window.__walletCalls++;return undefined;}});
+    Object.defineProperty(window,'arweaveWallet',{get(){window.__walletCalls++;return undefined;}});
+  });
+  await page.goto('/#/admin');await login(page);
+  const overview=page.getByTestId('admin-network-overview');
+  await expect(overview.getByText('Не удалось проверить Solana')).toBeVisible({timeout:30_000});
+  await expect(overview.getByText('Оплат подтверждено').locator('..').locator('strong')).toHaveText('—');
+  await expect(overview.getByText('Получено').locator('..').locator('strong')).toHaveText('—');
+  expect(await page.evaluate(()=>window.__walletCalls)).toBe(0);
+  expect(requests.every(request=>!request.body||/graphql|getGenesisHash|getSignaturesForAddress|getTransaction/.test(request.body))).toBe(true);
+});
