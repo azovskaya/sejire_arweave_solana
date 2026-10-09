@@ -150,5 +150,6 @@ test('network overview RPC failure shows unknown values and performs no wallet o
   await expect(overview.getByText('Оплат подтверждено').locator('..').locator('strong')).toHaveText('—');
   await expect(overview.getByText('Получено').locator('..').locator('strong')).toHaveText('—');
   expect(await page.evaluate(()=>window.__walletCalls)).toBe(0);
-  expect(requests.every(request=>!request.body||/graphql|getGenesisHash|getSignaturesForAddress|getTransaction/.test(request.body))).toBe(true);
+  expect(requests.every(request=>!request.body||new URL(request.url).pathname==='/graphql'||
+    /getGenesisHash|getSignaturesForAddress|getTransaction/.test(request.body))).toBe(true);
 });
