@@ -1,5 +1,6 @@
 import {test,expect} from '@playwright/test';
 import {adminPassword,mockAdminLock} from './admin-password.fixture.mjs';
+import {pbkdf2Sync} from 'node:crypto';
 
 async function isolate(page){
   const requests=[];
@@ -52,6 +53,15 @@ test('correct password opens desk with show/hide and Enter',async({page})=>{
   await input.press('Enter');
   await expect(page.getByRole('button',{name:'Диагностика'})).toBeVisible();
   await expect(page.getByRole('button',{name:'Создать пароль'})).toHaveCount(0);
+});
+test('NFD input verifies the same NFC password bytes in browser',async({page})=>{
+  const password='Cafe\u0301 synthetic admin password 2026!';
+  const salt=Buffer.alloc(32,9);
+  const lock={schema:'sejire/admin-lock/v1',algorithm:'PBKDF2-SHA256',configured:true,iterations:600000,
+    salt:salt.toString('base64'),digest:pbkdf2Sync(password.normalize('NFC'),salt,600000,32,'sha256').toString('base64')};
+  await page.route('**/admin-lock.json',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(lock)}));
+  await page.goto('/#/admin');await login(page,password);
+  await expect(page.getByRole('button',{name:'Диагностика'})).toBeVisible();
 });
 test('reload locks Admin Desk again',async({page})=>{
   await isolate(page);await page.goto('/#/admin');await login(page);

@@ -41,5 +41,5 @@ export async function verifyAdminLock(password: string): Promise<boolean> {
   const body = await response.text();
   if (body.length > 4096) throw new Error("admin_lock_invalid");
   const lock = parseLock(JSON.parse(body) as unknown);
-  return verifyOpsPassword(password, `pbkdf2$${lock.iterations}$${lock.salt}$${lock.digest}`);
+  return verifyOpsPassword(password.normalize("NFC"), `pbkdf2$${lock.iterations}$${lock.salt}$${lock.digest}`);
 }

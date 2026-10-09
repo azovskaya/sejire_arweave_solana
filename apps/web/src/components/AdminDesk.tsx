@@ -161,7 +161,7 @@ export function AdminDesk({ onHome, v2Diagnostics=false }: Props) {
     try {
       const okLogin = v2Diagnostics ? await verifyAdminLock(pass) : await loginOps(pass);
       if (!okLogin) {setErr(v2Diagnostics?copy.wrong:a.wrong);return;}
-      if (v2Diagnostics) await activateOpsPassword(pass);
+      if (v2Diagnostics) await activateOpsPassword(pass.normalize("NFC"));
       setPass("");
       setPhase("desk");
       await refreshDesk();
