@@ -4,8 +4,8 @@ import { Workspace } from "./components/Workspace";
 import { RestoreSeed } from "./components/RestoreSeed";
 import { NativeCheckoutPanel } from "./components/NativeCheckoutPanel";
 import { PreservationV2 } from "./components/PreservationV2";
-import { PreservationV2Diagnostics } from "./components/PreservationV2Diagnostics";
-import { NativeAdminDesk as AdminDesk } from "./components/NativeAdminDesk";
+import { NativeAdminDesk } from "./components/NativeAdminDesk";
+import { AdminDesk } from "./components/AdminDesk";
 import { closeOpsHash, isOpsHash, openOpsHash } from "./lib/opsDesk/route";
 import type { TreeStore } from "./lib/types";
 import { clearDraftTree, loadDraftTree, saveDraftTree } from "./lib/draftStorage";
@@ -111,8 +111,8 @@ export default function App() {
         ? <PreservationV2 key={savingRoute+':'+savingNavigation} treeName={store?.meta.title} onBack={() => go(store?"work":"welcome")} />
         : <NativeCheckoutPanel key={savingRoute+':'+savingNavigation} resume treeName={store?.meta.title} onBack={() => go(store?"work":"welcome")} />}</main>}
       {screen === "admin" && (import.meta.env.VITE_PRESERVATION_V2_ENABLED === "1"
-        ? <PreservationV2Diagnostics onHome={() => go("welcome")} />
-        : <AdminDesk onHome={() => go("welcome")} />)}
+        ? <AdminDesk onHome={() => go("welcome")} v2Diagnostics />
+        : <NativeAdminDesk onHome={() => go("welcome")} />)}
 
       {screen === "restore" && (
         <RestoreSeed

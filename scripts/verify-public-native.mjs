@@ -24,6 +24,7 @@ try{
   for(let i=0;i<2;i++){
     const context=await browser.newContext({locale:'ru-RU',viewport:i?{width:390,height:844}:{width:1280,height:900}});
     const page=await context.newPage();
+    await page.route(/\/graphql(?:\?|$)/,route=>route.fulfill({status:200,contentType:'application/json',body:'{"data":{"transactions":{"edges":[]}}}'}));
     page.on('pageerror',e=>errors.push(e.message));
     page.on('console',m=>{if(m.type()==='error')errors.push(m.text());});
     page.on('requestfailed',r=>failed.push({url:r.url(),reason:r.failure()?.errorText}));
@@ -47,13 +48,19 @@ try{
 
     await page.goto(base+'#/admin',{waitUntil:'networkidle'});
     assert.equal(new URL(page.url()).hash,'#/admin');
+    await page.getByRole('heading',{name:'Настройка администратора',exact:true}).waitFor();
+    assert.equal(await page.getByRole('heading',{name:'Диагностика сохранения V2'}).count(),0);
+    await page.getByLabel('Создайте пароль').fill('Synthetic public smoke password 2026!');
+    await page.getByLabel('Повторите пароль').fill('Synthetic public smoke password 2026!');
+    await page.getByRole('button',{name:'Создать пароль'}).click();
+    await page.getByRole('button',{name:'Диагностика',exact:true}).click();
     await page.getByRole('heading',{name:'Диагностика сохранения V2',exact:true}).waitFor();
     assert(await page.getByText('Сохранение V2 на этом устройстве не найдено.',{exact:true}).isVisible());
-    assert.equal(await page.getByRole('button').count(),1);
     assert.equal(await page.getByRole('heading',{name:'Центр управления'}).count(),0);
     assert.equal(await page.getByRole('button',{name:'Подготовить это сохранение'}).count(),0);
     await page.reload({waitUntil:'networkidle'});
     assert.equal(new URL(page.url()).hash,'#/admin');
+    await page.getByRole('button',{name:'Диагностика',exact:true}).click();
     await page.getByRole('heading',{name:'Диагностика сохранения V2',exact:true}).waitFor();
     await page.screenshot({path:`.pages-evidence/v2-admin-${i}.png`,fullPage:true});
     await page.goto(base+'#/restore?diagnostics=1',{waitUntil:'networkidle'});

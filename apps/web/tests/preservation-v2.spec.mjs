@@ -43,11 +43,15 @@ test('wrong file is rejected before either wallet',async({page})=>{
   await expect(page.getByRole('button',{name:'Оплатить 0.03 SOL'})).toHaveCount(0);
 });
 
-test('V2 diagnostics are read-only and do not expose the legacy operator',async({page})=>{
+test('V2 diagnostics are inside password protected admin',async({page})=>{
   await page.goto('/#/admin');
+  await expect(page.getByRole('heading',{name:'Настройка администратора'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Диагностика сохранения V2'})).toHaveCount(0);
+  await page.getByLabel('Создайте пароль').fill('Synthetic admin password 2026!');
+  await page.getByLabel('Повторите пароль').fill('Synthetic admin password 2026!');
+  await page.getByRole('button',{name:'Создать пароль'}).click();
+  await page.getByRole('button',{name:'Диагностика',exact:true}).click();
   await expect(page.getByRole('heading',{name:'Диагностика сохранения V2'})).toBeVisible();
-  await expect(page.getByRole('button',{name:'На главную'})).toBeVisible();
-  await expect(page.getByRole('button')).toHaveCount(1);
   await expect(page.getByText('Сохранение V2 на этом устройстве не найдено.')).toBeVisible();
   await expect(page.getByRole('heading',{name:'Центр управления'})).toHaveCount(0);
   await expect(page.getByRole('button',{name:'Подготовить это сохранение'})).toHaveCount(0);

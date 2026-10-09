@@ -62,6 +62,7 @@ jobs:
       - run: npm run test:native-browser
       - run: npm run test:native-pilot-browser --prefix apps/web
       - run: npm run test:v2-browser --prefix apps/web
+      - run: npm run test:admin-browser --prefix apps/web
       - run: npm run test:v2-recovery-browser --prefix apps/web
       - name: Read-only Arweave recovery gateway and CORS acceptance
         run: node scripts/verify-recovery-network.mjs

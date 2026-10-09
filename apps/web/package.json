@@ -39,7 +39,8 @@
     "test:native-browser": "playwright test --config playwright.native.config.ts",
     "test:native-pilot-browser": "playwright test --config playwright.pilot.config.ts",
     "test:native-journey": "playwright test --config playwright.journey.config.ts",
-    "test:recovery": "tsx src/lib/recovery/recovery.selftest.ts"
+    "test:recovery": "tsx src/lib/recovery/recovery.selftest.ts",
+    "test:admin-browser": "playwright test --config playwright.admin-password.config.ts"
   },
   "dependencies": {
     "@ardrive/turbo-sdk": "2.1.0",

@@ -16,23 +16,32 @@ import {
   redactOpsKeys,
   setGeneratedTreasury,
   setupOpsPassword,
+  readSessionPassword,
 } from "../lib/opsDesk/store";
 import { addressFromTreasuryJson, generateTreasuryWallet, treasuryBalanceAr } from "../lib/opsDesk/treasury";
 import type { OpsOverview, RedactedOpsKeys } from "../lib/opsDesk/types";
+import { PreservationV2Diagnostics } from "./PreservationV2Diagnostics";
 
-type Props = { onHome: () => void };
-type Tab = "overview" | "keys" | "password";
+type Props = { onHome: () => void; v2Diagnostics?: boolean };
+type Tab = "overview" | "keys" | "password" | "diagnostics";
+const v2Copy={
+  ru:{setup:'Настройка администратора',login:'Админ-панель',createPassword:'Создайте пароль',repeat:'Повторите пароль',create:'Создать пароль',password:'Пароль',show:'Показать пароль',hide:'Скрыть пароль',diagnostics:'Диагностика',wrong:'Неверный пароль'},
+  kk:{setup:'Әкімшіні баптау',login:'Әкімші панелі',createPassword:'Құпия сөз жасаңыз',repeat:'Құпия сөзді қайталаңыз',create:'Құпия сөз жасау',password:'Құпия сөз',show:'Құпия сөзді көрсету',hide:'Құпия сөзді жасыру',diagnostics:'Диагностика',wrong:'Құпия сөз қате'},
+  en:{setup:'Administrator setup',login:'Admin panel',createPassword:'Create a password',repeat:'Repeat password',create:'Create password',password:'Password',show:'Show password',hide:'Hide password',diagnostics:'Diagnostics',wrong:'Wrong password'},
+};
 
 function tenge(n: number, currency: string): string {
   if (currency === "KZT") return `${new Intl.NumberFormat("ru-KZ").format(n)} ₸`;
   return `${n} ${currency}`;
 }
 
-export function AdminDesk({ onHome }: Props) {
+export function AdminDesk({ onHome, v2Diagnostics=false }: Props) {
   const { t, locale } = useI18n();
   const a = t.admin;
+  const copy=v2Copy[locale];
   const [phase, setPhase] = useState<"boot" | "setup" | "login" | "desk">("boot");
-  const [tab, setTab] = useState<Tab>("overview");
+  const [tab, setTab] = useState<Tab>(()=>location.hash.startsWith('#/admin/diagnostics')?'diagnostics':'overview');
+  const [showPassword,setShowPassword]=useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [ok, setOk] = useState<string | null>(null);
   const [pass, setPass] = useState("");
@@ -55,8 +64,24 @@ export function AdminDesk({ onHome }: Props) {
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    setPhase(opsNeedsSetup() ? "setup" : "login");
+    let live=true;
+    if(opsNeedsSetup()){setPhase('setup');return;}
+    const existing=readSessionPassword();
+    if(!existing){setPhase('login');return;}
+    void loginOps(existing).then(async valid=>{
+      if(!live)return;
+      if(!valid){logoutOps();setPhase('login');return;}
+      setPhase('desk');await refreshDesk();
+    }).catch(()=>{if(live){logoutOps();setPhase('login');}});
+    return()=>{live=false;};
   }, []);
+
+  useEffect(()=>{
+    if(!v2Diagnostics)return;
+    const onHash=()=>{if(location.hash.startsWith('#/admin/diagnostics'))setTab('diagnostics');};
+    window.addEventListener('hashchange',onHash);
+    return()=>window.removeEventListener('hashchange',onHash);
+  },[v2Diagnostics]);
 
   async function refreshDesk() {
     const secrets = await loadOpsSecrets();
@@ -103,12 +128,14 @@ export function AdminDesk({ onHome }: Props) {
 
   async function onSetup(e: FormEvent) {
     e.preventDefault();
+    if(busy)return;
     setErr(null);
     if (pass !== pass2) {
       setErr(a.mismatch);
       return;
     }
     try {
+      setBusy(true);
       await setupOpsPassword(pass);
       setPass("");
       setPass2("");
@@ -116,20 +143,22 @@ export function AdminDesk({ onHome }: Props) {
       await refreshDesk();
     } catch (e) {
       setErr(e instanceof Error && e.message === "password_too_short" ? a.short : a.failed);
-    }
+    } finally {setBusy(false);}
   }
 
   async function onLogin(e: FormEvent) {
     e.preventDefault();
+    if(busy)return;
     setErr(null);
-    const okLogin = await loginOps(pass);
-    if (!okLogin) {
-      setErr(a.wrong);
-      return;
-    }
-    setPass("");
-    setPhase("desk");
-    await refreshDesk();
+    setBusy(true);
+    try {
+      const okLogin = await loginOps(pass);
+      if (!okLogin) {setErr(v2Diagnostics?copy.wrong:a.wrong);return;}
+      setPass("");
+      setPhase("desk");
+      await refreshDesk();
+    } catch {setErr(a.failed);}
+    finally {setBusy(false);}
   }
 
   async function onSaveKeys() {
@@ -208,7 +237,10 @@ export function AdminDesk({ onHome }: Props) {
 
   function leave() {
     logoutOps();
-    onHome();
+    setPass('');setPass2('');setKeys(null);setOverview(null);setTab('overview');setShowPassword(false);
+    setTurboPaste('');setSitePaste('');setKaspiPaste('');setOnceJwk(null);setOnceAddr(null);
+    if(v2Diagnostics)setPhase('login');
+    else onHome();
   }
 
   return (
@@ -221,25 +253,25 @@ export function AdminDesk({ onHome }: Props) {
         <LanguageSwitch placement="chrome" />
       </header>
       <main className="ops-desk-main">
-        <h1>{a.title}</h1>
-        <p className="sub">{a.sub}</p>
-        <p className="ops-desk-note">{a.pagesHint}</p>
-        {err && <p className="form-error">{err}</p>}
+        <h1>{v2Diagnostics?(phase==='setup'?copy.setup:copy.login):a.title}</h1>
+        {phase==='desk'&&<><p className="sub">{a.sub}</p><p className="ops-desk-note">{a.pagesHint}</p></>}
+        {err && <p className="form-error" role="alert">{err}</p>}
         {ok && <p className="ops-desk-ok">{ok}</p>}
 
         {phase === "setup" && (
           <form className="ops-desk-form" onSubmit={(e) => void onSetup(e)}>
             <p className="sub">{a.setupHint}</p>
             <label>
-              <span>{a.password}</span>
-              <input type="password" autoComplete="new-password" value={pass} onChange={(e) => setPass(e.target.value)} />
+              <span>{v2Diagnostics?copy.createPassword:a.password}</span>
+              <input type={showPassword?'text':'password'} autoComplete="new-password" value={pass} onChange={(e) => setPass(e.target.value)} />
             </label>
             <label>
-              <span>{a.passwordAgain}</span>
-              <input type="password" autoComplete="new-password" value={pass2} onChange={(e) => setPass2(e.target.value)} />
+              <span>{v2Diagnostics?copy.repeat:a.passwordAgain}</span>
+              <input type={showPassword?'text':'password'} autoComplete="new-password" value={pass2} onChange={(e) => setPass2(e.target.value)} />
             </label>
-            <button className="btn" type="submit">
-              {a.create}
+            {v2Diagnostics&&<button type="button" className="welcome-link-quiet" onClick={()=>setShowPassword(value=>!value)}>{showPassword?copy.hide:copy.show}</button>}
+            <button className="btn" type="submit" disabled={busy}>
+              {v2Diagnostics?copy.create:a.create}
             </button>
           </form>
         )}
@@ -247,10 +279,11 @@ export function AdminDesk({ onHome }: Props) {
         {phase === "login" && (
           <form className="ops-desk-form" onSubmit={(e) => void onLogin(e)}>
             <label>
-              <span>{a.password}</span>
-              <input type="password" autoComplete="current-password" value={pass} onChange={(e) => setPass(e.target.value)} />
+              <span>{v2Diagnostics?copy.password:a.password}</span>
+              <input type={showPassword?'text':'password'} autoComplete="current-password" value={pass} onChange={(e) => setPass(e.target.value)} />
             </label>
-            <button className="btn" type="submit">
+            {v2Diagnostics&&<button type="button" className="welcome-link-quiet" onClick={()=>setShowPassword(value=>!value)}>{showPassword?copy.hide:copy.show}</button>}
+            <button className="btn" type="submit" disabled={busy}>
               {a.enter}
             </button>
           </form>
@@ -268,7 +301,12 @@ export function AdminDesk({ onHome }: Props) {
               <button type="button" className={tab === "password" ? "is-on" : ""} onClick={() => setTab("password")}>
                 {a.tabPassword}
               </button>
+              {v2Diagnostics&&<button type="button" className={tab === "diagnostics" ? "is-on" : ""} onClick={() => setTab("diagnostics")}>
+                {copy.diagnostics}
+              </button>}
             </div>
+
+            {v2Diagnostics&&tab==='diagnostics'&&<PreservationV2Diagnostics embedded />}
 
             {tab === "overview" && overview && (
               <div>
