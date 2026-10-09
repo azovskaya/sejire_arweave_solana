@@ -1,6 +1,6 @@
 name: Publish native SEJIRE preview to GitHub Pages
 
-# Only the temporary Pages preview is published. Arweave/ArNS are not touched.
+# Publishes a verified static build to the selected Pages path. Arweave/ArNS are not touched.
 on:
   workflow_dispatch:
     inputs:
@@ -8,6 +8,11 @@ on:
         description: 'Successful SEJIRE checks run for this exact source commit'
         required: true
         type: string
+      publish_root:
+        description: 'Publish the verified V2 build at the public site root'
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: write
@@ -34,18 +39,19 @@ jobs:
           node-version: '22'
           cache: npm
           cache-dependency-path: apps/web/package-lock.json
-      - name: Recover and verify the accepted native build; preserve existing Pages files
+      - name: Recover and verify the accepted build; preserve existing Pages files
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CHECKED_RUN: ${{ inputs.checked_run }}
+          PUBLISH_ROOT: ${{ inputs.publish_root && '1' || '0' }}
         run: node scripts/pages-native-artifact.mjs
       - name: Save Pages content without rewriting its history
         run: |
           git -C .pages-site config user.name 'SEJIRE Pages'
           git -C .pages-site config user.email 'sejire-pages@users.noreply.github.com'
-          git -C .pages-site add -- native-admin
+          git -C .pages-site add --all
           if ! git -C .pages-site diff --cached --quiet; then
-            git -C .pages-site commit -m "Publish verified native admin ${GITHUB_SHA} in native-admin/"
+            git -C .pages-site commit -m "Publish verified SEJIRE ${GITHUB_SHA}"
             git -C .pages-site push origin HEAD:gh-pages
           fi
           mkdir .pages-public
@@ -62,8 +68,12 @@ jobs:
           npm exec --prefix apps/web -- playwright install --with-deps chromium
       - name: Verify actual public HTTPS application in fresh browser contexts
         run: |
-          node scripts/verify-public-native.mjs
-          node scripts/verify-public-sol-balances.mjs .pages-evidence/live-sol-balances.json
+          if [ '${{ inputs.publish_root }}' = 'true' ]; then
+            node scripts/verify-public-root.mjs
+          else
+            node scripts/verify-public-native.mjs
+            node scripts/verify-public-sol-balances.mjs .pages-evidence/live-sol-balances.json
+          fi
       - name: Preserve public browser evidence
         if: always()
         uses: actions/upload-artifact@v4
