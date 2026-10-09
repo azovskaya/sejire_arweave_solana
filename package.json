@@ -10,6 +10,7 @@
     "deck": "npm run deck:pptx && npm run deck:pdf",
     "web": "npm run dev --prefix apps/web",
     "web:build": "npm run build --prefix apps/web",
+    "admin:set-password": "node scripts/admin-set-password.mjs",
     "solana:dev": "VITE_PUBLISH_MODE=solana VITE_SOLANA_NETWORK=devnet VITE_QA_TOOLS=0 npm run dev --prefix apps/web -- --host 127.0.0.1 --port 5173 --strictPort",
     "solana:build": "VITE_PUBLISH_MODE=solana VITE_SOLANA_NETWORK=devnet VITE_QA_TOOLS=0 npm run web:build",
     "solana:check": "npm test && npm run check --prefix apps/sponsor && npm run lint --prefix apps/web && npm run solana:build",

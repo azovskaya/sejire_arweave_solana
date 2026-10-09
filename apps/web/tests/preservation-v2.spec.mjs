@@ -1,6 +1,7 @@
 import {test,expect} from '@playwright/test';
 import {archive} from './preservation-v2.fixture.mjs';
 import {installV2Mock} from './preservation-v2.mock.mjs';
+import {adminPassword,mockAdminLock} from './admin-password.fixture.mjs';
 
 async function start(page){
   await page.addInitScript(installV2Mock);
@@ -44,13 +45,13 @@ test('wrong file is rejected before either wallet',async({page})=>{
 });
 
 test('V2 diagnostics are inside password protected admin',async({page})=>{
+  await mockAdminLock(page);
   await page.goto('/#/admin');
   await page.getByRole('radio',{name:'РУС'}).click();
-  await expect(page.getByRole('heading',{name:'Настройка администратора'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Админ-панель'})).toBeVisible();
   await expect(page.getByRole('heading',{name:'Диагностика сохранения V2'})).toHaveCount(0);
-  await page.getByLabel('Создайте пароль').fill('Synthetic admin password 2026!');
-  await page.getByLabel('Повторите пароль').fill('Synthetic admin password 2026!');
-  await page.getByRole('button',{name:'Создать пароль'}).click();
+  await page.getByLabel('Пароль',{exact:true}).fill(adminPassword);
+  await page.getByRole('button',{name:'Войти'}).click();
   await page.getByRole('button',{name:'Диагностика',exact:true}).click();
   await expect(page.getByRole('heading',{name:'Диагностика сохранения V2'})).toBeVisible();
   await expect(page.getByText('Сохранение V2 на этом устройстве не найдено.')).toBeVisible();

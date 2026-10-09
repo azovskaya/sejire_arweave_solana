@@ -14,7 +14,8 @@ const MIN_PASSWORD = 12;
 const PBKDF2_ITERS = 210_000;
 
 type Disk = {
-  passwordHash: string;
+  /** Legacy per-browser verifier; V2 does not use it for login. */
+  passwordHash?: string;
   wrap?: { iv: string; data: string };
   /** Read only during migration of older local records; never written again. */
   hotTreasury?: HotTreasury;
@@ -36,6 +37,7 @@ const DEFAULT_SETTINGS: OpsSettings = {
 
 const memory = new Map<string, string>();
 let activeTreasury: HotTreasury | null = null;
+let activePassword: string | null = null;
 
 function storageGet(key: string): string | null {
   try {
@@ -167,9 +169,8 @@ function parseDisk(raw: string | null): Disk | null {
   if (!raw) return null;
   try {
     const rec = JSON.parse(raw) as Partial<Disk>;
-    if (typeof rec.passwordHash !== "string" || !rec.passwordHash) return null;
     return {
-      passwordHash: rec.passwordHash,
+      passwordHash: typeof rec.passwordHash === "string" ? rec.passwordHash : undefined,
       wrap: rec.wrap && typeof rec.wrap.iv === "string" && typeof rec.wrap.data === "string" ? rec.wrap : undefined,
       hotTreasury:
         rec.hotTreasury && typeof rec.hotTreasury.jwk === "string" && typeof rec.hotTreasury.address === "string"
@@ -229,30 +230,36 @@ export function getOpsSettings(): OpsSettings {
 }
 
 export function readSessionPassword(): string | null {
-  try {
-    if (typeof sessionStorage === "undefined") return memory.get(SESSION_KEY) ?? null;
-    return sessionStorage.getItem(SESSION_KEY);
-  } catch {
-    return memory.get(SESSION_KEY) ?? null;
-  }
+  return activePassword;
 }
 
 function writeSessionPassword(password: string | null): void {
-  if (!password) {
-    memory.delete(SESSION_KEY);
-    try {
-      sessionStorage.removeItem(SESSION_KEY);
-    } catch {
-      /* ignore */
-    }
-    return;
-  }
-  memory.set(SESSION_KEY, password);
+  activePassword = password;
+  // Delete plaintext sessions from older builds without reading them.
   try {
-    sessionStorage.setItem(SESSION_KEY, password);
+    sessionStorage.removeItem(SESSION_KEY);
   } catch {
     /* ignore */
   }
+}
+
+/** Call only after the static admin-lock verifier accepts the password. */
+export async function activateOpsPassword(password: string): Promise<void> {
+  const disk = readDisk();
+  if (!disk) writeDisk({ settings: { ...DEFAULT_SETTINGS }, movements: [] });
+  else if (disk.hotTreasury?.jwk) {
+    try {
+      const secrets = disk.wrap ? await decryptSecrets(password, disk.wrap) : {};
+      secrets.turboJwk ??= disk.hotTreasury.jwk;
+      disk.treasuryAddress = disk.hotTreasury.address;
+      disk.treasuryKeySet = true;
+      disk.wrap = await encryptSecrets(password, secrets);
+      writeDisk(disk);
+    } catch {
+      // A different old local wrap must not override the portable admin lock.
+    }
+  }
+  writeSessionPassword(password);
 }
 
 export async function setupOpsPassword(password: string): Promise<void> {
@@ -270,7 +277,7 @@ export async function setupOpsPassword(password: string): Promise<void> {
 export async function loginOps(password: string): Promise<boolean> {
   const disk = readDisk();
   if (!disk) return false;
-  const ok = await verifyOpsPassword(password, disk.passwordHash);
+  const ok = disk.passwordHash ? await verifyOpsPassword(password, disk.passwordHash) : false;
   if (ok) {
     let secrets: OpsSecrets = {};
     try {secrets=disk.wrap?await decryptSecrets(password,disk.wrap):{};}catch{secrets={};}

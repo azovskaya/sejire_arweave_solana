@@ -48,20 +48,16 @@ try{
 
     await page.goto(base+'#/admin',{waitUntil:'networkidle'});
     assert.equal(new URL(page.url()).hash,'#/admin');
-    await page.getByRole('heading',{name:'Настройка администратора',exact:true}).waitFor();
+    await page.getByRole('heading',{name:'Админ-панель',exact:true}).waitFor();
+    assert(await page.getByLabel('Пароль',{exact:true}).isVisible());
+    assert.equal(await page.getByRole('button',{name:'Создать пароль'}).count(),0);
     assert.equal(await page.getByRole('heading',{name:'Диагностика сохранения V2'}).count(),0);
-    await page.getByLabel('Создайте пароль').fill('Synthetic public smoke password 2026!');
-    await page.getByLabel('Повторите пароль').fill('Synthetic public smoke password 2026!');
-    await page.getByRole('button',{name:'Создать пароль'}).click();
-    await page.getByRole('button',{name:'Диагностика',exact:true}).click();
-    await page.getByRole('heading',{name:'Диагностика сохранения V2',exact:true}).waitFor();
-    assert(await page.getByText('Сохранение V2 на этом устройстве не найдено.',{exact:true}).isVisible());
+    assert.equal(await page.getByRole('button',{name:'Диагностика',exact:true}).count(),0);
     assert.equal(await page.getByRole('heading',{name:'Центр управления'}).count(),0);
     assert.equal(await page.getByRole('button',{name:'Подготовить это сохранение'}).count(),0);
     await page.reload({waitUntil:'networkidle'});
     assert.equal(new URL(page.url()).hash,'#/admin');
-    await page.getByRole('button',{name:'Диагностика',exact:true}).click();
-    await page.getByRole('heading',{name:'Диагностика сохранения V2',exact:true}).waitFor();
+    await page.getByLabel('Пароль',{exact:true}).waitFor();
     await page.screenshot({path:`.pages-evidence/v2-admin-${i}.png`,fullPage:true});
     await page.goto(base+'#/restore?diagnostics=1',{waitUntil:'networkidle'});
     await page.getByRole('textbox',{name:'12 слов восстановления SEJIRE'}).waitFor();

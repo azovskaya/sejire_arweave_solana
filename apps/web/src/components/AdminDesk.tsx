@@ -4,6 +4,7 @@ import { formatUiDateTime } from "../lib/i18n/messages";
 import { LanguageSwitch } from "./LanguageSwitch";
 import { fetchNetworkSaves, mergeOpsOverview } from "../lib/opsDesk/feed";
 import {
+  activateOpsPassword,
   applyOpsKeyPatch,
   changeOpsPassword,
   getHotTreasury,
@@ -18,6 +19,7 @@ import {
   setupOpsPassword,
   readSessionPassword,
 } from "../lib/opsDesk/store";
+import { verifyAdminLock } from "../lib/opsDesk/adminLock";
 import { addressFromTreasuryJson, generateTreasuryWallet, treasuryBalanceAr } from "../lib/opsDesk/treasury";
 import type { OpsOverview, RedactedOpsKeys } from "../lib/opsDesk/types";
 import { PreservationV2Diagnostics } from "./PreservationV2Diagnostics";
@@ -65,6 +67,11 @@ export function AdminDesk({ onHome, v2Diagnostics=false }: Props) {
 
   useEffect(() => {
     let live=true;
+    if (v2Diagnostics) {
+      logoutOps();
+      setPhase('login');
+      return;
+    }
     if(opsNeedsSetup()){setPhase('setup');return;}
     const existing=readSessionPassword();
     if(!existing){setPhase('login');return;}
@@ -74,7 +81,7 @@ export function AdminDesk({ onHome, v2Diagnostics=false }: Props) {
       setPhase('desk');await refreshDesk();
     }).catch(()=>{if(live){logoutOps();setPhase('login');}});
     return()=>{live=false;};
-  }, []);
+  }, [v2Diagnostics]);
 
   useEffect(()=>{
     if(!v2Diagnostics)return;
@@ -152,8 +159,9 @@ export function AdminDesk({ onHome, v2Diagnostics=false }: Props) {
     setErr(null);
     setBusy(true);
     try {
-      const okLogin = await loginOps(pass);
+      const okLogin = v2Diagnostics ? await verifyAdminLock(pass) : await loginOps(pass);
       if (!okLogin) {setErr(v2Diagnostics?copy.wrong:a.wrong);return;}
+      if (v2Diagnostics) await activateOpsPassword(pass);
       setPass("");
       setPhase("desk");
       await refreshDesk();
@@ -258,7 +266,7 @@ export function AdminDesk({ onHome, v2Diagnostics=false }: Props) {
         {err && <p className="form-error" role="alert">{err}</p>}
         {ok && <p className="ops-desk-ok">{ok}</p>}
 
-        {phase === "setup" && (
+        {phase === "setup" && !v2Diagnostics && (
           <form className="ops-desk-form" onSubmit={(e) => void onSetup(e)}>
             <p className="sub">{a.setupHint}</p>
             <label>
@@ -298,9 +306,9 @@ export function AdminDesk({ onHome, v2Diagnostics=false }: Props) {
               <button type="button" className={tab === "keys" ? "is-on" : ""} onClick={() => setTab("keys")}>
                 {a.tabKeys}
               </button>
-              <button type="button" className={tab === "password" ? "is-on" : ""} onClick={() => setTab("password")}>
+              {!v2Diagnostics && <button type="button" className={tab === "password" ? "is-on" : ""} onClick={() => setTab("password")}>
                 {a.tabPassword}
-              </button>
+              </button>}
               {v2Diagnostics&&<button type="button" className={tab === "diagnostics" ? "is-on" : ""} onClick={() => setTab("diagnostics")}>
                 {copy.diagnostics}
               </button>}
@@ -492,7 +500,7 @@ export function AdminDesk({ onHome, v2Diagnostics=false }: Props) {
               </div>
             )}
 
-            {tab === "password" && (
+            {tab === "password" && !v2Diagnostics && (
               <form className="ops-desk-form" onSubmit={(e) => void onChangePassword(e)}>
                 <label>
                   <span>{a.newPass}</span>
