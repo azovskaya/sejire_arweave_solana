@@ -45,6 +45,7 @@ test('wrong file is rejected before either wallet',async({page})=>{
 
 test('V2 diagnostics are inside password protected admin',async({page})=>{
   await page.goto('/#/admin');
+  await page.getByRole('radio',{name:'РУС'}).click();
   await expect(page.getByRole('heading',{name:'Настройка администратора'})).toBeVisible();
   await expect(page.getByRole('heading',{name:'Диагностика сохранения V2'})).toHaveCount(0);
   await page.getByLabel('Создайте пароль').fill('Synthetic admin password 2026!');
