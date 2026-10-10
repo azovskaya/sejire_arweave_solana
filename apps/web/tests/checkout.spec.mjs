@@ -35,6 +35,10 @@ async function externalFixtures(page, options = {}) {
   if(pilot)pilot.control.missing=true;
   const handler=pilot?protocol.protocolHttp(pilot.engine,base,true):null;
   await page.addInitScript(() => localStorage.setItem('sejire.locale', 'ru'));
+  // Publishing a recovered local vault checks Arweave version history before
+  // opening checkout. Keep browser tests hermetic instead of waiting on a live gateway.
+  await page.route(/https:\/\/(?:arweave\.net|arweave-search\.goldsky\.com|ar-io\.dev)\/graphql/, route =>
+    route.fulfill({ contentType: 'application/json', body: JSON.stringify({ data: { transactions: { edges: [] } } }) }));
   await page.route('**/api/checkout/**', async route => {
     const request = route.request(), headers = { ...request.headers(), 'CF-Connecting-IP': '192.0.2.10', 'X-Test-Rpc': broadcast ? 'success' : 'null' };
     const optionsHTTP={ method: request.method(), headers, ...(request.postData() ? { body: request.postData() } : {}) };
