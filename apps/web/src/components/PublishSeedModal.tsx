@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { FormEvent } from "react";
 import {
   createMnemonic,
@@ -45,12 +45,18 @@ import {
 } from "../lib/vaultSession/localArchive";
 import { useI18n } from "../lib/i18n/I18nProvider";
 
+import { NativeCheckoutPanel } from './NativeCheckoutPanel';
+import { PreservationV2 } from './PreservationV2';
+import { CheckoutPublishPanel, SolanaPublishPanel } from '@sejire/payment-panels';
+import { solanaMessages } from "../lib/solana/messages";
+import type { PreservationReceipt } from "../lib/solana/client";
+
 type Props = {
   store: TreeStore;
   onClose: () => void;
   onPublished: (info: {
     txId?: string;
-    mode: "export" | "arweave" | "sponsor" | "demo";
+    mode: "export" | "arweave" | "sponsor" | "demo" | "solana" | "solana-test";
     address?: string;
     mock?: boolean;
     isNewVersion?: boolean;
@@ -70,7 +76,8 @@ type Mode =
   | "new-version"
   | "busy"
   | "fund-wait"
-  | "pay";
+  | "pay"
+  | "solana";
 
 function formatPrice(amountMinor: number, currency: string): string {
   const cur = currency.toUpperCase();
@@ -86,7 +93,12 @@ export function PublishSeedModal({
   parentTxId: parentTxProp,
   knownMnemonic: knownMnemonicProp,
 }: Props) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
+  const st = solanaMessages[locale];
+  const SolanaSavePanel = import.meta.env.VITE_NATIVE_AR_ENABLED === "1" ? NativeCheckoutPanel : import.meta.env.VITE_CHECKOUT_ENABLED === "1" ? CheckoutPublishPanel : SolanaPublishPanel;
+  const solanaBusy = useRef(false);
+  const freshKey = useRef(false);
+  const solanaReturnMode = useRef<Mode>("create-ready");
   const sponsorOn = isSponsorPublishEnabled();
   const demoOn = isDemoPublishEnabled();
   const treasuryOn = isTreasuryPublishEnabled();
@@ -120,6 +132,7 @@ export function PublishSeedModal({
     mode === "busy" ||
     mode === "fund-wait" ||
     mode === "pay" ||
+    mode === "solana" ||
     mode === "new-version";
 
   useEffect(() => {
@@ -159,7 +172,7 @@ export function PublishSeedModal({
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if (e.key !== "Escape") return;
-      if (mode === "busy") {
+      if (mode === "busy" || solanaBusy.current) {
         e.preventDefault();
         return;
       }
@@ -169,6 +182,7 @@ export function PublishSeedModal({
         mode === "create-ready" ||
         mode === "fund-wait" ||
         mode === "pay" ||
+        mode === "solana" ||
         mode === "new-version"
       ) {
         e.preventDefault();
@@ -200,7 +214,10 @@ export function PublishSeedModal({
   }> {
     const keys = deriveKeysFromMnemonic(phrase);
     setStatus(t.publish.vaultFp(fingerprintVaultId(keys.vaultId)));
-    const loaded = await loadVaultForPublish(keys, { parentTxId: publishParentTx });
+    const loaded = await loadVaultForPublish(keys, {
+      parentTxId: publishParentTx && /^[A-Za-z0-9_-]{43}$/.test(publishParentTx) ? publishParentTx : null,
+      freshKey: freshKey.current,
+    });
     setPublishParentTx(loaded.parentTxId);
     const vault = putTree(loaded.vault, store);
     setStatus(t.publish.encrypting);
@@ -213,6 +230,7 @@ export function PublishSeedModal({
     phrase: string,
     txId?: string
   ) {
+    freshKey.current = false;
     setVaultSession(
       {
         vaultId: keys.vaultId,
@@ -238,6 +256,35 @@ export function PublishSeedModal({
       source,
       envelope,
     });
+  }
+
+  async function startSolanaFlow(phrase: string) {
+    solanaReturnMode.current = mode;
+    setMode("busy"); setError(null);
+    try {
+      const { envelope, parentTx } = await sealForPhrase(phrase);
+      setSealedEnvelope(envelope); setPublishParentTx(parentTx); setMnemonic(phrase);
+      setMode("solana"); setStatus("");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+      setMode(solanaReturnMode.current);
+    }
+  }
+
+  function recordSolana(receipt: PreservationReceipt, acceptedEnvelope: EnvelopeV1, acceptedParent: string | null) {
+    const keys = deriveKeysFromMnemonic(mnemonic);
+    const live = receipt.network === "mainnet-beta";
+    if (live) {
+      archiveVersion(keys, acceptedEnvelope, receipt.receipt.id, acceptedParent, "network");
+      rememberSession(keys, mnemonic, receipt.receipt.id);
+      freshKey.current = false;
+    }
+  }
+
+  function finishSolana(receipt: PreservationReceipt, acceptedParent: string | null) {
+    const live = receipt.network === "mainnet-beta";
+    onPublished({ mode: live ? "solana" : "solana-test", txId: receipt.receipt.id,
+      isNewVersion: Boolean(acceptedParent) });
   }
 
   async function runDemoPublish(phrase: string) {
@@ -445,6 +492,7 @@ export function PublishSeedModal({
   function startCreate() {
     if (mnemonic && !confirmDiscardSeed()) return;
     setMnemonic(createMnemonic());
+    freshKey.current = true;
     setConfirm("");
     setError(null);
     setWalletAddress(null);
@@ -488,7 +536,9 @@ export function PublishSeedModal({
       return;
     }
     setMnemonic(phrase);
-    if (sponsorOn) await startSponsorFlow(phrase);
+    freshKey.current = false;
+    if (import.meta.env.VITE_PUBLISH_MODE === "solana") await startSolanaFlow(phrase);
+    else if (sponsorOn) await startSponsorFlow(phrase);
     else if (demoOn) await runDemoPublish(phrase);
     else if (treasuryOn) await runTreasuryPublish(phrase);
     else await runSelfFundPublish(phrase);
@@ -513,7 +563,7 @@ export function PublishSeedModal({
   }
 
   function requestClose() {
-    if (mode === "busy") return;
+    if (mode === "busy" || solanaBusy.current) return;
     if (seedLocked && mnemonic && mode !== "new-version") {
       if (!confirmDiscardSeed()) return;
     }
@@ -544,6 +594,19 @@ export function PublishSeedModal({
           {!demoOn && !sponsorOn && treasuryOn && t.publish.leadTreasury}
         </p>
 
+        {mode === "solana" && sealedEnvelope && import.meta.env.VITE_PRESERVATION_V2_ENABLED === "1" && (
+          <PreservationV2 envelope={sealedEnvelope} treeName={store.meta.title}
+            onBusy={(busy) => { solanaBusy.current = busy; }}
+            onBack={() => setMode(solanaReturnMode.current)} />
+        )}
+        {mode === "solana" && sealedEnvelope && import.meta.env.VITE_PRESERVATION_V2_ENABLED !== "1" && (
+          <SolanaSavePanel {...(import.meta.env.VITE_NATIVE_AR_ENABLED === "1" ? {treeName:store.meta.title,recoveryKeyInMemory:isValidMnemonic(normalizeMnemonic(mnemonic))} : {})} envelope={sealedEnvelope} parentTxId={publishParentTx}
+            onAccepted={recordSolana}
+            onBusy={(busy) => { solanaBusy.current = busy; }}
+            onBack={() => setMode(solanaReturnMode.current)}
+            onDone={finishSolana} />
+        )}
+
         {mode === "new-version" && (
           <div>
             <p className="sub">
@@ -554,6 +617,7 @@ export function PublishSeedModal({
                 : t.publish.oldKept}
             </p>
             <div className="actions" style={{ flexDirection: "column", alignItems: "stretch" }}>
+              {!demoOn && <button className="btn" type="button" onClick={() => void startSolanaFlow(mnemonic)}>{st.save}</button>}
               {demoOn && (
                 <button className="btn" type="button" onClick={() => void runDemoPublish(mnemonic)}>
                   {primarySaveLabel}
@@ -681,6 +745,7 @@ export function PublishSeedModal({
               <button className="btn" type="button" onClick={saveSeedFile}>
                 {seedFileSaved ? t.publish.seedJsonAgain : t.publish.seedJson}
               </button>
+              {!demoOn && <button className="btn" type="button" onClick={() => void startSolanaFlow(mnemonic)}>{st.save}</button>}
               {demoOn && (
                 <button className="btn" type="button" onClick={() => void runDemoPublish(mnemonic)}>
                   {t.publish.demoSave}
@@ -777,7 +842,7 @@ export function PublishSeedModal({
                 {t.back}
               </button>
               <button className="btn" type="submit">
-                {demoOn
+                {import.meta.env.VITE_PUBLISH_MODE === "solana" ? st.save : demoOn
                   ? t.publish.demoSaveBtn
                   : sponsorOn
                     ? t.publish.encryptPay

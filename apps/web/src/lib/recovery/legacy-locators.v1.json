@@ -1,0 +1,12 @@
+{
+  "schema": "sejire/legacy-locators/v1",
+  "entries": [
+    {
+      "vaultId": "449d6c6e8cec7700807278bc765ba116",
+      "txIds": ["T2huxIMLyfYclZH2h89Rf0IecHfFYKKaa0_3HaDP4fo"],
+      "archiveBytes": 28365,
+      "archiveSha256": "19133b897f69e1f0d43a55217a00adee6b6dfefb73f0f6228008f5c8a702e6c8",
+      "reason": "legacy-missing-vault-id"
+    }
+  ]
+}

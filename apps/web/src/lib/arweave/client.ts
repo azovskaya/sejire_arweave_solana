@@ -7,6 +7,7 @@ type ArweaveStatic = {
     host: string;
     port: number;
     protocol: string;
+    timeout?: number;
   }) => Arweave;
 };
 
@@ -14,7 +15,7 @@ type ArweaveStatic = {
  * Vite can double-wrap the CJS `arweave` default export so `.init` is not on
  * the value that `import Arweave from "arweave"` yields. Resolve the real API.
  */
-function resolveArweaveStatic(): ArweaveStatic {
+export function resolveArweaveStatic(): ArweaveStatic {
   const root = ArweaveImport as unknown as ArweaveStatic & {
     default?: ArweaveStatic & { default?: ArweaveStatic };
   };

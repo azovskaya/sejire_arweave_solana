@@ -1,0 +1,33 @@
+# Dedicated preview ONLY; use after owner's hosting/recipient/signer approval.
+# Default checkout remains closed. No routes to sejire.ar.io, no production secret bindings.
+name = "sejire-devnet-preview"
+main = "src/preview.ts"
+compatibility_date = "2026-07-01"
+compatibility_flags = ["nodejs_compat"]
+workers_dev = true
+
+[assets]
+directory = "../web/dist"
+binding = "ASSETS"
+not_found_handling = "single-page-application"
+run_worker_first = ["/api/*"]
+
+[vars]
+CHECKOUT_API_ENABLED = "false"
+CHECKOUT_UPLOAD_ENABLED = "false"
+MAX_ENVELOPE_BYTES = "524288"
+CHECKOUT_POLICY_VERSION = "devnet-sol-003-v1"
+# Required before enabling: exact preview HTTPS origin and approved PUBLIC recipient addresses.
+# CHECKOUT_ALLOWED_ORIGINS = "https://actual-preview-origin"
+# CHECKOUT_SERVICE_RECIPIENT = "owner-approved-devnet-public-address"
+# CHECKOUT_FUND_RECIPIENT = "owner-approved-distinct-devnet-public-address"
+# CHECKOUT_UPLOAD_SIGNER: separate test uploader secret via protected Cloudflare secret setup.
+# Never reuse a production key or a personal wallet; no automatic funding transactions.
+
+[[durable_objects.bindings]]
+name = "CHECKOUT_LEDGER"
+class_name = "CheckoutLedger"
+
+[[migrations]]
+tag = "preview-checkout-v1"
+new_sqlite_classes = ["CheckoutLedger"]

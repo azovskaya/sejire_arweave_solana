@@ -1,7 +1,11 @@
-import { useState } from "react";
-import { loadDraftTree } from "../lib/draftStorage";
-import { useI18n } from "../lib/i18n/I18nProvider";
-import { LanguageSwitch } from "./LanguageSwitch";
+import { useState } from 'react';
+import { NativeCheckoutPanel } from './NativeCheckoutPanel';
+import { CheckoutPublishPanel } from '@sejire/payment-panels';
+import { checkoutMessages } from '../lib/checkout/messages';
+import { loadDraftTree } from '../lib/draftStorage';
+import { useI18n } from '../lib/i18n/I18nProvider';
+import { landingMessages } from '../lib/i18n/landing';
+import { LanguageSwitch } from './LanguageSwitch';
 
 type Props = {
   onStartNew: (title: string) => void;
@@ -10,77 +14,45 @@ type Props = {
   onCashier: () => void;
 };
 
-type Step = "brand" | "menu";
-
-/**
- * Step 1: only SEJIRE.
- * Step 2: start choices — same mental model on phone and desktop.
- */
 export function Welcome({ onStartNew, onContinueDraft, onRestoreSeed, onCashier }: Props) {
-  const [step, setStep] = useState<Step>("brand");
+  const [supportOpen, setSupportOpen] = useState(false);
   const hasDraft = Boolean(loadDraftTree());
-  const { t } = useI18n();
-
+  const { t, locale } = useI18n();
+  const copy = landingMessages[locale];
   function startFresh() {
-    if (hasDraft) {
-      const ok = window.confirm(t.welcome.replaceDraftConfirm);
-      if (!ok) return;
-    }
+    if (hasDraft && !window.confirm(t.welcome.replaceDraftConfirm)) return;
     onStartNew(t.defaultTreeTitle);
   }
-
-  if (step === "brand") {
-    return (
-      <div className="welcome-screen is-brand">
-        <button
-          type="button"
-          className="welcome-brand"
-          onClick={() => setStep("menu")}
-          aria-label={t.welcome.openMenu}
-        >
-          SEJIRE
+  if (supportOpen && import.meta.env.VITE_NATIVE_AR_ENABLED === "1") return <main className="landing"><NativeCheckoutPanel onBack={() => setSupportOpen(false)} /></main>;
+  if (supportOpen) return <main className="landing"><CheckoutPublishPanel onBack={() => setSupportOpen(false)} /></main>;
+  return <main className="landing">
+    <header className="landing-header">
+      <span className="landing-brand">SEJIRE<span aria-hidden="true">.</span></span>
+      <LanguageSwitch placement="welcome" />
+    </header>
+    <section className="landing-hero">
+      <p className="landing-eyebrow">{copy.eyebrow}</p>
+      <h1>{copy.title}</h1>
+      <p className="landing-lead">{copy.lead}</p>
+      <div className="landing-actions">
+        <button type="button" className="btn" onClick={hasDraft ? onContinueDraft : startFresh}>
+          {hasDraft ? t.welcome.continueDraft : copy.start}
         </button>
-        <LanguageSwitch placement="welcome" />
+        <button type="button" className="btn ghost" onClick={onRestoreSeed}>{t.welcome.restoreSeed}</button>
+        {hasDraft && <button type="button" className="welcome-link-quiet" onClick={startFresh}>{t.welcome.newTree}</button>}
       </div>
-    );
-  }
-
-  return (
-    <div className="welcome-screen is-menu">
-      <div className="welcome-menu">
-        <button type="button" className="welcome-menu-brand" onClick={() => setStep("brand")}>
-          SEJIRE
-        </button>
-
-        <div className="welcome-menu-actions">
-          {hasDraft ? (
-            <>
-              <button type="button" className="btn welcome-menu-btn" onClick={onContinueDraft}>
-                {t.welcome.continueDraft}
-              </button>
-              <button type="button" className="btn ghost welcome-menu-btn" onClick={onRestoreSeed}>
-                {t.welcome.restoreSeed}
-              </button>
-              <button type="button" className="welcome-link-quiet" onClick={startFresh}>
-                {t.welcome.newTree}
-              </button>
-            </>
-          ) : (
-            <>
-              <button type="button" className="btn welcome-menu-btn" onClick={startFresh}>
-                {t.welcome.start}
-              </button>
-              <button type="button" className="btn ghost welcome-menu-btn" onClick={onRestoreSeed}>
-                {t.welcome.restoreSeed}
-              </button>
-            </>
-          )}
-        </div>
-        <button type="button" className="welcome-link-quiet" onClick={onCashier}>
-          {t.welcome.cashier}
-        </button>
-        <LanguageSwitch placement="welcome" />
-      </div>
-    </div>
-  );
+      <p className="sub">{copy.free}</p>
+    </section>
+    <ol className="landing-steps">
+      {copy.steps.map(([number, title, detail]) => <li key={number}>
+        <span className="landing-number" aria-hidden="true">{number}</span>
+        <h2>{title}</h2><p>{detail}</p>
+      </li>)}
+    </ol>
+    <footer className="landing-footer">
+      {import.meta.env.VITE_CHECKOUT_ENABLED === "1" && <button type="button" className="btn ghost" onClick={() => setSupportOpen(true)}>{checkoutMessages[locale].support}</button>}
+      <p>{copy.heritage}</p><p className="sub">{copy.privacy}</p>
+      {import.meta.env.VITE_QA_TOOLS === '1' && <button type="button" className="welcome-link-quiet" onClick={onCashier}>{t.welcome.cashier}</button>}
+    </footer>
+  </main>;
 }

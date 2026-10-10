@@ -10,9 +10,9 @@ export function saveDraftTree(store: TreeStore): boolean {
 }
 
 export function loadDraftTree(): TreeStore | null {
-  const raw = localStorage.getItem(DRAFT_KEY);
-  if (!raw) return null;
   try {
+    const raw = localStorage.getItem(DRAFT_KEY);
+    if (!raw) return null;
     return coerceTreeStore(JSON.parse(raw));
   } catch {
     return null;
@@ -20,5 +20,5 @@ export function loadDraftTree(): TreeStore | null {
 }
 
 export function clearDraftTree() {
-  localStorage.removeItem(DRAFT_KEY);
+  try { localStorage.removeItem(DRAFT_KEY); } catch { /* browser storage disabled */ }
 }

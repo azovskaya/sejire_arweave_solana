@@ -32,6 +32,13 @@ export class GatewayUnavailableError extends Error {
   }
 }
 
+export class RawEnvelopeMismatchError extends Error {
+  constructor() {
+    super("Архив в Arweave повреждён или не соответствует формату SEJIRE.");
+    this.name = "RawEnvelopeMismatchError";
+  }
+}
+
 export function isGatewayUnavailable(e: unknown): boolean {
   return e instanceof GatewayUnavailableError;
 }
@@ -80,25 +87,57 @@ export async function graphqlQuery<T>(
   throw new GatewayUnavailableError(GATEWAY_DOWN_RU, lastStatus);
 }
 
-/**
- * Download TX JSON from the first data gateway that returns 200.
- * 404 on a live gateway means the TX is not there — returns null.
- * Only throws when every host failed at the network layer.
- */
-export async function fetchTxJson(txId: string): Promise<unknown | null> {
+/** Only unanimous 404 means absent. Raw payloads are bounded and parsed as envelopes. */
+export async function fetchTxJson(
+  txId: string,
+  expected?: { bytes: number; sha256: string },
+): Promise<EnvelopeV1 | null> {
   const id = encodeURIComponent(txId);
-  let sawHttp = false;
+  let failed = false;
+  let malformed = false;
+  let lastStatus: number | null = null;
   for (const base of DATA_GATEWAYS) {
     try {
-      const res = await fetchWithTimeout(`${base}/${id}`);
-      sawHttp = true;
+      const res = await fetch(`${base}/raw/${id}`, {
+        credentials: "omit", referrerPolicy: "no-referrer", redirect: "follow",
+        signal: AbortSignal.timeout(GATEWAY_TIMEOUT_MS),
+      });
+      lastStatus = res.status;
       if (res.status === 404) continue;
-      if (!res.ok) continue;
-      return await res.json();
-    } catch {
-      /* next host */
+      if (res.status === 202) { failed = true; continue; }
+      if (!res.ok) { failed = true; continue; }
+      if (!res.body) { malformed = true; continue; }
+      const reader = res.body.getReader();
+      const chunks: Uint8Array[] = [];
+      let length = 0;
+      try {
+        for (;;) {
+          const next = await reader.read();
+          if (next.done) break;
+          length += next.value.length;
+          if (length > MAX_BACKUP_BYTES) { await reader.cancel(); throw new RawEnvelopeMismatchError(); }
+          chunks.push(next.value);
+        }
+      } finally { reader.releaseLock(); }
+      const bytes = new Uint8Array(length);
+      let offset = 0;
+      for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.length; }
+      if (expected) {
+        if (length !== expected.bytes) { malformed = true; continue; }
+        const hash = new Uint8Array(await crypto.subtle.digest("SHA-256", bytes as BufferSource));
+        const digest = [...hash].map((part) => part.toString(16).padStart(2, "0")).join("");
+        if (digest !== expected.sha256) { malformed = true; continue; }
+      }
+      try { return parseEnvelope(JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes))); }
+      catch { malformed = true; }
+    } catch (error) {
+      if (error instanceof RawEnvelopeMismatchError) malformed = true;
+      else failed = true;
     }
   }
-  if (!sawHttp) throw new GatewayUnavailableError(GATEWAY_DOWN_RU);
+  if (malformed) throw new RawEnvelopeMismatchError();
+  if (failed) throw new GatewayUnavailableError(GATEWAY_DOWN_RU, lastStatus);
   return null;
 }
+import { MAX_BACKUP_BYTES, parseEnvelope } from "../crypto/envelope";
+import type { EnvelopeV1 } from "../crypto/encrypt";

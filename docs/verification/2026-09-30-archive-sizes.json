@@ -1,0 +1,74 @@
+{
+  "synthetic": true,
+  "externalRequests": 0,
+  "signatures": 0,
+  "paidUploads": 0,
+  "technicalImportLimitBytes": 10485760,
+  "results": [
+    {
+      "trees": 1,
+      "people": 20,
+      "revisions": 1,
+      "personsTotal": 20,
+      "plainBytes": 19001,
+      "envelopeBytes": 25541,
+      "quotePlanningBytes": 29637,
+      "roundtrip": "PASS",
+      "underTechnicalImportLimit": true
+    },
+    {
+      "trees": 2,
+      "people": 100,
+      "revisions": 5,
+      "personsTotal": 200,
+      "plainBytes": 554946,
+      "envelopeBytes": 740137,
+      "quotePlanningBytes": 744233,
+      "roundtrip": "PASS",
+      "underTechnicalImportLimit": true
+    },
+    {
+      "trees": 4,
+      "people": 250,
+      "revisions": 10,
+      "personsTotal": 1000,
+      "plainBytes": 5092480,
+      "envelopeBytes": 6790181,
+      "quotePlanningBytes": 6794277,
+      "roundtrip": "PASS",
+      "underTechnicalImportLimit": true
+    },
+    {
+      "trees": 2,
+      "people": 1000,
+      "revisions": 3,
+      "personsTotal": 2000,
+      "plainBytes": 3709986,
+      "envelopeBytes": 4946857,
+      "quotePlanningBytes": 4950953,
+      "roundtrip": "PASS",
+      "underTechnicalImportLimit": true
+    }
+  ],
+  "attachments": [
+    {
+      "hypotheticalRawAttachmentMiB": 1,
+      "base64CiphertextBytesLowerBound": 1398124,
+      "status": "MODEL_ONLY_NOT_SUPPORTED_ATTACHMENT_FORMAT"
+    },
+    {
+      "hypotheticalRawAttachmentMiB": 5,
+      "base64CiphertextBytesLowerBound": 6990528,
+      "status": "MODEL_ONLY_NOT_SUPPORTED_ATTACHMENT_FORMAT"
+    },
+    {
+      "hypotheticalRawAttachmentMiB": 20,
+      "base64CiphertextBytesLowerBound": 27962048,
+      "status": "MODEL_ONLY_NOT_SUPPORTED_ATTACHMENT_FORMAT"
+    }
+  ],
+  "costs": "NOT RUN: no live quotes or uploads. Free tier is not guaranteed. 4096 overhead is an estimate, not a signed-item measurement.",
+  "checkedAt": "2026-09-30",
+  "baselineCommit": "d76e2f540dea6059ea77a0476cc9659b2d8e7545",
+  "execution": "Node 18.20.7, pure-JS TypeScript loader; existing encryption and tree engine, offline"
+}

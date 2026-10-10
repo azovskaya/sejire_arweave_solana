@@ -1,0 +1,80 @@
+{
+  "checkedAt": "2026-10-01T08:03:01.483Z",
+  "preparationOnly": true,
+  "treasuryAddress": "JT23rmoV1DGADYVCSGe6quHF36n6TzpNAXPSavZKBad",
+  "balanceLamports": "0",
+  "network": "solana-mainnet-beta",
+  "archiveBytes": 359233,
+  "archiveSha256": "e6f9f337073bbbb2a79172f28ae7aacf47a0257dd9b9a48d22e989f85b8c5ca6",
+  "dataItemBytes": 359438,
+  "synthetic": {
+    "trees": 2,
+    "personsPerTree": 12,
+    "revisionsPerTree": 30
+  },
+  "localRestore": "PASS",
+  "tags": [
+    {
+      "name": "Content-Type",
+      "value": "application/json"
+    },
+    {
+      "name": "App-Name",
+      "value": "SEJIRE"
+    },
+    {
+      "name": "Protocol",
+      "value": "sejire/v0.3"
+    },
+    {
+      "name": "Type",
+      "value": "vault-envelope"
+    }
+  ],
+  "signerType": "ANS-104 type 4 Solana Ed25519 (unsigned item prepared)",
+  "expectedIdType": "base64url SHA-256 of data-item signature; ID not assigned before signing",
+  "uploadCost": {
+    "winc": "4477760373",
+    "adjustments": []
+  },
+  "sampleSolQuote": {
+    "winc": "18697732437",
+    "fees": [
+      {
+        "adjustmentAmount": "-10068009774",
+        "currencyType": "solana",
+        "description": "Inclusive usage fee on all payments to cover infrastructure costs and payment provider fees.",
+        "name": "Turbo Infrastructure Fee",
+        "operator": "multiply",
+        "operatorMagnitude": 0.65
+      }
+    ],
+    "actualPaymentAmount": "28765742211"
+  },
+  "bufferedCreditTargetWinc": "4925536411",
+  "fundingQuote": {
+    "winc": "4925543655",
+    "fees": [
+      {
+        "adjustmentAmount": "-2652215815",
+        "currencyType": "solana",
+        "description": "Inclusive usage fee on all payments to cover infrastructure costs and payment provider fees.",
+        "name": "Turbo Infrastructure Fee",
+        "operator": "multiply",
+        "operatorMagnitude": 0.65
+      }
+    ],
+    "actualPaymentAmount": "7577759470"
+  },
+  "paymentLamports": "263430",
+  "estimatedNetworkFeeLamports": "5000",
+  "feeBufferLamports": "5000",
+  "refundableUnspentRentReserveLamports": "650240",
+  "requiredFundingLamports": "923670",
+  "turboPaymentRecipient": "HepiT2k93CFQaSB7i3ZNXhybZKn5MeWiv3UkLsaJKk4i",
+  "paymentEndpoint": "https://payment.ardrive.io/v1",
+  "archiveFormat": "sejire/envelope/v1 AES-GCM-256; encrypted sejire/vault/v1",
+  "settlement": "NOT RUN",
+  "mainnetUpload": "NOT RUN",
+  "ao": "BLOCKED independently; not required for archive preparation"
+}

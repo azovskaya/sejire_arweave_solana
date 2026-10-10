@@ -4,6 +4,7 @@ import {
   GATEWAY_DOWN_RU,
   GRAPHQL_ENDPOINTS,
   GatewayUnavailableError,
+  RawEnvelopeMismatchError,
   fetchTxJson,
   graphqlQuery,
   isGatewayUnavailable,
@@ -52,19 +53,21 @@ assert(empty.transactions.edges.length === 0, "empty vault is success, not 'down
 assert(gqlCalls >= 2, "walked past the failing primary");
 
 let dataCalls = 0;
+const envelope = {schema:"sejire/envelope/v1",vault_id:"a".repeat(32),cipher:"aes-gcm-256",kdf:"hkdf-sha256",iv:"AAAAAAAAAAAAAAAA",ciphertext:"AAAAAAAAAAAAAAAAAAAAAAAA",protocol:"sejire/v0.3"};
 globalThis.fetch = async (input) => {
   dataCalls += 1;
   const url = String(input);
+  assert(url.includes('/raw/txid123'), 'retrieval uses raw endpoint');
   if (url.includes("arweave.net")) {
     return new Response("missing", { status: 404 });
   }
-  return new Response(JSON.stringify({ schema: "sejire/envelope/v1", vault_id: "abc" }), {
+  return new Response(JSON.stringify(envelope), {
     status: 200,
     headers: { "Content-Type": "application/json" },
   });
 };
 const tx = await fetchTxJson("txid123");
-assert((tx as { vault_id: string }).vault_id === "abc", "data gateway fallback");
+assert(tx?.vault_id === envelope.vault_id, "data gateway fallback");
 assert(dataCalls >= 2, "skipped 404 primary");
 
 globalThis.fetch = async () => {
@@ -77,6 +80,22 @@ try {
   assert(isGatewayUnavailable(e), "all data hosts down");
 }
 
+for (const status of [429, 500, 503]) {
+  globalThis.fetch = async () => new Response("unavailable", { status });
+  let failed = false;
+  try { await fetchTxJson("existing-vault"); } catch (e) { failed = isGatewayUnavailable(e); }
+  assert(failed, `HTTP ${status} must not mean absent vault`);
+}
+globalThis.fetch = async () => new Response("not JSON", { status: 200 });
+let invalidFailed = false;
+try { await fetchTxJson("existing-vault"); } catch (e) { invalidFailed = e instanceof RawEnvelopeMismatchError; }
+assert(invalidFailed, "malformed raw response must not mean absence or timeout");
+globalThis.fetch = async (input) => new Response("missing", { status: String(input).includes("arweave.net") ? 404 : 503 });
+let mixedFailed = false;
+try { await fetchTxJson("existing-vault"); } catch (e) { mixedFailed = isGatewayUnavailable(e); }
+assert(mixedFailed, "mixed 404 and 503 is inconclusive");
+globalThis.fetch = async () => new Response("missing", { status: 404 });
+assert(await fetchTxJson("absent") === null, "all 404 means absent");
 globalThis.fetch = origFetch;
 
 console.log("gateways.selftest: OK", {

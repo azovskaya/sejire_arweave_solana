@@ -16,7 +16,7 @@ assert(parseUiLocale("en-US") === "en", "en-US");
 assert(parseUiLocale("ru") === "ru", "ru");
 assert(parseUiLocale("de") === null, "unknown");
 assert(detectUiLocale(["de-DE", "en-GB"]) === "en", "first known in list");
-assert(detectUiLocale(["fr-FR"]) === "ru", "fallback ru");
+assert(detectUiLocale(["fr-FR"]) === "en", "international fallback en");
 
 const locales: UiLocale[] = ["ru", "kk", "en"];
 for (const loc of locales) {

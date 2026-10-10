@@ -27,13 +27,13 @@ export function parseUiLocale(raw: string | null | undefined): UiLocale | null {
   return null;
 }
 
-/** Browser language → UI locale. Unknown / CIS default stays Russian (current product). */
+/** Browser language → UI locale. International visitors default to English. */
 export function detectUiLocale(languages: readonly string[] = []): UiLocale {
   for (const lang of languages) {
     const hit = parseUiLocale(lang);
     if (hit) return hit;
   }
-  return "ru";
+  return "en";
 }
 
 export function readStoredLocale(): UiLocale | null {

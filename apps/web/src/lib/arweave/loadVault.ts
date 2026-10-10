@@ -11,6 +11,7 @@ import {
 } from "../crypto/vault";
 import {
   fetchEnvelopeByTx,
+  GatewayUnavailableError,
   isGatewayUnavailable,
   listVaultVersions,
 } from "./fetch";
@@ -65,29 +66,32 @@ async function tryOpenTx(
 
 export async function loadVaultForPublish(
   keys: SejireKeys,
-  opts?: { parentTxId?: string | null }
+  opts?: { parentTxId?: string | null; freshKey?: boolean }
 ): Promise<LoadedPublishVault> {
+  const local = await openLocalVault(keys);
+  // Only the caller that generated a brand-new random mnemonic may bypass lookup.
+  if (opts?.freshKey) return { vault: local ?? emptyVault(keys.vaultId), parentTxId: null };
   let opened: VaultV1 | null = null;
   let parentTxId: string | null = null;
   let remoteListed = 0;
   let remoteDecryptFails = 0;
   let offline = false;
 
-  const consider = async (txId: string, fromGraphQl: boolean) => {
+  const consider = async (txId: string) => {
     const result = await tryOpenTx(keys, txId);
     if ("vault" in result) {
       opened = result.vault;
       parentTxId = txId;
       return true;
     }
-    if (fromGraphQl) remoteListed += 1;
+    remoteListed += 1;
     if ("decryptFailed" in result) remoteDecryptFails += 1;
     return false;
   };
 
   try {
     if (opts?.parentTxId) {
-      await consider(opts.parentTxId, false);
+      await consider(opts.parentTxId);
     }
     if (!opened) {
       const versions = await listVaultVersions(keys.vaultId, { limit: 15 });
@@ -96,7 +100,7 @@ export async function loadVaultForPublish(
           remoteListed += 1;
           continue;
         }
-        if (await consider(v.txId, true)) break;
+        if (await consider(v.txId)) break;
       }
     }
   } catch (e) {
@@ -104,10 +108,10 @@ export async function loadVaultForPublish(
     else throw e;
   }
 
-  const local = await openLocalVault(keys);
   if (offline) {
+    if (!local && !opened) throw new GatewayUnavailableError();
     return {
-      vault: local ?? emptyVault(keys.vaultId),
+      vault: opened ?? local!,
       parentTxId: opened ? parentTxId : opts?.parentTxId ?? null,
     };
   }

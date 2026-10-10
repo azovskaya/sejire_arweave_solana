@@ -1,0 +1,42 @@
+{
+  "checkedAtUtc": "2026-10-01T07:37:13.099140+00:00",
+  "network": "Solana devnet + AO ao.TN.1 readiness",
+  "payer": "Hn9ELgjKXrb7svZM9XtDYozGTirxo5e1tWRy1J1v4vwF",
+  "serviceRecipient": "ETWcxNPF3Qcwvo4NHYw6JhMiKnGwrvH1U9YEAQ3rZSWd",
+  "fundRecipient": "Gy3SSxP7spgDcserSfMckPd73LeSoxdrvXeNap7huLQN",
+  "balanceBeforeLamports": 998506560,
+  "balanceAfterLamports": 998506560,
+  "devnetLamportsSpent": 0,
+  "solanaTransactions": [],
+  "aoReadinessCandidateId": "fN3lu9MeN8QkgJMUNI7CjUdqWf_b4p_40Enp9TaXwyA",
+  "aoCreationStatus": "UNKNOWN_NOT_CONFIRMED",
+  "aoTransportSigner": "7keZdeBFGNkiawwb4H6OHiTopwCZZfu6v0k-vT0OSG4",
+  "moduleId": "ISShJH1ij-hPPt9St5UFFr_8Ys3Kj5cyg7zrMGt7H9s",
+  "readinessCodeHash": "e05e612bbaeeaaa961c3dd7a6d4c10b941ee3878d7ba616966d85d81a68a2f5b",
+  "mu": {
+    "url": "https://mu.ao-testnet.xyz",
+    "status": 500,
+    "error": "TypeError: Cannot read properties of null (reading 'toLowerCase')"
+  },
+  "cu": {
+    "url": "https://cu.ao-testnet.xyz",
+    "status": 403,
+    "error": "Process not found in whitelist"
+  },
+  "scheduler": {
+    "url": "https://su-router.ao-testnet.xyz",
+    "status": 400,
+    "error": "Process scheduler not found"
+  },
+  "alternativeCu": {
+    "url": "https://ao-cu-0.ao-devnet.xyz",
+    "status": "DNS_UNAVAILABLE"
+  },
+  "aoPaymentJournal": "NOT_RUN",
+  "aoReplay": "NOT_RUN",
+  "upload": "NOT_RUN",
+  "arweaveSettlement": "NOT_CONFIRMED",
+  "phantom": "NOT_RUN",
+  "localRsaSigningCheck": "PASS; crypto check only, not AO admission",
+  "privateKeysPublished": false
+}

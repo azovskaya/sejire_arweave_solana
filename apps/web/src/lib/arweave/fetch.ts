@@ -1,5 +1,5 @@
 import type { EnvelopeV1 } from "../crypto/encrypt";
-import { fetchTxJson, graphqlQuery, isGatewayUnavailable } from "./gateways";
+import { fetchTxJson, GatewayUnavailableError, graphqlQuery } from "./gateways";
 
 export { GatewayUnavailableError, isGatewayUnavailable } from "./gateways";
 
@@ -40,15 +40,11 @@ export function mapVaultVersionEdges(edges: GqlEdge[]): VaultVersionMeta[] {
 }
 
 export async function fetchEnvelopeByTx(txId: string): Promise<EnvelopeV1 | null> {
-  try {
-    const envelope = (await fetchTxJson(txId)) as EnvelopeV1 | null;
-    if (envelope?.schema === "sejire/envelope/v1") return envelope;
-  } catch (e) {
-    if (isGatewayUnavailable(e)) throw e;
-    return null;
-  }
-  return null;
+  return fetchTxJson(txId);
 }
+
+/** Compatibility alias for ordinary Vault-Id discovery. */
+export const listRecoverableVaultVersions = listVaultVersions;
 
 /**
  * List SEJIRE vault envelopes for vaultId (newest first).
@@ -85,7 +81,8 @@ export async function listVaultVersions(
     vaultId,
     limit,
   });
-  return mapVaultVersionEdges(data.transactions?.edges ?? []);
+  if (!Array.isArray(data.transactions?.edges)) throw new GatewayUnavailableError();
+  return mapVaultVersionEdges(data.transactions.edges);
 }
 
 /**

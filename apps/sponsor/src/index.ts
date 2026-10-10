@@ -1,3 +1,5 @@
+import { checkoutApi, type CheckoutApiEnv } from './checkout/api';
+export { CheckoutLedger } from './checkout/durableStore';
 /**
  * SEJIRE sponsor edge — Cloudflare Worker cashier.
  *
@@ -60,7 +62,7 @@ import {
 } from "./sessions";
 import { uploadEnvelope } from "./upload";
 
-export interface Env {
+export interface Env extends CheckoutApiEnv {
   KASPI_MERCHANT_TOKEN?: string;
   TURBO_JWK?: string;
   SITE_JWK?: string;
@@ -184,6 +186,8 @@ async function readJson(request: Request): Promise<Record<string, unknown>> {
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
+    const checkout = await checkoutApi(request, env);
+    if (checkout) return checkout;
     const secrets = await loadOpsSecrets(env);
     const rt = mergeRuntime(env, secrets);
     const origin = allowedOrigin(rt, request);

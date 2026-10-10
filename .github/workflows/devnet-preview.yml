@@ -1,0 +1,74 @@
+name: SEJIRE isolated devnet preview (owner manual approval)
+# NEVER triggered by push/PR. No main, ArNS or existing site route.
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'After approving Free Worker + SQLite + test recipients/signer, type devnet-preview'
+        required: true
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: sejire-devnet-preview
+  cancel-in-progress: false
+jobs:
+  publish-test-only:
+    if: github.ref == 'refs/heads/feat/solana-preservation' && inputs.confirm == 'devnet-preview'
+    environment: devnet-preview
+    runs-on: ubuntu-latest
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      CHECKOUT_UPLOAD_SIGNER: ${{ secrets.CHECKOUT_UPLOAD_SIGNER }}
+      CHECKOUT_SERVICE_RECIPIENT: ${{ vars.CHECKOUT_SERVICE_RECIPIENT || 'ETWcxNPF3Qcwvo4NHYw6JhMiKnGwrvH1U9YEAQ3rZSWd' }}
+      CHECKOUT_FUND_RECIPIENT: ${{ vars.CHECKOUT_FUND_RECIPIENT || 'Gy3SSxP7spgDcserSfMckPd73LeSoxdrvXeNap7huLQN' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Require isolated preview setup (never print secrets)
+        run: |
+          python3 - <<'PY'
+          import os, sys
+          needed=['CLOUDFLARE_API_TOKEN','CLOUDFLARE_ACCOUNT_ID','CHECKOUT_UPLOAD_SIGNER','CHECKOUT_SERVICE_RECIPIENT','CHECKOUT_FUND_RECIPIENT']
+          absent=[name for name in needed if not os.environ.get(name)]
+          if absent: sys.exit('Missing devnet-preview environment settings: '+', '.join(absent))
+          if os.environ['CHECKOUT_SERVICE_RECIPIENT']==os.environ['CHECKOUT_FUND_RECIPIENT']: sys.exit('Recipient roles must be separate')
+          PY
+      - run: npm ci --prefix apps/web
+      - run: npm ci --prefix apps/sponsor
+      - run: npm test
+      - run: npm run check --prefix apps/sponsor
+      - run: npm run test:api
+      - run: npm run test:preservation
+      - run: npm run lint --prefix apps/web
+      - run: npm run checkout:build
+      - run: npm exec --prefix apps/web -- playwright install --with-deps chromium
+      - run: npm run test:checkout-browser
+      - run: npm run preview:package
+      - name: Resolve actual account preview origin (read-only)
+        run: |
+          python3 - <<'PY'
+          import os,json,re,urllib.request,sys
+          account=os.environ['CLOUDFLARE_ACCOUNT_ID']
+          if not re.fullmatch(r'[a-f0-9]{32}',account): sys.exit('Invalid Cloudflare account ID')
+          req=urllib.request.Request('https://api.cloudflare.com/client/v4/accounts/'+account+'/workers/subdomain',headers={'Authorization':'Bearer '+os.environ['CLOUDFLARE_API_TOKEN']})
+          with urllib.request.urlopen(req,timeout=20) as response: data=json.load(response)
+          sub=data.get('result',{}).get('subdomain','')
+          if not data.get('success') or not re.fullmatch(r'[a-z0-9](?:[a-z0-9-]*[a-z0-9])?',sub): sys.exit('Existing Workers subdomain required')
+          origin='https://sejire-devnet-preview.'+sub+'.workers.dev'
+          with open(os.environ['GITHUB_ENV'],'a') as f: f.write('PREVIEW_ORIGIN='+origin+'\n')
+          print('Preview origin from Cloudflare account:',origin)
+          PY
+      - name: Deploy only named sandbox Worker and its SQLite (explicit manual approval)
+        run: |
+          npm exec --yes --package=wrangler@4.145.0 -- wrangler deploy .cache/devnet-preview/worker.mjs --no-bundle --config apps/sponsor/wrangler.preview.toml --var CHECKOUT_API_ENABLED:true --var CHECKOUT_UPLOAD_ENABLED:true --var "CHECKOUT_ALLOWED_ORIGINS:$PREVIEW_ORIGIN" --var "CHECKOUT_SERVICE_RECIPIENT:$CHECKOUT_SERVICE_RECIPIENT" --var "CHECKOUT_FUND_RECIPIENT:$CHECKOUT_FUND_RECIPIENT"
+      - name: Configure only separate test upload signer (stdin, masked secret)
+        run: |
+          printf '%s' "$CHECKOUT_UPLOAD_SIGNER" | npm exec --yes --package=wrangler@4.145.0 -- wrangler secret put CHECKOUT_UPLOAD_SIGNER --config apps/sponsor/wrangler.preview.toml
+      - name: Verify isolated preview HTTP health (no wallet or upload)
+        run: |
+          curl --fail --silent --show-error "$PREVIEW_ORIGIN/" > /tmp/sejire-preview-index.html
+          echo "Preview opened: $PREVIEW_ORIGIN"

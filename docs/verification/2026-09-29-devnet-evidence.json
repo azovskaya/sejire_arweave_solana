@@ -1,0 +1,48 @@
+{
+  "result": "PASS",
+  "checkedAt": "2026-09-29T12:12:26.766Z",
+  "network": "devnet",
+  "walletKind": "disposable software signer (NOT Phantom/Solflare extension)",
+  "checks": [
+    "real SDK signature",
+    "live Turbo acceptance",
+    "receipt import",
+    "durable receipt replay",
+    "live duplicate POST reuses the same item ID without re-signing or payment",
+    "live gateway retrieval",
+    "SHA-256",
+    "AES-GCM decrypt",
+    "full two-tree vault with relationships and history"
+  ],
+  "messageSignatures": 1,
+  "solTransfers": 0,
+  "treeCount": 2,
+  "receipt": {
+    "schema": "sejire/preservation-receipt/v1",
+    "network": "devnet",
+    "status": "accepted-by-turbo",
+    "wallet": "4mTS5vRmCtYtph2GvpNLnHHfKhCa3jn33pcFKNRV5sXK",
+    "vaultId": "f6128c8c810a8d358f4d93c81ee695ed",
+    "envelopeSha256": "1ed6f291d1726ed53840b71df0006eea6e1ddf6cd4ddd64c6d9f837286543aa7",
+    "acceptedAt": "2026-09-29T12:12:26.082Z",
+    "receipt": {
+      "id": "PnLfyAI2gfLB_S8DYcHY8hslLJuTDMVVwLJUWQQP6X4",
+      "timestamp": 1790683946283,
+      "winc": "0",
+      "version": "0.2.0",
+      "deadlineHeight": 2011194,
+      "dataCaches": [
+        "ar-io.dev"
+      ],
+      "fastFinalityIndexes": [
+        "ar-io.dev"
+      ],
+      "public": "qiT6R3pxYH_YcVKjtpKNWk-DuOtKV7REkKYyQRVBfiZuRaOkSXiViwJDOaAuCwEcadPgs9Xco-KNSF_NZqWT7nPXU0OAFQzLsm38I3HlQyzA83WKu3-VAUCFluYmYZbsGc30GRWLRlcYj6-X2jaO3IAlz7qYp_s6g4KNBAxKG-7SC8DI1vZvanZ69UaqY6B2wNsgYvzkH0Sw-zBo48s9lYX0XJuhApan13FZSCgi-H5LvJ8j_R1txDRF9nK9yyBqeXxWxIt4hmP-TQQyBIbSHYvunTIyWy6veDHQ7wBYxowmW8swpFXmfNLuH-huKQkA8KvKbMPPHef6pv_KbxCBbrRtKnZQzXMfraRL109KUpKTAIS5OrHnriv13VVJNPLLqTdVItat54_JxUhFiKs8Trc6w6EbGn2eN5jGgg_UerVzE6OfDAmoG7g1HMJ6Zc_jINxxopQnNjm5MAyidQp4usVFN0K0f9zeVbnlHsebdtUlTwiZtdCg5LOHnhVZ6-2yVlOLg2f6c8O_UpuNIovKE7CwYlcOBfBBEggJ5UlkwRR8JcvYogQfAgJvCagIi8al8wD3iZu0oAySyBpKYWbhV9T7BWvOCV3nRUiECJ-krWE_RhZ4BjR2gB5LOi_s_FsQIVEckX1vHpL8H--UUXmVgxPkkmCz-HGBYQ2d0sgH3Hc",
+      "signature": "FR1r37aAhpLkW8PxHnGNWkjZcc56V6SgPpyvGc9_a6BOMocvQAcn4MSuIy6fNY5TNudv6PZiyJdzDoklVdj7uY5ROHx8vjA1jbuTkYjZXRf0d-C4A1xi3Cunjn3Oi6Bs7Df8v-asePOUcyXNCA-za7TGyv_akOxkZoA6VlB8glL3Uce4wKgTfIsOIO-LzcsuZiuacnIsPhVtbTd1RlhU11qUmzQtVsezx7KVfkIlTfYskCen9NQdxtZVf29aGViS2EMUNo7iXRNY9ByGwScEQ8J2GgW4cDupkk43JBHKif602z3AyoG5vlnNU41jK2562VLca41tLIk2RqPyv9rUjnbNWpL_5-4SH0BenbXP3LXxib1wBCWmcVfvnrkLknTrpozaNGBN5fvFiXy2-V5BeSsyytbrzn6rf6M5MmgLLWHFqkgWcXLU17MaOnOisKHrwSqkRahvJr3I9dCGJ4stsDj9sD5Y_4fJPwEgljj3IwyZuVz8COZinecNwyt_tw-q4MUxCnMoHFoIO8xYrWrHeSfHZ3JPR62w5_Py5wmLKaGts5kl_DIY90I_z8Ai1cyZOPj6a1zfSYDciHyo4zn9N5TgCHmG7NNtANQl3rxFg8K0pRvOrYE1ILdPU866dRNxqhrfKZbaOuwW3SDr3YzeGSja4_0lpYDGnL2rkh-hC4w",
+      "owner": "h7e7yHJOXjMONPrNQX-VYqA9shQO3vT5XKQJHKOMbFk"
+    }
+  },
+  "warning": "Historical software-signer evidence on synthetic public-vector data only; not wallet-extension or paid-upload certification. No recovery words or private keys are included. Devnet archive availability expires.",
+  "applicationCommit": "4725b1ec47c0a4129fdfa7a0835207377a35fccd",
+  "sensitivity": "Public test-service receipt and public synthetic wallet address only."
+}

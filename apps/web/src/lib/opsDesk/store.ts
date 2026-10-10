@@ -14,9 +14,13 @@ const MIN_PASSWORD = 12;
 const PBKDF2_ITERS = 210_000;
 
 type Disk = {
-  passwordHash: string;
+  /** Legacy per-browser verifier; V2 does not use it for login. */
+  passwordHash?: string;
   wrap?: { iv: string; data: string };
+  /** Read only during migration of older local records; never written again. */
   hotTreasury?: HotTreasury;
+  treasuryAddress?: string;
+  treasuryKeySet?: boolean;
   settings: OpsSettings;
   kaspiTokenSet?: boolean;
   siteKeySet?: boolean;
@@ -32,6 +36,8 @@ const DEFAULT_SETTINGS: OpsSettings = {
 };
 
 const memory = new Map<string, string>();
+let activeTreasury: HotTreasury | null = null;
+let activePassword: string | null = null;
 
 function storageGet(key: string): string | null {
   try {
@@ -163,14 +169,15 @@ function parseDisk(raw: string | null): Disk | null {
   if (!raw) return null;
   try {
     const rec = JSON.parse(raw) as Partial<Disk>;
-    if (typeof rec.passwordHash !== "string" || !rec.passwordHash) return null;
     return {
-      passwordHash: rec.passwordHash,
+      passwordHash: typeof rec.passwordHash === "string" ? rec.passwordHash : undefined,
       wrap: rec.wrap && typeof rec.wrap.iv === "string" && typeof rec.wrap.data === "string" ? rec.wrap : undefined,
       hotTreasury:
         rec.hotTreasury && typeof rec.hotTreasury.jwk === "string" && typeof rec.hotTreasury.address === "string"
           ? rec.hotTreasury
           : undefined,
+      treasuryAddress: typeof rec.treasuryAddress === 'string' ? rec.treasuryAddress : rec.hotTreasury?.address,
+      treasuryKeySet: Boolean(rec.treasuryKeySet || rec.hotTreasury?.jwk),
       settings: {
         paymentProvider: rec.settings?.paymentProvider === "kaspi" ? "kaspi" : "mock",
         publishPriceMinor: rec.settings?.publishPriceMinor || DEFAULT_SETTINGS.publishPriceMinor,
@@ -198,6 +205,7 @@ function readDisk(): Disk | null {
 }
 
 function writeDisk(disk: Disk): void {
+  delete disk.hotTreasury;
   storageSet(OPS_STORAGE_KEY, JSON.stringify(disk));
 }
 
@@ -206,7 +214,7 @@ export function opsNeedsSetup(): boolean {
 }
 
 export function getHotTreasury(): HotTreasury | null {
-  return readDisk()?.hotTreasury ?? null;
+  return activeTreasury;
 }
 
 export function isTreasuryPublishEnabled(): boolean {
@@ -222,30 +230,36 @@ export function getOpsSettings(): OpsSettings {
 }
 
 export function readSessionPassword(): string | null {
-  try {
-    if (typeof sessionStorage === "undefined") return memory.get(SESSION_KEY) ?? null;
-    return sessionStorage.getItem(SESSION_KEY);
-  } catch {
-    return memory.get(SESSION_KEY) ?? null;
-  }
+  return activePassword;
 }
 
 function writeSessionPassword(password: string | null): void {
-  if (!password) {
-    memory.delete(SESSION_KEY);
-    try {
-      sessionStorage.removeItem(SESSION_KEY);
-    } catch {
-      /* ignore */
-    }
-    return;
-  }
-  memory.set(SESSION_KEY, password);
+  activePassword = password;
+  // Delete plaintext sessions from older builds without reading them.
   try {
-    sessionStorage.setItem(SESSION_KEY, password);
+    sessionStorage.removeItem(SESSION_KEY);
   } catch {
     /* ignore */
   }
+}
+
+/** Call only after the static admin-lock verifier accepts the password. */
+export async function activateOpsPassword(password: string): Promise<void> {
+  const disk = readDisk();
+  if (!disk) writeDisk({ settings: { ...DEFAULT_SETTINGS }, movements: [] });
+  else if (disk.hotTreasury?.jwk) {
+    try {
+      const secrets = disk.wrap ? await decryptSecrets(password, disk.wrap) : {};
+      secrets.turboJwk ??= disk.hotTreasury.jwk;
+      disk.treasuryAddress = disk.hotTreasury.address;
+      disk.treasuryKeySet = true;
+      disk.wrap = await encryptSecrets(password, secrets);
+      writeDisk(disk);
+    } catch {
+      // A different old local wrap must not override the portable admin lock.
+    }
+  }
+  writeSessionPassword(password);
 }
 
 export async function setupOpsPassword(password: string): Promise<void> {
@@ -256,18 +270,32 @@ export async function setupOpsPassword(password: string): Promise<void> {
     settings: { ...DEFAULT_SETTINGS },
     movements: [],
   });
+  activeTreasury=null;
   writeSessionPassword(password);
 }
 
 export async function loginOps(password: string): Promise<boolean> {
   const disk = readDisk();
   if (!disk) return false;
-  const ok = await verifyOpsPassword(password, disk.passwordHash);
-  if (ok) writeSessionPassword(password);
+  const ok = disk.passwordHash ? await verifyOpsPassword(password, disk.passwordHash) : false;
+  if (ok) {
+    let secrets: OpsSecrets = {};
+    try {secrets=disk.wrap?await decryptSecrets(password,disk.wrap):{};}catch{secrets={};}
+    if(disk.hotTreasury?.jwk){
+      secrets.turboJwk??=disk.hotTreasury.jwk;
+      disk.treasuryAddress=disk.hotTreasury.address;
+      disk.treasuryKeySet=true;
+      disk.wrap=await encryptSecrets(password,secrets);
+      writeDisk(disk);
+    }
+    activeTreasury=secrets.turboJwk?{jwk:secrets.turboJwk,address:disk.treasuryAddress||'configured'}:null;
+    writeSessionPassword(password);
+  }
   return ok;
 }
 
 export function logoutOps(): void {
+  activeTreasury=null;
   writeSessionPassword(null);
 }
 
@@ -279,7 +307,7 @@ export async function changeOpsPassword(nextPassword: string): Promise<void> {
   if (!disk) throw new Error("unauthorized");
   const secrets = disk.wrap ? await decryptSecrets(current, disk.wrap) : {};
   disk.passwordHash = await hashOpsPassword(nextPassword);
-  disk.wrap = Object.keys(secrets).length ? await encryptSecrets(nextPassword, secrets) : disk.wrap;
+  disk.wrap = disk.wrap ? await encryptSecrets(nextPassword, secrets) : undefined;
   writeDisk(disk);
   writeSessionPassword(nextPassword);
 }
@@ -289,7 +317,9 @@ export async function loadOpsSecrets(): Promise<OpsSecrets> {
   const disk = readDisk();
   if (!password || !disk?.wrap) return {};
   try {
-    return await decryptSecrets(password, disk.wrap);
+    const secrets=await decryptSecrets(password, disk.wrap);
+    activeTreasury=secrets.turboJwk?{jwk:secrets.turboJwk,address:disk.treasuryAddress||'configured'}:null;
+    return secrets;
   } catch {
     return {};
   }
@@ -344,13 +374,9 @@ export async function applyOpsKeyPatch(patch: OpsKeyPatch): Promise<void> {
   if (secrets.turboJwk && !looksLikeJwk(secrets.turboJwk)) throw new Error("turbo_jwk_invalid");
   if (secrets.siteJwk && !looksLikeJwk(secrets.siteJwk)) throw new Error("site_jwk_invalid");
 
-  if (patch.clearTreasury) delete disk.hotTreasury;
-  else if (secrets.turboJwk) {
-    disk.hotTreasury = {
-      jwk: secrets.turboJwk,
-      address: patch.hotAddress || disk.hotTreasury?.address || "configured",
-    };
-  }
+  if(patch.clearTreasury)disk.treasuryAddress=undefined;
+  else if(secrets.turboJwk)disk.treasuryAddress=patch.hotAddress||disk.treasuryAddress||disk.hotTreasury?.address||'configured';
+  disk.treasuryKeySet=Boolean(secrets.turboJwk);
 
   if (patch.paymentProvider === "kaspi" || patch.paymentProvider === "mock") {
     disk.settings.paymentProvider = patch.paymentProvider;
@@ -368,6 +394,7 @@ export async function applyOpsKeyPatch(patch: OpsKeyPatch): Promise<void> {
   disk.siteKeySet = Boolean(secrets.siteJwk);
   disk.wrap = await encryptSecrets(password, secrets);
   writeDisk(disk);
+  activeTreasury=secrets.turboJwk?{jwk:secrets.turboJwk,address:disk.treasuryAddress||'configured'}:null;
 }
 
 export async function setGeneratedTreasury(jwk: string, address: string): Promise<void> {
@@ -376,10 +403,9 @@ export async function setGeneratedTreasury(jwk: string, address: string): Promis
 
 export function redactOpsKeys(balanceAr?: string | null): RedactedOpsKeys {
   const disk = readDisk();
-  const hot = disk?.hotTreasury;
   return {
-    treasuryConfigured: Boolean(hot?.jwk),
-    treasuryAddress: hot?.address && hot.address !== "configured" ? hot.address : null,
+    treasuryConfigured: Boolean(disk?.treasuryKeySet),
+    treasuryAddress: disk?.treasuryAddress && disk.treasuryAddress !== "configured" ? disk.treasuryAddress : null,
     treasuryBalanceAr: balanceAr ?? null,
     siteKeyConfigured: Boolean(disk?.siteKeySet),
     kaspiTokenConfigured: Boolean(disk?.kaspiTokenSet),
@@ -389,7 +415,7 @@ export function redactOpsKeys(balanceAr?: string | null): RedactedOpsKeys {
     publishPriceMinor: disk?.settings.publishPriceMinor || "1500",
     publishCurrency: disk?.settings.publishCurrency || "KZT",
     passwordConfigured: Boolean(disk?.passwordHash),
-    hotTreasury: Boolean(hot?.jwk),
+    hotTreasury: Boolean(disk?.treasuryKeySet),
   };
 }
 
@@ -420,6 +446,7 @@ export function recordOpsMovement(event: {
 
 export function resetOpsDesk(): void {
   memory.clear();
+  activeTreasury=null;
   storageRemove(OPS_STORAGE_KEY);
   writeSessionPassword(null);
 }

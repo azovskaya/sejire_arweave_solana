@@ -199,6 +199,12 @@ export type UiMessages = {
     needWords: string;
     looking: (fp: string) => string;
     fileReady: string;
+    wordsLabel: string;
+    archiveReady: (name: string) => string;
+    removeFile: string;
+    openingFile: string;
+    openArchive: string;
+    fileTooLarge: string;
     arweaveDown: string;
     arweaveFail: string;
     noneAnywhere: string;
@@ -592,10 +598,16 @@ const ru: UiMessages = {
     networkVersion: (n) => `Сеть · версия ${n}`,
     hideFile: "Скрыть файл",
     openFile: "Открыть из файла",
-    fileLabel: "JSON: 12 слов (seed) или сейф (envelope)",
+    fileLabel: "Архив, квитанция или файл с 12 словами SEJIRE (.json)",
     needWords: "Нужны 12 корректных английских слов.",
     looking: (fp) => `Ищем версии (${fp})…`,
     fileReady: "Слова из файла подставлены. Нажмите «Открыть».",
+    wordsLabel: "12 слов восстановления SEJIRE",
+    archiveReady: (name) => `Выбран архив «${name}». Введите его 12 слов и нажмите «Восстановить архив». Подключение к хранилищу не требуется.`,
+    removeFile: "Убрать файл и искать сохранения в сети",
+    openingFile: "Открываем архив…",
+    openArchive: "Восстановить архив",
+    fileTooLarge: "Файл слишком большой. Выберите архив до 10 МБ.",
     arweaveDown: "Сеть Arweave недоступна.",
     arweaveFail: "Не удалось связаться с Arweave. Проверьте сеть и попробуйте снова.",
     noneAnywhere: "Сейф не найден ни в сети, ни в этом браузере.",
@@ -1007,10 +1019,16 @@ const kk: UiMessages = {
     networkVersion: (n) => `Желі · нұсқа ${n}`,
     hideFile: "Файлды жасыру",
     openFile: "Файлдан ашу",
-    fileLabel: "JSON: 12 сөз (seed) немесе сейф (envelope)",
+    fileLabel: "Архив, түбіртек немесе SEJIRE-дің 12 сөзі бар файл (.json)",
     needWords: "12 дұрыс ағылшын сөзі керек.",
     looking: (fp) => `Нұсқаларды іздеу (${fp})…`,
     fileReady: "Файлдағы сөздер қойылды. «Ашу» басыңыз.",
+    wordsLabel: "SEJIRE қалпына келтірудің 12 сөзі",
+    archiveReady: (name) => `«${name}» архиві таңдалды. Оның 12 сөзін енгізіп, «Архивті қалпына келтіру» басыңыз. Қоймаға қосылу қажет емес.`,
+    removeFile: "Файлды алып тастап, желіден іздеу",
+    openingFile: "Архив ашылуда…",
+    openArchive: "Архивті қалпына келтіру",
+    fileTooLarge: "Файл тым үлкен. 10 МБ-тан аспайтын архивті таңдаңыз.",
     arweaveDown: "Arweave желісі қолжетімсіз.",
     arweaveFail: "Arweave-пен байланыс болмады. Желіні тексеріп, қайта көріңіз.",
     noneAnywhere: "Сейф желіде де, осы браузерде де табылмады.",
@@ -1423,10 +1441,16 @@ const en: UiMessages = {
     networkVersion: (n) => `Network · version ${n}`,
     hideFile: "Hide file",
     openFile: "Open from file",
-    fileLabel: "JSON: 12 words (seed) or vault (envelope)",
+    fileLabel: "Archive, receipt or SEJIRE recovery-words file (.json)",
     needWords: "Need 12 valid English words.",
     looking: (fp) => `Looking for versions (${fp})…`,
     fileReady: "Words from the file are filled in. Tap Open.",
+    wordsLabel: "12 SEJIRE recovery words",
+    archiveReady: (name) => `Archive “${name}” selected. Enter its 12 words and choose Restore archive. No connection to the storage service is needed.`,
+    removeFile: "Remove file and search online",
+    openingFile: "Opening archive…",
+    openArchive: "Restore archive",
+    fileTooLarge: "This file is too large. Choose an archive up to 10 MB.",
     arweaveDown: "Arweave network unavailable.",
     arweaveFail: "Could not reach Arweave. Check the network and try again.",
     noneAnywhere: "Vault not found on the network or in this browser.",

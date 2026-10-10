@@ -1,0 +1,123 @@
+name: SEJIRE checks
+on:
+  pull_request:
+  push:
+    branches: [main, feat/solana-preservation, feat/preservation-v2-simple]
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: |
+            apps/web/package-lock.json
+            apps/sponsor/package-lock.json
+      - run: npm ci --prefix apps/web
+      - run: npm ci --prefix apps/sponsor
+      - run: npm test
+      - run: npm run check --prefix apps/sponsor
+      - run: npm run test:checkout
+      - run: npm run test:rpc
+      - run: npm run test:sqlite
+      - run: npm run test:api
+      - run: npm run test:protocol
+      - name: AO readiness signer selftest (offline, no secrets or network)
+        run: node scripts/ao-live-readiness.mjs --selftest
+      - name: Local Lua boundary checks (not a live AO process)
+        timeout-minutes: 4
+        run: |
+          if ! command -v lua5.4 >/dev/null; then
+            sudo apt-get update -o Acquire::Retries=0 -o Acquire::http::Timeout=20 -o Acquire::https::Timeout=20
+            sudo apt-get install -y lua5.4
+          fi
+          lua5.4 ao/modules/local_checks.lua
+      - run: npm run test:preservation
+      - run: npm run lint --prefix apps/web
+      - run: npm run archive:measure
+      - run: npm run solana:build
+      - run: npm run checkout:build
+      - run: npm exec --prefix apps/web -- playwright install --with-deps chromium
+      - run: npm run test:checkout-browser
+      - run: npm run test:protocol-browser
+      - run: npm run native:build
+      - name: Portable admin verifier is copied into the static build
+        run: cmp apps/web/public/admin-lock.json apps/web/dist/admin-lock.json
+      - name: Pages root publisher and smoke syntax
+        run: node --check scripts/pages-native-artifact.mjs && node --check scripts/verify-public-root.mjs
+      - name: Native V2 bundle dependency boundary (all dynamic chunks)
+        run: node scripts/native-bundle-audit.mjs
+      - uses: actions/upload-artifact@v4
+        with:
+          name: native-security-boundary
+          path: .cache/native-security
+          include-hidden-files: true
+      - uses: actions/upload-artifact@v4
+        with:
+          name: native-admin-build
+          path: apps/web/dist/
+          retention-days: 14
+      - name: Wallet history timeout regression (read-only, balance preserved)
+        run: npm run test:native-browser --prefix apps/web -- --grep 'public balances never wait for history'
+      - run: npm run test:native-browser
+      - run: npm run test:native-pilot-browser --prefix apps/web
+      - run: npm run test:v2-browser --prefix apps/web
+      - run: npm run test:admin-browser --prefix apps/web
+      - run: npm run test:v2-recovery-browser --prefix apps/web
+      - name: Read-only Arweave recovery gateway and CORS acceptance
+        run: node scripts/verify-recovery-network.mjs
+      - run: npm run test:native-journey --prefix apps/web
+      - name: Preserve synthetic MVP screens (no recovery words or wallet secrets)
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-mvp-screens
+          path: apps/web/test-results/mvp-screens
+          if-no-files-found: error
+      - name: Read-only live Solana requests from public Pages browser
+        run: node scripts/verify-public-sol-balances.mjs
+      - uses: actions/upload-artifact@v4
+        with:
+          name: public-sol-read-diagnostics
+          path: .cache/public-sol-read/
+      - run: npm run continuation:package
+      - run: npm run test:continuation
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sejire-continuation-local-pilot
+          path: .cache/continuation/
+          retention-days: 14
+      - run: npm run preview:package
+      - name: Preserve preview build for owner review (no deployment)
+        uses: actions/upload-artifact@v4
+        with:
+          name: devnet-preview-build
+          path: |
+            .cache/devnet-preview/
+            apps/web/dist/
+          retention-days: 7
+      - run: npm run security:reachability
+      - name: Preserve static security evidence (no site publication)
+        uses: actions/upload-artifact@v4
+        with:
+          name: a2-1-security-evidence
+          path: .cache/a2-1/browser-dependency-reachability.json
+          retention-days: 14
+      - name: Web dependency audit (non-blocking; release review required)
+        continue-on-error: true
+        run: npm audit --prefix apps/web --omit=dev
+      - name: Sponsor dependency audit (non-blocking; release review required)
+        continue-on-error: true
+        run: npm audit --prefix apps/sponsor --omit=dev
+      - name: Sponsor test-tool dependency audit (non-blocking; release review required)
+        continue-on-error: true
+        run: npm audit --prefix apps/sponsor
+      - name: Preserve checkout failure diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: checkout-failure-diagnostics
+          path: apps/web/test-results/

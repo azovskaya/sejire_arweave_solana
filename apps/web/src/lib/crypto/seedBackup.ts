@@ -1,4 +1,5 @@
 import { isValidMnemonic, normalizeMnemonic, splitWords } from "./bip39";
+import { downloadJson } from "../download";
 
 /** Plain BIP-39 backup for SEJIRE — not encrypted; treat like paper. */
 export type SeedBackupV1 = {
@@ -44,13 +45,5 @@ export function parseSeedBackup(raw: unknown): string | null {
 
 export function downloadSeedBackup(phrase: string) {
   const backup = buildSeedBackup(phrase);
-  const blob = new Blob([JSON.stringify(backup, null, 2)], {
-    type: "application/json;charset=utf-8",
-  });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `sejire-12-words-${backup.created_at.slice(0, 10)}.json`;
-  a.click();
-  URL.revokeObjectURL(url);
+  downloadJson(backup, `sejire-12-words-${backup.created_at.slice(0, 10)}.json`);
 }

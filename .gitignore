@@ -22,3 +22,7 @@ admin.local.json
 
 # Local QA exports (PDFs, JSON fixtures dumps)
 /artifacts/
+
+# Local Playwright test output (no family archives/words committed)
+apps/web/test-results/
+apps/web/playwright-report/

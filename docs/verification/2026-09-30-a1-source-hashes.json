@@ -1,0 +1,20 @@
+{
+  "baselineCommit": "d76e2f540dea6059ea77a0476cc9659b2d8e7545",
+  "sourceState": "uncommitted local source; not a new commit or CI evidence",
+  "sha256": {
+    "packages/checkout/amounts.ts": "fe01f512cfc7c09750f1ea35e6a2039c7f82d5faa1a212dcb46e1760c602401f",
+    "packages/checkout/states.ts": "c400ad02d9e94e8c9e4be9e9a979720b876fae644a85609439d2fa1b3955a09d",
+    "packages/checkout/order.ts": "2b2b571c6e1d715aabf130c7db1c7a5fc034cba3aec202ab067597925f3ca52d",
+    "apps/sponsor/src/checkout/selftest.ts": "d76dd1e84211dc03282a9c312e4297e535100c2d4301e11d8c9f26694d2123fb",
+    "apps/sponsor/src/checkout/reconciliation.ts": "25e04a940108e9eafc73bb9c9c23cc7bb4b2961a4652e0ac11a8093a0f08a42e",
+    "apps/sponsor/src/checkout/store.ts": "2d673d91c7e853d4ea6100168a8773df0373245821c4a6c213a71cd5878252dc",
+    "apps/sponsor/src/checkout/paymentValidator.ts": "6a7969f7992bcf97e36ceedad6785353635ac1900c11aae4df99baa73c569e6c",
+    "scripts/archive-size-study.mts": "e66e0b8c11a473c19f0000e2de575cd06e5cbebec7a2bf3c13db2c3324ef2c33",
+    "scripts/offline-ts-loader.mjs": "fe2e579d56000b194575e00d1cb57e08de95cb1329a0d9846b3bd1f73311afa8",
+    ".github/workflows/checks.yml": "0f849f056286a943631156b5902402269a9ccf0fe9a8a9c12637cae64804e8c4",
+    "apps/sponsor/package.json": "abbad48f78d3ecac71112c5f74888ba6ba01ee2c84b336b2fd12984220d46263",
+    "apps/sponsor/package-lock.json": "d4aad2c33abdac7547f9a6b1816cb8100c939ab617c5003819a6c630b84807c8",
+    "apps/sponsor/tsconfig.json": "09937c89879173036f37b6c417a16b8763796bc65508f0617e13df690e020634",
+    "package.json": "fca83066762612532853aa3db5ed3d77f2fa0af543f43672a5882778f78a3c36"
+  }
+}

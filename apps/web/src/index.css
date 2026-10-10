@@ -1897,3 +1897,113 @@ a {
   border-radius: 12px;
   padding: 1rem;
 }
+
+/* Clear first visit, with no account or wallet gate before the editor. */
+.landing { width: min(1080px, calc(100% - 3rem)); margin: 0 auto; padding: 1.5rem 0 2rem; }
+.landing-header { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.landing-brand { font: 700 1.8rem var(--font-display); letter-spacing: -0.05em; }
+.landing-brand span { color: var(--accent); }
+.landing-header .lang-switch-welcome { position: static; margin: 0; }
+.landing-hero { max-width: 820px; padding: clamp(2.8rem, 7vw, 5.5rem) 0 3rem; }
+.landing-eyebrow { color: #a94200; font-size: .8rem; text-transform: uppercase; letter-spacing: .14em; font-weight: 700; }
+.landing-hero h1 { font: 700 clamp(2.25rem, 4.8vw, 3.8rem)/1.08 var(--font-display); letter-spacing: -.045em; margin: 1.1rem 0 1.4rem; }
+.landing-lead { color: var(--ink-dim); max-width: 660px; font-size: clamp(1rem, 2vw, 1.14rem); }
+.landing-actions { display: flex; gap: .7rem; flex-wrap: wrap; align-items: center; margin: 1.8rem 0 .9rem; }
+.landing-actions .btn { min-height: 3rem; }
+.landing-steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 2rem; list-style: none; padding: 1.8rem 0; margin: 0; border-top: 1px solid var(--line-strong); }
+.landing-number { font: .85rem var(--font-mono); color: #a94200; }
+.landing-steps h2 { font: 700 1.05rem var(--font-display); margin: .8rem 0 .5rem; }
+.landing-steps p { color: var(--ink-dim); font-size: .9rem; margin: 0; }
+.landing-footer { border-top: 1px solid var(--line); padding-top: 1rem; max-width: 800px; font-size: .85rem; }
+.landing-footer .sub { font-size: .8rem; }
+.solana-panel { display: grid; gap: .7rem; }
+.network-note { border: 1px solid #58735c; background: #f2f7f2; padding: .8rem; border-radius: 4px; font-size: .9rem; }
+.network-note.is-test { border-color: #ab7423; background: #fff6e4; }
+.solana-quote { background: var(--bg-1); border: 1px solid var(--line); padding: .8rem; }
+.consent-line { display: flex; align-items: flex-start; gap: .6rem; margin: 1rem 0; font-size: .85rem; }
+.consent-line input { flex: 0 0 auto; margin-top: .3rem; }
+@media (max-width: 650px) {
+  .landing { width: calc(100% - 2rem); }
+  .landing-steps { grid-template-columns: 1fr; gap: 1.5rem; }
+  .landing-actions { align-items: stretch; flex-direction: column; }
+  .landing-hero { padding-bottom: 2rem; }
+}
+
+/* Native administration reuses the existing controls, with bounded public evidence panes. */
+.native-admin section { margin-block: 1.25rem; padding-block: .75rem; border-top: 1px solid currentColor; }
+.native-admin label { display: block; margin-block: .75rem; }
+.native-admin input:not([type=checkbox]), .native-admin textarea, .native-admin select { max-width: 100%; width: 100%; box-sizing: border-box; }
+.native-admin pre { max-width: 100%; max-height: 28rem; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; font-size: .85rem; }
+.native-admin .actions { flex-wrap: wrap; }
+.checkout-panel dd { overflow-wrap: anywhere; }
+
+/* Owner-facing protocol administration; technical controls remain in disclosures. */
+.admin-center { max-width: 1440px; margin: auto; padding: clamp(1rem, 3vw, 2.5rem); }
+.admin-header { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; padding-bottom: 1.5rem; }
+.admin-header > div:first-child { flex: 1; }
+.admin-brand { letter-spacing: .18em; font-weight: 700; color: var(--accent, #32726b); }
+.admin-header h1 { margin: .25rem 0; font-size: clamp(1.5rem, 3vw, 2.2rem); }
+.admin-layout { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 1.5rem; align-items: start; }
+.admin-sidebar { display: flex; flex-direction: column; gap: .4rem; position: sticky; top: 1rem; }
+.admin-sidebar button { text-align: left; white-space: normal; }
+.admin-sidebar button[aria-pressed=true] { background: #e7f2ed; color: #28574d; border-color: #91b4a7; }
+.admin-content { min-width: 0; }
+.admin-status { display: flex; flex-wrap: wrap; gap: .6rem 1.2rem; padding: .9rem; border-radius: 12px; background: #f1f4ef; color: #294337; font-size: .9rem; }
+.native-admin .admin-panel, .checkout-panel .admin-panel { border: 1px solid #d7dfd5; padding: clamp(1rem, 2vw, 1.5rem); border-radius: 16px; background: #fffefa; margin-block: 1rem; }
+.admin-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 235px), 1fr)); gap: 1rem; margin-block: 1rem; }
+.admin-card { padding: 1.15rem; border-radius: 14px; border: 1px solid #dbe3d9; background: #f8faf5; min-width: 0; }
+.admin-card h3 { font-size: 1rem; margin: 0 0 .8rem; }
+.admin-card > strong { font-size: 1.6rem; overflow-wrap: anywhere; }
+.admin-card p, .admin-hint { font-size: .92rem; line-height: 1.6; }
+.admin-card .btn { font-size: .85rem; margin: .2rem; }
+.admin-notice, .admin-alert { padding: .8rem 1rem; border-radius: 10px; overflow-wrap: anywhere; }
+.admin-notice { background: #e7f3e9; color: #294c34; }
+.admin-alert { background: #fff0e3; color: #7a4323; }
+.admin-wizard { max-width: 760px; }
+.admin-wizard progress { width: 100%; accent-color: #52896b; height: .5rem; }
+.admin-wizard h3 { margin-top: 1.5rem; }
+.admin-summary { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; }
+.admin-summary dd { margin: 0; overflow-wrap: anywhere; font-weight: 600; }
+.admin-center input, .admin-center select, .admin-center textarea { padding: .65rem; border-radius: 8px; border: 1px solid #bbcabc; background: #fff; color: #293d30; }
+.admin-center fieldset { border: none; padding: 0; }
+.admin-center details > summary { cursor: pointer; padding-block: .7rem; font-weight: 600; }
+.admin-address { overflow-wrap: anywhere; }
+.admin-table-scroll { overflow-x: auto; max-width: 100%; }
+.admin-center table { width: 100%; border-collapse: collapse; font-size: .9rem; }
+.admin-center th, .admin-center td { padding: .8rem .6rem; text-align: left; border-bottom: 1px solid #dce3d7; }
+.admin-progress { display: grid; gap: .7rem; list-style: none; padding: 0; border-left: 3px solid #91b4a7; margin-left: .5rem; padding-left: 1rem; }
+.admin-center .admin-advanced { background: #f5f5f0; }
+@media (max-width: 760px) {
+ .admin-layout { grid-template-columns: minmax(0, 1fr); gap: .5rem; }
+ .admin-sidebar { position: static; flex-direction: row; flex-wrap: wrap; gap: .3rem; }
+ .admin-sidebar button { font-size: .8rem; padding: .5rem .65rem; }
+ .admin-center { padding: .75rem; }
+ .admin-header { gap: .5rem; }
+ .admin-summary { grid-template-columns: minmax(0, 1fr); gap: .3rem; }
+ .admin-status { font-size: .8rem; }
+}
+
+.checkout-panel { min-width: 0; overflow-wrap: anywhere; }
+
+/* The pilot has two roles, one consistent visual hierarchy, and no trade-terminal styling. */
+.admin-center,.saving-screen { font-size:16px; line-height:1.55; color:#23392d; }
+.admin-center button,.saving-screen button,.admin-center input,.saving-screen input,.admin-center select { min-height:44px; font-size:16px; }
+.admin-center .admin-sidebar button,.admin-center table,.admin-center .admin-status { font-size:16px; }
+.admin-content { min-width:0; }
+.attention-panel { border-left:4px solid #52896b; }
+.attention-item { padding:1rem 0; border-top:1px solid #dce3d7; }
+.attention-item h3 { margin:0; }
+.saving-screen { max-width:760px; width:100%; margin:auto; padding:1rem; box-sizing:border-box; }
+.saving-screen h3 { font-size:1.65rem; margin:.4rem 0 1rem; }
+.saving-summary { background:#fafbf7; border:1px solid #dce3d7; border-radius:16px; padding:1.2rem; }
+.saving-total { display:grid; grid-template-columns:1fr auto; gap:.75rem; }
+.saving-total dd { margin:0; text-align:right; font-weight:600; }
+.saving-stage { border-left:3px solid #52896b; padding:.8rem; background:#eef4ee; }
+.saving-primary { width:100%; margin:.7rem 0; }
+.saving-uncertain { padding:1rem; background:#fff7e8; border-radius:12px; }
+.saving-screen input:not([type=checkbox]) { display:block; width:100%; box-sizing:border-box; padding:.7rem; margin:.4rem 0; }
+.saving-detail section { padding:.6rem 0; border-top:1px solid #dce3d7; }
+.saving-detail h4 { margin:.4rem 0; font-size:1.1rem; }
+.settings-review { border:1px solid #8aab97; padding:1rem; border-radius:12px; background:#f7faf5; }
+.admin-center .admin-card,.admin-center dd,.admin-center a { overflow-wrap:anywhere; min-width:0; }
+@media(max-width:760px) { .saving-screen { padding:.5rem; } .saving-summary { padding:.85rem; } .admin-center .admin-sidebar { display:grid; grid-template-columns:1fr 1fr; } .saving-total { grid-template-columns:1fr; gap:.2rem; } .saving-total dd { text-align:left; margin-bottom:.5rem; } }

@@ -1,0 +1,35 @@
+{
+  "date": "2026-09-30",
+  "baselineCommit": "d76e2f540dea6059ea77a0476cc9659b2d8e7545",
+  "branch": "feat/solana-preservation",
+  "sourceState": "uncommitted working tree; not CI",
+  "checks": [
+    {
+      "command": "npm run check --prefix apps/sponsor",
+      "status": "PASS",
+      "chunk_id": "e8e1ff",
+      "wall_time_seconds": 0.000055414,
+      "exit_code": 0,
+      "original_token_count": 0,
+      "output": ""
+    },
+    {
+      "command": "npm run sponsor:test:local",
+      "status": "PASS",
+      "chunk_id": "11e5d8",
+      "wall_time_seconds": 0.000032642,
+      "exit_code": 0,
+      "original_token_count": 100,
+      "output": "(node:16982) ExperimentalWarning: `--experimental-loader` may be removed in the future; instead use `register()`:\n--import 'data:text/javascript,import { register } from \"node:module\"; import { pathToFileURL } from \"node:url\"; register(\"./scripts/offline-ts-loader.mjs\", pathToFileURL(\"./\"));'\n(Use `node --trace-warnings ...` to show where the warning was created)\nsponsor.selftest: 46 asserts ok\n"
+    },
+    {
+      "command": "npm run test:checkout:local",
+      "status": "PASS",
+      "chunk_id": "313a50",
+      "wall_time_seconds": 0.000019674,
+      "exit_code": 0,
+      "original_token_count": 600,
+      "output": "(node:16994) ExperimentalWarning: `--experimental-loader` may be removed in the future; instead use `register()`:\n--import 'data:text/javascript,import { register } from \"node:module\"; import { pathToFileURL } from \"node:url\"; register(\"./scripts/offline-ts-loader.mjs\", pathToFileURL(\"./\"));'\n(Use `node --trace-warnings ...` to show where the warning was created)\nPASS arbitrary contributions include one million and above; no commercial cap\nPASS zero contribution does not request a fund transfer\nPASS service and contribution have exact distinct instruction allocations\nPASS SOL represented in lamports with its own program, not USDC units\nPASS decimal arithmetic and format roundtrip for 1000 varied amounts\nPASS technical u64 boundary, total overflow and precision fail closed\nPASS large contribution requests confirmation without rejecting it\nPASS preservation requires digest/size/service; no fixed 512 KiB policy\nPASS donation-only cannot charge service or require an archive; must be positive\nPASS quote/order immutability and distinct recipient roles\nPASS reject wrong network\nPASS reject wrong genesis\nPASS reject failed transaction\nPASS reject processed transaction\nPASS reject confirmed is not finalized\nPASS reject missing block time\nPASS reject late payment\nPASS reject predates order\nPASS reject wrong fee payer\nPASS reject missing payer signature\nPASS reject malformed signature\nPASS reject wrong recipient\nPASS reject wrong sender\nPASS reject counterfeit USDC mint\nPASS reject wrong token program\nPASS reject wrong decimals\nPASS reject wrong amount\nPASS reject wrong reference\nPASS reject duplicate instruction\nPASS reject extra transfer\nPASS forged order asset or total is rejected\nPASS atomic test store: 32 concurrent confirmations credit once\nPASS not found and RPC loss retain pending signature; replacement blocked\nPASS pending finality and wrong response signature never grant fulfillment\nPASS response lost AFTER atomic credit: retry does not credit again\nPASS duplicate order/reference and cross-order instruction replay are refused\nPASS detached reads cannot tamper with test store state\nPASS contribution-only is verified without storage fulfillment or archive\nPASS validated payment and credit allocations are frozen\ncheckout.selftest: 39 scenarios PASS; synthetic normalized RPC evidence, single-isolate memory store only; zero external requests/signatures/transfers\n"
+    }
+  ]
+}

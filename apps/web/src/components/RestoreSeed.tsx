@@ -1,17 +1,17 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { FormEvent } from "react";
 import { isValidMnemonic, normalizeMnemonic } from "../lib/crypto/bip39";
-import { deriveKeysFromMnemonic, fingerprintVaultId } from "../lib/crypto/keys";
-import type { EnvelopeV1 } from "../lib/crypto/encrypt";
-import { parseSeedBackup } from "../lib/crypto/seedBackup";
-import { openEnvelope, openLocalVault, type VaultV1 } from "../lib/crypto/vault";
-import {
-  fetchVaultEnvelope,
-  formatVersionWhen,
-  isGatewayUnavailable,
-  listVaultVersions,
-  type VaultVersionMeta,
-} from "../lib/arweave/fetch";
+import { deriveKeysFromMnemonic } from "../lib/crypto/keys";
+import { parsePortableBackup, type PortableBackup } from "../lib/crypto/backup";
+import { readCache } from "../lib/native/cache";
+import { retrieveNativeReceipt } from "../lib/native/receipt";
+import { DATA_GATEWAYS } from "../lib/arweave/gateways";
+import { retrieveReceiptEnvelope } from "../lib/solana/receipt";
+import { preservationError, solanaMessages } from "../lib/solana/messages";
+import { MAX_BACKUP_BYTES } from "../lib/crypto/envelope";
+import { openEnvelope, openLocalVault, sealVault, type VaultV1 } from "../lib/crypto/vault";
+import {recoverVaultFromWords} from "../lib/recovery/recover";
+import type {VerifiedVersion,SafeRecoveryDiagnostics,RecoveryErrorCode,RecoveryStage} from "../lib/recovery/types";
 import { saveDraftTree, loadDraftTree } from "../lib/draftStorage";
 import { coerceTreeStore } from "../lib/treeJson";
 import type { TreeStore } from "../lib/types";
@@ -19,11 +19,7 @@ import { defaultGuide, saveGuide } from "../lib/guide";
 import { pickHomeFocus } from "../lib/pedigree";
 import { activePersons } from "../lib/treeEngine";
 import { setVaultSession } from "../lib/vaultSession/session";
-import {
-  getLocalVaultVersion,
-  listLocalVaultVersions,
-  type LocalVaultVersion,
-} from "../lib/vaultSession/localArchive";
+import {listLocalVaultVersions,type LocalVaultVersion} from "../lib/vaultSession/localArchive";
 
 import { useI18n } from "../lib/i18n/I18nProvider";
 import { formatUiDateTime } from "../lib/i18n/messages";
@@ -34,7 +30,7 @@ type Props = {
 };
 
 type PickerItem =
-  | { kind: "network"; meta: VaultVersionMeta; index: number }
+  | { kind: "network"; version: VerifiedVersion; index: number }
   | { kind: "archive"; entry: LocalVaultVersion }
   | { kind: "local" };
 
@@ -45,15 +41,40 @@ export function RestoreSeed({ onRestored, onBack }: Props) {
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState("");
   const [showFile, setShowFile] = useState(false);
+  const [backup, setBackup] = useState<({ name: string } & Exclude<PortableBackup, { kind: "words" }>) | null>(null);
+  const [nativeGateway, setNativeGateway] = useState("");
   const [phrase, setPhrase] = useState<string | null>(null);
   const [vaultId, setVaultId] = useState<string | null>(null);
   const [picker, setPicker] = useState<PickerItem[] | null>(null);
   const [openingId, setOpeningId] = useState<string | null>(null);
+  const [diagnostics,setDiagnostics]=useState<SafeRecoveryDiagnostics|null>(null);
+  const showDiagnostics=location.hash.includes('diagnostics=1');
+
+  function recoveryMessage(code:RecoveryErrorCode):string {
+    const messages:Record<RecoveryErrorCode,string>={
+      INVALID_WORDS:t.restore.needWords,NO_CANDIDATES:'Сохранение для этих слов не найдено.',
+      DISCOVERY_UNAVAILABLE:'Сеть поиска сейчас недоступна. Проверьте соединение и повторите попытку.',
+      DATA_UNAVAILABLE:'Архив найден, но пока не удалось загрузить его данные. Попробуйте позже.',
+      METADATA_MISMATCH:'Найденная запись не прошла проверку.',RAW_HASH_MISMATCH:'Архив повреждён или не совпадает с опубликованной записью.',
+      VAULT_ID_MISMATCH:'Найденная запись относится к другому сейфу.',DECRYPT_FAILED:'Не удалось расшифровать найденный архив этими словами.',
+      INVALID_VAULT:'Данные семейного дерева не прошли проверку.',MULTIPLE_VERIFIED_HEADS:'Найдено несколько веток сохранения.',
+      UNKNOWN_ERROR:'Не удалось завершить восстановление. Повторите попытку.'};
+    return messages[code];
+  }
+  function stageMessage(stage:RecoveryStage):string {
+    return {discover:'Ищем сохранение…',found:'Нашли семейный архив…',download:'Загружаем…',verify:'Проверяем…',decrypt:'Открываем дерево…',open:'Открываем дерево…'}[stage];
+  }
+
+  useEffect(()=>{if(!location.hash.startsWith('#/restore?saved=1'))return;let live=true;void readCache<{id:string;serialized:string}>('retrieved-saving').then(value=>{if(!value||!live)return;const parsed=parsePortableBackup(value.serialized);if(parsed.kind==='words')throw Error('invalid_envelope');setBackup({name:'Arweave '+value.id,...parsed});setShowFile(true);setStatus('Архив получен и проверен. Введите свои слова SEJIRE для расшифровки.');}).catch(()=>{if(live)setError(t.restore.badFile);});return()=>{live=false;};},[]);
 
   async function finishWithVault(
     vault: VaultV1,
     opts: { vaultId: string; headTxId: string | null; mnemonic: string; source: "network" | "local" | "file" }
   ) {
+    if (!vault || vault.schema !== "sejire/vault/v1" || vault.vault_id !== opts.vaultId ||
+        !vault.trees || typeof vault.trees !== "object" || Array.isArray(vault.trees)) {
+      throw new Error(t.restore.badFile);
+    }
     const treeId = vault.active_tree_id;
     const store = coerceTreeStore(treeId ? vault.trees[treeId] : Object.values(vault.trees)[0]);
     if (!store) throw new Error(t.restore.noTrees);
@@ -63,6 +84,9 @@ export function RestoreSeed({ onRestored, onBack }: Props) {
       if (!ok) return;
     }
     const selfId = pickHomeFocus(store.draft, null);
+    // Preserve every tree in an imported/network vault, not only the active tree
+    // displayed by the editor. A later offline save must retain the full archive.
+    await sealVault(deriveKeysFromMnemonic(opts.mnemonic), vault);
     saveDraftTree(store);
     saveGuide({ ...defaultGuide(), step: "done", selfId });
     setVaultSession(
@@ -74,6 +98,7 @@ export function RestoreSeed({ onRestored, onBack }: Props) {
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
+    if (busy) return;
     const normalized = normalizeMnemonic(input);
     if (!isValidMnemonic(normalized)) {
       setError(t.restore.needWords);
@@ -83,27 +108,40 @@ export function RestoreSeed({ onRestored, onBack }: Props) {
     setError(null);
     try {
       const keys = deriveKeysFromMnemonic(normalized);
+      if (backup) {
+        const envelope = backup.kind === "receipt"
+          ? await retrieveReceiptEnvelope(backup.receipt, { vaultId: keys.vaultId })
+          : backup.kind === "nativeReceipt" ? await retrieveNativeReceipt(backup.receipt, nativeGateway ? [nativeGateway, ...DATA_GATEWAYS] : [...DATA_GATEWAYS]) : backup.envelope;
+        let vault: VaultV1;
+        try {
+          vault = await openEnvelope(keys, envelope);
+        } catch {
+          throw new Error(t.restore.decryptFail);
+        }
+        await finishWithVault(vault, {
+          vaultId: keys.vaultId,
+          headTxId: backup.kind === "nativeReceipt" ? backup.receipt.transactionId : backup.kind === "receipt" && backup.receipt.network === "mainnet-beta" ? backup.receipt.receipt.id : null,
+          mnemonic: normalized, source: backup.kind !== "vault" ? "network" : "file",
+        });
+        return;
+      }
       setPhrase(normalized);
       setVaultId(keys.vaultId);
-      setStatus(t.restore.looking(fingerprintVaultId(keys.vaultId)));
-
-      let versions: VaultVersionMeta[] = [];
+      setStatus('Ищем сохранение…');
+      const result=await recoverVaultFromWords(normalized,{onStage:stage=>setStatus(stageMessage(stage))});
+      setDiagnostics(result.diagnostics);
       let networkError: string | null = null;
-      try {
-        versions = await listVaultVersions(keys.vaultId);
-      } catch (e) {
-        networkError = isGatewayUnavailable(e)
-          ? e instanceof Error
-            ? e.message
-            : t.restore.arweaveDown
-          : t.restore.arweaveFail;
+      if(!result.ok)networkError=recoveryMessage(result.code);
+      if(result.ok&&!result.forks.length){
+        await finishWithVault(result.vault,{vaultId:keys.vaultId,headTxId:result.headTxId,mnemonic:normalized,source:'network'});return;
       }
+      const versions=result.ok?[...result.versions].sort((a,b)=>(b.blockHeight??-1)-(a.blockHeight??-1)):[];
       const archive = listLocalVaultVersions(keys.vaultId);
-      const networkIds = new Set(versions.map((v) => v.txId));
+      const networkIds = new Set(versions.map(v=>v.txId));
       const archiveOnly = archive.filter((a) => !networkIds.has(a.id));
       const local = await openLocalVault(keys);
       const items: PickerItem[] = [
-        ...versions.map((meta, index) => ({ kind: "network" as const, meta, index })),
+        ...versions.map((version, index) => ({ kind: "network" as const, version, index })),
         ...archiveOnly.map((entry) => ({ kind: "archive" as const, entry })),
         ...(local ? [{ kind: "local" as const }] : []),
       ];
@@ -118,7 +156,7 @@ export function RestoreSeed({ onRestored, onBack }: Props) {
 
       if (networkError) {
         setError(`${networkError} ${t.restore.shownLocal}`);
-      }
+      } else if(result.ok&&result.forks.length){setError(recoveryMessage('MULTIPLE_VERIFIED_HEADS'));}
 
       if (items.length === 1 && !networkError) {
         await openPickerItem(items[0], normalized, keys.vaultId);
@@ -130,9 +168,9 @@ export function RestoreSeed({ onRestored, onBack }: Props) {
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       setError(
-        /mismatch|decrypt|JSON/i.test(msg)
+        preservationError(locale, msg) ?? (/mismatch|decrypt|JSON/i.test(msg)
           ? t.restore.decryptFail
-          : msg
+          : msg)
       );
     } finally {
       setBusy(false);
@@ -149,7 +187,7 @@ export function RestoreSeed({ onRestored, onBack }: Props) {
     const useVaultId = vaultOverride ?? vaultId;
     if (!usePhrase || !useVaultId) return;
     const id =
-      item.kind === "local" ? "local" : item.kind === "network" ? item.meta.txId : item.entry.id;
+      item.kind === "local" ? "local" : item.kind === "network" ? item.version.txId : item.entry.id;
     setOpeningId(id);
     setError(null);
     try {
@@ -175,17 +213,9 @@ export function RestoreSeed({ onRestored, onBack }: Props) {
         });
         return;
       }
-      let vault: VaultV1 | null = null;
-      const remote = await fetchVaultEnvelope(useVaultId, item.meta.txId);
-      if (remote) vault = await openEnvelope(keys, remote.envelope);
-      if (!vault) {
-        const archived = getLocalVaultVersion(useVaultId, item.meta.txId);
-        if (!archived) throw new Error(t.restore.decryptFail);
-        vault = await openEnvelope(keys, archived.envelope);
-      }
-      await finishWithVault(vault, {
+      await finishWithVault(item.version.vault, {
         vaultId: useVaultId,
-        headTxId: item.meta.txId,
+        headTxId: item.version.txId,
         mnemonic: usePhrase,
         source: "network",
       });
@@ -202,40 +232,22 @@ export function RestoreSeed({ onRestored, onBack }: Props) {
   }
 
   async function onFile(file: File) {
+    if (busy) return;
     setBusy(true);
     setError(null);
+    setStatus("");
     try {
-      const raw = JSON.parse(await file.text()) as Record<string, unknown>;
-      const fromSeed = parseSeedBackup(raw);
-      if (fromSeed) {
-        setInput(fromSeed);
+      if (file.size > MAX_BACKUP_BYTES) throw new Error("envelope_too_large");
+      const parsed = parsePortableBackup(await file.text());
+      if (parsed.kind === "words") {
+        setInput(parsed.mnemonic);
         setStatus(t.restore.fileReady);
         return;
       }
-      if (raw.schema !== "sejire/envelope/v1") {
-        setError(t.restore.badFile);
-        return;
-      }
-      const normalized = normalizeMnemonic(input);
-      if (!isValidMnemonic(normalized)) {
-        setError(t.restore.needWords);
-        return;
-      }
-      const keys = deriveKeysFromMnemonic(normalized);
-      const vault = await openEnvelope(keys, raw as EnvelopeV1);
-      await finishWithVault(vault, {
-        vaultId: keys.vaultId,
-        headTxId: null,
-        mnemonic: normalized,
-        source: "file",
-      });
+      setBackup({ name: file.name, ...parsed });
     } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      setError(
-        /mismatch|decrypt|JSON/i.test(msg)
-          ? t.restore.decryptFail
-          : msg
-      );
+      setError(err instanceof Error && err.message === "envelope_too_large"
+        ? t.restore.fileTooLarge : t.restore.badFile);
     } finally {
       setBusy(false);
     }
@@ -250,7 +262,7 @@ export function RestoreSeed({ onRestored, onBack }: Props) {
         </button>
         <div className="panel" style={{ textAlign: "left", width: "100%" }}>
           <h2>{t.restore.pickTitle}</h2>
-          <p className="sub">{t.restore.pickHint(fingerprintVaultId(vaultId))}</p>
+          <p className="sub">Найдено несколько проверенных сохранений. Выберите нужную версию.</p>
           <ul className="vault-version-list">
             {picker.map((item) => {
               if (item.kind === "local") {
@@ -294,7 +306,7 @@ export function RestoreSeed({ onRestored, onBack }: Props) {
               }
               const n = networkCount - item.index;
               return (
-                <li key={item.meta.txId}>
+                  <li key={item.version.txId}>
                   <button
                     type="button"
                     className="vault-version-item"
@@ -302,11 +314,11 @@ export function RestoreSeed({ onRestored, onBack }: Props) {
                     onClick={() => void openPickerItem(item)}
                   >
                     <span className="vault-version-title">
-                      {item.index === 0 ? t.restore.latestNetwork : t.restore.networkVersion(n)}
-                      {openingId === item.meta.txId ? "…" : ""}
+                        {item.index === 0 ? t.restore.latestNetwork : t.restore.networkVersion(n)}
+                        {openingId === item.version.txId ? "…" : ""}
                     </span>
                     <span className="vault-version-meta">
-                      {formatVersionWhen(item.meta)} · {item.meta.txId.slice(0, 10)}…
+                        {item.version.blockHeight!=null?`Блок ${item.version.blockHeight}`:t.restore.unknownTime}
                     </span>
                   </button>
                 </li>
@@ -341,24 +353,43 @@ export function RestoreSeed({ onRestored, onBack }: Props) {
         <h2>{t.restore.title}</h2>
         <p className="sub">{t.restore.hint}</p>
         <textarea
+          aria-label={t.restore.wordsLabel}
           rows={3}
           value={input}
+          disabled={busy}
+          autoComplete="off"
+          spellCheck={false}
           onChange={(e) => setInput(e.target.value)}
           placeholder="word1 word2 … word12"
           required
         />
+        {backup && <div className="sub" role="status">
+          <p style={{ overflowWrap: "anywhere" }}>{backup.kind === "receipt" ? backup.name : t.restore.archiveReady(backup.name)}</p>
+          {backup.kind === "nativeReceipt" && <label>Другой Arweave gateway<input aria-label="Другой Arweave gateway" value={nativeGateway} onChange={e=>setNativeGateway(e.target.value)} /></label>}
+          {backup.kind === "receipt" && <>
+            <p>{solanaMessages[locale].receiptRestore}</p>
+            {backup.receipt.network === "devnet" && <p>{solanaMessages[locale].test}</p>}
+          </>}
+          <button type="button" className="welcome-link-quiet" disabled={busy} onClick={() => {
+            setBackup(null);
+            setError(null);
+            setStatus("");
+          }}>{t.restore.removeFile}</button>
+        </div>}
         <div className="actions">
           <button className="btn ghost" type="button" onClick={onBack}>
             {t.back}
           </button>
           <button className="btn" type="submit" disabled={busy}>
-            {busy ? status || t.restore.searching : t.restore.open}
+            {busy ? (backup ? t.restore.openingFile : status || t.restore.searching) : (backup ? t.restore.openArchive : t.restore.open)}
           </button>
         </div>
         <button
           type="button"
           className="welcome-link-quiet"
           style={{ marginTop: "0.85rem" }}
+          disabled={busy}
+          aria-expanded={showFile}
           onClick={() => setShowFile((v) => !v)}
         >
           {showFile ? t.restore.hideFile : t.restore.openFile}
@@ -369,15 +400,18 @@ export function RestoreSeed({ onRestored, onBack }: Props) {
             <input
               type="file"
               accept="application/json,.json"
+              disabled={busy}
               onChange={(e) => {
                 const f = e.target.files?.[0];
+                e.target.value = "";
                 if (f) void onFile(f);
               }}
             />
           </label>
         ) : null}
         {status && !busy && <p className="sub">{status}</p>}
-        {error && <p className="form-error">{error}</p>}
+        {error && <p className="form-error" role="alert">{error}</p>}
+        {showDiagnostics&&diagnostics&&<details><summary>Диагностика восстановления</summary><pre>{JSON.stringify(diagnostics,null,2)}</pre></details>}
       </form>
     </section>
   );

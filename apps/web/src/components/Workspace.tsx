@@ -34,6 +34,7 @@ import {
   type PersonProtocolView,
 } from "../lib/ao/protocolKinship";
 import { useI18n } from "../lib/i18n/I18nProvider";
+import { solanaMessages } from "../lib/solana/messages";
 import { LanguageSwitch } from "./LanguageSwitch";
 
 function uid() {
@@ -667,7 +668,9 @@ export function Workspace({ store, guide, onStoreChange, onGuideChange, onHome }
             const ver = isNewVersion ? t.workspace.publishedNewVersion : "";
             const short = txId?.slice(0, 10) ?? "";
             const shorter = txId?.slice(0, 8) ?? "";
-            if (mode === "demo") {
+            if (mode === "solana" || mode === "solana-test") {
+              flash(mode === "solana" ? solanaMessages[locale].success : solanaMessages[locale].testSuccess);
+            } else if (mode === "demo") {
               flash(t.workspace.publishedDemo(short, ver));
             } else if (mode === "sponsor") {
               flash(

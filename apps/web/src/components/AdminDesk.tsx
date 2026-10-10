@@ -3,7 +3,9 @@ import { useI18n } from "../lib/i18n/I18nProvider";
 import { formatUiDateTime } from "../lib/i18n/messages";
 import { LanguageSwitch } from "./LanguageSwitch";
 import { fetchNetworkSaves, mergeOpsOverview } from "../lib/opsDesk/feed";
+import { fetchAdminNetworkOverview, type NetworkOverview } from "../lib/opsDesk/networkOverview";
 import {
+  activateOpsPassword,
   applyOpsKeyPatch,
   changeOpsPassword,
   getHotTreasury,
@@ -16,28 +18,39 @@ import {
   redactOpsKeys,
   setGeneratedTreasury,
   setupOpsPassword,
+  readSessionPassword,
 } from "../lib/opsDesk/store";
+import { verifyAdminLock } from "../lib/opsDesk/adminLock";
 import { addressFromTreasuryJson, generateTreasuryWallet, treasuryBalanceAr } from "../lib/opsDesk/treasury";
 import type { OpsOverview, RedactedOpsKeys } from "../lib/opsDesk/types";
+import { PreservationV2Diagnostics } from "./PreservationV2Diagnostics";
 
-type Props = { onHome: () => void };
-type Tab = "overview" | "keys" | "password";
+type Props = { onHome: () => void; v2Diagnostics?: boolean };
+type Tab = "overview" | "keys" | "password" | "diagnostics";
+const v2Copy={
+  ru:{setup:'Настройка администратора',login:'Админ-панель',createPassword:'Создайте пароль',repeat:'Повторите пароль',create:'Создать пароль',password:'Пароль',show:'Показать пароль',hide:'Скрыть пароль',diagnostics:'Диагностика',wrong:'Неверный пароль'},
+  kk:{setup:'Әкімшіні баптау',login:'Әкімші панелі',createPassword:'Құпия сөз жасаңыз',repeat:'Құпия сөзді қайталаңыз',create:'Құпия сөз жасау',password:'Құпия сөз',show:'Құпия сөзді көрсету',hide:'Құпия сөзді жасыру',diagnostics:'Диагностика',wrong:'Құпия сөз қате'},
+  en:{setup:'Administrator setup',login:'Admin panel',createPassword:'Create a password',repeat:'Repeat password',create:'Create password',password:'Password',show:'Show password',hide:'Hide password',diagnostics:'Diagnostics',wrong:'Wrong password'},
+};
 
 function tenge(n: number, currency: string): string {
   if (currency === "KZT") return `${new Intl.NumberFormat("ru-KZ").format(n)} ₸`;
   return `${n} ${currency}`;
 }
 
-export function AdminDesk({ onHome }: Props) {
+export function AdminDesk({ onHome, v2Diagnostics=false }: Props) {
   const { t, locale } = useI18n();
   const a = t.admin;
+  const copy=v2Copy[locale];
   const [phase, setPhase] = useState<"boot" | "setup" | "login" | "desk">("boot");
-  const [tab, setTab] = useState<Tab>("overview");
+  const [tab, setTab] = useState<Tab>(()=>location.hash.startsWith('#/admin/diagnostics')?'diagnostics':'overview');
+  const [showPassword,setShowPassword]=useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [ok, setOk] = useState<string | null>(null);
   const [pass, setPass] = useState("");
   const [pass2, setPass2] = useState("");
   const [overview, setOverview] = useState<OpsOverview | null>(null);
+  const [networkOverview,setNetworkOverview]=useState<NetworkOverview|null>(null);
   const [keys, setKeys] = useState<RedactedOpsKeys | null>(null);
   const [turboPaste, setTurboPaste] = useState("");
   const [sitePaste, setSitePaste] = useState("");
@@ -55,8 +68,29 @@ export function AdminDesk({ onHome }: Props) {
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    setPhase(opsNeedsSetup() ? "setup" : "login");
-  }, []);
+    let live=true;
+    if (v2Diagnostics) {
+      logoutOps();
+      setPhase('login');
+      return;
+    }
+    if(opsNeedsSetup()){setPhase('setup');return;}
+    const existing=readSessionPassword();
+    if(!existing){setPhase('login');return;}
+    void loginOps(existing).then(async valid=>{
+      if(!live)return;
+      if(!valid){logoutOps();setPhase('login');return;}
+      setPhase('desk');await refreshDesk();
+    }).catch(()=>{if(live){logoutOps();setPhase('login');}});
+    return()=>{live=false;};
+  }, [v2Diagnostics]);
+
+  useEffect(()=>{
+    if(!v2Diagnostics)return;
+    const onHash=()=>{if(location.hash.startsWith('#/admin/diagnostics'))setTab('diagnostics');};
+    window.addEventListener('hashchange',onHash);
+    return()=>window.removeEventListener('hashchange',onHash);
+  },[v2Diagnostics]);
 
   async function refreshDesk() {
     const secrets = await loadOpsSecrets();
@@ -77,7 +111,7 @@ export function AdminDesk({ onHome }: Props) {
     setPrice(withBal.publishPriceMinor);
     setCurrency(withBal.publishCurrency);
     let network: Awaited<ReturnType<typeof fetchNetworkSaves>> = [];
-    try {
+    if(!v2Diagnostics)try {
       network = await fetchNetworkSaves();
     } catch {
       network = [];
@@ -85,7 +119,7 @@ export function AdminDesk({ onHome }: Props) {
     setOverview(
       mergeOpsOverview({
         network,
-        movements: listOpsMovements(),
+        movements: v2Diagnostics?[]:listOpsMovements(),
         treasuryAddress: withBal.treasuryAddress,
         treasuryReady: withBal.treasuryConfigured,
         kaspiReady: withBal.kaspiTokenConfigured,
@@ -93,6 +127,11 @@ export function AdminDesk({ onHome }: Props) {
         currency: withBal.publishCurrency,
       })
     );
+    if(v2Diagnostics){
+      try{setNetworkOverview(await fetchAdminNetworkOverview());}
+      catch{setNetworkOverview({archives:null,trees:null,saves:null,payments:null,paidCount:null,
+        receivedLamports:null,arweaveError:true,solanaError:true});}
+    }
     setTurboPaste("");
     setSitePaste("");
     setKaspiPaste("");
@@ -103,12 +142,14 @@ export function AdminDesk({ onHome }: Props) {
 
   async function onSetup(e: FormEvent) {
     e.preventDefault();
+    if(busy)return;
     setErr(null);
     if (pass !== pass2) {
       setErr(a.mismatch);
       return;
     }
     try {
+      setBusy(true);
       await setupOpsPassword(pass);
       setPass("");
       setPass2("");
@@ -116,20 +157,23 @@ export function AdminDesk({ onHome }: Props) {
       await refreshDesk();
     } catch (e) {
       setErr(e instanceof Error && e.message === "password_too_short" ? a.short : a.failed);
-    }
+    } finally {setBusy(false);}
   }
 
   async function onLogin(e: FormEvent) {
     e.preventDefault();
+    if(busy)return;
     setErr(null);
-    const okLogin = await loginOps(pass);
-    if (!okLogin) {
-      setErr(a.wrong);
-      return;
-    }
-    setPass("");
-    setPhase("desk");
-    await refreshDesk();
+    setBusy(true);
+    try {
+      const okLogin = v2Diagnostics ? await verifyAdminLock(pass) : await loginOps(pass);
+      if (!okLogin) {setErr(v2Diagnostics?copy.wrong:a.wrong);return;}
+      if (v2Diagnostics) await activateOpsPassword(pass.normalize("NFC"));
+      setPass("");
+      setPhase("desk");
+      await refreshDesk();
+    } catch {setErr(a.failed);}
+    finally {setBusy(false);}
   }
 
   async function onSaveKeys() {
@@ -208,7 +252,10 @@ export function AdminDesk({ onHome }: Props) {
 
   function leave() {
     logoutOps();
-    onHome();
+    setPass('');setPass2('');setKeys(null);setOverview(null);setNetworkOverview(null);setTab('overview');setShowPassword(false);
+    setTurboPaste('');setSitePaste('');setKaspiPaste('');setOnceJwk(null);setOnceAddr(null);
+    if(v2Diagnostics)setPhase('login');
+    else onHome();
   }
 
   return (
@@ -221,25 +268,25 @@ export function AdminDesk({ onHome }: Props) {
         <LanguageSwitch placement="chrome" />
       </header>
       <main className="ops-desk-main">
-        <h1>{a.title}</h1>
-        <p className="sub">{a.sub}</p>
-        <p className="ops-desk-note">{a.pagesHint}</p>
-        {err && <p className="form-error">{err}</p>}
+        <h1>{v2Diagnostics?(phase==='setup'?copy.setup:copy.login):a.title}</h1>
+        {phase==='desk'&&<><p className="sub">{a.sub}</p><p className="ops-desk-note">{a.pagesHint}</p></>}
+        {err && <p className="form-error" role="alert">{err}</p>}
         {ok && <p className="ops-desk-ok">{ok}</p>}
 
-        {phase === "setup" && (
+        {phase === "setup" && !v2Diagnostics && (
           <form className="ops-desk-form" onSubmit={(e) => void onSetup(e)}>
             <p className="sub">{a.setupHint}</p>
             <label>
-              <span>{a.password}</span>
-              <input type="password" autoComplete="new-password" value={pass} onChange={(e) => setPass(e.target.value)} />
+              <span>{v2Diagnostics?copy.createPassword:a.password}</span>
+              <input type={showPassword?'text':'password'} autoComplete="new-password" value={pass} onChange={(e) => setPass(e.target.value)} />
             </label>
             <label>
-              <span>{a.passwordAgain}</span>
-              <input type="password" autoComplete="new-password" value={pass2} onChange={(e) => setPass2(e.target.value)} />
+              <span>{v2Diagnostics?copy.repeat:a.passwordAgain}</span>
+              <input type={showPassword?'text':'password'} autoComplete="new-password" value={pass2} onChange={(e) => setPass2(e.target.value)} />
             </label>
-            <button className="btn" type="submit">
-              {a.create}
+            {v2Diagnostics&&<button type="button" className="welcome-link-quiet" onClick={()=>setShowPassword(value=>!value)}>{showPassword?copy.hide:copy.show}</button>}
+            <button className="btn" type="submit" disabled={busy}>
+              {v2Diagnostics?copy.create:a.create}
             </button>
           </form>
         )}
@@ -247,10 +294,11 @@ export function AdminDesk({ onHome }: Props) {
         {phase === "login" && (
           <form className="ops-desk-form" onSubmit={(e) => void onLogin(e)}>
             <label>
-              <span>{a.password}</span>
-              <input type="password" autoComplete="current-password" value={pass} onChange={(e) => setPass(e.target.value)} />
+              <span>{v2Diagnostics?copy.password:a.password}</span>
+              <input type={showPassword?'text':'password'} autoComplete="current-password" value={pass} onChange={(e) => setPass(e.target.value)} />
             </label>
-            <button className="btn" type="submit">
+            {v2Diagnostics&&<button type="button" className="welcome-link-quiet" onClick={()=>setShowPassword(value=>!value)}>{showPassword?copy.hide:copy.show}</button>}
+            <button className="btn" type="submit" disabled={busy}>
               {a.enter}
             </button>
           </form>
@@ -265,12 +313,44 @@ export function AdminDesk({ onHome }: Props) {
               <button type="button" className={tab === "keys" ? "is-on" : ""} onClick={() => setTab("keys")}>
                 {a.tabKeys}
               </button>
-              <button type="button" className={tab === "password" ? "is-on" : ""} onClick={() => setTab("password")}>
+              {!v2Diagnostics && <button type="button" className={tab === "password" ? "is-on" : ""} onClick={() => setTab("password")}>
                 {a.tabPassword}
-              </button>
+              </button>}
+              {v2Diagnostics&&<button type="button" className={tab === "diagnostics" ? "is-on" : ""} onClick={() => setTab("diagnostics")}>
+                {copy.diagnostics}
+              </button>}
             </div>
 
-            {tab === "overview" && overview && (
+            {v2Diagnostics&&tab==='diagnostics'&&<PreservationV2Diagnostics embedded />}
+
+            {v2Diagnostics&&tab==='overview'&&(
+              <div data-testid="admin-network-overview">
+                <p className="sub">Solana Devnet</p>
+                {!networkOverview&&<p>Загружаем сетевые данные…</p>}
+                {networkOverview&&(networkOverview.arweaveError||networkOverview.solanaError)&&
+                  <p role="status">{networkOverview.solanaError?'Не удалось проверить Solana':'Сетевые данные временно недоступны'}</p>}
+                <div className="ops-desk-cards">
+                  <div className="ops-desk-card"><em>Деревьев</em><strong>{networkOverview?.trees??'—'}</strong></div>
+                  <div className="ops-desk-card"><em>Сохранений</em><strong>{networkOverview?.saves??'—'}</strong></div>
+                  <div className="ops-desk-card"><em>Оплат подтверждено</em><strong>{networkOverview?.paidCount??'—'}</strong></div>
+                  <div className="ops-desk-card"><em>Получено</em><strong>{networkOverview?.receivedLamports==null?'—':`${(networkOverview.receivedLamports/1e9).toFixed(2)} SOL`}</strong></div>
+                </div>
+                <h2>Arweave</h2>
+                <table className="ops-desk-table"><thead><tr><th>Время</th><th>Сейф</th><th>TX</th><th>Статус</th></tr></thead>
+                  <tbody>{networkOverview?.archives?.map(row=><tr key={row.txId}>
+                    <td>{formatUiDateTime(row.at,locale,'—')}</td><td>{row.vaultFp}</td>
+                    <td><a href={`https://viewblock.io/arweave/tx/${row.txId}`} target="_blank" rel="noreferrer">{row.txId.slice(0,6)}…{row.txId.slice(-4)}</a></td>
+                    <td>{row.status}</td></tr>)}</tbody></table>
+                <h2>Solana</h2>
+                <table className="ops-desk-table"><thead><tr><th>Время</th><th>Сумма</th><th>Плательщик</th><th>Signature</th><th>Статус</th></tr></thead>
+                  <tbody>{networkOverview?.payments?.map(row=><tr key={row.signature}>
+                    <td>{formatUiDateTime(row.at,locale,'—')}</td><td>{(row.lamports/1e9).toFixed(2)} SOL</td>
+                    <td>{row.payer.slice(0,6)}…{row.payer.slice(-4)}</td>
+                    <td><a href={`https://explorer.solana.com/tx/${row.signature}?cluster=devnet`} target="_blank" rel="noreferrer">{row.signature.slice(0,6)}…{row.signature.slice(-4)}</a></td>
+                    <td>{row.status}</td></tr>)}</tbody></table>
+              </div>
+            )}
+            {!v2Diagnostics&&tab === "overview" && overview && (
               <div>
                 <p className="sub">
                   {a.treasury}: {overview.treasuryReady ? a.has : a.none}
@@ -454,7 +534,7 @@ export function AdminDesk({ onHome }: Props) {
               </div>
             )}
 
-            {tab === "password" && (
+            {tab === "password" && !v2Diagnostics && (
               <form className="ops-desk-form" onSubmit={(e) => void onChangePassword(e)}>
                 <label>
                   <span>{a.newPass}</span>

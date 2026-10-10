@@ -1,0 +1,608 @@
+{
+  "auditReportVersion": 2,
+  "vulnerabilities": {
+    "@ardrive/turbo-sdk": {
+      "name": "@ardrive/turbo-sdk",
+      "severity": "high",
+      "isDirect": true,
+      "via": [
+        "@solana/spl-token",
+        "@solana/web3.js"
+      ],
+      "effects": [],
+      "range": ">=1.8.0-alpha.1",
+      "nodes": [
+        "node_modules/@ardrive/turbo-sdk"
+      ],
+      "fixAvailable": {
+        "name": "@ardrive/turbo-sdk",
+        "version": "1.41.3",
+        "isSemVerMajor": true
+      }
+    },
+    "@dha-team/arbundles": {
+      "name": "@dha-team/arbundles",
+      "severity": "high",
+      "isDirect": true,
+      "via": [
+        "@ethersproject/hash",
+        "@ethersproject/providers",
+        "@ethersproject/signing-key",
+        "@ethersproject/transactions",
+        "@ethersproject/wallet",
+        "secp256k1"
+      ],
+      "effects": [],
+      "range": "*",
+      "nodes": [
+        "node_modules/@dha-team/arbundles"
+      ],
+      "fixAvailable": {
+        "name": "@dha-team/arbundles",
+        "version": "1.0.3",
+        "isSemVerMajor": true
+      }
+    },
+    "@ethersproject/abstract-provider": {
+      "name": "@ethersproject/abstract-provider",
+      "severity": "low",
+      "isDirect": false,
+      "via": [
+        "@ethersproject/transactions"
+      ],
+      "effects": [
+        "@ethersproject/abstract-signer"
+      ],
+      "range": "*",
+      "nodes": [
+        "node_modules/@ethersproject/abstract-provider"
+      ],
+      "fixAvailable": true
+    },
+    "@ethersproject/abstract-signer": {
+      "name": "@ethersproject/abstract-signer",
+      "severity": "low",
+      "isDirect": false,
+      "via": [
+        "@ethersproject/abstract-provider"
+      ],
+      "effects": [
+        "@ethersproject/hash"
+      ],
+      "range": "*",
+      "nodes": [
+        "node_modules/@ethersproject/abstract-signer"
+      ],
+      "fixAvailable": true
+    },
+    "@ethersproject/hash": {
+      "name": "@ethersproject/hash",
+      "severity": "low",
+      "isDirect": false,
+      "via": [
+        "@ethersproject/abstract-signer"
+      ],
+      "effects": [
+        "@ethersproject/providers",
+        "@ethersproject/wallet",
+        "@ethersproject/wordlists"
+      ],
+      "range": "5.0.6 - 5.8.0",
+      "nodes": [
+        "node_modules/@ethersproject/hash",
+        "node_modules/@ethersproject/wordlists/node_modules/@ethersproject/hash"
+      ],
+      "fixAvailable": true
+    },
+    "@ethersproject/hdnode": {
+      "name": "@ethersproject/hdnode",
+      "severity": "low",
+      "isDirect": false,
+      "via": [
+        "@ethersproject/abstract-signer",
+        "@ethersproject/signing-key",
+        "@ethersproject/transactions",
+        "@ethersproject/wordlists"
+      ],
+      "effects": [
+        "@ethersproject/json-wallets"
+      ],
+      "range": "*",
+      "nodes": [
+        "node_modules/@ethersproject/hdnode"
+      ],
+      "fixAvailable": true
+    },
+    "@ethersproject/json-wallets": {
+      "name": "@ethersproject/json-wallets",
+      "severity": "low",
+      "isDirect": false,
+      "via": [
+        "@ethersproject/abstract-signer",
+        "@ethersproject/hdnode",
+        "@ethersproject/transactions"
+      ],
+      "effects": [],
+      "range": "*",
+      "nodes": [
+        "node_modules/@ethersproject/json-wallets"
+      ],
+      "fixAvailable": true
+    },
+    "@ethersproject/providers": {
+      "name": "@ethersproject/providers",
+      "severity": "high",
+      "isDirect": false,
+      "via": [
+        "@ethersproject/abstract-provider",
+        "@ethersproject/abstract-signer",
+        "@ethersproject/hash",
+        "@ethersproject/transactions",
+        "ws"
+      ],
+      "effects": [],
+      "range": "<=5.8.0",
+      "nodes": [
+        "node_modules/@ethersproject/providers"
+      ],
+      "fixAvailable": true
+    },
+    "@ethersproject/signing-key": {
+      "name": "@ethersproject/signing-key",
+      "severity": "low",
+      "isDirect": false,
+      "via": [
+        "elliptic"
+      ],
+      "effects": [
+        "@dha-team/arbundles",
+        "@ethersproject/hdnode",
+        "@ethersproject/transactions",
+        "@ethersproject/wallet"
+      ],
+      "range": "<=5.8.0",
+      "nodes": [
+        "node_modules/@ethersproject/abstract-provider/node_modules/@ethersproject/signing-key",
+        "node_modules/@ethersproject/hdnode/node_modules/@ethersproject/signing-key",
+        "node_modules/@ethersproject/json-wallets/node_modules/@ethersproject/signing-key",
+        "node_modules/@ethersproject/signing-key"
+      ],
+      "fixAvailable": {
+        "name": "@dha-team/arbundles",
+        "version": "1.0.3",
+        "isSemVerMajor": true
+      }
+    },
+    "@ethersproject/transactions": {
+      "name": "@ethersproject/transactions",
+      "severity": "low",
+      "isDirect": false,
+      "via": [
+        "@ethersproject/signing-key"
+      ],
+      "effects": [
+        "@ethersproject/abstract-provider",
+        "@ethersproject/providers"
+      ],
+      "range": "<=5.8.0",
+      "nodes": [
+        "node_modules/@ethersproject/abstract-provider/node_modules/@ethersproject/transactions",
+        "node_modules/@ethersproject/hdnode/node_modules/@ethersproject/transactions",
+        "node_modules/@ethersproject/json-wallets/node_modules/@ethersproject/transactions",
+        "node_modules/@ethersproject/transactions"
+      ],
+      "fixAvailable": true
+    },
+    "@ethersproject/wallet": {
+      "name": "@ethersproject/wallet",
+      "severity": "low",
+      "isDirect": false,
+      "via": [
+        "@ethersproject/abstract-provider",
+        "@ethersproject/abstract-signer",
+        "@ethersproject/hash",
+        "@ethersproject/hdnode",
+        "@ethersproject/json-wallets",
+        "@ethersproject/signing-key",
+        "@ethersproject/transactions",
+        "@ethersproject/wordlists"
+      ],
+      "effects": [],
+      "range": "<=5.8.0",
+      "nodes": [
+        "node_modules/@ethersproject/wallet"
+      ],
+      "fixAvailable": true
+    },
+    "@ethersproject/wordlists": {
+      "name": "@ethersproject/wordlists",
+      "severity": "low",
+      "isDirect": false,
+      "via": [
+        "@ethersproject/hash"
+      ],
+      "effects": [
+        "@ethersproject/hdnode"
+      ],
+      "range": "5.0.8 - 5.8.0",
+      "nodes": [
+        "node_modules/@ethersproject/wordlists"
+      ],
+      "fixAvailable": true
+    },
+    "@solana/buffer-layout-utils": {
+      "name": "@solana/buffer-layout-utils",
+      "severity": "high",
+      "isDirect": false,
+      "via": [
+        "@solana/web3.js",
+        "bigint-buffer"
+      ],
+      "effects": [
+        "@solana/spl-token"
+      ],
+      "range": "*",
+      "nodes": [
+        "node_modules/@solana/buffer-layout-utils"
+      ],
+      "fixAvailable": {
+        "name": "@ardrive/turbo-sdk",
+        "version": "1.41.3",
+        "isSemVerMajor": true
+      }
+    },
+    "@solana/spl-token": {
+      "name": "@solana/spl-token",
+      "severity": "high",
+      "isDirect": false,
+      "via": [
+        "@solana/buffer-layout-utils",
+        "@solana/spl-token-group",
+        "@solana/spl-token-metadata",
+        "@solana/web3.js"
+      ],
+      "effects": [
+        "@ardrive/turbo-sdk"
+      ],
+      "range": "*",
+      "nodes": [
+        "node_modules/@solana/spl-token"
+      ],
+      "fixAvailable": {
+        "name": "@ardrive/turbo-sdk",
+        "version": "1.41.3",
+        "isSemVerMajor": true
+      }
+    },
+    "@solana/spl-token-group": {
+      "name": "@solana/spl-token-group",
+      "severity": "moderate",
+      "isDirect": false,
+      "via": [
+        "@solana/web3.js"
+      ],
+      "effects": [
+        "@solana/spl-token"
+      ],
+      "range": "*",
+      "nodes": [
+        "node_modules/@solana/spl-token-group"
+      ],
+      "fixAvailable": {
+        "name": "@ardrive/turbo-sdk",
+        "version": "1.41.3",
+        "isSemVerMajor": true
+      }
+    },
+    "@solana/spl-token-metadata": {
+      "name": "@solana/spl-token-metadata",
+      "severity": "moderate",
+      "isDirect": false,
+      "via": [
+        "@solana/web3.js"
+      ],
+      "effects": [
+        "@solana/spl-token"
+      ],
+      "range": "*",
+      "nodes": [
+        "node_modules/@solana/spl-token-metadata"
+      ],
+      "fixAvailable": {
+        "name": "@ardrive/turbo-sdk",
+        "version": "1.41.3",
+        "isSemVerMajor": true
+      }
+    },
+    "@solana/web3.js": {
+      "name": "@solana/web3.js",
+      "severity": "moderate",
+      "isDirect": true,
+      "via": [
+        "jayson"
+      ],
+      "effects": [
+        "@ardrive/turbo-sdk",
+        "@solana/spl-token",
+        "@solana/spl-token-group",
+        "@solana/spl-token-metadata"
+      ],
+      "range": "<=0.0.0-pr-29130 || 0.0.4 - 1.99.0",
+      "nodes": [
+        "node_modules/@solana/web3.js"
+      ],
+      "fixAvailable": {
+        "name": "@solana/web3.js",
+        "version": "0.0.3",
+        "isSemVerMajor": true
+      }
+    },
+    "bigint-buffer": {
+      "name": "bigint-buffer",
+      "severity": "high",
+      "isDirect": false,
+      "via": [
+        {
+          "source": 1103747,
+          "name": "bigint-buffer",
+          "dependency": "bigint-buffer",
+          "title": "bigint-buffer Vulnerable to Buffer Overflow via toBigIntLE() Function",
+          "url": "https://github.com/advisories/GHSA-3gc7-fjrx-p6mg",
+          "severity": "high",
+          "cwe": [
+            "CWE-120"
+          ],
+          "cvss": {
+            "score": 7.5,
+            "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
+          },
+          "range": "<=1.1.5"
+        }
+      ],
+      "effects": [
+        "@solana/buffer-layout-utils"
+      ],
+      "range": "*",
+      "nodes": [
+        "node_modules/bigint-buffer"
+      ],
+      "fixAvailable": {
+        "name": "@ardrive/turbo-sdk",
+        "version": "1.41.3",
+        "isSemVerMajor": true
+      }
+    },
+    "elliptic": {
+      "name": "elliptic",
+      "severity": "low",
+      "isDirect": false,
+      "via": [
+        {
+          "source": 1112030,
+          "name": "elliptic",
+          "dependency": "elliptic",
+          "title": "Elliptic Uses a Cryptographic Primitive with a Risky Implementation",
+          "url": "https://github.com/advisories/GHSA-848j-6mx2-7j84",
+          "severity": "low",
+          "cwe": [
+            "CWE-1240"
+          ],
+          "cvss": {
+            "score": 5.6,
+            "vectorString": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:L/I:L/A:L"
+          },
+          "range": "<=6.6.1"
+        }
+      ],
+      "effects": [
+        "@ethersproject/signing-key",
+        "secp256k1"
+      ],
+      "range": "*",
+      "nodes": [
+        "node_modules/elliptic"
+      ],
+      "fixAvailable": {
+        "name": "@dha-team/arbundles",
+        "version": "1.0.3",
+        "isSemVerMajor": true
+      }
+    },
+    "jayson": {
+      "name": "jayson",
+      "severity": "moderate",
+      "isDirect": false,
+      "via": [
+        "stream-json",
+        "uuid"
+      ],
+      "effects": [
+        "@solana/web3.js"
+      ],
+      "range": "2.0.6 - 4.3.0",
+      "nodes": [
+        "node_modules/jayson"
+      ],
+      "fixAvailable": {
+        "name": "@solana/web3.js",
+        "version": "0.0.3",
+        "isSemVerMajor": true
+      }
+    },
+    "secp256k1": {
+      "name": "secp256k1",
+      "severity": "high",
+      "isDirect": false,
+      "via": [
+        {
+          "source": 1100206,
+          "name": "secp256k1",
+          "dependency": "secp256k1",
+          "title": "secp256k1-node allows private key extraction over ECDH",
+          "url": "https://github.com/advisories/GHSA-584q-6j8j-r5pm",
+          "severity": "high",
+          "cwe": [
+            "CWE-200",
+            "CWE-354"
+          ],
+          "cvss": {
+            "score": 0,
+            "vectorString": null
+          },
+          "range": "=5.0.0"
+        },
+        "elliptic"
+      ],
+      "effects": [
+        "@dha-team/arbundles"
+      ],
+      "range": ">=2.0.0",
+      "nodes": [
+        "node_modules/secp256k1"
+      ],
+      "fixAvailable": {
+        "name": "@dha-team/arbundles",
+        "version": "1.0.3",
+        "isSemVerMajor": true
+      }
+    },
+    "stream-json": {
+      "name": "stream-json",
+      "severity": "moderate",
+      "isDirect": false,
+      "via": [
+        {
+          "source": 1164823,
+          "name": "stream-json",
+          "dependency": "stream-json",
+          "title": "stream-json: pick/ignore/filter/replace filters are O(depth²) on nested input — small crafted JSON blocks the event loop for seconds→minutes (DoS)",
+          "url": "https://github.com/advisories/GHSA-528h-pc64-c93x",
+          "severity": "moderate",
+          "cwe": [
+            "CWE-407"
+          ],
+          "cvss": {
+            "score": 6.2,
+            "vectorString": "CVSS:3.1/AV:L/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
+          },
+          "range": "<=3.4.0"
+        }
+      ],
+      "effects": [
+        "jayson"
+      ],
+      "range": "<=3.4.0",
+      "nodes": [
+        "node_modules/stream-json"
+      ],
+      "fixAvailable": {
+        "name": "@solana/web3.js",
+        "version": "0.0.3",
+        "isSemVerMajor": true
+      }
+    },
+    "uuid": {
+      "name": "uuid",
+      "severity": "moderate",
+      "isDirect": false,
+      "via": [
+        {
+          "source": 1119441,
+          "name": "uuid",
+          "dependency": "uuid",
+          "title": "uuid: Missing buffer bounds check in v3/v5/v6 when buf is provided",
+          "url": "https://github.com/advisories/GHSA-w5hq-g745-h8pq",
+          "severity": "moderate",
+          "cwe": [
+            "CWE-787",
+            "CWE-1285"
+          ],
+          "cvss": {
+            "score": 7.5,
+            "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:H/A:N"
+          },
+          "range": "<11.1.1"
+        }
+      ],
+      "effects": [
+        "jayson"
+      ],
+      "range": "<11.1.1",
+      "nodes": [
+        "node_modules/uuid"
+      ],
+      "fixAvailable": {
+        "name": "@solana/web3.js",
+        "version": "0.0.3",
+        "isSemVerMajor": true
+      }
+    },
+    "ws": {
+      "name": "ws",
+      "severity": "high",
+      "isDirect": false,
+      "via": [
+        {
+          "source": 1118729,
+          "name": "ws",
+          "dependency": "ws",
+          "title": "ws affected by a DoS when handling a request with many HTTP headers",
+          "url": "https://github.com/advisories/GHSA-3h5v-q93c-6h6q",
+          "severity": "high",
+          "cwe": [
+            "CWE-476"
+          ],
+          "cvss": {
+            "score": 7.5,
+            "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
+          },
+          "range": ">=7.0.0 <7.5.10"
+        },
+        {
+          "source": 1123260,
+          "name": "ws",
+          "dependency": "ws",
+          "title": "ws: Memory exhaustion DoS from tiny fragments and data chunks",
+          "url": "https://github.com/advisories/GHSA-96hv-2xvq-fx4p",
+          "severity": "high",
+          "cwe": [
+            "CWE-400",
+            "CWE-770",
+            "CWE-1050"
+          ],
+          "cvss": {
+            "score": 7.5,
+            "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
+          },
+          "range": ">=7.0.0 <7.5.11"
+        }
+      ],
+      "effects": [
+        "@ethersproject/providers"
+      ],
+      "range": "7.0.0 - 7.5.10",
+      "nodes": [
+        "node_modules/ws"
+      ],
+      "fixAvailable": true
+    }
+  },
+  "metadata": {
+    "vulnerabilities": {
+      "info": 0,
+      "low": 10,
+      "moderate": 6,
+      "high": 8,
+      "critical": 0,
+      "total": 24
+    },
+    "dependencies": {
+      "prod": 252,
+      "dev": 203,
+      "optional": 128,
+      "peer": 2,
+      "peerOptional": 0,
+      "total": 506
+    }
+  }
+}

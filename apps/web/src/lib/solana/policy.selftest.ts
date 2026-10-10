@@ -1,0 +1,48 @@
+import assert from 'node:assert/strict';
+import { deriveKeysFromMnemonic } from '../crypto/keys';
+import { encryptJson, decryptJson } from '../crypto/encrypt';
+import { assertQuote, envelopeDigest, envelopeTags, formatSol, networkConfig, quoteCap, serializeEnvelope, solToLamports, type UploadQuote } from './policy';
+
+// Public BIP39 test vector, never a funded wallet or a production recovery phrase.
+const keys = deriveKeysFromMnemonic('abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about');
+const privateTree = { name: 'Private family name', birthDate: '1972-03-04', note: 'Private memory' };
+const envelope = await encryptJson(keys.encKey, keys.vaultId, privateTree);
+const payload = serializeEnvelope(envelope);
+assert(!payload.includes(privateTree.name));
+assert(!payload.includes(privateTree.birthDate));
+assert.deepEqual(await decryptJson(keys.encKey, JSON.parse(payload)), privateTree);
+assert.equal((await envelopeDigest(payload)).length, 64);
+assert.throws(() => serializeEnvelope({ ...envelope, name: privateTree.name } as typeof envelope), /invalid_envelope/);
+assert.throws(() => serializeEnvelope({ ...envelope, ciphertext: 'a' }), /invalid_envelope/);
+assert.throws(() => serializeEnvelope({ ...envelope, iv: '' }), /invalid_envelope/);
+assert.throws(() => serializeEnvelope({ ...envelope, ciphertext: 'a'.repeat(11 * 1024 * 1024) }), /envelope_too_large/);
+assert.equal(quoteCap('0'), '0');
+assert.equal(quoteCap('1'), '2');
+assert.equal(quoteCap('1000'), '1100');
+for (const bad of ['-1', '1.5', '1e6', '', 'NaN', '10000000']) assert.throws(() => quoteCap(bad));
+assert.equal(formatSol('1'), '0.000000001');
+assert.equal(formatSol('10000000'), '0.01');
+assert.equal(formatSol('0'), '0');
+const quote: UploadQuote = { address: 'wallet-A', digest: await envelopeDigest(payload), network: 'devnet', maxLamports: '1000', expiresAt: 2000 };
+const input = { address: quote.address, digest: quote.digest, network: quote.network, now: 1000 };
+assert.doesNotThrow(() => assertQuote(quote, input));
+assert.throws(() => assertQuote(quote, { ...input, address: 'wallet-B' }), /wallet_changed/);
+assert.throws(() => assertQuote(quote, { ...input, network: 'mainnet-beta' }), /network_changed/);
+assert.throws(() => assertQuote(quote, { ...input, digest: 'changed' }), /envelope_changed/);
+assert.throws(() => assertQuote(quote, { ...input, now: 2000 }), /quote_expired/);
+assert.throws(() => assertQuote({ ...quote, expiresAt: NaN }, input), /quote_expired/);
+assert.throws(() => assertQuote({ ...quote, maxLamports: '10000001' }, input), /invalid_quote/);
+const tags = envelopeTags(envelope, 'a'.repeat(43));
+assert.equal(tags.find(t => t.name === 'Parent-Tx')?.value, 'a'.repeat(43));
+assert.equal(tags.find(t => t.name === 'Vault-Id')?.value, keys.vaultId);
+assert(!JSON.stringify(tags).includes(privateTree.name));
+assert.throws(() => envelopeTags(envelope, 'local-demo'), /invalid_parent/);
+assert.notEqual(networkConfig('devnet').uploadServiceConfig.url, networkConfig('mainnet-beta').uploadServiceConfig.url);
+assert(networkConfig('devnet').gatewayUrl.includes('devnet'));
+console.log('solana.policy.selftest: OK — encryption, money caps, quote binding, tags and network isolation');
+
+assert.equal(solToLamports('0.000000001'), '1');
+assert.equal(solToLamports('1.002'), '1002000000');
+assert.equal(solToLamports('0.000000000'), '0');
+for (const bad of ['-1', '0.0000000001', '1e-9', 'NaN', '']) assert.throws(() => solToLamports(bad));
+assert.equal(quoteCap(solToLamports('0.000001000')), '1100');

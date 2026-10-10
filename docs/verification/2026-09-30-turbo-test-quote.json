@@ -1,0 +1,18 @@
+{
+  "observedDuring": "2026-09-30 interrupted A0 session; exact wall-clock time not captured",
+  "environment": "Turbo test service; read-only calculation",
+  "method": "GET",
+  "url": "https://payment.services.ar-io.dev/v1/price/bytes/744233",
+  "requestedBytes": 744233,
+  "httpStatus": 200,
+  "response": {
+    "winc": "9314856308",
+    "adjustments": []
+  },
+  "solanaTransactions": 0,
+  "walletSignatures": 0,
+  "uploads": 0,
+  "payments": 0,
+  "productionCostProven": false,
+  "note": "Test winc quote only. Cannot convert this into proven production cost or paid upload. Payload 740137 bytes plus estimated 4096-byte overhead; not a signed data-item measurement."
+}

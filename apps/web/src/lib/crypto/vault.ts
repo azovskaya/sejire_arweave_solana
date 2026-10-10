@@ -3,6 +3,7 @@ import type { EnvelopeV1 } from "./encrypt";
 import { decryptJson, encryptJson } from "./encrypt";
 import type { SejireKeys } from "./keys";
 import { setLocalJson } from "../storageQuota";
+import { downloadJson } from "../download";
 
 export type VaultV1 = {
   schema: "sejire/vault/v1";
@@ -40,9 +41,9 @@ export async function sealVault(keys: SejireKeys, vault: VaultV1): Promise<Envel
 }
 
 export async function openLocalVault(keys: SejireKeys): Promise<VaultV1 | null> {
-  const raw = localStorage.getItem(LOCAL_PREFIX + keys.vaultId);
-  if (!raw) return null;
   try {
+    const raw = localStorage.getItem(LOCAL_PREFIX + keys.vaultId);
+    if (!raw) return null;
     const envelope = JSON.parse(raw) as EnvelopeV1;
     return await decryptJson<VaultV1>(keys.encKey, envelope);
   } catch {
@@ -51,7 +52,7 @@ export async function openLocalVault(keys: SejireKeys): Promise<VaultV1 | null> 
 }
 
 export function clearLocalVault(vaultId: string) {
-  localStorage.removeItem(LOCAL_PREFIX + vaultId);
+  try { localStorage.removeItem(LOCAL_PREFIX + vaultId); } catch { /* browser storage disabled */ }
 }
 
 export async function openEnvelope(keys: SejireKeys, envelope: EnvelopeV1): Promise<VaultV1> {
@@ -62,11 +63,5 @@ export async function openEnvelope(keys: SejireKeys, envelope: EnvelopeV1): Prom
 }
 
 export function downloadEnvelope(envelope: EnvelopeV1, filename?: string) {
-  const blob = new Blob([JSON.stringify(envelope, null, 2)], { type: "application/json" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename ?? `sejire-vault-${envelope.vault_id.slice(0, 8)}.json`;
-  a.click();
-  URL.revokeObjectURL(url);
+  downloadJson(envelope, filename ?? `sejire-vault-${envelope.vault_id.slice(0, 8)}.json`);
 }

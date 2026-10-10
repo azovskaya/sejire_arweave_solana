@@ -1,0 +1,340 @@
+{
+  "network": "devnet",
+  "payer": "Hn9ELgjKXrb7svZM9XtDYozGTirxo5e1tWRy1J1v4vwF",
+  "serviceRecipient": "ETWcxNPF3Qcwvo4NHYw6JhMiKnGwrvH1U9YEAQ3rZSWd",
+  "fundRecipient": "Gy3SSxP7spgDcserSfMckPd73LeSoxdrvXeNap7huLQN",
+  "balanceBefore": 998506560,
+  "balanceAfter": 928491560,
+  "budgetLamports": "200000000",
+  "spentLamports": "70015000",
+  "transactions": [
+    {
+      "scenario": "A",
+      "order": {
+        "schema": "sejire/order/v1",
+        "id": "cacc125ddd7a2f7ab391410695077530",
+        "kind": "preservation",
+        "network": "devnet",
+        "asset": {
+          "symbol": "SOL",
+          "decimals": 9,
+          "mint": null,
+          "program": "11111111111111111111111111111111"
+        },
+        "payer": "Hn9ELgjKXrb7svZM9XtDYozGTirxo5e1tWRy1J1v4vwF",
+        "reference": "6fMqvyuWxbyuVKGNWnLid83RL5LJdSwejpPmAwzgWRpX",
+        "createdAt": 1790925217294,
+        "expiresAt": 1790927017294,
+        "policyVersion": "native-validator-probe",
+        "servicePayment": {
+          "amount": "30000000",
+          "recipient": "ETWcxNPF3Qcwvo4NHYw6JhMiKnGwrvH1U9YEAQ3rZSWd"
+        },
+        "fundContribution": {
+          "amount": "0",
+          "recipient": "Gy3SSxP7spgDcserSfMckPd73LeSoxdrvXeNap7huLQN"
+        },
+        "total": "30000000",
+        "networkFee": {
+          "asset": "SOL",
+          "includedInTotal": false
+        },
+        "archive": {
+          "digest": "83e322b971c1163c6c038f49e09ad7239be396e24150f925a44aaa7916b49b1e",
+          "bytes": 5149
+        }
+      },
+      "evidence": {
+        "signature": "mkFCDSqaRrVBdhqiNqs7Wp8jY9T3RxppqB4LhQURCpiEkc9B3EL95T9kDrbbWagATTBdD4owQqccTekQu3Bvfqh",
+        "network": "devnet",
+        "genesisHash": "EtWTRABZaYq6iMfeYKouRu166VU2xqa1wcaWoxPkrZBG",
+        "commitment": "finalized",
+        "error": null,
+        "slot": 506559924,
+        "blockTimeMs": 1790925218000,
+        "feeLamports": "5000",
+        "feePayer": "Hn9ELgjKXrb7svZM9XtDYozGTirxo5e1tWRy1J1v4vwF",
+        "signers": [
+          "Hn9ELgjKXrb7svZM9XtDYozGTirxo5e1tWRy1J1v4vwF"
+        ],
+        "transfers": [
+          {
+            "instruction": "0",
+            "sender": "Hn9ELgjKXrb7svZM9XtDYozGTirxo5e1tWRy1J1v4vwF",
+            "recipient": "ETWcxNPF3Qcwvo4NHYw6JhMiKnGwrvH1U9YEAQ3rZSWd",
+            "amount": "30000000",
+            "asset": {
+              "symbol": "SOL",
+              "decimals": 9,
+              "mint": null,
+              "program": "11111111111111111111111111111111"
+            },
+            "references": [
+              "6fMqvyuWxbyuVKGNWnLid83RL5LJdSwejpPmAwzgWRpX"
+            ]
+          }
+        ]
+      },
+      "payment": {
+        "orderId": "cacc125ddd7a2f7ab391410695077530",
+        "network": "devnet",
+        "signature": "mkFCDSqaRrVBdhqiNqs7Wp8jY9T3RxppqB4LhQURCpiEkc9B3EL95T9kDrbbWagATTBdD4owQqccTekQu3Bvfqh",
+        "slot": 506559924,
+        "feeLamports": "5000",
+        "credits": [
+          {
+            "purpose": "servicePayment",
+            "amount": "30000000",
+            "recipient": "ETWcxNPF3Qcwvo4NHYw6JhMiKnGwrvH1U9YEAQ3rZSWd",
+            "instruction": "0"
+          }
+        ]
+      },
+      "signature": "mkFCDSqaRrVBdhqiNqs7Wp8jY9T3RxppqB4LhQURCpiEkc9B3EL95T9kDrbbWagATTBdD4owQqccTekQu3Bvfqh",
+      "explorer": "https://explorer.solana.com/tx/mkFCDSqaRrVBdhqiNqs7Wp8jY9T3RxppqB4LhQURCpiEkc9B3EL95T9kDrbbWagATTBdD4owQqccTekQu3Bvfqh?cluster=devnet",
+      "orderId": "cacc125ddd7a2f7ab391410695077530",
+      "serviceLamports": "30000000",
+      "fundLamports": "0",
+      "feeLamports": "5000",
+      "repeat": "already-credited",
+      "replay": "saved evidence into fresh MemoryAtomicOrderStore; not a persistent DB guarantee",
+      "storage": "NOT RUN: no approved AR reserve/executor"
+    },
+    {
+      "scenario": "B",
+      "order": {
+        "schema": "sejire/order/v1",
+        "id": "f1dfe8a845047ffb2309912762d508b6",
+        "kind": "preservation",
+        "network": "devnet",
+        "asset": {
+          "symbol": "SOL",
+          "decimals": 9,
+          "mint": null,
+          "program": "11111111111111111111111111111111"
+        },
+        "payer": "Hn9ELgjKXrb7svZM9XtDYozGTirxo5e1tWRy1J1v4vwF",
+        "reference": "CkhT53Gpp9KeBBf1D3Kb6L9dgVDVoZCkkvgHD6HMVrtn",
+        "createdAt": 1790925220284,
+        "expiresAt": 1790927020284,
+        "policyVersion": "native-validator-probe",
+        "servicePayment": {
+          "amount": "30000000",
+          "recipient": "ETWcxNPF3Qcwvo4NHYw6JhMiKnGwrvH1U9YEAQ3rZSWd"
+        },
+        "fundContribution": {
+          "amount": "5000000",
+          "recipient": "Gy3SSxP7spgDcserSfMckPd73LeSoxdrvXeNap7huLQN"
+        },
+        "total": "35000000",
+        "networkFee": {
+          "asset": "SOL",
+          "includedInTotal": false
+        },
+        "archive": {
+          "digest": "83e322b971c1163c6c038f49e09ad7239be396e24150f925a44aaa7916b49b1e",
+          "bytes": 5149
+        }
+      },
+      "evidence": {
+        "signature": "B8jxxE1SNB4d7PpxLrTW1c7tzatAX8a7Qrev5wLEBFu5v3M2YunfgymumrymLDiNpGYWdcaAMuNfv9KkaHdnSGM",
+        "network": "devnet",
+        "genesisHash": "EtWTRABZaYq6iMfeYKouRu166VU2xqa1wcaWoxPkrZBG",
+        "commitment": "finalized",
+        "error": null,
+        "slot": 506559936,
+        "blockTimeMs": 1790925221000,
+        "feeLamports": "5000",
+        "feePayer": "Hn9ELgjKXrb7svZM9XtDYozGTirxo5e1tWRy1J1v4vwF",
+        "signers": [
+          "Hn9ELgjKXrb7svZM9XtDYozGTirxo5e1tWRy1J1v4vwF"
+        ],
+        "transfers": [
+          {
+            "instruction": "0",
+            "sender": "Hn9ELgjKXrb7svZM9XtDYozGTirxo5e1tWRy1J1v4vwF",
+            "recipient": "ETWcxNPF3Qcwvo4NHYw6JhMiKnGwrvH1U9YEAQ3rZSWd",
+            "amount": "30000000",
+            "asset": {
+              "symbol": "SOL",
+              "decimals": 9,
+              "mint": null,
+              "program": "11111111111111111111111111111111"
+            },
+            "references": [
+              "CkhT53Gpp9KeBBf1D3Kb6L9dgVDVoZCkkvgHD6HMVrtn"
+            ]
+          },
+          {
+            "instruction": "1",
+            "sender": "Hn9ELgjKXrb7svZM9XtDYozGTirxo5e1tWRy1J1v4vwF",
+            "recipient": "Gy3SSxP7spgDcserSfMckPd73LeSoxdrvXeNap7huLQN",
+            "amount": "5000000",
+            "asset": {
+              "symbol": "SOL",
+              "decimals": 9,
+              "mint": null,
+              "program": "11111111111111111111111111111111"
+            },
+            "references": [
+              "CkhT53Gpp9KeBBf1D3Kb6L9dgVDVoZCkkvgHD6HMVrtn"
+            ]
+          }
+        ]
+      },
+      "payment": {
+        "orderId": "f1dfe8a845047ffb2309912762d508b6",
+        "network": "devnet",
+        "signature": "B8jxxE1SNB4d7PpxLrTW1c7tzatAX8a7Qrev5wLEBFu5v3M2YunfgymumrymLDiNpGYWdcaAMuNfv9KkaHdnSGM",
+        "slot": 506559936,
+        "feeLamports": "5000",
+        "credits": [
+          {
+            "purpose": "servicePayment",
+            "amount": "30000000",
+            "recipient": "ETWcxNPF3Qcwvo4NHYw6JhMiKnGwrvH1U9YEAQ3rZSWd",
+            "instruction": "0"
+          },
+          {
+            "purpose": "fundContribution",
+            "amount": "5000000",
+            "recipient": "Gy3SSxP7spgDcserSfMckPd73LeSoxdrvXeNap7huLQN",
+            "instruction": "1"
+          }
+        ]
+      },
+      "signature": "B8jxxE1SNB4d7PpxLrTW1c7tzatAX8a7Qrev5wLEBFu5v3M2YunfgymumrymLDiNpGYWdcaAMuNfv9KkaHdnSGM",
+      "explorer": "https://explorer.solana.com/tx/B8jxxE1SNB4d7PpxLrTW1c7tzatAX8a7Qrev5wLEBFu5v3M2YunfgymumrymLDiNpGYWdcaAMuNfv9KkaHdnSGM?cluster=devnet",
+      "orderId": "f1dfe8a845047ffb2309912762d508b6",
+      "serviceLamports": "30000000",
+      "fundLamports": "5000000",
+      "feeLamports": "5000",
+      "repeat": "already-credited",
+      "replay": "saved evidence into fresh MemoryAtomicOrderStore; not a persistent DB guarantee",
+      "storage": "NOT RUN: no approved AR reserve/executor"
+    },
+    {
+      "scenario": "C",
+      "order": {
+        "schema": "sejire/order/v1",
+        "id": "5493af785c3917a199e1cecafe58b120",
+        "kind": "contribution",
+        "network": "devnet",
+        "asset": {
+          "symbol": "SOL",
+          "decimals": 9,
+          "mint": null,
+          "program": "11111111111111111111111111111111"
+        },
+        "payer": "Hn9ELgjKXrb7svZM9XtDYozGTirxo5e1tWRy1J1v4vwF",
+        "reference": "Csvizf8noxXs3VQEe8ra9ceJpZRoXerTZRzk8GSnafH9",
+        "createdAt": 1790925223428,
+        "expiresAt": 1790927023428,
+        "policyVersion": "native-validator-probe",
+        "servicePayment": {
+          "amount": "0",
+          "recipient": "ETWcxNPF3Qcwvo4NHYw6JhMiKnGwrvH1U9YEAQ3rZSWd"
+        },
+        "fundContribution": {
+          "amount": "5000000",
+          "recipient": "Gy3SSxP7spgDcserSfMckPd73LeSoxdrvXeNap7huLQN"
+        },
+        "total": "5000000",
+        "networkFee": {
+          "asset": "SOL",
+          "includedInTotal": false
+        }
+      },
+      "evidence": {
+        "signature": "4F1KFHF9MypoVn2XqVu4Hhy7CTnf9sBX5TefRXAhjFfXZJdiVGdBo5NchPbLkDBpkWVwMAbrkSK8oFXrVx4dZyL1",
+        "network": "devnet",
+        "genesisHash": "EtWTRABZaYq6iMfeYKouRu166VU2xqa1wcaWoxPkrZBG",
+        "commitment": "finalized",
+        "error": null,
+        "slot": 506559948,
+        "blockTimeMs": 1790925224000,
+        "feeLamports": "5000",
+        "feePayer": "Hn9ELgjKXrb7svZM9XtDYozGTirxo5e1tWRy1J1v4vwF",
+        "signers": [
+          "Hn9ELgjKXrb7svZM9XtDYozGTirxo5e1tWRy1J1v4vwF"
+        ],
+        "transfers": [
+          {
+            "instruction": "0",
+            "sender": "Hn9ELgjKXrb7svZM9XtDYozGTirxo5e1tWRy1J1v4vwF",
+            "recipient": "Gy3SSxP7spgDcserSfMckPd73LeSoxdrvXeNap7huLQN",
+            "amount": "5000000",
+            "asset": {
+              "symbol": "SOL",
+              "decimals": 9,
+              "mint": null,
+              "program": "11111111111111111111111111111111"
+            },
+            "references": [
+              "Csvizf8noxXs3VQEe8ra9ceJpZRoXerTZRzk8GSnafH9"
+            ]
+          }
+        ]
+      },
+      "payment": {
+        "orderId": "5493af785c3917a199e1cecafe58b120",
+        "network": "devnet",
+        "signature": "4F1KFHF9MypoVn2XqVu4Hhy7CTnf9sBX5TefRXAhjFfXZJdiVGdBo5NchPbLkDBpkWVwMAbrkSK8oFXrVx4dZyL1",
+        "slot": 506559948,
+        "feeLamports": "5000",
+        "credits": [
+          {
+            "purpose": "fundContribution",
+            "amount": "5000000",
+            "recipient": "Gy3SSxP7spgDcserSfMckPd73LeSoxdrvXeNap7huLQN",
+            "instruction": "0"
+          }
+        ]
+      },
+      "signature": "4F1KFHF9MypoVn2XqVu4Hhy7CTnf9sBX5TefRXAhjFfXZJdiVGdBo5NchPbLkDBpkWVwMAbrkSK8oFXrVx4dZyL1",
+      "explorer": "https://explorer.solana.com/tx/4F1KFHF9MypoVn2XqVu4Hhy7CTnf9sBX5TefRXAhjFfXZJdiVGdBo5NchPbLkDBpkWVwMAbrkSK8oFXrVx4dZyL1?cluster=devnet",
+      "orderId": "5493af785c3917a199e1cecafe58b120",
+      "serviceLamports": "0",
+      "fundLamports": "5000000",
+      "feeLamports": "5000",
+      "repeat": "already-credited",
+      "replay": "saved evidence into fresh MemoryAtomicOrderStore; not a persistent DB guarantee",
+      "storage": "NOT RUN: no approved AR reserve/executor"
+    }
+  ],
+  "archive": {
+    "bytes": 5149,
+    "digest": "83e322b971c1163c6c038f49e09ad7239be396e24150f925a44aaa7916b49b1e",
+    "quote": {
+      "network": "arweave.N.1",
+      "node": "https://arweave.net",
+      "winston": "3295008643",
+      "AR": "0.003295008643",
+      "checkedAt": "2026-10-02T07:14:43.204Z"
+    },
+    "tags": [
+      {
+        "name": "Content-Type",
+        "value": "application/json"
+      },
+      {
+        "name": "App-Name",
+        "value": "SEJIRE"
+      },
+      {
+        "name": "Protocol",
+        "value": "sejire/v0.3"
+      },
+      {
+        "name": "Type",
+        "value": "vault-envelope"
+      },
+      {
+        "name": "Envelope-SHA256",
+        "value": "83e322b971c1163c6c038f49e09ad7239be396e24150f925a44aaa7916b49b1e"
+      }
+    ],
+    "offlineRestore": "PASS"
+  },
+  "storage": "NOT RUN"
+}
