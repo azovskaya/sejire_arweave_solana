@@ -1,95 +1,233 @@
-[Открыть SEJIRE — проверочная версия](https://azovskaya.github.io/sejire_arweave_solana/native-admin/) · [Открыть админку](https://azovskaya.github.io/sejire_arweave_solana/native-admin/#/admin)
+<p align="center">
+  <img src="docs/colosseum/assets/sejire-cover.svg" alt="SEJIRE — Pay with Solana. Preserve on Arweave. Recover with 12 words." width="100%">
+</p>
 
-Публичная статическая проверочная версия. Конфигурация импортируется с проверкой подписей; данные браузера не синхронизируются между компьютерами. Mainnet-отправка и публикация конфигурации выключены.
+<p align="center">
+  <a href="https://azovskaya.github.io/sejire_arweave_solana/"><strong>Live Protocol</strong></a>
+  ·
+  <a href="https://azovskaya.github.io/sejire_arweave_solana/#/restore"><strong>Recovery</strong></a>
+  ·
+  <a href="docs/colosseum/README.md"><strong>Colosseum Materials</strong></a>
+  ·
+  <a href="https://azovskaya.github.io/sejire_arweave_solana/build-provenance.json"><strong>Build Provenance</strong></a>
+</p>
 
-# SEJIRE · Solana preservation prototype
+<p align="center">
+  <a href="https://github.com/azovskaya/sejire_arweave_solana/actions/workflows/checks.yml">
+    <img alt="SEJIRE checks" src="https://github.com/azovskaya/sejire_arweave_solana/actions/workflows/checks.yml/badge.svg?branch=feat%2Fpreservation-v2-simple">
+  </a>
+  <img alt="Solana Devnet" src="https://img.shields.io/badge/Solana-Devnet-7B61FF">
+  <img alt="Arweave Mainnet" src="https://img.shields.io/badge/Arweave-Mainnet-222222">
+  <img alt="License MIT" src="https://img.shields.io/badge/license-MIT-C57A45">
+</p>
 
-Build a family tree. Preserve an encrypted archive with your own recovery words.
-Rooted in the Kazakh tradition of shezhire, designed for families everywhere.
+# SEJIRE
 
-SEJIRE already includes a genealogy editor, ancestor views, PDF/JSON exports, three interface languages (Kazakh, Russian, English), encrypted Arweave archives and recovery. This repository develops a **Solana-funded preservation flow** on top of that existing product.
+**Pay with Solana. Preserve on Arweave. Recover with 12 words.**
 
-**Current stage:** devnet prototype. Local tests and production build pass. Live software-signer uploads, same-item retries and receipt-based recovery in a clean browser have passed; real Phantom/Solflare extensions and actual SOL-funded uploads still require acceptance. A quote or a Turbo acceptance receipt alone does not prove final Arweave settlement.
+SEJIRE is a decentralized protocol and web client for creating, encrypting, preserving, and independently recovering family trees.
 
-**Continuing on another Mac with Codex CLI?** Read [the handoff and next test steps](docs/CONTINUE_ON_ANOTHER_MAC.md). Repository instructions are in [AGENTS.md](AGENTS.md). Use the `feat/solana-preservation` branch for this continuation.
+A family can build a tree without an account or wallet. When it chooses permanent preservation, SEJIRE encrypts the archive in the browser, verifies the preservation payment through Solana, stores the encrypted archive on Arweave, and allows recovery on a clean device using 12 words.
 
-## Run locally
+Rooted in the Kazakh tradition of *shezhire*. Built for families everywhere.
 
-Requires Node.js 22.12+ (or a compatible newer version) and npm. The commands below target macOS/Linux and explicitly select devnet without overwriting an existing `.env.local`.
+## Working end-to-end proof
 
-```sh
-npm ci --prefix apps/web
-npm ci --prefix apps/sponsor
-npm run solana:check
-npm run solana:dev
-```
+The current pilot has completed this full path:
 
-Open the address printed by Vite. Create a tree without an account or payment wallet. Choose **Save**, create and confirm SEJIRE recovery words, then **Save with Solana**. Phantom or Solflare signs through its own interface. SEJIRE never asks for the payment wallet's recovery phrase.
+1. Create a family tree in the browser.
+2. Encrypt the family vault locally with AES-GCM.
+3. Verify an exact `0.03 SOL` payment on Solana Devnet.
+4. Publish the encrypted archive to Arweave Mainnet.
+5. Retrieve the raw archive and verify its byte size, SHA-256 digest, and vault identity.
+6. Open SEJIRE in a clean browser.
+7. Recover the family tree using only the 12 recovery words.
 
-`solana:check` runs all offline tests, the sponsor type check, lint and a devnet production build. It makes no live upload or payment. `solana:dev` serves only `127.0.0.1:5173` and refuses an occupied port; it does not deploy. Keep that terminal running and open the URL in Chrome on the same Mac as the wallet extension. The complete setup still requires the two `npm ci` commands above, not an install at the repository root.
+The public admin overview also reads Arweave saves and independently verifies the finalized Solana payment through public RPC endpoints.
 
-## Solana continuation package
+> This proves the technical workflow. It does not yet prove product-market fit or production pricing.
 
-- [Mac handoff and next steps](docs/CONTINUE_ON_ANOTHER_MAC.md)
-- [Real-wallet acceptance checklist and evidence template](docs/SOLANA_WALLET_ACCEPTANCE.md) — still NOT RUN with an actual extension
-- [September 29 test report and known issues](docs/verification/2026-09-29-solana-report.md)
-- [Public software-signer devnet evidence](docs/verification/2026-09-29-devnet-evidence.json) — zero SOL transfers, no private key or recovery phrase
-- [Production dependency audit snapshot](docs/verification/2026-09-29-web-production-audit.json) — unresolved findings, not a clean security certification
+## Why Solana + Arweave
 
-The reproducible boundary tests are included in `npm test` and CI. Live network testing remains explicit and separate: `SEJIRE_LIVE_DEVNET=1 npm run test:solana:live --prefix apps/web`; it uploads only synthetic data and refuses SOL transfers. Do not consume the free quota repeatedly to force a paid test.
+### Solana: practical payment and verification
 
-The default Solana environment is **devnet**, using Turbo's test services. Test uploads are not permanent backups. Keep an encrypted file and the recovery words separately. Mainnet requires an explicit `VITE_SOLANA_NETWORK=mainnet-beta` build and completion of [acceptance checks](docs/SOLANA_PRESERVATION.md).
+Solana is used as the payment and coordination layer.
 
-## Restore an encrypted file on another computer
+SEJIRE verifies:
 
-Choose **Open with 12 words → Open from file**, select the downloaded `sejire-vault-….json`, enter the matching **SEJIRE** recovery words, then choose **Restore archive**. You can select the file before entering the words and retry a mistyped phrase without selecting the file again. A downloaded SEJIRE recovery-words JSON can also fill in the words while retaining the selected archive.
+- the network;
+- transaction finality;
+- the payer;
+- the recipient;
+- the exact service amount;
+- the deterministic preservation reference;
+- the absence of unexpected transfers.
 
-File recovery does not contact Arweave or require a payment wallet. It retains the entire vault, including trees other than the one displayed by the editor. Removing the selected file returns to searching for saved versions online. Chrome download and isolated-profile file recovery were verified on September 29; other browser/device combinations remain acceptance work.
+Family names, dates, relationships, and recovery words are not written to Solana.
 
-The same form accepts a preservation receipt JSON. Unlike an encrypted backup file, a receipt requires network access to retrieve the archive. It selects the correct network and checks the exact ciphertext hash before decryption; SEJIRE recovery words are still required, but the payment wallet is not.
+### Arweave: encrypted archive storage
 
-## How preservation works
+Arweave is used to preserve the encrypted family archive independently of the SEJIRE interface.
+
+SEJIRE does not mark preservation complete after receiving a transaction ID. It retrieves the raw archive again and verifies its integrity before showing completion.
+
+### Browser cryptography: family-controlled recovery
+
+The archive is encrypted before upload. The 12 recovery words stay with the family and are used locally to derive the decryption key and vault identifier.
+
+## Architecture
 
 ```mermaid
 flowchart LR
-  Family[Family tree in browser] --> Encrypt[Encrypt with SEJIRE key]
-  Encrypt --> Backup[Encrypted local backup]
-  Encrypt --> Quote[Quote and payment cap]
-  Wallet[Phantom / Solflare] --> Quote
-  Quote --> Turbo[Turbo: SOL funding and upload]
-  Turbo --> Receipt[Service acceptance receipt]
-  Turbo --> Arweave[Arweave settlement and indexing]
-  Arweave --> Restore[Recover with SEJIRE words]
-  Backup --> Restore
+    A[Family tree in browser] --> B[AES-GCM encryption]
+    B --> C[Encrypted vault]
+    C --> D[Solana Devnet payment]
+    D --> E[Strict payment verification]
+    E --> F[Arweave Mainnet upload]
+    F --> G[Raw retrieval + integrity checks]
+    G --> H[Permanent encrypted archive]
+    R[12 recovery words] --> I[Local key derivation]
+    H --> J[Multi-provider discovery]
+    I --> K[Local decryption]
+    J --> K
+    K --> L[Recovered family tree]
 ```
 
-Only the encrypted envelope and minimal archive tags are uploaded through this path. Wallet activity, archive identifiers, ciphertext size and timestamps are public. Editor drafts are stored **unencrypted in this browser**. This prototype does not provide anonymous payments, family access roles or a key-inheritance service.
+More detail: [Architecture and trust boundaries](docs/colosseum/ARCHITECTURE.md).
 
-## Hackathon provenance
+## Product links
 
-This is an adaptation of an existing project, **not a claim that the entire product was built during the contest**.
+- Live protocol: https://azovskaya.github.io/sejire_arweave_solana/
+- Recovery: https://azovskaya.github.io/sejire_arweave_solana/#/restore
+- Published build provenance: https://azovskaya.github.io/sejire_arweave_solana/build-provenance.json
+- Colosseum submission draft: [docs/colosseum/COLOSSEUM_SUBMISSION.md](docs/colosseum/COLOSSEUM_SUBMISSION.md)
+- Judge demo guide: [docs/colosseum/DEMO_GUIDE.md](docs/colosseum/DEMO_GUIDE.md)
+- Hackathon work log: [docs/colosseum/HACKATHON_WORKLOG.md](docs/colosseum/HACKATHON_WORKLOG.md)
 
-- Original: [azovskaya/Sejire_arweave](https://github.com/azovskaya/Sejire_arweave), source commit `22084ac99b69bf3971c3ed75626074ba9a04d078`.
-- Exact imported source tree: `f2d8a4b42e0e628360a72fcb6180e3f98d70e19b`.
-- Import baseline in this repository: `37a1a230934e0bbd9cecb2beb4531c542ab1b5a4`.
-- New development: Solana browser-wallet flow and payment cap, quote checks, receipt export, clearer international onboarding, vault-preservation fixes and CI.
-- No contest application has been submitted from this repository. Team eligibility and founder-provided traction remain to be confirmed.
+## What existed before the hackathon
 
-[Contest research and deadlines](docs/HACKATHON_2026.md) · [Technical integration and acceptance](docs/SOLANA_PRESERVATION.md) · [Product audit and global strategy, Russian](docs/PRODUCT_STRATEGY.ru.md)
+SEJIRE was an existing genealogy project before Crypto World's Fair.
+
+The pre-hackathon product already included:
+
+- the family-tree editor;
+- ancestor views;
+- PDF and JSON export;
+- client-side encryption;
+- recovery concepts;
+- earlier Arweave and AO experiments.
+
+The original source and import baseline are disclosed in [HACKATHON_WORKLOG.md](docs/colosseum/HACKATHON_WORKLOG.md).
+
+## What was built during the hackathon
+
+The hackathon work added and hardened:
+
+- Solana browser-wallet payment;
+- deterministic payment references;
+- strict finalized-payment verification;
+- lost-response reconciliation and duplicate-payment prevention;
+- the Preservation V2 state machine;
+- real encrypted Arweave Mainnet preservation;
+- post-upload raw-data verification;
+- clean-browser recovery from 12 words;
+- multi-provider and multi-gateway recovery;
+- version-head and fork handling;
+- password-protected admin diagnostics;
+- network-based Arweave and Solana admin overview;
+- public deployment, provenance, and extensive browser tests.
+
+Only work completed during the contest period is presented as hackathon work.
+
+## Team
+
+**Alexey Azovsky** — co-creator and adult team leader.
+
+**Alisa Azovskaya** — co-creator and English-language presenter, age 15.
+
+SEJIRE is a father-and-daughter project from Kazakhstan, created from a shared goal: family history should not depend on one device, account, or company.
+
+> Colosseum participation by a minor requires case-by-case approval. The team must obtain written confirmation from Colosseum before listing Alisa as an official entrant.
+
+## Run locally
+
+Requirements:
+
+- Node.js `22.12+`
+- npm
+- Git
+
+```bash
+git clone https://github.com/azovskaya/sejire_arweave_solana.git
+cd sejire_arweave_solana
+git checkout feat/preservation-v2-simple
+
+npm ci --prefix apps/web
+npm ci --prefix apps/sponsor
+
+npm test
+npm run lint --prefix apps/web
+npm run native:build
+```
+
+Run the web client:
+
+```bash
+npm run dev --prefix apps/web
+```
+
+The automated test suite uses synthetic data and mocked wallets. It does not spend SOL, sign with the owner's wallets, or publish a new family archive.
+
+## Verification
+
+The release gate includes:
+
+- TypeScript and lint;
+- unit and protocol tests;
+- Solana payment validation;
+- Preservation V2 browser tests;
+- admin-login browser tests;
+- 22 clean-browser recovery scenarios;
+- multi-gateway fallback;
+- no-wallet/no-write recovery checks;
+- public deployment smoke tests;
+- build-to-published-SHA provenance.
+
+Key technical documentation:
+
+- [Preservation V2](docs/PRESERVATION_V2.md)
+- [Resilient recovery ADR](docs/adr/0009-resilient-vault-recovery.md)
+- [Solana preservation](docs/SOLANA_PRESERVATION.md)
+- [Security policy](SECURITY.md)
+
+## Privacy and limitations
+
+- Draft family data is stored locally in the browser and is not encrypted until the user creates the protected archive.
+- The encrypted payload and limited technical metadata are public on Arweave.
+- Solana wallet activity is public; SEJIRE does not claim payment anonymity.
+- Losing the 12 recovery words can make the archive impossible to decrypt.
+- The current payment uses Solana Devnet and is not production revenue.
+- One owner-run pilot proves the technical path, not external demand.
+- Shared family access, inheritance recovery, and mainnet settlement remain future work.
+- The static admin password gate protects the interface only; wallet signatures remain required for critical wallet operations.
 
 ## Repository map
 
-| Directory | Purpose |
+| Path | Purpose |
 |---|---|
-| `apps/web` | React/TypeScript editor, encryption, recovery and Solana integration |
-| `apps/sponsor` | Earlier mock/Kaspi/Turbo cashier; not used by the direct Solana flow |
-| `ao/processes` | Earlier AO Tree/Factory processes; separate from private encrypted preservation |
-| `packages/schema` | Archive and tree schemas |
-| `docs` | Protocol, audit, current scope and historical decisions |
-| `presentation` | Earlier pitch materials; review before reusing in a new submission |
+| `apps/web` | React/TypeScript family-tree client, encryption, payments, preservation, and recovery |
+| `apps/sponsor` | Earlier service and checkout components retained for protocol development |
+| `packages/checkout` | Payment amounts, orders, and state models |
+| `packages/schema` | Family-tree and archive schemas |
+| `ao` | Earlier AO protocol experiments |
+| `docs/colosseum` | Submission, demo, work-log, and review materials |
+| `docs/verification` | Reproducible technical evidence |
+| `presentation` | Earlier presentation assets |
 
-Pages workflow builds this repository's `gh-pages` branch with **devnet** settings. A successful workflow alone does not verify GitHub Pages is enabled or that paid uploads work. Historical documents may mention the original deployment; this README and the two new implementation documents define this fork's current status.
+## License
 
-## Known release limits
+MIT. See [LICENSE](LICENSE).
 
-Real extension approval, actual SOL payment and final Arweave settlement are still unverified end to end; the free software-signer and clean-browser receipt-recovery paths have passed. The SDK adds large lazy-loaded chunks and transitive dependency audit findings; see the integration document. Existing cashier concurrency and AO privacy/bootstrap concerns need separate work before those paths are offered as production features. Do not treat a passing build as a security audit.
+---
+
+**SEJIRE — Pay with Solana. Preserve on Arweave. Recover with 12 words.**

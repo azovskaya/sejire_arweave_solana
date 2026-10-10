@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="320" viewBox="0 0 1200 320" fill="none">
+  <rect width="1200" height="320" rx="36" fill="#F7F3EC"/>
+  <path d="M164 54L274 150L233 270H95L54 150L164 54Z" fill="#C57A45"/>
+  <circle cx="164" cy="150" r="22" fill="#F7F3EC"/>
+  <path d="M164 172V225M164 190L126 214M164 190L202 214" stroke="#F7F3EC" stroke-width="12" stroke-linecap="round"/>
+  <text x="330" y="158" fill="#201B18" font-family="Arial, Helvetica, sans-serif" font-size="112" font-weight="700" letter-spacing="10">SEJIRE</text>
+  <text x="336" y="218" fill="#6B625B" font-family="Arial, Helvetica, sans-serif" font-size="30" font-weight="500">PAY WITH SOLANA · PRESERVE ON ARWEAVE · RECOVER WITH 12 WORDS</text>
+</svg>

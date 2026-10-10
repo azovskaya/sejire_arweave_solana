@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" fill="none">
+  <rect width="1200" height="630" rx="40" fill="#171411"/>
+  <circle cx="1020" cy="100" r="260" fill="#2B2420"/>
+  <circle cx="110" cy="590" r="300" fill="#211B18"/>
+  <path d="M151 92L264 190L222 314H80L38 190L151 92Z" fill="#C57A45"/>
+  <circle cx="151" cy="190" r="22" fill="#171411"/>
+  <path d="M151 212V264M151 230L113 254M151 230L189 254" stroke="#171411" stroke-width="12" stroke-linecap="round"/>
+  <text x="330" y="205" fill="#F7F3EC" font-family="Arial, Helvetica, sans-serif" font-size="118" font-weight="700" letter-spacing="12">SEJIRE</text>
+  <text x="80" y="405" fill="#F7F3EC" font-family="Arial, Helvetica, sans-serif" font-size="54" font-weight="700">Pay with Solana.</text>
+  <text x="80" y="475" fill="#F7F3EC" font-family="Arial, Helvetica, sans-serif" font-size="54" font-weight="700">Preserve on Arweave.</text>
+  <text x="80" y="545" fill="#C57A45" font-family="Arial, Helvetica, sans-serif" font-size="54" font-weight="700">Recover with 12 words.</text>
+  <text x="920" y="570" fill="#9E9187" font-family="Arial, Helvetica, sans-serif" font-size="23" text-anchor="end">Solana Ecosystem · Crypto World's Fair 2026</text>
+</svg>
