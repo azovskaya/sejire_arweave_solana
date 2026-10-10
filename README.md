@@ -7,7 +7,7 @@
   ·
   <a href="https://azovskaya.github.io/sejire_arweave_solana/#/restore"><strong>Recovery</strong></a>
   ·
-  <a href="docs/colosseum/README.md"><strong>Colosseum Materials</strong></a>
+  <a href="docs/colosseum/COLOSSEUM_SUBMISSION.md"><strong>Colosseum Submission</strong></a>
   ·
   <a href="https://azovskaya.github.io/sejire_arweave_solana/build-provenance.json"><strong>Build Provenance</strong></a>
 </p>
@@ -25,67 +25,65 @@
 
 **Pay with Solana. Preserve on Arweave. Recover with 12 words.**
 
-SEJIRE is a decentralized protocol and web client for creating, encrypting, preserving, and independently recovering family trees.
+SEJIRE is a decentralized protocol for creating, encrypting, preserving, and independently recovering family trees.
 
 A family can build a tree without an account or wallet. When it chooses permanent preservation, SEJIRE encrypts the archive in the browser, verifies the preservation payment through Solana, stores the encrypted archive on Arweave, and allows recovery on a clean device using 12 words.
 
 Rooted in the Kazakh tradition of *shezhire*. Built for families everywhere.
 
-## Working end-to-end proof
+## Working proof
 
-The current pilot has completed this full path:
+The current pilot completed the full flow:
 
 1. Create a family tree in the browser.
 2. Encrypt the family vault locally with AES-GCM.
 3. Verify an exact `0.03 SOL` payment on Solana Devnet.
 4. Publish the encrypted archive to Arweave Mainnet.
-5. Retrieve the raw archive and verify its byte size, SHA-256 digest, and vault identity.
+5. Retrieve the raw archive and verify its size, SHA-256 digest, and vault identity.
 6. Open SEJIRE in a clean browser.
 7. Recover the family tree using only the 12 recovery words.
 
-The public admin overview also reads Arweave saves and independently verifies the finalized Solana payment through public RPC endpoints.
+The admin overview also reads the Arweave save and verifies the finalized Solana payment through public read-only endpoints.
 
-> This proves the technical workflow. It does not yet prove product-market fit or production pricing.
+> This proves the technical workflow. It does not yet prove product-market fit, customer traction, or production pricing.
 
 ## Why Solana + Arweave
 
-### Solana: practical payment and verification
+### Solana — practical payment and verification
 
-Solana is used as the payment and coordination layer.
-
-SEJIRE verifies:
+SEJIRE uses Solana as the payment and coordination layer. It verifies:
 
 - the network;
 - transaction finality;
 - the payer;
 - the recipient;
-- the exact service amount;
+- the exact amount;
 - the deterministic preservation reference;
-- the absence of unexpected transfers.
+- the absence of unexpected value transfers.
 
 Family names, dates, relationships, and recovery words are not written to Solana.
 
-### Arweave: encrypted archive storage
+### Arweave — encrypted archive storage
 
-Arweave is used to preserve the encrypted family archive independently of the SEJIRE interface.
+Arweave stores the encrypted family archive independently of the SEJIRE interface.
 
 SEJIRE does not mark preservation complete after receiving a transaction ID. It retrieves the raw archive again and verifies its integrity before showing completion.
 
-### Browser cryptography: family-controlled recovery
+### Browser cryptography — family-controlled recovery
 
-The archive is encrypted before upload. The 12 recovery words stay with the family and are used locally to derive the decryption key and vault identifier.
+The archive is encrypted before upload. The 12 recovery words remain with the family and are used locally to derive the decryption key and vault identifier.
 
 ## Architecture
 
 ```mermaid
 flowchart LR
-    A[Family tree in browser] --> B[AES-GCM encryption]
+    A[Family tree] --> B[AES-GCM encryption]
     B --> C[Encrypted vault]
     C --> D[Solana Devnet payment]
-    D --> E[Strict payment verification]
-    E --> F[Arweave Mainnet upload]
-    F --> G[Raw retrieval + integrity checks]
-    G --> H[Permanent encrypted archive]
+    D --> E[Payment verification]
+    E --> F[Arweave Mainnet]
+    F --> G[Raw archive verification]
+    G --> H[Encrypted preserved archive]
     R[12 recovery words] --> I[Local key derivation]
     H --> J[Multi-provider discovery]
     I --> K[Local decryption]
@@ -93,22 +91,21 @@ flowchart LR
     K --> L[Recovered family tree]
 ```
 
-More detail: [Architecture and trust boundaries](docs/colosseum/ARCHITECTURE.md).
+Detailed architecture: [docs/colosseum/ARCHITECTURE.md](docs/colosseum/ARCHITECTURE.md).
 
-## Product links
+## Live links
 
-- Live protocol: https://azovskaya.github.io/sejire_arweave_solana/
+- Protocol: https://azovskaya.github.io/sejire_arweave_solana/
 - Recovery: https://azovskaya.github.io/sejire_arweave_solana/#/restore
-- Published build provenance: https://azovskaya.github.io/sejire_arweave_solana/build-provenance.json
-- Colosseum submission draft: [docs/colosseum/COLOSSEUM_SUBMISSION.md](docs/colosseum/COLOSSEUM_SUBMISSION.md)
-- Judge demo guide: [docs/colosseum/DEMO_GUIDE.md](docs/colosseum/DEMO_GUIDE.md)
-- Hackathon work log: [docs/colosseum/HACKATHON_WORKLOG.md](docs/colosseum/HACKATHON_WORKLOG.md)
+- Build provenance: https://azovskaya.github.io/sejire_arweave_solana/build-provenance.json
+- Colosseum submission text: [docs/colosseum/COLOSSEUM_SUBMISSION.md](docs/colosseum/COLOSSEUM_SUBMISSION.md)
+- Demo guide: [docs/colosseum/DEMO_GUIDE.md](docs/colosseum/DEMO_GUIDE.md)
+- Prior-work disclosure: [docs/colosseum/HACKATHON_WORKLOG.md](docs/colosseum/HACKATHON_WORKLOG.md)
+- Final checklist: [docs/colosseum/SUBMISSION_CHECKLIST.md](docs/colosseum/SUBMISSION_CHECKLIST.md)
 
 ## What existed before the hackathon
 
-SEJIRE was an existing genealogy project before Crypto World's Fair.
-
-The pre-hackathon product already included:
+SEJIRE was an existing genealogy project before Crypto World's Fair. The pre-hackathon project already included:
 
 - the family-tree editor;
 - ancestor views;
@@ -117,7 +114,7 @@ The pre-hackathon product already included:
 - recovery concepts;
 - earlier Arweave and AO experiments.
 
-The original source and import baseline are disclosed in [HACKATHON_WORKLOG.md](docs/colosseum/HACKATHON_WORKLOG.md).
+The original source and exact import baseline are disclosed in [HACKATHON_WORKLOG.md](docs/colosseum/HACKATHON_WORKLOG.md).
 
 ## What was built during the hackathon
 
@@ -135,19 +132,21 @@ The hackathon work added and hardened:
 - version-head and fork handling;
 - password-protected admin diagnostics;
 - network-based Arweave and Solana admin overview;
-- public deployment, provenance, and extensive browser tests.
+- public deployment, provenance, and browser-test coverage.
 
 Only work completed during the contest period is presented as hackathon work.
 
-## Team
+## Team and contributors
 
-**Alexey Azovsky** — co-creator and adult team leader.
+### Alexey Azovsky — creator, developer, and official team lead
 
-**Alisa Azovskaya** — co-creator and English-language presenter, age 15.
+Alexey is an early-career software developer and a student at Tomorrow School. He graduated from the Faculty of Physics and Mathematics at Orenburg State Pedagogical University. He created SEJIRE and leads its product and technical development.
 
-SEJIRE is a father-and-daughter project from Kazakhstan, created from a shared goal: family history should not depend on one device, account, or company.
+### Alisa Azovskaya — presentation and materials contributor
 
-> Colosseum participation by a minor requires case-by-case approval. The team must obtain written confirmation from Colosseum before listing Alisa as an official entrant.
+Alisa is Alexey's daughter. She helped prepare the Colosseum materials and record the English-language pitch and product-demo videos.
+
+For the Colosseum submission, Alexey is the official entrant. Alisa is credited for presentation and materials support and is not listed as an official entrant.
 
 ## Run locally
 
@@ -167,15 +166,10 @@ npm ci --prefix apps/sponsor
 npm test
 npm run lint --prefix apps/web
 npm run native:build
-```
-
-Run the web client:
-
-```bash
 npm run dev --prefix apps/web
 ```
 
-The automated test suite uses synthetic data and mocked wallets. It does not spend SOL, sign with the owner's wallets, or publish a new family archive.
+Automated tests use synthetic data and mocked wallets. They do not spend SOL, sign with the owner's wallets, or publish a new family archive.
 
 ## Verification
 
@@ -192,16 +186,16 @@ The release gate includes:
 - public deployment smoke tests;
 - build-to-published-SHA provenance.
 
-Key technical documentation:
+Technical documentation:
 
 - [Preservation V2](docs/PRESERVATION_V2.md)
 - [Resilient recovery ADR](docs/adr/0009-resilient-vault-recovery.md)
 - [Solana preservation](docs/SOLANA_PRESERVATION.md)
 - [Security policy](SECURITY.md)
 
-## Privacy and limitations
+## Privacy and current limits
 
-- Draft family data is stored locally in the browser and is not encrypted until the user creates the protected archive.
+- Draft family data is stored locally in the browser and is not encrypted until the protected archive is created.
 - The encrypted payload and limited technical metadata are public on Arweave.
 - Solana wallet activity is public; SEJIRE does not claim payment anonymity.
 - Losing the 12 recovery words can make the archive impossible to decrypt.
@@ -214,14 +208,13 @@ Key technical documentation:
 
 | Path | Purpose |
 |---|---|
-| `apps/web` | React/TypeScript family-tree client, encryption, payments, preservation, and recovery |
+| `apps/web` | React/TypeScript family-tree client, encryption, payment, preservation, and recovery |
 | `apps/sponsor` | Earlier service and checkout components retained for protocol development |
 | `packages/checkout` | Payment amounts, orders, and state models |
 | `packages/schema` | Family-tree and archive schemas |
 | `ao` | Earlier AO protocol experiments |
-| `docs/colosseum` | Submission, demo, work-log, and review materials |
+| `docs/colosseum` | Submission, demo, work-log, and checklist materials |
 | `docs/verification` | Reproducible technical evidence |
-| `presentation` | Earlier presentation assets |
 
 ## License
 

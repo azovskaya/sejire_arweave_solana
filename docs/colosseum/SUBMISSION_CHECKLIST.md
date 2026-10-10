@@ -6,44 +6,44 @@ Official deadline:
 
 **October 12, 2026, 11:59 PM Pacific Time**
 
-Equivalent planning time for Kazakhstan:
+Planning equivalent for Kazakhstan:
 
 **October 13, 2026, 11:59 AM Asia/Almaty**
 
 Verify the live Colosseum dashboard before final submission.
 
-## Critical eligibility gates
+## Official entrant and contributors
 
-- [ ] Alexey has joined the current Colosseum hackathon.
-- [ ] Alexey is the official adult team leader.
-- [ ] Every official team member has a Colosseum account.
-- [ ] Written approval has been received from `hello@colosseum.com` before Alisa, age 15, is listed as an official entrant.
-- [ ] If approval is not received, the submission accurately lists Alexey as the official entrant and describes Alisa only in the role Colosseum has confirmed is permitted.
-- [ ] The team is not submitting another product.
+- [ ] Alexey Azovsky has joined the current Colosseum hackathon.
+- [ ] Alexey is listed as the official entrant and adult team lead.
+- [ ] Alexey's Colosseum profile information is complete.
+- [ ] Alisa Azovskaya is credited only for presentation and materials support, not listed as an official entrant.
+- [ ] The project is not submitting another product.
 - [ ] Relevant pre-existing SEJIRE work is fully disclosed.
 
 ## Required submission materials
 
-- [ ] Product name: `SEJIRE`
-- [ ] Brief English description
-- [ ] Solana and Arweave integration description
-- [ ] Team members and backgrounds
-- [ ] Team location
-- [ ] Logo or graphic
-- [ ] Public GitHub repository
-- [ ] Presentation video, 2–3 minutes
-- [ ] Product demo, no more than 3 minutes
-- [ ] Go-to-market strategy
-- [ ] Demand-validation status
-- [ ] Distribution plan
-- [ ] Prior-work disclosure
+- [x] Product name: `SEJIRE`
+- [x] Brief English description
+- [x] Solana and Arweave integration description
+- [x] Team background and location
+- [x] Logo and cover graphic
+- [x] Public GitHub repository
+- [x] Presentation video file, 2–3 minutes
+- [x] Product demo file, no more than 3 minutes
+- [x] Go-to-market strategy
+- [x] Demand-validation status
+- [x] Distribution plan
+- [x] Prior-work disclosure
+- [ ] Public or Unlisted pitch-video URL added by the owner
+- [ ] Public or Unlisted product-demo URL added by the owner
 
 ## Repository checks
 
 - [ ] Default GitHub branch shows the current protocol and the submission-ready README.
-- [ ] Repository is public, or `hackathon@colosseum.com` has access.
-- [ ] MIT license is present and approved by the repository owners.
-- [ ] CI badge is green.
+- [ ] Repository is public.
+- [ ] MIT license is accepted by the repository owner.
+- [ ] Latest CI run is green.
 - [ ] Live link points to the root deployment.
 - [ ] Recovery link works.
 - [ ] Build-provenance link works.
@@ -53,11 +53,11 @@ Verify the live Colosseum dashboard before final submission.
 ## Video checks
 
 - [ ] All spoken and on-screen submission content is in English.
-- [ ] Alisa and Alexey have permitted the use of their names and likenesses.
-- [ ] Pitch video is clear in the first 10 seconds.
-- [ ] Product demo shows the working protocol.
-- [ ] Demo uses synthetic family data.
-- [ ] Demo uses synthetic recovery words.
+- [ ] Alexey and Alisa have permitted the use of their names and likenesses.
+- [ ] Pitch video is 2–3 minutes.
+- [ ] Product demo is no more than 3 minutes.
+- [ ] Product demo uses synthetic family data.
+- [ ] Product demo uses synthetic recovery words.
 - [ ] Videos are Public or Unlisted, not Private.
 - [ ] Videos open without signing in or requesting access.
 
@@ -78,15 +78,16 @@ Verify the live Colosseum dashboard before final submission.
 - [ ] English can be selected.
 - [ ] A synthetic tree can be created.
 - [ ] Recovery route opens.
-- [ ] GitHub opens on the correct current branch/default branch.
+- [ ] GitHub opens on the current default branch.
 - [ ] Pitch video opens.
-- [ ] Demo video opens.
+- [ ] Product demo opens.
 - [ ] Logo loads.
 - [ ] All links pasted into Colosseum are final.
 
 ## Final manual review
 
 - [ ] Alexey reads every answer before submission.
-- [ ] Names and roles match the Colosseum profiles.
-- [ ] No `[ADD ...]` placeholders remain.
-- [ ] The team leader presses the final Submit button before the deadline.
+- [ ] Names and roles match the Colosseum profile.
+- [ ] No temporary notes remain in the pasted form.
+- [ ] The owner adds both video URLs.
+- [ ] Alexey presses the final Submit button before the deadline.

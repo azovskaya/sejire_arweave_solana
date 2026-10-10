@@ -1,6 +1,6 @@
 # SEJIRE video upload package
 
-The submission requires two separate English-language videos.
+The Colosseum submission uses two separate English-language videos.
 
 ## 1. Presentation video
 
@@ -8,7 +8,7 @@ The submission requires two separate English-language videos.
 
 `SEJIRE — Colosseum Crypto World's Fair 2026 Pitch`
 
-### Recommended visibility
+### Visibility
 
 Public or Unlisted. Never Private.
 
@@ -19,7 +19,7 @@ SEJIRE is a decentralized protocol for preserving private family trees.
 
 A family creates its tree without an account, encrypts the archive in the browser, pays for preservation through Solana, stores the encrypted archive on Arweave, and can recover it on a clean device using 12 words.
 
-Built by a father-and-daughter team from Kazakhstan.
+SEJIRE was created by Alexey Azovsky in Kazakhstan. His daughter, Alisa Azovskaya, helped prepare the hackathon materials and record the English-language videos.
 
 Live protocol:
 https://azovskaya.github.io/sejire_arweave_solana/
@@ -43,7 +43,7 @@ SOLANA × ARWEAVE
 
 ### URL after upload
 
-`[ADD PITCH VIDEO URL]`
+Owner will add the final public or unlisted URL.
 
 ## 2. Product demo video
 
@@ -51,7 +51,7 @@ SOLANA × ARWEAVE
 
 `SEJIRE — Solana + Arweave Product Demo`
 
-### Recommended visibility
+### Visibility
 
 Public or Unlisted. Never Private.
 
@@ -82,12 +82,12 @@ https://github.com/azovskaya/sejire_arweave_solana
 
 ```text
 CREATE → PAY → PRESERVE → RECOVER
-REAL SOLANA + ARWEAVE FLOW
+SOLANA + ARWEAVE FLOW
 ```
 
 ### URL after upload
 
-`[ADD PRODUCT DEMO VIDEO URL]`
+Owner will add the final public or unlisted URL.
 
 ## Final upload checks
 

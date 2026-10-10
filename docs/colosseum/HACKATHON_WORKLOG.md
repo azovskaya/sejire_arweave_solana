@@ -8,6 +8,28 @@ September 14, 2026, 6:00 AM PT — October 12, 2026, 11:59 PM PT.
 
 Only work completed during that period should be judged as hackathon work.
 
+## Project ownership and contributions
+
+### Alexey Azovsky
+
+- creator of SEJIRE;
+- official Colosseum entrant and adult team lead;
+- product and protocol design;
+- software development;
+- Solana and Arweave integration;
+- testing and release preparation;
+- submission ownership.
+
+Alexey is an early-career software developer and a student at Tomorrow School. He graduated from the Faculty of Physics and Mathematics at Orenburg State Pedagogical University.
+
+### Alisa Azovskaya
+
+- helped prepare the Colosseum presentation materials;
+- helped record the English-language pitch video;
+- helped record the English-language product-demo video.
+
+Alisa is credited as a presentation and materials contributor. She is not listed as an official Colosseum entrant.
+
 ## Pre-existing project baseline
 
 SEJIRE existed before the hackathon.
@@ -32,7 +54,7 @@ Pre-existing capabilities included:
 - earlier Arweave and AO code;
 - earlier mock/Kaspi/Turbo service experiments.
 
-The team does not claim that these capabilities were built during Crypto World's Fair.
+The submission does not claim that these capabilities were built during Crypto World's Fair.
 
 ## Hackathon contribution
 
@@ -126,7 +148,7 @@ Published build provenance:
 
 `https://azovskaya.github.io/sejire_arweave_solana/build-provenance.json`
 
-Current verified release at the time of this document:
+Verified public release used for the submission preparation:
 
 - source commit: `26f8a803d80c4474499f6fbe2f28374784408efb`
 - successful CI run: `37923843733`

@@ -1,6 +1,6 @@
 # SEJIRE — Colosseum submission draft
 
-> Paste-ready English draft. Replace every `[ADD ...]` field before submission. Do not submit until the eligibility and required-material gates in `SUBMISSION_CHECKLIST.md` are complete.
+Paste-ready English copy for Crypto World's Fair 2026. The owner will add the final public video URLs after upload.
 
 ## Product name
 
@@ -40,7 +40,7 @@ SEJIRE separates the family-tree interface from the preserved archive.
 
 Solana makes the preservation payment fast, practical, and verifiable.
 
-SEJIRE uses Solana as the economic and coordination layer. It verifies the network, transaction finality, payer, recipient, exact service amount, and deterministic preservation reference.
+SEJIRE uses Solana as the payment and coordination layer. It verifies the network, transaction finality, payer, recipient, exact service amount, and deterministic preservation reference.
 
 Private family data is not written to Solana.
 
@@ -48,7 +48,7 @@ The current pilot uses Solana Devnet. Mainnet settlement is a future milestone, 
 
 ## Why Arweave
 
-Arweave stores the encrypted family archive independently of the SEJIRE web interface.
+Arweave stores the encrypted family archive independently of the SEJIRE interface.
 
 SEJIRE does not mark preservation complete after receiving a transaction ID. It retrieves the raw archive again and verifies its byte size, SHA-256 digest, and vault identity.
 
@@ -81,7 +81,7 @@ We completed one full owner-run technical pilot:
 - opened SEJIRE in a clean browser;
 - recovered the family tree using only the 12 recovery words.
 
-The public admin overview independently reads the Arweave save and verifies the finalized Solana payment through public network endpoints.
+The admin overview independently reads the Arweave save and verifies the finalized Solana payment through public read-only endpoints.
 
 This proves the technical workflow. It does not yet prove product-market fit.
 
@@ -98,9 +98,9 @@ The starting wedge is:
 
 These customer segments still require external validation.
 
-## Founder and market insight
+## Founder and insight
 
-SEJIRE is a father-and-daughter project from Kazakhstan.
+SEJIRE was created by Alexey Azovsky in Kazakhstan.
 
 The project comes from a simple insight: families may last for generations, while the devices, accounts, and companies storing their history may not.
 
@@ -113,19 +113,17 @@ The protocol combines:
 
 ## Team
 
-### Alexey Azovsky
+### Alexey Azovsky — official entrant and team lead
 
-Co-creator and adult team leader.
+Alexey is the creator and developer of SEJIRE. He is an early-career software developer and a student at Tomorrow School. He graduated from the Faculty of Physics and Mathematics at Orenburg State Pedagogical University.
 
-**Background:** `[ADD ALEXEY'S 1–2 SENTENCE RELEVANT BACKGROUND: product, business, genealogy, software, Web3, or operations.]`
+He leads SEJIRE's product design, protocol architecture, implementation, testing, and hackathon submission.
 
-### Alisa Azovskaya
+### Alisa Azovskaya — presentation and materials contributor
 
-Co-creator and English-language presenter, age 15.
+Alisa is Alexey's daughter. She helped prepare the Colosseum materials and record the English-language pitch and product-demo videos.
 
-**Contribution:** `[ADD ALISA'S EXACT CONTRIBUTION: presentation, product testing, UX feedback, research, content, or other work.]`
-
-**Eligibility note:** Colosseum requires age-of-majority participation unless it grants a case-by-case exception. Written confirmation is required before Alisa is listed as an official entrant.
+Alisa is credited for presentation and materials support and is not listed as an official Colosseum entrant.
 
 ### Location
 
@@ -179,12 +177,6 @@ We will not present the technical pilot as customer traction.
 
 The current `0.03 SOL` Devnet amount is a technical pilot policy, not validated production pricing.
 
-## Potential market
-
-SEJIRE begins with family genealogy but addresses a broader digital-legacy problem: important personal history is often trapped in one platform, account, or device.
-
-The market-size case is still provisional because SEJIRE has not completed external customer validation. The immediate focus is proving demand in a narrow community before making a broader market claim.
-
 ## Differentiation
 
 SEJIRE combines four behaviors in one user-controlled flow:
@@ -196,7 +188,7 @@ SEJIRE combines four behaviors in one user-controlled flow:
 
 The strongest differentiator is not simply blockchain storage. It is **recoverability without depending on the original device or SEJIRE account**.
 
-## Prior work disclosure
+## Prior-work disclosure
 
 SEJIRE existed before Crypto World's Fair.
 
@@ -246,8 +238,8 @@ Exact source and import baselines are listed in `HACKATHON_WORKLOG.md`.
 - Recovery: https://azovskaya.github.io/sejire_arweave_solana/#/restore
 - GitHub: https://github.com/azovskaya/sejire_arweave_solana
 - Build provenance: https://azovskaya.github.io/sejire_arweave_solana/build-provenance.json
-- Pitch video: `[ADD PUBLIC OR UNLISTED PITCH VIDEO URL]`
-- Product demo: `[ADD PUBLIC OR UNLISTED DEMO VIDEO URL]`
+- Pitch video: pending owner upload
+- Product demo: pending owner upload
 - Logo: `docs/colosseum/assets/sejire-logo.svg`
 
 ## What we want from Colosseum
