@@ -14,7 +14,7 @@
 
 <p align="center">
   <a href="https://github.com/azovskaya/sejire_arweave_solana/actions/workflows/checks.yml">
-    <img alt="SEJIRE checks" src="https://github.com/azovskaya/sejire_arweave_solana/actions/workflows/checks.yml/badge.svg?branch=feat%2Fpreservation-v2-simple">
+    <img alt="SEJIRE checks" src="https://github.com/azovskaya/sejire_arweave_solana/actions/workflows/checks.yml/badge.svg">
   </a>
   <img alt="Solana Devnet" src="https://img.shields.io/badge/Solana-Devnet-7B61FF">
   <img alt="Arweave Mainnet" src="https://img.shields.io/badge/Arweave-Mainnet-222222">
@@ -160,7 +160,6 @@ Requirements:
 ```bash
 git clone https://github.com/azovskaya/sejire_arweave_solana.git
 cd sejire_arweave_solana
-git checkout feat/preservation-v2-simple
 
 npm ci --prefix apps/web
 npm ci --prefix apps/sponsor
