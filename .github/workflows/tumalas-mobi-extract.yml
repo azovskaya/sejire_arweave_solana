@@ -1,0 +1,109 @@
+name: Extract Tumalas mobi graph
+
+on:
+  push:
+    branches:
+      - research/tumalas-mobi-extract
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  extract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: apps/web/package-lock.json
+
+      - name: Install browser tooling
+        run: |
+          npm ci --prefix apps/web
+          npm exec --prefix apps/web -- playwright install --with-deps chromium
+
+      - name: Capture live Tumalas mobi application and network traffic
+        run: node scripts/tumalas-mobi-capture.mjs
+
+      - name: Fetch raw entry pages
+        if: always()
+        run: |
+          mkdir -p tumalas-output/raw
+          curl -L --retry 3 --connect-timeout 20 --max-time 120 \
+            -A 'Mozilla/5.0 SEJIRE-research/1.0' \
+            -D tumalas-output/raw/mobi.headers \
+            -o tumalas-output/raw/mobi.html \
+            https://tumalas.kz/mobi/ || true
+          curl -L --retry 3 --connect-timeout 20 --max-time 120 \
+            -A 'Mozilla/5.0 SEJIRE-research/1.0' \
+            -D tumalas-output/raw/root.headers \
+            -o tumalas-output/raw/root.html \
+            https://tumalas.kz/ || true
+
+      - name: Try to obtain and inspect the companion Android APK
+        if: always()
+        run: |
+          mkdir -p tumalas-output/apk
+          urls=(
+            'https://d.apkpure.com/b/APK/fly.altynkundyz.zhetiatashejiresi?version=latest'
+            'https://apkpure.com/seven-ata-genealogy/fly.altynkundyz.zhetiatashejiresi/download'
+          )
+          for url in "${urls[@]}"; do
+            echo "Trying $url" | tee -a tumalas-output/apk/download.log
+            if curl -L --retry 2 --connect-timeout 20 --max-time 180 \
+              -A 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/128 Safari/537.36' \
+              -o tumalas-output/apk/app.download "$url"; then
+              file tumalas-output/apk/app.download | tee -a tumalas-output/apk/download.log
+              if unzip -t tumalas-output/apk/app.download >/dev/null 2>&1; then
+                mv tumalas-output/apk/app.download tumalas-output/apk/app.apk
+                break
+              fi
+            fi
+          done
+          if [ -f tumalas-output/apk/app.apk ]; then
+            unzip -q tumalas-output/apk/app.apk -d tumalas-output/apk/unpacked
+            find tumalas-output/apk/unpacked -type f -printf '%p\t%s\n' | sort > tumalas-output/apk/files.tsv
+            grep -RIl --binary-files=without-match -E 'Алаш|Ұлы жүз|Орта жүз|Кіші жүз|Жүзден тыс|tumalas\.kz|altynkundyz' \
+              tumalas-output/apk/unpacked > tumalas-output/apk/matching-files.txt || true
+            while IFS= read -r file; do
+              echo "===== $file ====="
+              grep -aEn -C 3 'Алаш|Ұлы жүз|Орта жүз|Кіші жүз|Жүзден тыс|tumalas\.kz|altynkundyz' "$file" || true
+            done < tumalas-output/apk/matching-files.txt > tumalas-output/apk/matches.txt
+          fi
+
+      - name: Summarize captured graph hints
+        if: always()
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import json, re
+          root=Path('tumalas-output')
+          report=[]
+          for p in root.rglob('*'):
+              if not p.is_file() or p.stat().st_size > 20_000_000: continue
+              try: s=p.read_text('utf-8',errors='ignore')
+              except Exception: continue
+              hits=[]
+              for term in ['Алаш','Ұлы жүз','Орта жүз','Кіші жүз','Жүзден тыс']:
+                  n=s.count(term)
+                  if n: hits.append([term,n])
+              urls=sorted(set(re.findall(r'https?://[^"\'<>\\\s]+',s)))[:500]
+              if hits or urls:
+                  report.append({'file':str(p),'bytes':p.stat().st_size,'hits':hits,'urls':urls})
+          (root/'hint-report.json').write_text(json.dumps(report,ensure_ascii=False,indent=2),'utf-8')
+          print(json.dumps(report[:30],ensure_ascii=False,indent=2))
+          PY
+
+      - name: Upload extraction evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tumalas-mobi-extraction
+          path: tumalas-output
+          if-no-files-found: error
+          retention-days: 14
