@@ -1,0 +1,89 @@
+name: Wayback Tumalas graph extraction
+
+on:
+  push:
+    branches:
+      - research/tumalas-mobi-extract
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  extract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Query Wayback CDX and download archived assets
+        run: |
+          mkdir -p wayback-output/assets
+          curl -L --retry 3 --connect-timeout 20 --max-time 180 \
+            -A 'SEJIRE genealogy research contact: repository owner' \
+            'https://web.archive.org/cdx/search/cdx?url=tumalas.kz/mobi/*&output=json&filter=statuscode:200&collapse=digest&fl=timestamp,original,mimetype,statuscode,digest,length&from=2018&to=2026' \
+            -o wayback-output/cdx.json || true
+          python3 - <<'PY'
+          from pathlib import Path
+          from urllib.parse import urlparse
+          import hashlib,json,re,subprocess
+          p=Path('wayback-output/cdx.json')
+          try: rows=json.loads(p.read_text('utf-8'))
+          except Exception as e:
+              Path('wayback-output/error.txt').write_text(str(e),'utf-8'); rows=[]
+          if rows and isinstance(rows[0],list):
+              keys=rows[0]; items=[dict(zip(keys,r)) for r in rows[1:]]
+          else: items=[]
+          # Prefer HTML, JS, JSON and text-like responses; keep a bounded set.
+          def score(x):
+              u=x.get('original','').lower(); m=x.get('mimetype','').lower()
+              return (100 if 'json' in m or u.endswith('.json') else 0) + (80 if 'javascript' in m or '.js' in u else 0) + (60 if 'html' in m else 0)
+          items=sorted(items,key=score,reverse=True)[:1000]
+          manifest=[]
+          for i,item in enumerate(items):
+              ts=item.get('timestamp'); url=item.get('original')
+              if not ts or not url: continue
+              ext='.bin'
+              low=(item.get('mimetype','')+' '+url).lower()
+              if 'json' in low: ext='.json'
+              elif 'javascript' in low or '.js' in low: ext='.js'
+              elif 'html' in low: ext='.html'
+              elif 'css' in low: ext='.css'
+              name=f'{i:04d}-{hashlib.sha1(url.encode()).hexdigest()[:12]}{ext}'
+              target='wayback-output/assets/'+name
+              archive=f'https://web.archive.org/web/{ts}id_/{url}'
+              r=subprocess.run(['curl','-L','--retry','2','--connect-timeout','20','--max-time','180','-A','SEJIRE-research/1.0','-o',target,archive])
+              if r.returncode==0 and Path(target).exists():
+                  manifest.append({**item,'archive':archive,'savedAs':target,'bytes':Path(target).stat().st_size})
+          Path('wayback-output/manifest.json').write_text(json.dumps(manifest,ensure_ascii=False,indent=2),'utf-8')
+          PY
+          grep -RIna --binary-files=text -E 'Алаш|Ұлы жүз|Орта жүз|Кіші жүз|Жүзден тыс|children|parent|nodes|tree|graph|firebase|api/' \
+            wayback-output/assets > wayback-output/matches.txt || true
+          find wayback-output -type f -printf '%p\t%s\n' | sort > wayback-output/files.tsv
+
+      - name: Query Common Crawl indexes for missed assets
+        if: always()
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import json,subprocess
+          indexes=['CC-MAIN-2026-30','CC-MAIN-2026-21','CC-MAIN-2025-47','CC-MAIN-2024-51','CC-MAIN-2023-50','CC-MAIN-2022-49','CC-MAIN-2021-49','CC-MAIN-2020-50']
+          out=[]
+          for idx in indexes:
+              url=f'https://index.commoncrawl.org/{idx}-index?url=tumalas.kz/mobi/*&output=json&filter=status:200&collapse=urlkey'
+              p=Path(f'wayback-output/commoncrawl-{idx}.jsonl')
+              subprocess.run(['curl','-L','--retry','2','--connect-timeout','20','--max-time','120','-A','SEJIRE-research/1.0','-o',str(p),url],check=False)
+              if p.exists():
+                  for line in p.read_text('utf-8',errors='ignore').splitlines():
+                      try: out.append(json.loads(line))
+                      except: pass
+          Path('wayback-output/commoncrawl-all.json').write_text(json.dumps(out,ensure_ascii=False,indent=2),'utf-8')
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: tumalas-wayback-extraction
+          path: wayback-output
+          if-no-files-found: error
+          retention-days: 14
