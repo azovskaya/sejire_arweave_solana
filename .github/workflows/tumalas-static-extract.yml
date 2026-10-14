@@ -1,0 +1,97 @@
+name: Static Tumalas graph extraction
+
+on:
+  push:
+    branches:
+      - research/tumalas-mobi-extract
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  extract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download page and linked assets
+        run: |
+          set -u
+          mkdir -p static-output/site/assets static-output/apk
+          curl -L --retry 3 --connect-timeout 15 --max-time 120 \
+            -A 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/128 Safari/537.36' \
+            -D static-output/site/headers.txt \
+            -o static-output/site/index.html https://tumalas.kz/mobi/ || true
+          python3 - <<'PY'
+          from pathlib import Path
+          from urllib.parse import urljoin
+          import re, subprocess
+          html=Path('static-output/site/index.html').read_text('utf-8',errors='ignore') if Path('static-output/site/index.html').exists() else ''
+          urls=[]
+          for m in re.finditer(r'(?:src|href)=["\']([^"\']+)["\']',html,re.I):
+              u=urljoin('https://tumalas.kz/mobi/',m.group(1))
+              if any(x in u.lower() for x in ('.js','.json','.css','manifest','service-worker','sw.js')): urls.append(u)
+          Path('static-output/site/asset-urls.txt').write_text('\n'.join(dict.fromkeys(urls)),'utf-8')
+          for i,u in enumerate(dict.fromkeys(urls)):
+              subprocess.run(['curl','-L','--retry','2','--connect-timeout','15','--max-time','120','-A','Mozilla/5.0','-o',f'static-output/site/assets/{i:04d}.bin',u],check=False)
+          PY
+          find static-output/site -type f -printf '%p\t%s\n' | sort > static-output/site/files.tsv
+          grep -RIna --binary-files=text -E 'Алаш|Ұлы жүз|Орта жүз|Кіші жүз|Жүзден тыс|api/|axios|fetch\(|graphql|firebase|children|parent' static-output/site > static-output/site/matches.txt || true
+
+      - name: Download APK from several mirrors
+        run: |
+          set -u
+          urls=(
+            'https://d.apkpure.com/b/APK/fly.altynkundyz.zhetiatashejiresi?version=latest'
+            'https://apkpure.net/ru/%D0%B6%D0%B5%D1%82%D1%96-%D0%B0%D1%82%D0%B0-%D1%88%D0%B5%D0%B6%D1%96%D1%80%D0%B5%D1%81%D1%96/fly.altynkundyz.zhetiatashejiresi/download'
+            'https://apkcombo.com/downloader/#package=fly.altynkundyz.zhetiatashejiresi'
+          )
+          for url in "${urls[@]}"; do
+            echo "Trying $url" | tee -a static-output/apk/download.log
+            curl -L --retry 2 --connect-timeout 15 --max-time 180 \
+              -A 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/128 Safari/537.36' \
+              -o static-output/apk/candidate "$url" || true
+            file static-output/apk/candidate | tee -a static-output/apk/download.log || true
+            if unzip -t static-output/apk/candidate >/dev/null 2>&1; then
+              mv static-output/apk/candidate static-output/apk/app.apk
+              break
+            fi
+          done
+          if [ -f static-output/apk/app.apk ]; then
+            unzip -q static-output/apk/app.apk -d static-output/apk/unpacked
+            find static-output/apk/unpacked -type f -printf '%p\t%s\n' | sort > static-output/apk/files.tsv
+            for f in static-output/apk/unpacked/classes*.dex static-output/apk/unpacked/resources.arsc; do
+              [ -f "$f" ] || continue
+              strings -a -n 3 "$f" >> static-output/apk/all-strings.txt || true
+            done
+            grep -Ina -E 'Алаш|Ұлы жүз|Орта жүз|Кіші жүз|Жүзден тыс|tumalas|http|firebase|json|sqlite|realm' static-output/apk/all-strings.txt > static-output/apk/interesting-strings.txt || true
+            grep -RIna --binary-files=text -E 'Алаш|Ұлы жүз|Орта жүз|Кіші жүз|Жүзден тыс|tumalas|firebase' static-output/apk/unpacked > static-output/apk/raw-matches.txt || true
+          fi
+
+      - name: Build static report
+        if: always()
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import json
+          root=Path('static-output')
+          files=[]
+          terms=['Алаш','Ұлы жүз','Орта жүз','Кіші жүз','Жүзден тыс']
+          for p in root.rglob('*'):
+            if not p.is_file() or p.stat().st_size>30_000_000: continue
+            text=p.read_text('utf-8',errors='ignore')
+            hits={t:text.count(t) for t in terms if text.count(t)}
+            if hits: files.append({'path':str(p),'bytes':p.stat().st_size,'hits':hits})
+          (root/'report.json').write_text(json.dumps({'files':files},ensure_ascii=False,indent=2),'utf-8')
+          print(json.dumps({'files':files},ensure_ascii=False,indent=2))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: tumalas-static-extraction
+          path: static-output
+          if-no-files-found: error
+          retention-days: 14
