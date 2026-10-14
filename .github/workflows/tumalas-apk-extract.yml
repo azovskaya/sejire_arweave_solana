@@ -1,0 +1,57 @@
+name: Extract Tumalas Android graph
+
+on:
+  push:
+    branches:
+      - research/tumalas-mobi-extract
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  extract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: apps/web/package-lock.json
+      - name: Install Playwright
+        run: |
+          npm ci --prefix apps/web
+          npm exec --prefix apps/web -- playwright install --with-deps chromium
+      - name: Download APK through browser
+        run: node scripts/download-tumalas-apk.mjs
+      - name: Inspect APK contents
+        if: always()
+        run: |
+          set -u
+          apk="$(find tumalas-apk-output -maxdepth 1 -type f \( -name '*.apk' -o -name '*.xapk' -o -name '*.apks' \) | head -n1)"
+          if [ -z "$apk" ]; then
+            echo 'No APK downloaded' > tumalas-apk-output/inspection.txt
+            exit 0
+          fi
+          file "$apk" | tee tumalas-apk-output/inspection.txt
+          mkdir -p tumalas-apk-output/unpacked
+          unzip -q "$apk" -d tumalas-apk-output/unpacked
+          find tumalas-apk-output/unpacked -type f -printf '%p\t%s\n' | sort > tumalas-apk-output/files.tsv
+          for f in tumalas-apk-output/unpacked/classes*.dex tumalas-apk-output/unpacked/resources.arsc; do
+            [ -f "$f" ] || continue
+            strings -a -n 2 "$f" >> tumalas-apk-output/all-strings.txt || true
+          done
+          find tumalas-apk-output/unpacked -type f \( -name '*.json' -o -name '*.js' -o -name '*.html' -o -name '*.xml' -o -name '*.db' -o -name '*.sqlite' \) -print > tumalas-apk-output/data-files.txt
+          grep -RIna --binary-files=text -E 'Алаш|Ұлы жүз|Орта жүз|Кіші жүз|Жүзден тыс|tumalas|tuma_cached|admin-ajax|parent|children' \
+            tumalas-apk-output/unpacked > tumalas-apk-output/raw-matches.txt || true
+          grep -Ina -E 'Алаш|Ұлы жүз|Орта жүз|Кіші жүз|Жүзден тыс|tumalas|tuma_cached|admin-ajax|parent|children' \
+            tumalas-apk-output/all-strings.txt > tumalas-apk-output/string-matches.txt || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: tumalas-apk-extraction
+          path: tumalas-apk-output
+          if-no-files-found: error
+          retention-days: 14
