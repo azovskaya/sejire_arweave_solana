@@ -1,0 +1,131 @@
+name: Extract archived Tumalas child API
+
+on:
+  push:
+    branches:
+      - research/tumalas-mobi-extract
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  extract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Query Wayback for admin AJAX captures
+        run: |
+          set -u
+          mkdir -p ajax-archive-output/cdx ajax-archive-output/responses
+          queries=(
+            'tumalas.kz/wp-admin/admin-ajax.php*'
+            'www.tumalas.kz/wp-admin/admin-ajax.php*'
+            'https://tumalas.kz/wp-admin/admin-ajax.php*'
+            'http://tumalas.kz/wp-admin/admin-ajax.php*'
+          )
+          i=0
+          for q in "${queries[@]}"; do
+            curl -G -L --retry 3 --connect-timeout 20 --max-time 180 \
+              -A 'SEJIRE research' \
+              --data-urlencode "url=$q" \
+              --data-urlencode 'output=json' \
+              --data-urlencode 'filter=statuscode:200' \
+              --data-urlencode 'fl=timestamp,original,mimetype,statuscode,digest,length' \
+              --data-urlencode 'collapse=digest' \
+              --data-urlencode 'from=2017' \
+              --data-urlencode 'to=2026' \
+              'https://web.archive.org/cdx/search/cdx' \
+              -o "ajax-archive-output/cdx/query-$i.json" || true
+            i=$((i+1))
+          done
+
+      - name: Download unique archived JSON-like responses
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import json, hashlib, subprocess
+          rows=[]
+          for p in Path('ajax-archive-output/cdx').glob('*.json'):
+              try: data=json.loads(p.read_text('utf-8'))
+              except: continue
+              if not data or not isinstance(data,list) or not isinstance(data[0],list): continue
+              keys=data[0]
+              rows.extend(dict(zip(keys,r)) for r in data[1:])
+          seen=set(); unique=[]
+          for r in rows:
+              key=(r.get('timestamp'),r.get('original'),r.get('digest'))
+              if key in seen: continue
+              seen.add(key); unique.append(r)
+          manifest=[]
+          for idx,r in enumerate(unique):
+              url=r.get('original',''); ts=r.get('timestamp','')
+              if not url or not ts: continue
+              archive=f'https://web.archive.org/web/{ts}id_/{url}'
+              name=f'{idx:06d}-{hashlib.sha1((ts+url).encode()).hexdigest()[:12]}.bin'
+              dest=Path('ajax-archive-output/responses')/name
+              proc=subprocess.run(['curl','-L','--retry','2','--connect-timeout','20','--max-time','120','-A','SEJIRE-research/1.0','-o',str(dest),archive])
+              if proc.returncode!=0 or not dest.exists(): continue
+              raw=dest.read_bytes(); text=raw.decode('utf-8','ignore').strip()
+              parsed=None
+              try: parsed=json.loads(text)
+              except: pass
+              record={**r,'archive':archive,'file':str(dest),'bytes':len(raw),'preview':text[:500]}
+              if isinstance(parsed,list):
+                  record['jsonType']='array'; record['jsonLength']=len(parsed); record['first']=parsed[:2]
+              elif isinstance(parsed,dict):
+                  record['jsonType']='object'; record['jsonKeys']=list(parsed)[:30]
+              manifest.append(record)
+          Path('ajax-archive-output/manifest.json').write_text(json.dumps(manifest,ensure_ascii=False,indent=2),'utf-8')
+          print(json.dumps({'cdxRows':len(rows),'unique':len(unique),'downloaded':len(manifest),'jsonResponses':sum(1 for x in manifest if x.get('jsonType'))},ensure_ascii=False,indent=2))
+          PY
+
+      - name: Search Common Crawl indexes for AJAX captures
+        if: always()
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import json, subprocess
+          indexes=['CC-MAIN-2026-30','CC-MAIN-2026-21','CC-MAIN-2025-47','CC-MAIN-2024-51','CC-MAIN-2023-50','CC-MAIN-2022-49','CC-MAIN-2021-49','CC-MAIN-2020-50','CC-MAIN-2019-51','CC-MAIN-2018-51']
+          patterns=['tumalas.kz/wp-admin/admin-ajax.php*','www.tumalas.kz/wp-admin/admin-ajax.php*']
+          out=[]
+          for idx in indexes:
+              for n,pat in enumerate(patterns):
+                  url=f'https://index.commoncrawl.org/{idx}-index?url={pat}&output=json&filter=status:200&collapse=urlkey'
+                  p=Path(f'ajax-archive-output/commoncrawl-{idx}-{n}.jsonl')
+                  subprocess.run(['curl','-L','--retry','2','--connect-timeout','20','--max-time','120','-A','SEJIRE-research/1.0','-o',str(p),url],check=False)
+                  if p.exists():
+                      for line in p.read_text('utf-8',errors='ignore').splitlines():
+                          try: out.append(json.loads(line))
+                          except: pass
+          Path('ajax-archive-output/commoncrawl-all.json').write_text(json.dumps(out,ensure_ascii=False,indent=2),'utf-8')
+          print('Common Crawl rows',len(out))
+          PY
+
+      - name: Build endpoint summary
+        if: always()
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import json,re,urllib.parse
+          try: manifest=json.loads(Path('ajax-archive-output/manifest.json').read_text('utf-8'))
+          except: manifest=[]
+          summary=[]
+          for r in manifest:
+              u=r.get('original',''); q=urllib.parse.parse_qs(urllib.parse.urlparse(u).query)
+              action=(q.get('action') or [''])[0]
+              if 'tuma_' in action or 'child' in action or 'ancestor' in action or r.get('jsonType'):
+                  summary.append({'timestamp':r.get('timestamp'),'url':u,'action':action,'id':(q.get('id') or [None])[0],'nodeid':(q.get('nodeid') or [None])[0],'jsonType':r.get('jsonType'),'jsonLength':r.get('jsonLength'),'file':r.get('file'),'preview':r.get('preview','')[:300]})
+          Path('ajax-archive-output/endpoint-summary.json').write_text(json.dumps(summary,ensure_ascii=False,indent=2),'utf-8')
+          print(json.dumps(summary[:50],ensure_ascii=False,indent=2))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: tumalas-ajax-archive
+          path: ajax-archive-output
+          if-no-files-found: error
+          retention-days: 14
