@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import type { EnvelopeV1 } from '../lib/crypto/encrypt';
+import { parseEnvelope } from '../lib/crypto/envelope';
 import { envelopeText, importPilotFile, PRESERVATION_V2_PILOT_POLICY as P } from '../lib/preserveV2/policy';
 import { beginSave, currentSession, pay, prepareArweave, reconcileSave, saveToArweave } from '../lib/preserveV2/machine';
 import type { SaveSession } from '../lib/preserveV2/types';
+import { PromoFundedFlow } from './PromoFundedFlow';
 
 type Props = { envelope?: EnvelopeV1 | null; treeName?: string; onBack?: () => void; onBusy?: (busy: boolean) => void };
 const message = (error: unknown) => {
@@ -25,12 +27,16 @@ export function PreservationV2({envelope,treeName,onBack,onBusy}: Props) {
   const [error,setError] = useState('');
   const [info,setInfo] = useState('');
   const [reward,setReward] = useState<string>();
+  const [promoEnvelope,setPromoEnvelope] = useState<EnvelopeV1|null>(null);
   const running = useRef(false);
   useEffect(() => {
     let live=true;
     void (async()=>{
       try {
-        if (envelope) await beginSave(await envelopeText(envelope));
+        if (envelope) {
+          try { await beginSave(await envelopeText(envelope)); }
+          catch (error) { if(error instanceof Error && error.message==='archive_not_authorized'){if(live)setSession(undefined);return;} throw error; }
+        }
         const next=await currentSession();
         if(live) setSession(next);
       } catch(e) { if(live) setError(message(e)); }
@@ -75,6 +81,11 @@ export function PreservationV2({envelope,treeName,onBack,onBusy}: Props) {
     if(!file)return;
     await run(async()=>beginSave(await importPilotFile(file)));
   }
+  async function choosePromo(file?:File){
+    if(!file)return;setError('');
+    try{if(file.size>524288)throw Error('envelope_too_large');setPromoEnvelope(parseEnvelope(JSON.parse(await file.text())));}
+    catch{setError('Не удалось прочитать зашифрованный архив.');}
+  }
   async function payNow() {
     await run(async()=>{
       const result=await pay();
@@ -99,10 +110,10 @@ export function PreservationV2({envelope,treeName,onBack,onBusy}: Props) {
     <h1>Сохранить семейную историю</h1>
     <h2>{treeName || 'Мой род'}</h2>
     <p>Данные сохраняются в зашифрованном архиве. Ваши 12 слов SEJIRE остаются у вас.</p>
-    <p><strong>Оплата: 0.03 SOL</strong><br/>Solana Devnet · комиссия сети отдельно</p>
-    <p><strong>Хранение: Arweave Mainnet</strong><br/>Реальные AR · до 0.004 AR</p>
-    <ol aria-label="Ход сохранения"><li>{paid?'✓ ':''}Оплата</li><li>{stored?'✓ ':''}Сохранение</li><li>{stored?'✓ ':''}Готово</li></ol>
-    {!session && <label>Зашифрованный архив пилота<input type="file" accept="application/json,.json" onChange={e=>void choose(e.target.files?.[0])}/></label>}
+    {session&&<p><strong>Оплата: 0.03 SOL</strong><br/>Solana Devnet · комиссия сети отдельно</p>}
+    {session&&<p><strong>Хранение: Arweave Mainnet</strong><br/>Реальные AR · до 0.004 AR</p>}
+    {session&&<ol aria-label="Ход сохранения"><li>{paid?'✓ ':''}Оплата</li><li>{stored?'✓ ':''}Сохранение</li><li>{stored?'✓ ':''}Готово</li></ol>}
+    {!session && !envelope && <label>Зашифрованный архив пилота<input type="file" accept="application/json,.json" onChange={e=>void choose(e.target.files?.[0])}/></label>}
     {session && !paid && state!=='BLOCKED' && <button className="btn" disabled={busy || state==='SOLANA_PENDING'} onClick={()=>void payNow()}>Оплатить 0.03 SOL</button>}
     {state==='SOLANA_PENDING' && <p>Проверяем оплату в Solana. Повторного платежа нет.</p>}
     {paid && !stored && <p>✓ Оплата подтверждена</p>}
@@ -119,6 +130,8 @@ export function PreservationV2({envelope,treeName,onBack,onBusy}: Props) {
     {stored && <><p>✓ Семейная история сохранена навсегда</p><a className="btn" href="#/restore">Проверить восстановление</a></>}
     {state==='BLOCKED' && <p role="alert">{blockedAfterPayment?'Оплата подтверждена. Проверяем уже подписанную транзакцию Wander; новая оплата и новая подпись не запускаются.':'Сохранение остановлено для предотвращения повторного расхода. Нужна проверка операции.'}</p>}
     {info && state!=='BLOCKED' && <p role="status">{info}</p>}{error && <p role="alert">{error}</p>}
+    {!envelope&&!promoEnvelope&&<label>Зашифрованный архив для промокода<input type="file" accept="application/json,.json" onChange={e=>void choosePromo(e.target.files?.[0])}/></label>}
+    {(envelope||promoEnvelope)&&<PromoFundedFlow envelope={(envelope||promoEnvelope)!}/>}
     {onBack && <button className="btn ghost" disabled={busy} onClick={onBack}>Назад</button>}
   </section>;
 }

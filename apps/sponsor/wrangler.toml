@@ -5,6 +5,7 @@ compatibility_flags = ["nodejs_compat"]
 
 [vars]
 PAYMENT_PROVIDER = "mock"
+FUND_API_ENABLED = "false"
 PUBLISH_PRICE_MINOR = "1500"
 PUBLISH_CURRENCY = "KZT"
 MAX_ENVELOPE_BYTES = "524288"
@@ -32,3 +33,13 @@ APP_ORIGIN = "https://azovskaya.github.io,https://sejire.ar.io,http://localhost:
 # binding = "IDEMPOTENCY"
 # id = "REPLACE_WITH_KV_NAMESPACE_ID"
 # preview_id = "REPLACE_WITH_KV_PREVIEW_ID"
+
+# Fund and checkout share one atomic SQLite Durable Object.
+# Fund API stays closed until owner configures secrets and explicitly enables it.
+[[durable_objects.bindings]]
+name = "CHECKOUT_LEDGER"
+class_name = "CheckoutLedger"
+
+[[migrations]]
+tag = "fund-ledger-v1"
+new_sqlite_classes = ["CheckoutLedger"]

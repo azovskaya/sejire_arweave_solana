@@ -1,0 +1,20 @@
+import type { EnvelopeV1 } from '../crypto/encrypt';
+import { serializeEnvelope } from '../crypto/envelope';
+import { envelopeDigest } from '../solana/policy';
+export type FundOrderView={preservationId:string;orderId:string;promoRevision:number;archiveSizeBytes:number;archiveDigest:string;vaultId:string;estimatedRewardWinston:string;reservedRewardWinston:string;actualRewardWinston:string|null;arweaveTxId:string|null;status:string;createdAt:number;uploadedAt:number|null;verifiedAt:number|null};
+export type FundDashboard={promo:{enabled:boolean;displayHint:string;revision:number;createdAt:number;updatedAt:number};treasuryAddress:string;limitWinston:string;actualSpentWinston:string;reservedWinston:string;budgetRemainingWinston:string;walletBalanceWinston:string|null;lastBalanceCheck:number|null;currentQuoteWinston:string|null;currentQuoteBytes:number;effectiveAvailableWinston:string|null;estimatedTreesRemaining:string|null;fundStatus:string;successfulTrees:number;today:number;last7Days:number;failedAttempts:number;pending:number;totalEncryptedBytes:number;averageArchiveBytes:number|null;largestArchiveBytes:number|null;smallestArchiveBytes:number|null;averageActualWinston:string|null;minActualWinston:string|null;maxActualWinston:string|null;latestActualWinston:string|null;currentRevisionTrees:number;currentRevisionSpentWinston:string;lastReconciliation:number|null;history:FundOrderView[]};
+export function formatAr(value:string|null|undefined,places=6){if(value==null)return '—';const raw=BigInt(value),negative=raw<0n,n=negative?-raw:raw,whole=n/1000000000000n,frac=(n%1000000000000n).toString().padStart(12,'0');return `${negative?'-':''}${whole}.${frac.slice(0,places)}`;}
+function endpoint(){const raw=import.meta.env.VITE_FUND_API_URL||import.meta.env.VITE_CHECKOUT_API_URL||location.origin;const url=new URL(raw);
+  if(url.origin!==raw||(url.protocol!=='https:'&&!['localhost','127.0.0.1'].includes(url.hostname)))throw Error('invalid_fund_endpoint');return url.origin+'/api/fund';}
+async function call<T>(path:string,method:'GET'|'POST'='GET',value?:unknown,adminPassword?:string):Promise<T>{const r=await fetch(endpoint()+path,{method,credentials:'omit',referrerPolicy:'no-referrer',cache:'no-store',headers:{...(value===undefined?{}:{'Content-Type':'application/json'}),...(adminPassword?{Authorization:`Bearer ${adminPassword}`}:{})},...(value===undefined?{}:{body:JSON.stringify(value)}),signal:AbortSignal.timeout(30000)});
+  const data=await r.json() as {error?:string};if(!r.ok)throw Error(data.error||'fund_unavailable');return data as T;}
+export const validatePromo=(code:string)=>call<{accepted:boolean}>('/validate','POST',{code});
+export const publicFundBalance=()=>call<{treasuryAddress:string;walletBalanceWinston:string|null;lastBalanceCheck:number|null}>('/balance');
+export const readFundOrder=(id:string)=>call<{order:FundOrderView}>(`/orders/${id}`);
+export async function preserveFunded(envelope:EnvelopeV1,code:string,orderId:string){const archive=serializeEnvelope(envelope);return call<{order:FundOrderView}>('/orders','POST',{orderId,preservationId:orderId,code,archive});}
+export async function journalKey(envelope:EnvelopeV1){return `sejire-funded:${await envelopeDigest(serializeEnvelope(envelope))}`;}
+export const fundDashboard=(password:string)=>call<FundDashboard>('/admin/dashboard','GET',undefined,password);
+export const fundChangePromo=(password:string,code:string,confirm:string)=>call('/admin/promo','POST',{code,confirm},password);
+export const fundEnable=(password:string,enabled:boolean)=>call('/admin/enabled','POST',{enabled},password);
+export const fundLimit=(password:string,limitAr:string)=>call('/admin/limit','POST',{limitAr},password);
+export const fundReconcile=(password:string)=>call('/admin/reconcile','POST',{},password);

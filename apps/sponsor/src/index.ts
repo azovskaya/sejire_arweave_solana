@@ -1,3 +1,4 @@
+import { fundApi } from './fund/api';
 import { checkoutApi, type CheckoutApiEnv } from './checkout/api';
 export { CheckoutLedger } from './checkout/durableStore';
 /**
@@ -63,6 +64,9 @@ import {
 import { uploadEnvelope } from "./upload";
 
 export interface Env extends CheckoutApiEnv {
+  FUND_API_ENABLED?: string;
+  ARWEAVE_TREASURY_JWK?: string;
+  PROMO_CODE_SECRET?: string;
   KASPI_MERCHANT_TOKEN?: string;
   TURBO_JWK?: string;
   SITE_JWK?: string;
@@ -186,6 +190,8 @@ async function readJson(request: Request): Promise<Record<string, unknown>> {
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
+    const fund = await fundApi(request, env);
+    if (fund) return fund;
     const checkout = await checkoutApi(request, env);
     if (checkout) return checkout;
     const secrets = await loadOpsSecrets(env);

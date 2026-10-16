@@ -5,11 +5,13 @@
   "type": "module",
   "scripts": {
     "check": "tsc --noEmit -p tsconfig.json",
-    "test": "tsx src/selftest.ts && npm run test:checkout && npm run test:rpc",
+    "test": "tsx src/selftest.ts && npm run test:checkout && npm run test:rpc && npm run test:fund",
     "dev": "echo 'Use: npx wrangler dev (Cloudflare login). Default PAYMENT_PROVIDER=mock.'",
     "test:checkout": "tsx src/checkout/selftest.ts",
     "test:rpc": "tsx src/checkout/rpc.selftest.ts",
     "test:sqlite": "node tests/sqlite-runtime.mjs",
+    "test:fund": "node --experimental-sqlite --loader ../../scripts/offline-ts-loader.mjs tests/fund.local.mjs",
+    "test:fund-runtime": "node tests/fund-runtime.mjs",
     "test:api": "node tests/api-runtime.mjs",
     "test:preservation": "tsx src/checkout/preparation.selftest.ts && tsx src/checkout/preservation.selftest.ts",
     "test:protocol": "tsx src/protocol/selftest.ts"

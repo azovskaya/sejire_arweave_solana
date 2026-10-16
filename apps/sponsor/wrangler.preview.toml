@@ -14,6 +14,7 @@ run_worker_first = ["/api/*"]
 
 [vars]
 CHECKOUT_API_ENABLED = "false"
+FUND_API_ENABLED = "false"
 CHECKOUT_UPLOAD_ENABLED = "false"
 MAX_ENVELOPE_BYTES = "524288"
 CHECKOUT_POLICY_VERSION = "devnet-sol-003-v1"

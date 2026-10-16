@@ -2007,3 +2007,17 @@ a {
 .settings-review { border:1px solid #8aab97; padding:1rem; border-radius:12px; background:#f7faf5; }
 .admin-center .admin-card,.admin-center dd,.admin-center a { overflow-wrap:anywhere; min-width:0; }
 @media(max-width:760px) { .saving-screen { padding:.5rem; } .saving-summary { padding:.85rem; } .admin-center .admin-sidebar { display:grid; grid-template-columns:1fr 1fr; } .saving-total { grid-template-columns:1fr; gap:.2rem; } .saving-total dd { text-align:left; margin-bottom:.5rem; } }
+
+.funded-flow,.fund-admin{margin:1.5rem 0;padding:1.25rem;border:1px solid var(--line,#ccc);border-radius:12px;max-width:100%;overflow-wrap:anywhere}
+.funded-flow label,.fund-admin label{display:block;margin:.75rem 0}
+.funded-flow input,.fund-admin input,.fund-admin select{display:block;width:100%;max-width:28rem;min-height:2.5rem;margin-top:.3rem}
+.fund-admin-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,310px),1fr));gap:1rem;margin:1rem 0}
+.fund-admin-grid .ops-desk-card{min-width:0}.fund-admin-grid .ops-desk-card p{margin:.55rem 0}.fund-admin .btn{margin:.3rem .4rem .3rem 0}
+.fund-admin progress{width:100%;height:1.1rem}.fund-admin-filters{display:flex;flex-wrap:wrap;gap:1rem}.fund-admin-history{max-width:100%;overflow-x:auto}
+@media(max-width:600px){
+  .fund-admin,.funded-flow{padding:.8rem}.fund-admin-grid{grid-template-columns:1fr}
+  .fund-admin-history table,.fund-admin-history tbody,.fund-admin-history tr,.fund-admin-history td{display:block;width:100%}
+  .fund-admin-history thead{display:none}.fund-admin-history tr{border:1px solid var(--line,#ddd);border-radius:8px;margin:.7rem 0;padding:.5rem}
+  .fund-admin-history td{display:grid;grid-template-columns:7rem minmax(0,1fr);gap:.5rem;border:0;padding:.2rem .4rem;overflow-wrap:anywhere}
+  .fund-admin-history td::before{content:attr(data-label);font-weight:600}
+}

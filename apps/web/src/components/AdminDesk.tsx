@@ -24,9 +24,10 @@ import { verifyAdminLock } from "../lib/opsDesk/adminLock";
 import { addressFromTreasuryJson, generateTreasuryWallet, treasuryBalanceAr } from "../lib/opsDesk/treasury";
 import type { OpsOverview, RedactedOpsKeys } from "../lib/opsDesk/types";
 import { PreservationV2Diagnostics } from "./PreservationV2Diagnostics";
+import { FundAdmin } from "./FundAdmin";
 
 type Props = { onHome: () => void; v2Diagnostics?: boolean };
-type Tab = "overview" | "keys" | "password" | "diagnostics";
+type Tab = "overview" | "keys" | "password" | "diagnostics" | "fund";
 const v2Copy={
   ru:{setup:'Настройка администратора',login:'Админ-панель',createPassword:'Создайте пароль',repeat:'Повторите пароль',create:'Создать пароль',password:'Пароль',show:'Показать пароль',hide:'Скрыть пароль',diagnostics:'Диагностика',wrong:'Неверный пароль'},
   kk:{setup:'Әкімшіні баптау',login:'Әкімші панелі',createPassword:'Құпия сөз жасаңыз',repeat:'Құпия сөзді қайталаңыз',create:'Құпия сөз жасау',password:'Құпия сөз',show:'Құпия сөзді көрсету',hide:'Құпия сөзді жасыру',diagnostics:'Диагностика',wrong:'Құпия сөз қате'},
@@ -93,6 +94,11 @@ export function AdminDesk({ onHome, v2Diagnostics=false }: Props) {
   },[v2Diagnostics]);
 
   async function refreshDesk() {
+    if(v2Diagnostics){
+      try{setNetworkOverview(await fetchAdminNetworkOverview());}
+      catch{setNetworkOverview({archives:null,trees:null,saves:null,payments:null,paidCount:null,receivedLamports:null,arweaveError:true,solanaError:true});}
+      return;
+    }
     const secrets = await loadOpsSecrets();
     let balance: string | null = null;
     const jwk = secrets.turboJwk || getHotTreasury()?.jwk;
@@ -269,7 +275,7 @@ export function AdminDesk({ onHome, v2Diagnostics=false }: Props) {
       </header>
       <main className="ops-desk-main">
         <h1>{v2Diagnostics?(phase==='setup'?copy.setup:copy.login):a.title}</h1>
-        {phase==='desk'&&<><p className="sub">{a.sub}</p><p className="ops-desk-note">{a.pagesHint}</p></>}
+        {phase==='desk'&&(v2Diagnostics?<p className="sub">Управление бесплатным сохранением и диагностика сети. Архивы остаются зашифрованными.</p>:<><p className="sub">{a.sub}</p><p className="ops-desk-note">{a.pagesHint}</p></>)}
         {err && <p className="form-error" role="alert">{err}</p>}
         {ok && <p className="ops-desk-ok">{ok}</p>}
 
@@ -310,18 +316,20 @@ export function AdminDesk({ onHome, v2Diagnostics=false }: Props) {
               <button type="button" className={tab === "overview" ? "is-on" : ""} onClick={() => setTab("overview")}>
                 {a.tabOverview}
               </button>
-              <button type="button" className={tab === "keys" ? "is-on" : ""} onClick={() => setTab("keys")}>
+              {!v2Diagnostics&&<button type="button" className={tab === "keys" ? "is-on" : ""} onClick={() => setTab("keys")}>
                 {a.tabKeys}
-              </button>
+              </button>}
               {!v2Diagnostics && <button type="button" className={tab === "password" ? "is-on" : ""} onClick={() => setTab("password")}>
                 {a.tabPassword}
               </button>}
+              {v2Diagnostics&&<button type="button" className={tab === "fund" ? "is-on" : ""} onClick={() => setTab("fund")}>Free Preservation Fund</button>}
               {v2Diagnostics&&<button type="button" className={tab === "diagnostics" ? "is-on" : ""} onClick={() => setTab("diagnostics")}>
                 {copy.diagnostics}
               </button>}
             </div>
 
             {v2Diagnostics&&tab==='diagnostics'&&<PreservationV2Diagnostics embedded />}
+            {v2Diagnostics&&<div hidden={tab!=='fund'}><FundAdmin/></div>}
 
             {v2Diagnostics&&tab==='overview'&&(
               <div data-testid="admin-network-overview">
@@ -440,7 +448,7 @@ export function AdminDesk({ onHome, v2Diagnostics=false }: Props) {
               </div>
             )}
 
-            {tab === "keys" && keys && (
+            {!v2Diagnostics&&tab === "keys" && keys && (
               <div className="ops-desk-form">
                 <p className="sub">{a.keysHint}</p>
                 {provider === "mock" && keys.treasuryConfigured && <p className="ops-desk-warn">{a.mockWarn}</p>}

@@ -4,6 +4,7 @@ import type { AtomicOrderStore, StoredOrder, CommitResult } from './store';
 import { SqliteAtomicOrderStore } from './sqliteStore';
 import { ApiLedger } from './apiLedger';
 import type { UploadPlan, UploadAcceptance } from './preservation';
+import { FundLedger } from '../fund/ledger';
 
 export const LEDGER_OBJECT_NAME = 'sejire-checkout-ledger-v1';
 type Env = { CHECKOUT_LEDGER: DurableObjectNamespace };
@@ -14,18 +15,31 @@ type Env = { CHECKOUT_LEDGER: DurableObjectNamespace };
 export class CheckoutLedger {
   private readonly store: SqliteAtomicOrderStore;
   private readonly api: ApiLedger;
+  private readonly fund: FundLedger;
   constructor(ctx: DurableObjectState, env: Env) {
     if (!ctx.id.equals(env.CHECKOUT_LEDGER.idFromName(LEDGER_OBJECT_NAME))) throw new Error('wrong_ledger_object');
     this.store = new SqliteAtomicOrderStore(ctx.storage);
     this.api = new ApiLedger(ctx.storage, this.store);
+    this.fund = new FundLedger(ctx.storage);
   }
   async fetch(request: Request): Promise<Response> {
     if (request.method !== 'POST') return new Response('method_not_allowed', { status: 405 });
     try {
     const data = await request.json() as { action: string; order: Order; id: string; signature: string; payment: ValidatedPayment; hash: string; key: string; intent: string; expiresAt: number; buckets: string[]; limit: number; result: { status: string; reason?: string }; plan?: UploadPlan; accepted?: UploadAcceptance; retrieved: boolean };
     const now = Date.now();
+    const f=data as unknown as Record<string,unknown>;
     // Only trusted Worker service code has this binding. No browser input may invoke create/commit.
     switch (data.action) {
+      case 'fundSummary': return Response.json(this.fund.summary(now));
+      case 'fundSettings': return Response.json(this.fund.settings());
+      case 'fundOrder': return Response.json(this.fund.order(String(f.orderId),true));
+      case 'fundRate': await this.fund.rate(String(f.bucket),Number(f.limit),now); return Response.json(null);
+      case 'fundPromo': return Response.json(await this.fund.promo(String(f.hash),String(f.hint),now));
+      case 'fundEnable': return Response.json(await this.fund.enable(f.enabled===true,now));
+      case 'fundLimit': return Response.json(await this.fund.limit(String(f.value),now));
+      case 'fundReserve': return Response.json(await this.fund.reserve(f.input as Parameters<FundLedger['reserve']>[0],now));
+      case 'fundEvent': return Response.json(await this.fund.event(f.input as Parameters<FundLedger['event']>[0],now));
+      case 'fundReconciled': return Response.json(await this.fund.reconciled(now));
       case 'apiClaim': return Response.json(await this.api.claim(data.hash, data.id, data.plan, now));
       case 'apiFinish': return Response.json(await this.api.finish(data.hash, data.id, data.accepted, data.retrieved, now));
       case 'apiRate': await this.api.rate(data.buckets, data.limit, now); return Response.json(null);
@@ -47,7 +61,7 @@ export class CheckoutLedger {
     } catch (error) {
       const known = ['order_or_reference_exists', 'order_not_found', 'previous_payment_unresolved', 'order_already_paid',
         'payment_conflict', 'payment_not_reserved', 'credit_allocation_mismatch', 'payment_already_used',
-        'unauthorized', 'idempotency_conflict', 'rate_limited', 'preservation_not_paid', 'execution_not_reserved', 'upload_receipt_mismatch'];
+        'promo_invalid','promo_disabled','promo_missing','fund_exhausted','archive_changed','limit_below_spent','limit_below_reserved','fund_ledger_inconsistent','wallet_low','invalid_ar_amount','invalid_winston','invalid_reward','invalid_signed_tx','tx_conflict','invalid_actual_reward','signed_tx_must_reconcile','order_not_found','unauthorized', 'idempotency_conflict', 'rate_limited', 'preservation_not_paid', 'execution_not_reserved', 'upload_receipt_mismatch'];
       const code = error instanceof Error && known.includes(error.message) ? error.message : 'ledger_operation_failed';
       return Response.json({ error: code }, { status: 409 });
     }

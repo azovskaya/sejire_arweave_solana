@@ -7,6 +7,7 @@ interface ImportMetaEnv {
   readonly VITE_NATIVE_SOL_MAINNET?: string;
   readonly VITE_CHECKOUT_ENABLED?: string;
   readonly VITE_CHECKOUT_API_URL?: string;
+  readonly VITE_FUND_API_URL?: string;
   readonly VITE_SOLANA_NETWORK?: "devnet" | "mainnet-beta";
   readonly VITE_PUBLISH_MODE?: string;
   readonly VITE_QA_TOOLS?: string;
