@@ -41,7 +41,7 @@ try {
   assert.equal(calls.every(([,options])=>options.signal instanceof AbortSignal),true);
 
   globalThis.fetch=async()=>Response.json({network:'not-mainnet'});
-  await assert.rejects(publicNetwork(),/wrong_arweave_network/);
+  await assert.rejects(publicNetwork(),/network_unavailable/);
   globalThis.fetch=async()=>new Response('x'.repeat(4097));
   await assert.rejects(publicNetwork(),/network_unavailable/);
   globalThis.fetch=async()=>new Response('bad-anchor');
