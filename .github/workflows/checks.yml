@@ -45,7 +45,7 @@ jobs:
       - run: npm exec --prefix apps/web -- playwright install --with-deps chromium
       - run: npm run test:checkout-browser
       - run: npm run test:protocol-browser
-      - run: npm run native:build
+      - run: VITE_FUND_API_URL=https://sejire-sponsor.azovskaya-alissa.workers.dev npm run native:build
       - run: npm run security:fund
       - name: Portable admin verifier is copied into the static build
         run: cmp apps/web/public/admin-lock.json apps/web/dist/admin-lock.json
