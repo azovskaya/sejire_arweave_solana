@@ -10,8 +10,9 @@ const anchor='A'.repeat(64); // realistic recent block independent hash from /tx
   let value=ArweaveWebModule;
   let runtime;
   for(let i=0;i<4;i++){
-    if(value&&typeof value==='object'&&typeof value.init==='function'){runtime=value;break;}
-    value=value&&typeof value==='object'?value.default:undefined;
+    const container=value&&(typeof value==='object'||typeof value==='function');
+    if(container&&typeof value.init==='function'){runtime=value;break;}
+    value=container?value.default:undefined;
   }
   assert.ok(runtime,'Arweave web runtime must expose init');
   try{
