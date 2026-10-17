@@ -8,6 +8,7 @@ on:
       - '.github/workflows/promo-preview-pages.yml'
       - '.github/workflows/checks.yml'
       - 'scripts/pages-native-artifact.mjs'
+      - 'apps/web/**'
 
 permissions:
   contents: write
