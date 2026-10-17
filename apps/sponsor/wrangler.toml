@@ -5,7 +5,7 @@ compatibility_flags = ["nodejs_compat"]
 
 [vars]
 PAYMENT_PROVIDER = "mock"
-FUND_API_ENABLED = "false"
+FUND_API_ENABLED = "true"
 CHECKOUT_ALLOWED_ORIGINS = "https://azovskaya.github.io,https://sejire.ar.io"
 PUBLISH_PRICE_MINOR = "1500"
 PUBLISH_CURRENCY = "KZT"
@@ -38,7 +38,7 @@ APP_ORIGIN = "https://azovskaya.github.io,https://sejire.ar.io,http://localhost:
 # preview_id = "REPLACE_WITH_KV_PREVIEW_ID"
 
 # Fund and checkout share one atomic SQLite Durable Object.
-# Fund API stays closed until owner configures secrets and explicitly enables it.
+# Fund API is enabled after owner readiness verification, reconciliation, promo setup and explicit rollout approval.
 [[durable_objects.bindings]]
 name = "CHECKOUT_LEDGER"
 class_name = "CheckoutLedger"
