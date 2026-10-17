@@ -17,8 +17,9 @@ export interface FundedArweaveProvider {
 function arweaveRuntime(){
   let value:unknown=ArweaveWebModule;
   for(let i=0;i<4;i++){
-    if(value&&typeof value==='object'&&typeof (value as {init?:unknown}).init==='function')return value as {init:(config:Record<string,unknown>)=>any};
-    const next=value&&typeof value==='object'?(value as {default?:unknown}).default:undefined;
+    const container=value&&(typeof value==='object'||typeof value==='function');
+    if(container&&typeof (value as {init?:unknown}).init==='function')return value as {init:(config:Record<string,unknown>)=>any};
+    const next=container?(value as {default?:unknown}).default:undefined;
     if(next===undefined||next===value)break;value=next;
   }
   throw Error('arweave_web_init_unavailable');
