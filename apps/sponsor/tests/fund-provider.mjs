@@ -3,7 +3,7 @@ import Arweave from 'arweave';
 import { DirectArweaveFundProvider, publicNetwork, publicAnchor } from '../src/fund/provider.ts';
 
 const originalFetch=globalThis.fetch;
-const anchor='A'.repeat(43);
+const anchor='A'.repeat(64); // realistic recent block independent hash from /tx_anchor
 try {
   const calls=[];
   globalThis.fetch=async (url,options)=>{
