@@ -93,8 +93,10 @@ export class DirectArweaveFundProvider implements FundedArweaveProvider {
   getBalance(){return publicBalance();}
   getPrice(bytes:number){return publicPrice(bytes);}
   async prepareTransaction(bytes:Uint8Array,tags:{name:string;value:string}[]){await this.assertSigner();const ar=client();const quote=await this.getPrice(bytes.length);
-    amount(quote);await publicNetwork();const anchor=await publicAnchor();
-    const tx=await ar.createTransaction({data:bytes,owner:this.jwk.n,reward:quote,last_tx:anchor},this.jwk as never);
+    amount(quote);
+    try{await publicNetwork();}catch{throw Error('fund_network_unavailable');}
+    let anchor:string;try{anchor=await publicAnchor();}catch{throw Error('fund_anchor_unavailable');}
+    let tx;try{tx=await ar.createTransaction({data:bytes,owner:this.jwk.n,reward:quote,last_tx:anchor},this.jwk as never);}catch{throw Error('fund_create_failed');}
     for(const tag of tags)tx.addTag(tag.name,tag.value);
     const reward=tx.reward;amount(reward);return {raw:JSON.stringify(tx.toJSON()),reward};}
   async sign(prepared:PreparedFundTx){await this.assertSigner();const ar=client(),tx=ar.transactions.fromRaw(JSON.parse(prepared.raw));
