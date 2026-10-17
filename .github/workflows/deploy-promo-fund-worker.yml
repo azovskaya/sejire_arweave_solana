@@ -8,13 +8,18 @@ on:
         required: true
         default: 'NO'
         type: string
+  push:
+    branches:
+      - feat/promo-funded-preservation
+    paths:
+      - '.github/workflows/deploy-promo-fund-worker.yml'
 
 permissions:
   contents: read
 
 jobs:
   deploy:
-    if: ${{ github.ref == 'refs/heads/feat/promo-funded-preservation' && inputs.confirm == 'DEPLOY' }}
+    if: ${{ github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/feat/promo-funded-preservation' && inputs.confirm == 'DEPLOY') }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
