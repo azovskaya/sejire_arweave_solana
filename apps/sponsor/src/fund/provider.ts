@@ -16,6 +16,9 @@ export interface FundedArweaveProvider {
 }
 const client=()=>Arweave.init({host:'arweave.net',port:443,protocol:'https',timeout:15000});
 const txId=/^[A-Za-z0-9_-]{43}$/;
+// /tx_anchor may return either a transaction id (32-byte SHA-256 => 43 chars)
+// or a recent block independent hash (48-byte SHA-384 => 64 chars).
+const anchorId=/^(?:[A-Za-z0-9_-]{43}|[A-Za-z0-9_-]{64})$/;
 const gateways=['https://arweave.net','https://ar-io.dev'] as const;
 const amount=(v:string)=>{if(!/^[1-9][0-9]{0,29}$/.test(v))throw Error('invalid_reward');return BigInt(v);};
 function b64UrlBytes(value:string){
@@ -52,7 +55,7 @@ export async function publicNetwork():Promise<void>{
 export async function publicAnchor():Promise<string>{
   for(const host of gateways)try{
     const response=await fetch(`${host}/tx_anchor`,{redirect:'error',signal:AbortSignal.timeout(10000)});
-    const anchor=await boundedText(response,128);if(txId.test(anchor))return anchor;
+    const anchor=await boundedText(response,128);if(anchorId.test(anchor))return anchor;
   }catch{ /* try trusted fallback */ }
   throw Error('anchor_unavailable');
 }
