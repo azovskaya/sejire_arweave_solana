@@ -16,6 +16,7 @@ export interface FundedArweaveProvider {
 }
 const client=()=>Arweave.init({host:'arweave.net',port:443,protocol:'https',timeout:15000});
 const txId=/^[A-Za-z0-9_-]{43}$/;
+const gateways=['https://arweave.net','https://ar-io.dev'] as const;
 const amount=(v:string)=>{if(!/^[1-9][0-9]{0,29}$/.test(v))throw Error('invalid_reward');return BigInt(v);};
 function b64UrlBytes(value:string){
   if(!/^[A-Za-z0-9_-]+$/.test(value))throw Error('invalid_jwk_modulus');
@@ -30,6 +31,30 @@ function b64Url(bytes:Uint8Array){
 }
 async function addressFromModulus(n:string){
   return b64Url(new Uint8Array(await crypto.subtle.digest('SHA-256',b64UrlBytes(n))));
+}
+async function boundedText(response:Response,max:number):Promise<string>{
+  if(!response.ok||!response.body)throw Error('gateway_unavailable');
+  const reader=response.body.getReader();let size=0;const parts:Uint8Array[]=[];
+  try{for(;;){const part=await reader.read();if(part.done)break;size+=part.value.byteLength;
+    if(size>max){await reader.cancel();throw Error('gateway_response_too_large');}parts.push(part.value);}}
+  finally{reader.releaseLock();}
+  const bytes=new Uint8Array(size);let offset=0;for(const part of parts){bytes.set(part,offset);offset+=part.length;}
+  return new TextDecoder('utf-8',{fatal:true,ignoreBOM:false}).decode(bytes).trim();
+}
+export async function publicNetwork():Promise<void>{
+  for(const host of gateways)try{
+    const response=await fetch(`${host}/info`,{redirect:'error',signal:AbortSignal.timeout(10000)});
+    const info=JSON.parse(await boundedText(response,4096)) as {network?:unknown};
+    if(info.network!=='arweave.N.1')throw Error('wrong_arweave_network');return;
+  }catch(error){if(error instanceof Error&&error.message==='wrong_arweave_network')throw error;}
+  throw Error('network_unavailable');
+}
+export async function publicAnchor():Promise<string>{
+  for(const host of gateways)try{
+    const response=await fetch(`${host}/tx_anchor`,{redirect:'error',signal:AbortSignal.timeout(10000)});
+    const anchor=await boundedText(response,128);if(txId.test(anchor))return anchor;
+  }catch{ /* try trusted fallback */ }
+  throw Error('anchor_unavailable');
 }
 async function digest(bytes:Uint8Array){return Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',bytes)),x=>x.toString(16).padStart(2,'0')).join('');}
 async function boundedRaw(id:string,max:number):Promise<Uint8Array|null>{
@@ -65,8 +90,8 @@ export class DirectArweaveFundProvider implements FundedArweaveProvider {
   getBalance(){return publicBalance();}
   getPrice(bytes:number){return publicPrice(bytes);}
   async prepareTransaction(bytes:Uint8Array,tags:{name:string;value:string}[]){await this.assertSigner();const ar=client();const quote=await this.getPrice(bytes.length);
-    if((await ar.network.getInfo()).network!=='arweave.N.1')throw Error('wrong_arweave_network');
-    const tx=await ar.createTransaction({data:bytes,owner:this.jwk.n,reward:quote},this.jwk as never);
+    amount(quote);await publicNetwork();const anchor=await publicAnchor();
+    const tx=await ar.createTransaction({data:bytes,owner:this.jwk.n,reward:quote,last_tx:anchor},this.jwk as never);
     for(const tag of tags)tx.addTag(tag.name,tag.value);
     const reward=tx.reward;amount(reward);return {raw:JSON.stringify(tx.toJSON()),reward};}
   async sign(prepared:PreparedFundTx){await this.assertSigner();const ar=client(),tx=ar.transactions.fromRaw(JSON.parse(prepared.raw));

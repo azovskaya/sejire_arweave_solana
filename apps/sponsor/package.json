@@ -10,7 +10,7 @@
     "test:checkout": "tsx src/checkout/selftest.ts",
     "test:rpc": "tsx src/checkout/rpc.selftest.ts",
     "test:sqlite": "node tests/sqlite-runtime.mjs",
-    "test:fund": "node --experimental-sqlite --loader ../../scripts/offline-ts-loader.mjs tests/fund.local.mjs",
+    "test:fund": "node --loader ../../scripts/offline-ts-loader.mjs tests/fund-provider.mjs && node --experimental-sqlite --loader ../../scripts/offline-ts-loader.mjs tests/fund.local.mjs",
     "test:fund-runtime": "node tests/fund-runtime.mjs",
     "test:api": "node tests/api-runtime.mjs",
     "test:preservation": "tsx src/checkout/preparation.selftest.ts && tsx src/checkout/preservation.selftest.ts",

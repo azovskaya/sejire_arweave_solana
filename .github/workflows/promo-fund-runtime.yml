@@ -2,6 +2,15 @@ name: Promo fund Worker runtime
 on:
   push:
     branches: [feat/promo-funded-preservation]
+    paths:
+      - 'apps/sponsor/src/fund/**'
+      - 'apps/sponsor/src/**'
+      - 'apps/sponsor/tests/**'
+      - 'apps/sponsor/package*.json'
+      - 'apps/web/src/lib/crypto/**'
+      - 'apps/web/src/lib/solana/policy.ts'
+      - 'scripts/build-preview-worker.mjs'
+      - '.github/workflows/promo-fund-runtime.yml'
   pull_request:
     branches: [main]
     paths:
@@ -30,8 +39,16 @@ jobs:
       - run: npm ci --prefix apps/web
       - run: npm run check --prefix apps/sponsor
       - run: npm run preview:package
+      - name: Build production Worker candidate from fund source
+        run: |
+          mkdir -p .cache/fund-worker
+          node --input-type=module -e "import { buildWorker } from './apps/sponsor/tests/build-worker.mjs'; await buildWorker('apps/sponsor/src/index.ts', '.cache/fund-worker/worker.mjs')"
       - name: Real workerd HTTP acceptance with mock provider and persistent SQLite DO
         run: npm run test:fund-runtime
       - run: npm run test:fund
       - run: npm run native:build
       - run: npm run security:fund
+      - uses: actions/upload-artifact@v4
+        with:
+          name: fund-worker-candidate
+          path: .cache/fund-worker/worker.mjs

@@ -14,6 +14,9 @@ on:
     paths:
       - '.github/workflows/deploy-promo-fund-worker.yml'
       - 'apps/sponsor/wrangler.toml'
+      - 'apps/sponsor/src/fund/**'
+      - 'apps/sponsor/package.json'
+      - 'apps/sponsor/tests/fund*.mjs'
 
 # rollout diagnostic: Worker-native signer address derivation
 permissions:
@@ -36,11 +39,23 @@ jobs:
       - name: Install sponsor dependencies
         run: npm ci --prefix apps/sponsor
 
+      - name: Install web dependencies for shared envelope and build checks
+        run: npm ci --prefix apps/web
+
       - name: Typecheck sponsor Worker
         run: npm run check --prefix apps/sponsor
 
       - name: Run promo fund tests
         run: npm run test:fund --prefix apps/sponsor
+
+      - name: Test fund in workerd with persistent SQLite Durable Object
+        run: npm run test:fund-runtime
+
+      - name: Check native production build
+        run: npm run native:build
+
+      - name: Scan fund browser bundle
+        run: npm run security:fund
 
       - name: Deploy sejire-sponsor
         working-directory: apps/sponsor

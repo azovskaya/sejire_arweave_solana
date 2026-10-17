@@ -102,5 +102,14 @@ try{
   assert.equal(rows.some(x=>x.action==='PROMO_CHANGED'),true);assert.equal(rows.some(x=>x.action==='FUND_LIMIT_CHANGED'),true);
   assert.equal(rows.some(x=>x.action==='FUND_RECONCILED'),true);assert.equal(JSON.stringify(rows).includes('TEST-PENSIONER'),false);
  });
+ await test('prepare failure returns safe code before reservation',async()=>{
+  const before=ledger.summary();const original=mock.prepareTransaction;
+  mock.prepareTransaction=async()=>{throw Error('synthetic private key detail');};
+  try{const result=await call('/orders',make('9','TEST-PENSIONER-2'),{ip:'192.0.2.99'});
+    assert.equal(result.status,503);assert.deepEqual(result.body,{error:'fund_prepare_failed'});
+    assert.equal(ledger.order('9'.repeat(32),true),null);
+    assert.equal(ledger.summary().reservedWinston,before.reservedWinston);
+  }finally{mock.prepareTransaction=original;}
+ });
  console.log('fund.local: PASS; real SQLite, mock provider, zero network calls or AR transactions');
 }finally{storage.close();await rm(temp,{recursive:true,force:true});}

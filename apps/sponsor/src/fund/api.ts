@@ -161,7 +161,7 @@ export async function fundApi(request:Request,env:FundEnv,provided?:FundedArweav
       const estimated=await provider.getPrice(bytes.length);
       const prepared=await provider.prepareTransaction(bytes,[{name:'App-Name',value:'SEJIRE'},{name:'Type',value:'vault-envelope'},{name:'Schema',value:'sejire/envelope/v1'},
         {name:'Vault-Id',value:envelope.vault_id},{name:'Archive-SHA256',value:digest},{name:'Archive-Bytes',value:String(bytes.length)},
-        {name:'Preservation-Id',value:input.preservationId},{name:'Promo-Funded',value:'true'}]);
+        {name:'Preservation-Id',value:input.preservationId},{name:'Promo-Funded',value:'true'}]).catch(()=>{throw Error('fund_prepare_failed');});
       const reward=BigInt(prepared.reward);if(reward<=0n||balance<reward)throw Error('wallet_low');
       let saved=await ledger.call<FundOrder>({action:'fundReserve',input:{orderId:input.orderId,preservationId:input.preservationId,hash,archiveSizeBytes:bytes.length,
         archiveDigest:digest,vaultId:envelope.vault_id,reward:prepared.reward,estimated,prepared:prepared.raw,balance:balance.toString()}});
@@ -183,7 +183,7 @@ export async function fundApi(request:Request,env:FundEnv,provided?:FundedArweav
     }
     return reply(404,{error:'not_found'});
   }catch(error){const code=error instanceof SyntaxError?'invalid_request':error instanceof Error?error.message:'fund_error';
-    const known=['promo_invalid','promo_disabled','promo_missing','fund_exhausted','archive_changed','limit_below_spent','limit_below_reserved','invalid_ar_amount','invalid_promo_format','promo_confirmation_mismatch','wallet_low','fund_provider_unavailable','balance_unavailable','price_unavailable','invalid_request','invalid_envelope','envelope_too_large','forbidden_field','json_required','encoding_not_supported','request_too_large','archive_size_invalid','archive_not_canonical','rate_limited','order_not_found','fund_sign_failed','signed_tx_not_persisted','treasury_address_mismatch','signer_address_unavailable','fund_ledger_unavailable','fund_ledger_inconsistent'];
+    const known=['promo_invalid','promo_disabled','promo_missing','fund_exhausted','archive_changed','limit_below_spent','limit_below_reserved','invalid_ar_amount','invalid_promo_format','promo_confirmation_mismatch','wallet_low','fund_provider_unavailable','balance_unavailable','price_unavailable','fund_prepare_failed','invalid_request','invalid_envelope','envelope_too_large','forbidden_field','json_required','encoding_not_supported','request_too_large','archive_size_invalid','archive_not_canonical','rate_limited','order_not_found','fund_sign_failed','signed_tx_not_persisted','treasury_address_mismatch','signer_address_unavailable','fund_ledger_unavailable','fund_ledger_inconsistent'];
     const safe=known.includes(code)?code:'fund_requires_reconciliation';return reply(code==='rate_limited'?429:code==='order_not_found'?404:code==='request_too_large'?413:code==='json_required'||code==='encoding_not_supported'?415:code==='promo_invalid'||code==='invalid_request'||code==='invalid_envelope'||code==='envelope_too_large'||code==='forbidden_field'||code==='archive_size_invalid'||code==='archive_changed'||code==='archive_not_canonical'||code==='invalid_ar_amount'||code==='invalid_promo_format'||code==='promo_confirmation_mismatch'?400:code==='promo_disabled'||code==='fund_exhausted'||code==='limit_below_spent'||code==='limit_below_reserved'?409:503,{error:safe});
   }
 }
