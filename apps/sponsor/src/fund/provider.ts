@@ -1,4 +1,4 @@
-import Arweave from 'arweave/web/index.js';
+import * as ArweaveWebModule from 'arweave/web/index.js';
 import { parseEnvelope } from '../../../web/src/lib/crypto/envelope';
 import { TREASURY_ADDRESS } from './ledger';
 export type PreparedFundTx = { raw:string; reward:string };
@@ -14,7 +14,16 @@ export interface FundedArweaveProvider {
   getRawData(id:string):Promise<Uint8Array|null>;
   verify(id:string,expected:{digest:string;bytes:number;vaultId:string}):Promise<{confirmed:boolean;reward:string|null}>;
 }
-const client=()=>Arweave.init({host:'arweave.net',port:443,protocol:'https',timeout:15000});
+function arweaveRuntime(){
+  let value:unknown=ArweaveWebModule;
+  for(let i=0;i<4;i++){
+    if(value&&typeof value==='object'&&typeof (value as {init?:unknown}).init==='function')return value as {init:(config:Record<string,unknown>)=>any};
+    const next=value&&typeof value==='object'?(value as {default?:unknown}).default:undefined;
+    if(next===undefined||next===value)break;value=next;
+  }
+  throw Error('arweave_web_init_unavailable');
+}
+const client=()=>arweaveRuntime().init({host:'arweave.net',port:443,protocol:'https',timeout:15000});
 const txId=/^[A-Za-z0-9_-]{43}$/;
 // /tx_anchor may return either a transaction id (32-byte SHA-256 => 43 chars)
 // or a recent block independent hash (48-byte SHA-384 => 64 chars).
