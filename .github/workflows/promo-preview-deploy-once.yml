@@ -1,0 +1,72 @@
+name: Deploy promo fund preview once
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: gh-pages-deploy
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 009efca139f51244d51c543e9c7aa986146b042e
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Recover verified promo build and preserve existing Pages files
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CHECKED_RUN: '39026124803'
+          SOURCE_SHA: '009efca139f51244d51c543e9c7aa986146b042e'
+          PUBLISH_ROOT: '0'
+        run: node scripts/pages-native-artifact.mjs
+      - name: Save preview to gh-pages
+        run: |
+          git -C .pages-site config user.name 'SEJIRE Pages'
+          git -C .pages-site config user.email 'sejire-pages@users.noreply.github.com'
+          git -C .pages-site add --all
+          if ! git -C .pages-site diff --cached --quiet; then
+            git -C .pages-site commit -m "Deploy verified promo fund preview 009efca1"
+            git -C .pages-site push origin HEAD:gh-pages
+          fi
+          mkdir .pages-public
+          git -C .pages-site archive HEAD | tar -x -C .pages-public
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: .pages-public
+      - name: Deploy GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+      - name: Verify live fund-admin bundle
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='https://azovskaya.github.io/sejire_arweave_solana/native-admin/'
+          for i in $(seq 1 30); do
+            html="$(curl -fsSL --max-time 15 "${base}?deploy=009efca1-${i}" || true)"
+            asset="$(printf '%s' "$html" | sed -n 's/.*src="\.\/\(assets\/index-[^"]*\.js\)".*/\1/p' | head -1)"
+            if [ -n "$asset" ]; then
+              js="$(curl -fsSL --max-time 20 "${base}${asset}" || true)"
+              if printf '%s' "$js" | grep -q '#/fund-admin' && printf '%s' "$js" | grep -q 'FREE PRESERVATION FUND'; then
+                echo 'Live promo fund preview verified.'
+                exit 0
+              fi
+            fi
+            sleep 10
+          done
+          echo 'Live Pages did not expose the verified fund-admin bundle in time.' >&2
+          exit 1
