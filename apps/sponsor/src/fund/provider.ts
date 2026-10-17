@@ -4,6 +4,7 @@ import { TREASURY_ADDRESS } from './ledger';
 export type PreparedFundTx = { raw:string; reward:string };
 export type FundNetworkTx = {confirmed:boolean; reward:string|null};
 export interface FundedArweaveProvider {
+  getSignerAddress():Promise<string>;
   getBalance():Promise<string>;
   getPrice(bytes:number):Promise<string>;
   prepareTransaction(bytes:Uint8Array,tags:{name:string;value:string}[]):Promise<PreparedFundTx>;
@@ -45,7 +46,8 @@ export class DirectArweaveFundProvider implements FundedArweaveProvider {
   private jwk:Record<string,string>;
   constructor(secret:string|undefined){if(!secret)throw Error('fund_provider_unavailable');try{this.jwk=JSON.parse(secret) as Record<string,string>;}catch{throw Error('fund_provider_unavailable');}
     if(this.jwk.kty!=='RSA'||typeof this.jwk.n!=='string'||typeof this.jwk.d!=='string')throw Error('fund_provider_unavailable');}
-  async assertSigner(){if(await client().wallets.jwkToAddress(this.jwk as never)!==TREASURY_ADDRESS)throw Error('treasury_address_mismatch');}
+  async getSignerAddress(){return client().wallets.jwkToAddress(this.jwk as never);}
+  async assertSigner(){if(await this.getSignerAddress()!==TREASURY_ADDRESS)throw Error('treasury_address_mismatch');}
   getBalance(){return publicBalance();}
   getPrice(bytes:number){return publicPrice(bytes);}
   async prepareTransaction(bytes:Uint8Array,tags:{name:string;value:string}[]){await this.assertSigner();const ar=client();const quote=await this.getPrice(bytes.length);
@@ -73,8 +75,9 @@ export class DirectArweaveFundProvider implements FundedArweaveProvider {
     if(parsed.vault_id!==expected.vaultId)throw Error('vault_integrity_failed');return tx;}
 }
 export class MockFundedArweaveProvider implements FundedArweaveProvider {
-  balance='68000000000000';price='3000000000';estimate='3000000000';actual='3000000000';failure='';delay=false; submissions=0;
+  balance='68000000000000';price='3000000000';estimate='3000000000';actual='3000000000';failure='';delay=false; submissions=0;signerAddress=TREASURY_ADDRESS;
   private transactions=new Map<string,{raw:string;data:Uint8Array;accepted:boolean}>();
+  async getSignerAddress(){return this.signerAddress;}
   async getBalance(){if(this.failure==='balance')throw Error('balance_unavailable');return this.balance;}
   async getPrice(_bytes:number){if(this.failure==='price')throw Error('price_unavailable');return this.estimate;}
   async prepareTransaction(bytes:Uint8Array,tags:{name:string;value:string}[]){return {raw:JSON.stringify({data:Array.from(bytes),tags}),reward:this.price};}

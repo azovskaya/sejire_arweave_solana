@@ -63,8 +63,22 @@ if (!process.argv[2]) {
     });
     if (phase === 'disabled') {
       await test('fund routes fail closed by default', async () => {
-        assert.equal((await call('/status')).status, 404);
+        assert.deepEqual((await call('/status')).body, { enabled: false, available: false });
         assert.equal((await call('/orders', order('0', 'TEST-PENSIONER'))).status, 404);
+        assert.equal((await call('/validate', { code: 'TEST-PENSIONER' })).status, 404);
+      });
+      await test('read-only signed treasury readiness and admin dashboard work before fund activation', async () => {
+        assert.equal((await call('/admin/readiness')).status, 401);
+        const ready = await call('/admin/readiness', undefined, admin);
+        assert.equal(ready.status, 200); assert.equal(ready.body.signerVerified, true);
+        assert.equal(ready.body.signerAddress, 'qgoIFw9WsusMRapWzcFg4jNW08HSWvQkpAKOz86BUuI');
+        assert.equal(ready.body.fundApiEnabled, false); assert.equal(ready.body.limitWinston, (13n * winston).toString());
+        assert.equal(ready.body.walletBalanceWinston, '68000000000000');
+        assert.equal(ready.body.currentQuoteWinston, '3000000000');
+        assert.equal((await dashboard()).fundStatus, 'HEALTHY');
+        await control('mock', { signerAddress: 'wrong-public-address' });
+        assert.equal((await call('/admin/readiness', undefined, admin)).body.error, 'treasury_address_mismatch');
+        assert.equal((await dashboard()).fundStatus, 'PROVIDER ERROR');
       });
     } else if (phase === 'write') {
       await test('every management route rejects missing and wrong server credential', async () => {

@@ -38,6 +38,7 @@ export function FundAdmin(){
       </section>
       <section className="ops-desk-card"><h3>ARWEAVE FUND</h3>
         <p>Treasury <code>{data.treasuryAddress.slice(0,7)}…{data.treasuryAddress.slice(-5)}</code></p>
+        <p>Signer address <strong>{data.signerVerified?'VERIFIED':'NOT VERIFIED'}</strong></p>
         <p>Live wallet balance <strong>{data.walletBalanceWinston==null?'Balance unavailable':`${formatAr(data.walletBalanceWinston)} AR`}</strong></p>
         <p>Last balance check {date(data.lastBalanceCheck)}</p>
         <p>Promo fund limit <strong>{formatAr(data.limitWinston)} AR</strong></p><p>Actual confirmed spend <strong>{formatAr(data.actualSpentWinston)} AR</strong></p>

@@ -6,6 +6,7 @@ compatibility_flags = ["nodejs_compat"]
 [vars]
 PAYMENT_PROVIDER = "mock"
 FUND_API_ENABLED = "false"
+CHECKOUT_ALLOWED_ORIGINS = "https://azovskaya.github.io,https://sejire.ar.io"
 PUBLISH_PRICE_MINOR = "1500"
 PUBLISH_CURRENCY = "KZT"
 MAX_ENVELOPE_BYTES = "524288"
@@ -15,8 +16,10 @@ APP_ORIGIN = "https://azovskaya.github.io,https://sejire.ar.io,http://localhost:
 # KASPI_API_BASE = "https://pay.kaspi.kz/api/v2"
 # KASPI_TRADE_POINT_ID = "from-kaspi-cabinet"
 
-# Keys, Kaspi token, treasury JWK and admin password are entered at /admin
-# after deploy (stored in KV). Optional claim-guard for the first visit:
+# Legacy cashier keys and Kaspi settings can be entered at /admin after deploy.
+# Promo Fund ARWEAVE_TREASURY_JWK and PROMO_CODE_SECRET must be Worker secrets;
+# never enter them in the legacy /admin key form or commit their values.
+# Optional claim-guard for the first visit:
 # SETUP_PIN = "only-for-first-setup"
 
 # Legacy wrangler secrets still work as fallback (do not commit):

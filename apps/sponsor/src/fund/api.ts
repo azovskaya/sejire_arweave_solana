@@ -50,7 +50,6 @@ export async function fundApi(request:Request,env:FundEnv,provided?:FundedArweav
   const url=new URL(request.url);if(url.pathname!==PREFIX&&!url.pathname.startsWith(PREFIX+'/'))return null;
   const headers:Record<string,string>={'Content-Type':'application/json','Cache-Control':'no-store','Referrer-Policy':'no-referrer','X-Content-Type-Options':'nosniff','Vary':'Origin'};
   const reply=(status:number,data:unknown)=>new Response(status===204?null:JSON.stringify(data),{status,headers});
-  if(env.FUND_API_ENABLED!=='true')return reply(404,{error:'not_found'});
   const origins=(env.CHECKOUT_ALLOWED_ORIGINS??'').split(',').map(x=>x.trim()).filter(Boolean),origin=request.headers.get('Origin');
   if(!origins.length||origin&&!origins.includes(origin))return reply(403,{error:'origin_denied'});
   if(origin){headers['Access-Control-Allow-Origin']=origin;headers['Access-Control-Allow-Methods']='GET, POST, PUT, OPTIONS';headers['Access-Control-Allow-Headers']='Content-Type, Authorization';}
@@ -69,9 +68,22 @@ export async function fundApi(request:Request,env:FundEnv,provided?:FundedArweav
     }
     if(admin){
       await ledger.call({action:'fundRate',bucket:`admin:${await issuer(request)}`,limit:40});
+      if(url.pathname===PREFIX+'/admin/readiness'&&request.method==='GET'){
+        if(!provider)throw Error('fund_provider_unavailable');
+        const signerAddress=await provider.getSignerAddress();
+        if(signerAddress!==TREASURY_ADDRESS)throw Error('treasury_address_mismatch');
+        const walletBalanceWinston=await provider.getBalance();
+        const quoteBytes=6144,currentQuoteWinston=await provider.getPrice(quoteBytes);
+        const summary=await ledger.call<Record<string,unknown>>({action:'fundSummary'});
+        return reply(200,{signerAddress,signerVerified:true,walletBalanceWinston,currentQuoteWinston,quoteBytes,
+          fundApiEnabled:env.FUND_API_ENABLED==='true',promo:summary.promo,limitWinston:summary.limitWinston,
+          actualSpentWinston:summary.actualSpentWinston,reservedWinston:summary.reservedWinston,
+          budgetRemainingWinston:summary.budgetRemainingWinston});
+      }
       if(url.pathname===PREFIX+'/admin/dashboard'&&request.method==='GET'){
         const summary=await ledger.call<Record<string,unknown>>({action:'fundSummary'});
-        let walletBalanceWinston:string|null=null,currentQuoteWinston:string|null=null,lastBalanceCheck:number|null=null;
+        let walletBalanceWinston:string|null=null,currentQuoteWinston:string|null=null,lastBalanceCheck:number|null=null,signerVerified=false;
+        try{signerVerified=Boolean(provider&&await provider.getSignerAddress()===TREASURY_ADDRESS);}catch{ /* unavailable is not verified */ }
         try{walletBalanceWinston=await (provider?provider.getBalance():publicBalance());lastBalanceCheck=Date.now();}catch{ /* unavailable is not zero */ }
         const quoteBytes=Number(summary.averageArchiveBytes??6144);
         try{currentQuoteWinston=await (provider?provider.getPrice(quoteBytes):publicPrice(quoteBytes));}catch{ /* separate price failure */ }
@@ -81,9 +93,9 @@ export async function fundApi(request:Request,env:FundEnv,provided?:FundedArweav
         const average=summary.averageActualWinston?BigInt(String(summary.averageActualWinston)):null;
         const quote=currentQuoteWinston?BigInt(currentQuoteWinston):null;
         const cost=average===null?null:quote===null?average:average>quote?average:quote;
-        return reply(200,{...summary,walletBalanceWinston,lastBalanceCheck,currentQuoteWinston,currentQuoteBytes:quoteBytes,effectiveAvailableWinston:effective,
+        return reply(200,{...summary,walletBalanceWinston,lastBalanceCheck,currentQuoteWinston,currentQuoteBytes:quoteBytes,effectiveAvailableWinston:effective,signerVerified,
           estimatedTreesRemaining:cost&&cost>0n&&effective!==null?(BigInt(effective)/cost).toString():null,
-          fundStatus:!provider||walletBalanceWinston===null||currentQuoteWinston===null?'PROVIDER ERROR':budget===0n||cost&&budget<cost?'EXHAUSTED':walletFree===0n||cost&&walletFree!==null&&walletFree<cost?'WALLET LOW':budget*10n<BigInt(String(summary.limitWinston))?'LOW':'HEALTHY'});
+          fundStatus:!signerVerified||walletBalanceWinston===null||currentQuoteWinston===null?'PROVIDER ERROR':budget===0n||cost&&budget<cost?'EXHAUSTED':walletFree===0n||cost&&walletFree!==null&&walletFree<cost?'WALLET LOW':budget*10n<BigInt(String(summary.limitWinston))?'LOW':'HEALTHY'});
       }
       if(url.pathname===PREFIX+'/admin/promo'&&request.method==='POST'){
         const input=await body(request);only(input,['code','confirm']);if(typeof input.code!=='string'||input.code!==input.confirm)throw Error('promo_confirmation_mismatch');
@@ -114,8 +126,10 @@ export async function fundApi(request:Request,env:FundEnv,provided?:FundedArweav
     }
     if(url.pathname===PREFIX+'/status'&&request.method==='GET'){
       const s=await ledger.call<{promo:{enabled:boolean};budgetRemainingWinston:string}>({action:'fundSummary'});
-      return reply(200,{enabled:s.promo.enabled,available:s.promo.enabled&&Boolean(provider)&&BigInt(s.budgetRemainingWinston)>0n});
+      return reply(200,{enabled:env.FUND_API_ENABLED==='true'&&s.promo.enabled,available:env.FUND_API_ENABLED==='true'&&s.promo.enabled&&Boolean(provider)&&BigInt(s.budgetRemainingWinston)>0n});
     }
+    if(env.FUND_API_ENABLED!=='true'&&url.pathname===PREFIX+'/validate')return reply(404,{error:'not_found'});
+    if(env.FUND_API_ENABLED!=='true'&&url.pathname===PREFIX+'/orders'&&request.method==='POST')return reply(404,{error:'not_found'});
     const ip=await issuer(request);
     if(url.pathname===PREFIX+'/validate'&&request.method==='POST'){
       await ledger.call({action:'fundRate',bucket:`promo:${ip}`,limit:10});const input=await body(request);only(input,['code']);

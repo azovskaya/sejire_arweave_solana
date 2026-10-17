@@ -8,6 +8,8 @@ The treasury is the **existing** Arweave address `qgoIFw9WsusMRapWzcFg4jNW08HSWv
 
 `FUND_API_ENABLED` defaults to `false` in Wrangler. First production setup needs explicit owner authorization to deploy the Worker with its SQLite Durable Object binding, set the two secrets manually, configure `CHECKOUT_ALLOWED_ORIGINS`, and connect the public Pages build to the Worker through `VITE_FUND_API_URL` (public URL only). Keep `FUND_API_ENABLED=false` until this setup and review are complete. No deployment or live transaction was performed during development.
 
+With the flag off, new `/validate` and `/orders` POST requests remain closed. The authenticated Admin dashboard and `GET /api/fund/admin/readiness` remain available for rollout checks and reconciliation. Readiness derives the signer address inside the Worker, compares it to the fixed public treasury address, fetches the live balance and a 6144-byte quote, and returns only public values. It never prepares, signs or submits a transaction. A mismatch returns `treasury_address_mismatch`; the dashboard marks an unverified signer as `PROVIDER ERROR`. Existing order polling remains available so an interrupted operation can still be reconciled if the flag is switched off.
+
 The Worker uses the existing `CHECKOUT_LEDGER` SQLite Durable Object and a single global object name. It stores settings, an immutable order row, append-only status events, rate buckets and Admin audit events. The initial cumulative limit is **13,000,000,000,000 winston = 13 AR**. Admin may change it at runtime; changing the limit never resets ledger spend or tree counts. Lowering below confirmed spend or confirmed spend plus active reservations is rejected.
 
 ## Single promo

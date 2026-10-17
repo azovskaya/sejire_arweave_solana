@@ -7,7 +7,7 @@ test('Admin changes one promo and cumulative limit; user preserves encrypted arc
  await mockAdminLock(page);
  let code='',revision=0,enabled=false,limit=initial,spent=0n;
  const rows=[];
- const dashboard=()=>({promo:{enabled,displayHint:code?`${code.slice(0,4)}••••${code.slice(-2)}`:'',revision,createdAt:Date.now(),updatedAt:Date.now()},treasuryAddress:'qgoIFw9WsusMRapWzcFg4jNW08HSWvQkpAKOz86BUuI',
+ const dashboard=()=>({promo:{enabled,displayHint:code?`${code.slice(0,4)}••••${code.slice(-2)}`:'',revision,createdAt:Date.now(),updatedAt:Date.now()},treasuryAddress:'qgoIFw9WsusMRapWzcFg4jNW08HSWvQkpAKOz86BUuI',signerVerified:true,
   limitWinston:limit,actualSpentWinston:spent.toString(),reservedWinston:'0',budgetRemainingWinston:(BigInt(limit)-spent).toString(),walletBalanceWinston:'68996561462544',lastBalanceCheck:Date.now(),
   currentQuoteWinston:'3000000000',currentQuoteBytes:rows.length?archive.length:6144,effectiveAvailableWinston:(BigInt(limit)-spent).toString(),estimatedTreesRemaining:rows.length?String((BigInt(limit)-spent)/3000000000n):null,
   fundStatus:'HEALTHY',successfulTrees:rows.length,today:rows.length,last7Days:rows.length,failedAttempts:0,pending:0,totalEncryptedBytes:rows.reduce((n,x)=>n+x.archiveSizeBytes,0),
