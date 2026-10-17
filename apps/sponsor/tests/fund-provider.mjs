@@ -1,9 +1,29 @@
 import assert from 'node:assert/strict';
+import * as ArweaveWebModule from 'arweave/web/index.js';
 import Arweave from 'arweave';
 import { DirectArweaveFundProvider, publicNetwork, publicAnchor } from '../src/fund/provider.ts';
 
 const originalFetch=globalThis.fetch;
 const anchor='A'.repeat(64); // realistic recent block independent hash from /tx_anchor
+
+{
+  let value=ArweaveWebModule;
+  let runtime;
+  for(let i=0;i<4;i++){
+    if(value&&typeof value==='object'&&typeof value.init==='function'){runtime=value;break;}
+    value=value&&typeof value==='object'?value.default:undefined;
+  }
+  assert.ok(runtime,'Arweave web runtime must expose init');
+  try{
+    const instance=runtime.init({host:'arweave.net',port:443,protocol:'https',timeout:15000});
+    assert.equal(typeof instance.createTransaction,'function');
+    console.log('arweave-web-init: PASS');
+  }catch(error){
+    console.error('arweave-web-init:',error?.name??'Error',error?.message??'unknown');
+    throw error;
+  }
+}
+
 try {
   const calls=[];
   globalThis.fetch=async (url,options)=>{
