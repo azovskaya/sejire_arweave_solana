@@ -6,6 +6,7 @@ import { NativeCheckoutPanel } from "./components/NativeCheckoutPanel";
 import { PreservationV2 } from "./components/PreservationV2";
 import { NativeAdminDesk } from "./components/NativeAdminDesk";
 import { AdminDesk } from "./components/AdminDesk";
+import { FundAdmin } from "./components/FundAdmin";
 import { closeOpsHash, isOpsHash, openOpsHash } from "./lib/opsDesk/route";
 import type { TreeStore } from "./lib/types";
 import { clearDraftTree, loadDraftTree, saveDraftTree } from "./lib/draftStorage";
@@ -25,9 +26,12 @@ import {
   shouldResumeDraft,
 } from "./lib/lastScreen";
 
-type Screen = "welcome" | "work" | "restore" | "admin" | "saving";
+type Screen = "welcome" | "work" | "restore" | "admin" | "fund-admin" | "saving";
 
 function bootApp(): { screen: Screen; store: TreeStore | null; guide: GuideState } {
+  if (typeof location !== "undefined" && location.hash.startsWith("#/fund-admin")) {
+    return { screen: "fund-admin", store: null, guide: defaultGuide() };
+  }
   if (typeof location !== "undefined" && isOpsHash(location.hash)) {
     return { screen: "admin", store: null, guide: defaultGuide() };
   }
@@ -59,6 +63,7 @@ export default function App() {
       return;
     }
     if (screen === "admin") closeOpsHash();
+    if (screen === "fund-admin") history.replaceState(null, "", location.pathname + location.search);
     if(screen==="saving")history.replaceState(null,"",location.pathname+location.search);
     rememberScreen(next === "work" || next === "welcome" || next === "restore" ? next : "welcome");
     setScreen(next);
@@ -66,10 +71,11 @@ export default function App() {
 
   useEffect(() => {
     function onHash() {
-      if (isOpsHash(location.hash)) setScreen("admin");
+      if (location.hash.startsWith("#/fund-admin")) setScreen("fund-admin");
+      else if (isOpsHash(location.hash)) setScreen("admin");
       else if(location.hash.startsWith("#/save")){setSavingRoute(location.hash);setSavingNavigation(n=>n+1);setScreen("saving");}
       else if(location.hash.startsWith("#/restore"))setScreen("restore");
-      else if (screen === "admin"||screen === "saving") setScreen("welcome");
+      else if (screen === "admin"||screen === "fund-admin"||screen === "saving") setScreen("welcome");
     }
     window.addEventListener("hashchange", onHash);
     return () => window.removeEventListener("hashchange", onHash);
@@ -113,6 +119,13 @@ export default function App() {
       {screen === "admin" && (import.meta.env.VITE_PRESERVATION_V2_ENABLED === "1"
         ? <AdminDesk onHome={() => go("welcome")} v2Diagnostics />
         : <NativeAdminDesk onHome={() => go("welcome")} />)}
+
+      {screen === "fund-admin" && (
+        <main className="landing">
+          <FundAdmin />
+          <button className="btn ghost" type="button" onClick={() => go("welcome")}>На главную</button>
+        </main>
+      )}
 
       {screen === "restore" && (
         <RestoreSeed
