@@ -17,6 +17,20 @@ export interface FundedArweaveProvider {
 const client=()=>Arweave.init({host:'arweave.net',port:443,protocol:'https',timeout:15000});
 const txId=/^[A-Za-z0-9_-]{43}$/;
 const amount=(v:string)=>{if(!/^[1-9][0-9]{0,29}$/.test(v))throw Error('invalid_reward');return BigInt(v);};
+function b64UrlBytes(value:string){
+  if(!/^[A-Za-z0-9_-]+$/.test(value))throw Error('invalid_jwk_modulus');
+  const padded=value.replace(/-/g,'+').replace(/_/g,'/')+'='.repeat((4-value.length%4)%4);
+  const raw=atob(padded),out=new Uint8Array(raw.length);
+  for(let i=0;i<raw.length;i++)out[i]=raw.charCodeAt(i);
+  return out;
+}
+function b64Url(bytes:Uint8Array){
+  let raw='';for(const byte of bytes)raw+=String.fromCharCode(byte);
+  return btoa(raw).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+}
+async function addressFromModulus(n:string){
+  return b64Url(new Uint8Array(await crypto.subtle.digest('SHA-256',b64UrlBytes(n))));
+}
 async function digest(bytes:Uint8Array){return Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',bytes)),x=>x.toString(16).padStart(2,'0')).join('');}
 async function boundedRaw(id:string,max:number):Promise<Uint8Array|null>{
   for(const host of ['https://arweave.net','https://ar-io.dev']){
@@ -46,7 +60,7 @@ export class DirectArweaveFundProvider implements FundedArweaveProvider {
   private jwk:Record<string,string>;
   constructor(secret:string|undefined){if(!secret)throw Error('fund_provider_unavailable');try{this.jwk=JSON.parse(secret) as Record<string,string>;}catch{throw Error('fund_provider_unavailable');}
     if(this.jwk.kty!=='RSA'||typeof this.jwk.n!=='string'||typeof this.jwk.d!=='string')throw Error('fund_provider_unavailable');}
-  async getSignerAddress(){return client().wallets.jwkToAddress(this.jwk as never);}
+  async getSignerAddress(){return addressFromModulus(this.jwk.n);}
   async assertSigner(){if(await this.getSignerAddress()!==TREASURY_ADDRESS)throw Error('treasury_address_mismatch');}
   getBalance(){return publicBalance();}
   getPrice(bytes:number){return publicPrice(bytes);}
