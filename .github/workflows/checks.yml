@@ -2,7 +2,7 @@ name: SEJIRE checks
 on:
   pull_request:
   push:
-    branches: [main, feat/solana-preservation, feat/preservation-v2-simple]
+    branches: [main, feat/solana-preservation, feat/preservation-v2-simple, feat/promo-funded-preservation]
 permissions:
   contents: read
 jobs:
@@ -21,6 +21,7 @@ jobs:
       - run: npm ci --prefix apps/sponsor
       - run: npm test
       - run: npm run check --prefix apps/sponsor
+      - run: npm run test:fund-runtime
       - run: npm run test:checkout
       - run: npm run test:rpc
       - run: npm run test:sqlite
@@ -45,6 +46,7 @@ jobs:
       - run: npm run test:checkout-browser
       - run: npm run test:protocol-browser
       - run: npm run native:build
+      - run: npm run security:fund
       - name: Portable admin verifier is copied into the static build
         run: cmp apps/web/public/admin-lock.json apps/web/dist/admin-lock.json
       - name: Pages root publisher and smoke syntax
