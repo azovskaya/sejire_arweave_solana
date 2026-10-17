@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       confirm:
-        description: 'Type DEPLOY to deploy sejire-sponsor with Fund API still disabled'
+        description: 'Type DEPLOY to deploy the verified sejire-sponsor configuration'
         required: true
         default: 'NO'
         type: string
@@ -13,6 +13,7 @@ on:
       - feat/promo-funded-preservation
     paths:
       - '.github/workflows/deploy-promo-fund-worker.yml'
+      - 'apps/sponsor/wrangler.toml'
 
 # rollout diagnostic: Worker-native signer address derivation
 permissions:
