@@ -27,17 +27,18 @@ const anchor='A'.repeat(64); // realistic recent block independent hash from /tx
 
 try {
   const calls=[];
+  const responseAt=(url,body,init)=>{const r=new Response(body,init);Object.defineProperty(r,'url',{value:url});return r;};
   globalThis.fetch=async (url,options)=>{
     calls.push([url,options]);
-    if(url==='https://arweave.net/info')return new Response('unavailable',{status:503});
-    if(url==='https://ar-io.dev/info')return Response.json({network:'arweave.N.1'});
-    if(url==='https://arweave.net/tx_anchor')return new Response('invalid anchor');
-    if(url==='https://ar-io.dev/tx_anchor')return new Response(anchor);
+    if(url==='https://arweave.net/info')return responseAt(url,'unavailable',{status:503});
+    if(url==='https://g8way.io/info')return responseAt(url,JSON.stringify({network:'arweave.N.1'}),{headers:{'content-type':'application/json'}});
+    if(url==='https://arweave.net/tx_anchor')return responseAt(url,'invalid anchor');
+    if(url==='https://g8way.io/tx_anchor')return responseAt(url,anchor);
     throw Error('unexpected gateway');
   };
   await publicNetwork();assert.equal(await publicAnchor(),anchor);
-  assert.deepEqual(calls.map(x=>x[0]),['https://arweave.net/info','https://ar-io.dev/info','https://arweave.net/tx_anchor','https://ar-io.dev/tx_anchor']);
-  assert.equal(calls.every(([,options])=>options.redirect==='error'&&options.signal instanceof AbortSignal),true);
+  assert.deepEqual(calls.map(x=>x[0]),['https://arweave.net/info','https://g8way.io/info','https://arweave.net/tx_anchor','https://g8way.io/tx_anchor']);
+  assert.equal(calls.every(([,options])=>options.signal instanceof AbortSignal),true);
 
   globalThis.fetch=async()=>Response.json({network:'not-mainnet'});
   await assert.rejects(publicNetwork(),/wrong_arweave_network/);
@@ -55,8 +56,8 @@ try {
   const preparationCalls=[];
   globalThis.fetch=async url=>{
     preparationCalls.push(url);
-    if(url.endsWith('/info'))return Response.json({network:'arweave.N.1'});
-    if(url.endsWith('/tx_anchor'))return new Response(anchor);
+    if(url.endsWith('/info'))return responseAt(url,JSON.stringify({network:'arweave.N.1'}),{headers:{'content-type':'application/json'}});
+    if(url.endsWith('/tx_anchor'))return responseAt(url,anchor);
     throw Error('unexpected SDK network request');
   };
   const prepared=await provider.prepareTransaction(new Uint8Array([1,2,3]),[{name:'App-Name',value:'SEJIRE'}]);
