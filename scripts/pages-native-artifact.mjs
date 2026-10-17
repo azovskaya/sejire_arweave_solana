@@ -2,7 +2,7 @@
 import { createHash } from 'node:crypto';
 import { mkdirSync, writeFileSync, readFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
-const repo='azovskaya/sejire_arweave_solana', run=Number(process.env.CHECKED_RUN), sha=process.env.GITHUB_SHA;
+const repo='azovskaya/sejire_arweave_solana', run=Number(process.env.CHECKED_RUN), sha=process.env.SOURCE_SHA||process.env.GITHUB_SHA;
 const publishRoot=process.env.PUBLISH_ROOT==='1';
 if (!Number.isSafeInteger(run)||run<1||!sha||!/^[a-f0-9]{40}$/.test(sha)) throw Error('An explicit checked run and source commit are required');
 if (!process.env.GH_TOKEN) throw Error('GitHub Actions token required; do not pass secrets as command arguments');
