@@ -92,13 +92,19 @@ export class DirectArweaveFundProvider implements FundedArweaveProvider {
   async assertSigner(){if(await this.getSignerAddress()!==TREASURY_ADDRESS)throw Error('treasury_address_mismatch');}
   getBalance(){return publicBalance();}
   getPrice(bytes:number){return publicPrice(bytes);}
-  async prepareTransaction(bytes:Uint8Array,tags:{name:string;value:string}[]){await this.assertSigner();const ar=client();const quote=await this.getPrice(bytes.length);
-    amount(quote);
+  async prepareTransaction(bytes:Uint8Array,tags:{name:string;value:string}[]){
+    try{await this.assertSigner();}catch(error){if(error instanceof Error&&error.message==='treasury_address_mismatch')throw error;throw Error('fund_signer_check_failed');}
+    const ar=client();
+    let quote:string;try{quote=await this.getPrice(bytes.length);}catch{throw Error('fund_price_unavailable');}
+    try{amount(quote);}catch{throw Error('fund_price_invalid');}
     try{await publicNetwork();}catch{throw Error('fund_network_unavailable');}
     let anchor:string;try{anchor=await publicAnchor();}catch{throw Error('fund_anchor_unavailable');}
     let tx;try{tx=await ar.createTransaction({data:bytes,owner:this.jwk.n,reward:quote,last_tx:anchor},this.jwk as never);}catch{throw Error('fund_create_failed');}
-    for(const tag of tags)tx.addTag(tag.name,tag.value);
-    const reward=tx.reward;amount(reward);return {raw:JSON.stringify(tx.toJSON()),reward};}
+    try{for(const tag of tags)tx.addTag(tag.name,tag.value);}catch{throw Error('fund_tags_failed');}
+    const reward=tx.reward;try{amount(reward);}catch{throw Error('fund_reward_invalid');}
+    let raw:string;try{raw=JSON.stringify(tx.toJSON());}catch{throw Error('fund_serialize_failed');}
+    return {raw,reward};
+  }
   async sign(prepared:PreparedFundTx){await this.assertSigner();const ar=client(),tx=ar.transactions.fromRaw(JSON.parse(prepared.raw));
     if(tx.reward!==prepared.reward||tx.quantity!=='0'||tx.target!==''||await ar.wallets.ownerToAddress(tx.owner)!==TREASURY_ADDRESS)throw Error('prepared_tx_mismatch');
     await ar.transactions.sign(tx,this.jwk as never);if(!tx.id||!txId.test(tx.id)||!await ar.transactions.verify(tx))throw Error('signed_tx_invalid');
