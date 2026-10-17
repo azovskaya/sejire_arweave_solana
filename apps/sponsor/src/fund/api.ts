@@ -70,11 +70,16 @@ export async function fundApi(request:Request,env:FundEnv,provided?:FundedArweav
       await ledger.call({action:'fundRate',bucket:`admin:${await issuer(request)}`,limit:40});
       if(url.pathname===PREFIX+'/admin/readiness'&&request.method==='GET'){
         if(!provider)throw Error('fund_provider_unavailable');
-        const signerAddress=await provider.getSignerAddress();
+        let signerAddress:string;
+        try{signerAddress=await provider.getSignerAddress();}catch{throw Error('signer_address_unavailable');}
         if(signerAddress!==TREASURY_ADDRESS)throw Error('treasury_address_mismatch');
-        const walletBalanceWinston=await provider.getBalance();
-        const quoteBytes=6144,currentQuoteWinston=await provider.getPrice(quoteBytes);
-        const summary=await ledger.call<Record<string,unknown>>({action:'fundSummary'});
+        let walletBalanceWinston:string;
+        try{walletBalanceWinston=await provider.getBalance();}catch{throw Error('balance_unavailable');}
+        const quoteBytes=6144;
+        let currentQuoteWinston:string;
+        try{currentQuoteWinston=await provider.getPrice(quoteBytes);}catch{throw Error('price_unavailable');}
+        let summary:Record<string,unknown>;
+        try{summary=await ledger.call<Record<string,unknown>>({action:'fundSummary'});}catch{throw Error('fund_ledger_unavailable');}
         return reply(200,{signerAddress,signerVerified:true,walletBalanceWinston,currentQuoteWinston,quoteBytes,
           fundApiEnabled:env.FUND_API_ENABLED==='true',promo:summary.promo,limitWinston:summary.limitWinston,
           actualSpentWinston:summary.actualSpentWinston,reservedWinston:summary.reservedWinston,
@@ -178,7 +183,7 @@ export async function fundApi(request:Request,env:FundEnv,provided?:FundedArweav
     }
     return reply(404,{error:'not_found'});
   }catch(error){const code=error instanceof SyntaxError?'invalid_request':error instanceof Error?error.message:'fund_error';
-    const known=['promo_invalid','promo_disabled','promo_missing','fund_exhausted','archive_changed','limit_below_spent','limit_below_reserved','invalid_ar_amount','invalid_promo_format','promo_confirmation_mismatch','wallet_low','fund_provider_unavailable','balance_unavailable','price_unavailable','invalid_request','invalid_envelope','envelope_too_large','forbidden_field','json_required','encoding_not_supported','request_too_large','archive_size_invalid','archive_not_canonical','rate_limited','order_not_found','fund_sign_failed','signed_tx_not_persisted','treasury_address_mismatch','fund_ledger_inconsistent'];
+    const known=['promo_invalid','promo_disabled','promo_missing','fund_exhausted','archive_changed','limit_below_spent','limit_below_reserved','invalid_ar_amount','invalid_promo_format','promo_confirmation_mismatch','wallet_low','fund_provider_unavailable','balance_unavailable','price_unavailable','invalid_request','invalid_envelope','envelope_too_large','forbidden_field','json_required','encoding_not_supported','request_too_large','archive_size_invalid','archive_not_canonical','rate_limited','order_not_found','fund_sign_failed','signed_tx_not_persisted','treasury_address_mismatch','signer_address_unavailable','fund_ledger_unavailable','fund_ledger_inconsistent'];
     const safe=known.includes(code)?code:'fund_requires_reconciliation';return reply(code==='rate_limited'?429:code==='order_not_found'?404:code==='request_too_large'?413:code==='json_required'||code==='encoding_not_supported'?415:code==='promo_invalid'||code==='invalid_request'||code==='invalid_envelope'||code==='envelope_too_large'||code==='forbidden_field'||code==='archive_size_invalid'||code==='archive_changed'||code==='archive_not_canonical'||code==='invalid_ar_amount'||code==='invalid_promo_format'||code==='promo_confirmation_mismatch'?400:code==='promo_disabled'||code==='fund_exhausted'||code==='limit_below_spent'||code==='limit_below_reserved'?409:503,{error:safe});
   }
 }
