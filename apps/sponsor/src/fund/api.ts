@@ -93,6 +93,19 @@ export async function fundApi(request:Request,env:FundEnv,provided?:FundedArweav
         const prepared=await provider.prepareTransaction(probe,[{name:'App-Name',value:'SEJIRE'},{name:'Type',value:'fund-readiness'}]);
         return reply(200,{ok:true,signerVerified:true,prepared:true,rewardWinston:prepared.reward,unsigned:true,submitted:false});
       }
+      if(url.pathname===PREFIX+'/admin/sign-readiness'&&request.method==='GET'){
+        if(!provider)throw Error('fund_provider_unavailable');
+        const signerAddress=await provider.getSignerAddress();
+        if(signerAddress!==TREASURY_ADDRESS)throw Error('treasury_address_mismatch');
+        const probe=new TextEncoder().encode('SEJIRE funded preservation sign readiness v1');
+        let prepared;
+        try{prepared=await provider.prepareTransaction(probe,[{name:'App-Name',value:'SEJIRE'},{name:'Type',value:'fund-sign-readiness'}]);}
+        catch{throw Error('fund_sign_readiness_prepare_failed');}
+        let signed;
+        try{signed=await provider.sign(prepared);}catch{throw Error('fund_sign_readiness_failed');}
+        if(signed.reward!==prepared.reward)throw Error('fund_sign_readiness_failed');
+        return reply(200,{ok:true,signerVerified:true,prepared:true,signed:true,txId:signed.id,rewardWinston:signed.reward,submitted:false,persisted:false});
+      }
       if(url.pathname===PREFIX+'/admin/dashboard'&&request.method==='GET'){
         const summary=await ledger.call<Record<string,unknown>>({action:'fundSummary'});
         let walletBalanceWinston:string|null=null,currentQuoteWinston:string|null=null,lastBalanceCheck:number|null=null,signerVerified=false;
@@ -191,7 +204,7 @@ export async function fundApi(request:Request,env:FundEnv,provided?:FundedArweav
     }
     return reply(404,{error:'not_found'});
   }catch(error){const code=error instanceof SyntaxError?'invalid_request':error instanceof Error?error.message:'fund_error';
-    const known=['promo_invalid','promo_disabled','promo_missing','fund_exhausted','archive_changed','limit_below_spent','limit_below_reserved','invalid_ar_amount','invalid_promo_format','promo_confirmation_mismatch','wallet_low','fund_provider_unavailable','balance_unavailable','price_unavailable','fund_prepare_failed','fund_prepare_signer_failed','fund_prepare_client_failed','fund_prepare_price_failed','fund_prepare_network_failed','fund_prepare_anchor_failed','fund_prepare_create_failed','fund_prepare_tags_failed','fund_prepare_reward_failed','fund_prepare_serialize_failed','fund_signer_check_failed','fund_price_unavailable','fund_price_invalid','fund_network_unavailable','fund_anchor_unavailable','fund_create_failed','fund_tags_failed','fund_reward_invalid','fund_serialize_failed','invalid_request','invalid_envelope','envelope_too_large','forbidden_field','json_required','encoding_not_supported','request_too_large','archive_size_invalid','archive_not_canonical','rate_limited','order_not_found','fund_sign_failed','signed_tx_not_persisted','treasury_address_mismatch','signer_address_unavailable','fund_ledger_unavailable','fund_ledger_inconsistent'];
+    const known=['promo_invalid','promo_disabled','promo_missing','fund_exhausted','archive_changed','limit_below_spent','limit_below_reserved','invalid_ar_amount','invalid_promo_format','promo_confirmation_mismatch','wallet_low','fund_provider_unavailable','balance_unavailable','price_unavailable','fund_prepare_failed','fund_prepare_signer_failed','fund_prepare_client_failed','fund_prepare_price_failed','fund_prepare_network_failed','fund_prepare_anchor_failed','fund_prepare_create_failed','fund_prepare_tags_failed','fund_prepare_reward_failed','fund_prepare_serialize_failed','fund_sign_readiness_prepare_failed','fund_sign_readiness_failed','fund_signer_check_failed','fund_price_unavailable','fund_price_invalid','fund_network_unavailable','fund_anchor_unavailable','fund_create_failed','fund_tags_failed','fund_reward_invalid','fund_serialize_failed','invalid_request','invalid_envelope','envelope_too_large','forbidden_field','json_required','encoding_not_supported','request_too_large','archive_size_invalid','archive_not_canonical','rate_limited','order_not_found','fund_sign_failed','signed_tx_not_persisted','treasury_address_mismatch','signer_address_unavailable','fund_ledger_unavailable','fund_ledger_inconsistent'];
     const safe=known.includes(code)?code:'fund_requires_reconciliation';return reply(code==='rate_limited'?429:code==='order_not_found'?404:code==='request_too_large'?413:code==='json_required'||code==='encoding_not_supported'?415:code==='promo_invalid'||code==='invalid_request'||code==='invalid_envelope'||code==='envelope_too_large'||code==='forbidden_field'||code==='archive_size_invalid'||code==='archive_changed'||code==='archive_not_canonical'||code==='invalid_ar_amount'||code==='invalid_promo_format'||code==='promo_confirmation_mismatch'?400:code==='promo_disabled'||code==='fund_exhausted'||code==='limit_below_spent'||code==='limit_below_reserved'?409:503,{error:safe});
   }
 }
