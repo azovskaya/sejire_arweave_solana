@@ -14,7 +14,7 @@ on:
     paths:
       - '.github/workflows/deploy-promo-fund-worker.yml'
 
-# rollout diagnostic: safe readiness stage errors only
+# rollout diagnostic: Worker-native signer address derivation
 permissions:
   contents: read
 
