@@ -1,0 +1,43 @@
+name: Deploy promo fund Worker
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Type DEPLOY to deploy sejire-sponsor with Fund API still disabled'
+        required: true
+        default: 'NO'
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    if: ${{ github.ref == 'refs/heads/feat/promo-funded-preservation' && inputs.confirm == 'DEPLOY' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: apps/sponsor/package-lock.json
+
+      - name: Install sponsor dependencies
+        run: npm ci --prefix apps/sponsor
+
+      - name: Typecheck sponsor Worker
+        run: npm run check --prefix apps/sponsor
+
+      - name: Run promo fund tests
+        run: npm run test:fund --prefix apps/sponsor
+
+      - name: Deploy sejire-sponsor
+        working-directory: apps/sponsor
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: npx --yes wrangler@4.47.0 deploy --config wrangler.toml
