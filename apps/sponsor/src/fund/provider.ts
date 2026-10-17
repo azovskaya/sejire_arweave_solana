@@ -1,4 +1,4 @@
-import Arweave from 'arweave';
+import Arweave from 'arweave/web';
 import { parseEnvelope } from '../../../web/src/lib/crypto/envelope';
 import { TREASURY_ADDRESS } from './ledger';
 export type PreparedFundTx = { raw:string; reward:string };
