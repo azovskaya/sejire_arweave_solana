@@ -22,6 +22,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: deploy-promo-fund-worker
+  cancel-in-progress: true
+
 jobs:
   deploy:
     if: ${{ github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/feat/promo-funded-preservation' && inputs.confirm == 'DEPLOY') }}
@@ -57,7 +61,21 @@ jobs:
       - name: Scan fund browser bundle
         run: npm run security:fund
 
+      - name: Confirm this run is still the feature-branch head
+        id: head
+        shell: bash
+        run: |
+          set -euo pipefail
+          latest="$(git ls-remote origin refs/heads/feat/promo-funded-preservation | awk '{print $1}')"
+          if [ "$latest" = "$GITHUB_SHA" ]; then
+            echo "current=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "current=false" >> "$GITHUB_OUTPUT"
+            echo "Skipping stale Worker deployment: $GITHUB_SHA; current head is $latest"
+          fi
+
       - name: Deploy sejire-sponsor
+        if: steps.head.outputs.current == 'true'
         working-directory: apps/sponsor
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
