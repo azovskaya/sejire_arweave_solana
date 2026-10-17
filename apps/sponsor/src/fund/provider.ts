@@ -29,7 +29,7 @@ const txId=/^[A-Za-z0-9_-]{43}$/;
 // /tx_anchor may return either a transaction id (32-byte SHA-256 => 43 chars)
 // or a recent block independent hash (48-byte SHA-384 => 64 chars).
 const anchorId=/^(?:[A-Za-z0-9_-]{43}|[A-Za-z0-9_-]{64})$/;
-const gateways=['https://arweave.net','https://ar-io.dev'] as const;
+const gateways=['https://arweave.net','https://g8way.io'] as const;
 const amount=(v:string)=>{if(!/^[1-9][0-9]{0,29}$/.test(v))throw Error('invalid_reward');return BigInt(v);};
 function b64UrlBytes(value:string){
   if(!/^[A-Za-z0-9_-]+$/.test(value))throw Error('invalid_jwk_modulus');
@@ -56,22 +56,24 @@ async function boundedText(response:Response,max:number):Promise<string>{
 }
 export async function publicNetwork():Promise<void>{
   for(const host of gateways)try{
-    const response=await fetch(`${host}/info`,{redirect:'error',signal:AbortSignal.timeout(10000)});
-    const info=JSON.parse(await boundedText(response,4096)) as {network?:unknown};
-    if(info.network!=='arweave.N.1')throw Error('wrong_arweave_network');return;
-  }catch(error){if(error instanceof Error&&error.message==='wrong_arweave_network')throw error;}
+    const response=await fetch(`${host}/info`,{headers:{Accept:'application/json'},signal:AbortSignal.timeout(10000)});
+    if(new URL(response.url).origin!==host)throw Error('gateway_redirected');
+    const info=JSON.parse(await boundedText(response,16384)) as {network?:unknown};
+    if(info.network==='arweave.N.1')return;
+  }catch{ /* try trusted mainnet fallback */ }
   throw Error('network_unavailable');
 }
 export async function publicAnchor():Promise<string>{
   for(const host of gateways)try{
-    const response=await fetch(`${host}/tx_anchor`,{redirect:'error',signal:AbortSignal.timeout(10000)});
+    const response=await fetch(`${host}/tx_anchor`,{signal:AbortSignal.timeout(10000)});
+    if(new URL(response.url).origin!==host)throw Error('gateway_redirected');
     const anchor=await boundedText(response,128);if(anchorId.test(anchor))return anchor;
-  }catch{ /* try trusted fallback */ }
+  }catch{ /* try trusted mainnet fallback */ }
   throw Error('anchor_unavailable');
 }
 async function digest(bytes:Uint8Array){return Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',bytes)),x=>x.toString(16).padStart(2,'0')).join('');}
 async function boundedRaw(id:string,max:number):Promise<Uint8Array|null>{
-  for(const host of ['https://arweave.net','https://ar-io.dev']){
+  for(const host of gateways){
     try{const r=await fetch(`${host}/raw/${id}`,{redirect:'error',signal:AbortSignal.timeout(15000)});if(r.status===404||r.status===202)continue;if(!r.ok||!r.body)continue;
       const reader=r.body.getReader(),parts:Uint8Array[]=[];let length=0;
       try{for(;;){const chunk=await reader.read();if(chunk.done)break;length+=chunk.value.length;if(length>max){await reader.cancel();throw Error('retrieved_archive_too_large');}parts.push(chunk.value);}}finally{reader.releaseLock();}
@@ -80,7 +82,7 @@ async function boundedRaw(id:string,max:number):Promise<Uint8Array|null>{
   }return null;
 }
 export async function publicBalance():Promise<string>{
-  for(const host of ['https://arweave.net','https://ar-io.dev'])try{
+  for(const host of gateways)try{
     const r=await fetch(`${host}/wallet/${TREASURY_ADDRESS}/balance`,{signal:AbortSignal.timeout(10000)});
     if(r.ok){const value=(await r.text()).trim();if(/^(0|[1-9][0-9]*)$/.test(value))return value;}
   }catch{ /* try fallback */ }
@@ -88,7 +90,7 @@ export async function publicBalance():Promise<string>{
 }
 export async function publicPrice(bytes:number):Promise<string>{
   if(!Number.isSafeInteger(bytes)||bytes<=0||bytes>524288)throw Error('price_unavailable');
-  for(const host of ['https://arweave.net','https://ar-io.dev'])try{
+  for(const host of gateways)try{
     const r=await fetch(`${host}/price/${bytes}`,{signal:AbortSignal.timeout(10000)});
     if(r.ok){const value=(await r.text()).trim();amount(value);return value;}
   }catch{ /* try fallback */ }
