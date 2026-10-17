@@ -120,7 +120,7 @@ export function PreservationV2({envelope,treeName,onBack,onBusy}: Props) {
     <button className="btn ghost" type="button" onClick={()=>setSaveMethod('choose')}>Назад</button>
   </section>;
 
-  if(activeEnvelope&&saveMethod==='solana'&&P.network!=='mainnet-beta')return <section className="native-checkout" aria-label="Оплата SOL">
+  if(activeEnvelope&&saveMethod==='solana'&&import.meta.env.VITE_NATIVE_SOL_MAINNET!=='1')return <section className="native-checkout" aria-label="Оплата SOL">
     <h1>Оплатить 0.03 SOL</h1>
     <p>Реальная оплата Solana Mainnet ещё не подключена. Тестовый Devnet здесь больше не используется.</p>
     <button className="btn ghost" type="button" onClick={()=>setSaveMethod('choose')}>Назад</button>
