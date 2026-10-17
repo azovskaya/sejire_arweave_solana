@@ -110,9 +110,10 @@ export function PreservationV2({envelope,treeName,onBack,onBusy}: Props) {
     <h1>Сохранить семейную историю</h1>
     <h2>{treeName || 'Мой род'}</h2>
     <p>Данные сохраняются в зашифрованном архиве. Ваши 12 слов SEJIRE остаются у вас.</p>
-    {session&&<p><strong>Оплата: 0.03 SOL</strong><br/>Solana Devnet · комиссия сети отдельно</p>}
-    {session&&<p><strong>Хранение: Arweave Mainnet</strong><br/>Реальные AR · до 0.004 AR</p>}
-    {session&&<ol aria-label="Ход сохранения"><li>{paid?'✓ ':''}Оплата</li><li>{stored?'✓ ':''}Сохранение</li><li>{stored?'✓ ':''}Готово</li></ol>}
+    <h3>Обычное сохранение через Solana</h3>
+    <p><strong>Оплата: 0.03 SOL</strong><br/>Solana Devnet · комиссия сети отдельно</p>
+    <p><strong>Хранение: Arweave Mainnet</strong><br/>Реальные AR · до 0.004 AR</p>
+    <ol aria-label="Ход сохранения"><li>{paid?'✓ ':''}Оплата</li><li>{stored?'✓ ':''}Сохранение</li><li>{stored?'✓ ':''}Готово</li></ol>
     {!session && !envelope && <label>Зашифрованный архив пилота<input type="file" accept="application/json,.json" onChange={e=>void choose(e.target.files?.[0])}/></label>}
     {session && !paid && state!=='BLOCKED' && <button className="btn" disabled={busy || state==='SOLANA_PENDING'} onClick={()=>void payNow()}>Оплатить 0.03 SOL</button>}
     {state==='SOLANA_PENDING' && <p>Проверяем оплату в Solana. Повторного платежа нет.</p>}
