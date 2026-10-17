@@ -1,0 +1,86 @@
+name: Publish promo fund preview to GitHub Pages
+
+on:
+  push:
+    branches:
+      - feat/promo-funded-preservation
+    paths:
+      - '.github/workflows/promo-preview-pages.yml'
+      - '.github/workflows/checks.yml'
+      - 'scripts/pages-native-artifact.mjs'
+
+permissions:
+  contents: write
+  actions: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: promo-fund-preview
+  cancel-in-progress: true
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Wait for successful SEJIRE checks for this exact commit
+        id: checked
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          SOURCE_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          for attempt in $(seq 1 120); do
+            json="$(curl -fsSL -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/$REPO/actions/runs?head_sha=$SOURCE_SHA&per_page=20")"
+            line="$(python3 -c 'import json,sys; d=json.load(sys.stdin); xs=[x for x in d["workflow_runs"] if x["name"]=="SEJIRE checks" and x["head_sha"]==sys.argv[1]]; x=xs[0] if xs else None; print("" if x is None else f"{x["id"]} {x["status"]} {x["conclusion"] or ""}")' "$SOURCE_SHA" <<<"$json")"
+            if [ -n "$line" ]; then
+              read -r run status conclusion <<<"$line"
+              if [ "$status" = completed ] && [ "$conclusion" = success ]; then
+                echo "run_id=$run" >> "$GITHUB_OUTPUT"
+                exit 0
+              fi
+              if [ "$status" = completed ] && [ "$conclusion" != success ]; then
+                echo "SEJIRE checks failed: $conclusion" >&2
+                exit 1
+              fi
+            fi
+            sleep 10
+          done
+          echo "Timed out waiting for SEJIRE checks" >&2
+          exit 1
+
+      - name: Recover verified build and preserve existing Pages content
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CHECKED_RUN: ${{ steps.checked.outputs.run_id }}
+          SOURCE_SHA: ${{ github.sha }}
+          PUBLISH_ROOT: '0'
+        run: node scripts/pages-native-artifact.mjs
+
+      - name: Save Pages content without rewriting its history
+        run: |
+          git -C .pages-site config user.name 'SEJIRE Pages'
+          git -C .pages-site config user.email 'sejire-pages@users.noreply.github.com'
+          git -C .pages-site add --all
+          if ! git -C .pages-site diff --cached --quiet; then
+            git -C .pages-site commit -m "Publish promo preview ${GITHUB_SHA}"
+            git -C .pages-site push origin HEAD:gh-pages
+          fi
+          mkdir .pages-public
+          git -C .pages-site archive HEAD | tar -x -C .pages-public
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: .pages-public
+
+      - name: Deploy preserved static site
+        id: deployment
+        uses: actions/deploy-pages@v4
