@@ -28,6 +28,7 @@ export function PreservationV2({envelope,treeName,onBack,onBusy}: Props) {
   const [info,setInfo] = useState('');
   const [reward,setReward] = useState<string>();
   const [promoEnvelope,setPromoEnvelope] = useState<EnvelopeV1|null>(null);
+  const [saveMethod,setSaveMethod] = useState<'choose'|'promo'|'solana'>('choose');
   const running = useRef(false);
   useEffect(() => {
     let live=true;
@@ -102,6 +103,29 @@ export function PreservationV2({envelope,treeName,onBack,onBusy}: Props) {
       return saveToArweave(confirmedReward);
     });
   }
+  const activeEnvelope=envelope||promoEnvelope;
+  if(activeEnvelope&&saveMethod==='choose')return <section className="native-checkout" aria-label="Сохранить семейную историю">
+    <h1>Сохранить семейную историю</h1>
+    <h2>{treeName || 'Мой род'}</h2>
+    <div className="actions" style={{flexDirection:'column',alignItems:'stretch',gap:'12px'}}>
+      <button className="btn" type="button" onClick={()=>setSaveMethod('promo')}>Промокод</button>
+      <button className="btn ghost" type="button" onClick={()=>setSaveMethod('solana')}>Оплатить 0.03 SOL</button>
+    </div>
+    {onBack&&<button className="btn ghost" type="button" onClick={onBack}>Назад</button>}
+  </section>;
+
+  if(activeEnvelope&&saveMethod==='promo')return <section className="native-checkout" aria-label="Сохранить по промокоду">
+    <h1>Сохранить семейную историю</h1>
+    <PromoFundedFlow envelope={activeEnvelope}/>
+    <button className="btn ghost" type="button" onClick={()=>setSaveMethod('choose')}>Назад</button>
+  </section>;
+
+  if(activeEnvelope&&saveMethod==='solana'&&P.network!=='mainnet-beta')return <section className="native-checkout" aria-label="Оплата SOL">
+    <h1>Оплатить 0.03 SOL</h1>
+    <p>Реальная оплата Solana Mainnet ещё не подключена. Тестовый Devnet здесь больше не используется.</p>
+    <button className="btn ghost" type="button" onClick={()=>setSaveMethod('choose')}>Назад</button>
+  </section>;
+
   const state=session?.state;
   const blockedAfterPayment=state==='BLOCKED' && Boolean(session?.arSignedTransaction||session?.arTransactionId||session?.arSigningStarted);
   const paid=Boolean(state && (!['READY','SOLANA_PREPARED','SOLANA_PENDING','BLOCKED'].includes(state) || blockedAfterPayment));
