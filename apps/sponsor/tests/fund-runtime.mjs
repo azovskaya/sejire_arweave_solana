@@ -162,6 +162,13 @@ if (!process.argv[2]) {
         assert.equal(first.body.order.status, 'NEEDS_RECONCILIATION');
         const id = first.body.order.arweaveTxId, before = (await control('stats')).submissions;
         await control('mock', { failure: '' });
+        for (let check = 0; check < 2; check++) {
+          const pending = await call(`/orders/${'e'.repeat(32)}`);
+          assert.equal(pending.body.order.arweaveTxId, id);
+          assert.equal(pending.body.verification.stage, 'awaiting_confirmation');
+          assert.equal(pending.body.verification.transactionConfirmed, false);
+          assert.equal((await control('stats')).submissions, before, 'GET must never replay a signed transaction');
+        }
         assert.equal((await call('/admin/reconcile', {}, admin)).status, 200);
         const completed = (await call(`/orders/${'e'.repeat(32)}`)).body.order;
         assert.equal(completed.status, 'COMPLETED'); assert.equal(completed.arweaveTxId, id);
@@ -171,6 +178,16 @@ if (!process.argv[2]) {
         await control('mock', { delay: true });
         const pending = await call('/orders', order('f'), undefined, '192.0.2.25');
         assert.equal(pending.body.order.status, 'VERIFYING');
+        assert.equal(pending.body.verification.stage, 'awaiting_confirmation');
+        const submissions = (await control('stats')).submissions;
+        await control('mock', { delay: false, failure: 'archive_unavailable' });
+        const checking = await call(`/orders/${'f'.repeat(32)}`);
+        assert.equal(checking.body.order.status, 'VERIFYING');
+        assert.equal(checking.body.verification.stage, 'checking_archive');
+        assert.equal(checking.body.verification.transactionConfirmed, true);
+        assert.equal(checking.body.verification.reason, 'archive_unavailable');
+        assert.equal((await control('stats')).submissions, submissions);
+        await control('mock', { delay: true, failure: '' });
         const d = await dashboard(); assert.equal(d.reservedWinston, '3000000000');
         assert.equal(d.successfulTrees, 4); assert.equal(d.actualSpentWinston, '12000000000');
         assert.equal((await call('/orders', { ...order('9'), recoveryWords: 'synthetic only' }, undefined, '192.0.2.26')).body.error, 'forbidden_field');

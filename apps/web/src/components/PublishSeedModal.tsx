@@ -15,6 +15,7 @@ import {
   sealVault,
 } from "../lib/crypto/vault";
 import type { EnvelopeV1 } from "../lib/crypto/encrypt";
+import { serializeEnvelope } from "../lib/crypto/envelope";
 import { loadVaultForPublish } from "../lib/arweave/loadVault";
 import { addressFromJwk, jwkFromSeed } from "../lib/arweave/wallet";
 import { getWalletBalanceAr, publishEnvelope } from "../lib/arweave/publish";
@@ -41,6 +42,7 @@ import {
 } from "../lib/vaultSession/session";
 import {
   archiveLocalVaultVersion,
+  getLocalVaultVersion,
   makeLocalVersionId,
 } from "../lib/vaultSession/localArchive";
 import { useI18n } from "../lib/i18n/I18nProvider";
@@ -50,6 +52,7 @@ import { PreservationV2 } from './PreservationV2';
 import { CheckoutPublishPanel, SolanaPublishPanel } from '@sejire/payment-panels';
 import { solanaMessages } from "../lib/solana/messages";
 import type { PreservationReceipt } from "../lib/solana/client";
+import type { FundOrderView } from "../lib/fund/client";
 
 type Props = {
   store: TreeStore;
@@ -285,6 +288,24 @@ export function PublishSeedModal({
     const live = receipt.network === "mainnet-beta";
     onPublished({ mode: live ? "solana" : "solana-test", txId: receipt.receipt.id,
       isNewVersion: Boolean(acceptedParent) });
+  }
+
+  function finishFunded(order: FundOrderView) {
+    if (order.status !== "COMPLETED" || !order.arweaveTxId || !sealedEnvelope || order.vaultId !== sealedEnvelope.vault_id) {
+      throw Error("funded_completion_mismatch");
+    }
+    const keys = deriveKeysFromMnemonic(mnemonic);
+    if (keys.vaultId !== sealedEnvelope.vault_id) throw Error("funded_completion_mismatch");
+    archiveVersion(keys, sealedEnvelope, order.arweaveTxId, publishParentTx, "network");
+    // Existing storage helpers are best-effort; keep the TX visible if a write failed.
+    const archived = getLocalVaultVersion(keys.vaultId, order.arweaveTxId);
+    if (!archived || archived.parentId !== publishParentTx || serializeEnvelope(archived.envelope) !== serializeEnvelope(sealedEnvelope)) {
+      throw Error("funded_history_unavailable");
+    }
+    rememberSession(keys, mnemonic, order.arweaveTxId);
+    const remembered = getVaultSession();
+    if (remembered?.vaultId !== keys.vaultId || remembered.headTxId !== order.arweaveTxId) throw Error("funded_history_unavailable");
+    onPublished({ mode: "arweave", txId: order.arweaveTxId, isNewVersion: Boolean(publishParentTx) });
   }
 
   async function runDemoPublish(phrase: string) {
@@ -597,6 +618,7 @@ export function PublishSeedModal({
         {mode === "solana" && sealedEnvelope && import.meta.env.VITE_PRESERVATION_V2_ENABLED === "1" && (
           <PreservationV2 envelope={sealedEnvelope} treeName={store.meta.title}
             onBusy={(busy) => { solanaBusy.current = busy; }}
+            onFundedDone={finishFunded}
             onBack={() => setMode(solanaReturnMode.current)} />
         )}
         {mode === "solana" && sealedEnvelope && import.meta.env.VITE_PRESERVATION_V2_ENABLED !== "1" && (

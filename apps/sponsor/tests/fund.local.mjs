@@ -111,5 +111,74 @@ try{
     assert.equal(ledger.summary().reservedWinston,before.reservedWinston);
   }finally{mock.prepareTransaction=original;}
  });
+ await test('GET never signs, reserves or resubmits a missing signed transaction; explicit POST recovers the same order',async()=>{
+  const before=ledger.summary();
+  const initial=await call('/orders',make('c','TEST-PENSIONER-2'),{fault:'upload',ip:'192.0.2.101'});
+  assert.equal(initial.body.order.status,'NEEDS_RECONCILIATION');
+  const id=initial.body.order.arweaveTxId,submitted=mock.submissions,signed=mock.signings;
+  for(let check=0;check<3;check++){
+    const current=await call('/orders/'+'c'.repeat(32),undefined,{ip:'192.0.2.102'});
+    assert.equal(current.body.order.arweaveTxId,id);assert.equal(current.body.order.orderId,'c'.repeat(32));
+    assert.equal(current.body.verification.stage,'awaiting_confirmation');assert.equal(current.body.verification.reason,'network_pending');
+    assert.equal(current.body.verification.transactionConfirmed,false);
+    assert.equal(mock.submissions,submitted);assert.equal(mock.signings,signed);
+  }
+  assert.equal(ledger.summary().history.length,before.history.length+1);
+  assert.equal(ledger.summary().actualSpentWinston,before.actualSpentWinston);
+  assert.equal(ledger.summary().reservedWinston,(BigInt(before.reservedWinston)+3000000000n).toString());
+  const completed=await call('/orders',make('c','TEST-PENSIONER-2'),{ip:'192.0.2.103'});
+  assert.equal(completed.body.order.status,'COMPLETED');assert.equal(completed.body.order.arweaveTxId,id);
+  assert.equal(completed.body.verification.stage,'verified');assert.equal(mock.submissions,submitted+1);assert.equal(mock.signings,signed);
+  const cached=await call('/orders/'+'c'.repeat(32));
+  assert.equal(cached.body.verification.stage,'verified');assert.equal(cached.body.verification.confirmations,null);
+  assert.equal(ledger.summary().actualSpentWinston,(BigInt(before.actualSpentWinston)+3000000000n).toString());
+  assert.equal(ledger.summary().reservedWinston,before.reservedWinston);
+ });
+ await test('confirmed network with unavailable archive remains reserved, then the same order completes exactly once',async()=>{
+  const before=ledger.summary(),original=mock.getTransaction;let lookups=0;
+  mock.getTransaction=async(...args)=>{lookups++;return original.apply(mock,args);};
+  try{
+    const initial=await call('/orders',make('d','TEST-PENSIONER-2'),{fault:'archive_unavailable',ip:'192.0.2.104'});
+    assert.equal(initial.body.order.status,'VERIFYING');assert.equal(initial.body.verification.stage,'checking_archive');
+    assert.equal(initial.body.verification.transactionConfirmed,true);assert.equal(initial.body.verification.confirmations,1);
+    assert.equal(initial.body.verification.reason,'archive_unavailable');assert.equal(lookups,1,'one network lookup per check');
+    const id=initial.body.order.arweaveTxId,submitted=mock.submissions,signed=mock.signings;
+    assert.equal(ledger.summary().actualSpentWinston,before.actualSpentWinston);
+    assert.equal(ledger.summary().reservedWinston,(BigInt(before.reservedWinston)+3000000000n).toString());
+    const pending=await call('/orders/'+'d'.repeat(32),undefined,{fault:'archive_unavailable'});
+    assert.equal(pending.body.verification.transactionConfirmed,true);assert.equal(lookups,2);
+    const completed=await call('/orders/'+'d'.repeat(32));
+    assert.equal(completed.body.order.status,'COMPLETED');assert.equal(completed.body.order.arweaveTxId,id);
+    assert.equal(completed.body.verification.stage,'verified');assert.equal(lookups,3);
+    for(let i=0;i<2;i++)assert.equal((await call('/orders/'+'d'.repeat(32))).body.order.status,'COMPLETED');
+    assert.equal(lookups,3,'completed ledger entries do not re-query the network');
+    assert.equal(mock.submissions,submitted);assert.equal(mock.signings,signed);
+    assert.equal(ledger.summary().actualSpentWinston,(BigInt(before.actualSpentWinston)+3000000000n).toString());
+    assert.equal(ledger.summary().reservedWinston,before.reservedWinston);
+    assert.equal(storage.sql.exec('SELECT COUNT(*) AS n FROM fund_events WHERE order_id=? AND status=?','d'.repeat(32),'COMPLETED').toArray()[0].n,1);
+  }finally{mock.getTransaction=original;}
+ });
+ await test('public attention reasons remain safe and cannot release or complete an unverified archive',async()=>{
+  const before=ledger.summary();
+  const initial=await call('/orders',make('e','TEST-PENSIONER-2'),{fault:'verification',ip:'192.0.2.105'});
+  const id=initial.body.order.arweaveTxId,submitted=mock.submissions,signed=mock.signings;
+  assert.equal(initial.body.verification.stage,'attention');assert.equal(initial.body.verification.transactionConfirmed,true);
+  assert.equal(initial.body.verification.reason,'archive_verification_failed');
+  const network=await call('/orders/'+'e'.repeat(32),undefined,{fault:'network'});
+  assert.equal(network.body.verification.reason,'network_unavailable');assert.equal(network.body.verification.transactionConfirmed,false);
+  assert.equal(JSON.stringify(network.body).includes('synthetic gateway failure'),false);
+  const mismatch=await call('/orders/'+'e'.repeat(32),undefined,{actual:'1'});
+  assert.equal(mismatch.body.verification.reason,'reward_mismatch');assert.equal(mismatch.body.verification.transactionConfirmed,true);
+  assert.equal(mismatch.body.order.status,'NEEDS_RECONCILIATION');assert.equal(mismatch.body.order.arweaveTxId,id);
+  assert.equal(ledger.summary().actualSpentWinston,before.actualSpentWinston);
+  assert.equal(ledger.summary().reservedWinston,(BigInt(before.reservedWinston)+3000000000n).toString());
+  for(const response of [initial,network,mismatch]){
+    assert.deepEqual(Object.keys(response.body.verification).sort(),['checkedAt','confirmations','reason','stage','transactionConfirmed']);
+    assert.equal(typeof response.body.verification.checkedAt,'number');
+    for(const privateField of ['signedTransaction','preparedTransaction','ciphertext','code_hash'])assert.equal(JSON.stringify(response.body).includes(privateField),false);
+  }
+  assert.equal((await call('/orders/'+'e'.repeat(32))).body.order.status,'COMPLETED');
+  assert.equal(mock.submissions,submitted);assert.equal(mock.signings,signed);
+ });
  console.log('fund.local: PASS; real SQLite, mock provider, zero network calls or AR transactions');
 }finally{storage.close();await rm(temp,{recursive:true,force:true});}

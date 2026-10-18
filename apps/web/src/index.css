@@ -2011,6 +2011,36 @@ a {
 .funded-flow,.fund-admin{margin:1.5rem 0;padding:1.25rem;border:1px solid var(--line,#ccc);border-radius:12px;max-width:100%;overflow-wrap:anywhere}
 .funded-flow label,.fund-admin label{display:block;margin:.75rem 0}
 .funded-flow input,.fund-admin input,.fund-admin select{display:block;width:100%;max-width:28rem;min-height:2.5rem;margin-top:.3rem}
+.funded-flow h2{margin:0 0 .4rem;font-size:1.2rem}
+.funded-intro{margin:.35rem 0 1.2rem;color:var(--muted,#626873);font-size:.9rem;line-height:1.5}
+.funded-primary{width:100%;margin-top:.5rem}
+.funded-status{display:flex;align-items:flex-start;gap:.75rem;padding:1rem;border:1px solid #e7d9cd;border-radius:10px;background:#fff8f1}
+.funded-status>div{min-width:0}
+.funded-status h3{margin:0 0 .4rem;font-size:1.08rem;line-height:1.4}
+.funded-status p{margin:0;font-size:.93rem;line-height:1.55}
+.funded-status-icon{display:flex;align-items:center;justify-content:center;flex:0 0 1.8rem;height:1.8rem;border-radius:50%;background:#f0dfd0;color:#803d1b;font-weight:700;line-height:1}
+.funded-status--success{background:#eff8f2;border-color:#bedbc8;color:#225a38}
+.funded-status--success .funded-status-icon{background:#24633d;color:white}
+.funded-status--attention{background:#fff9eb;border-color:#e6d3a8;color:#644617}
+.funded-status--attention .funded-status-icon{background:#ecd7a8;color:#644617}
+.funded-steps{display:flex;flex-direction:column;gap:.65rem;margin:1.15rem 0;padding:0;list-style:none}
+.funded-steps li{display:flex;gap:.65rem;align-items:center;color:#686c73;font-size:.9rem}
+.funded-steps li>span{display:flex;align-items:center;justify-content:center;flex:0 0 1.55rem;height:1.55rem;border:1px solid #d6d8dc;border-radius:50%;font-size:.8rem}
+.funded-steps .is-done{color:#286440}
+.funded-steps .is-done>span{border-color:#a6cbb4;background:#eff8f2}
+.funded-steps .is-current{font-weight:600;color:var(--ink,#25282e)}
+.funded-steps .is-current>span{border-color:#c98760;background:#fff4e9;color:#803d1b}
+.funded-reassurance,.funded-check-time{color:var(--muted,#626873);font-size:.83rem;line-height:1.5}
+.funded-delay,.funded-error{padding:.75rem;border-radius:8px;background:#fff5e1;color:#674916;font-size:.9rem;line-height:1.5}
+.funded-error{border-left:3px solid #ae6728}
+.funded-actions{display:flex;align-items:center;flex-wrap:wrap;gap:.8rem;margin:1rem 0 .5rem}
+.funded-actions a{font-size:.87rem}
+.funded-check-time{margin:.5rem 0}
+.funded-details{margin-top:1rem;border-top:1px solid var(--line,#ddd);padding-top:.75rem;font-size:.85rem}
+.funded-details summary{cursor:pointer;color:var(--muted,#626873)}
+.funded-details dl{display:grid;grid-template-columns:auto minmax(0,1fr);gap:.5rem .8rem;margin:.8rem 0 0}
+.funded-details dd{margin:0;overflow-wrap:anywhere}
+.funded-details code{font-size:.78rem}
 .fund-admin-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,310px),1fr));gap:1rem;margin:1rem 0}
 .fund-admin-grid .ops-desk-card{min-width:0}.fund-admin-grid .ops-desk-card p{margin:.55rem 0}.fund-admin .btn{margin:.3rem .4rem .3rem 0}
 .fund-admin progress{width:100%;height:1.1rem}.fund-admin-filters{display:flex;flex-wrap:wrap;gap:1rem}.fund-admin-history{max-width:100%;overflow-x:auto}

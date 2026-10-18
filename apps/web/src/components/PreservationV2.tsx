@@ -4,9 +4,10 @@ import { parseEnvelope } from '../lib/crypto/envelope';
 import { envelopeText, importPilotFile, PRESERVATION_V2_PILOT_POLICY as P } from '../lib/preserveV2/policy';
 import { beginSave, currentSession, pay, prepareArweave, reconcileSave, saveToArweave } from '../lib/preserveV2/machine';
 import type { SaveSession } from '../lib/preserveV2/types';
+import type { FundOrderView } from '../lib/fund/client';
 import { PromoFundedFlow } from './PromoFundedFlow';
 
-type Props = { envelope?: EnvelopeV1 | null; treeName?: string; onBack?: () => void; onBusy?: (busy: boolean) => void };
+type Props = { envelope?: EnvelopeV1 | null; treeName?: string; onBack?: () => void; onBusy?: (busy: boolean) => void; onFundedDone?: (order: FundOrderView) => void };
 const message = (error: unknown) => {
   const code = error instanceof Error ? error.message : 'unknown_error';
   const known: Record<string,string> = {
@@ -21,7 +22,7 @@ const message = (error: unknown) => {
   return known[code] ?? 'Операция пока не завершена. Прогресс сохранён; проверьте его позже.';
 };
 
-export function PreservationV2({envelope,treeName,onBack,onBusy}: Props) {
+export function PreservationV2({envelope,treeName,onBack,onBusy,onFundedDone}: Props) {
   const [session,setSession] = useState<SaveSession>();
   const [busy,setBusy] = useState(false);
   const [error,setError] = useState('');
@@ -116,7 +117,7 @@ export function PreservationV2({envelope,treeName,onBack,onBusy}: Props) {
 
   if(activeEnvelope&&saveMethod==='promo')return <section className="native-checkout" aria-label="Сохранить по промокоду">
     <h1>Сохранить семейную историю</h1>
-    <PromoFundedFlow envelope={activeEnvelope}/>
+    <PromoFundedFlow envelope={activeEnvelope} onDone={onFundedDone??onBack}/>
     <button className="btn ghost" type="button" onClick={()=>setSaveMethod('choose')}>Назад</button>
   </section>;
 
@@ -156,7 +157,7 @@ export function PreservationV2({envelope,treeName,onBack,onBusy}: Props) {
     {state==='BLOCKED' && <p role="alert">{blockedAfterPayment?'Оплата подтверждена. Проверяем уже подписанную транзакцию Wander; новая оплата и новая подпись не запускаются.':'Сохранение остановлено для предотвращения повторного расхода. Нужна проверка операции.'}</p>}
     {info && state!=='BLOCKED' && <p role="status">{info}</p>}{error && <p role="alert">{error}</p>}
     {!envelope&&!promoEnvelope&&<label>Зашифрованный архив для промокода<input type="file" accept="application/json,.json" onChange={e=>void choosePromo(e.target.files?.[0])}/></label>}
-    {(envelope||promoEnvelope)&&<PromoFundedFlow envelope={(envelope||promoEnvelope)!}/>}
+    {(envelope||promoEnvelope)&&<PromoFundedFlow envelope={(envelope||promoEnvelope)!} onDone={onFundedDone??onBack}/>}
     {onBack && <button className="btn ghost" disabled={busy} onClick={onBack}>Назад</button>}
   </section>;
 }

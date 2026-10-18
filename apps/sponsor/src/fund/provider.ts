@@ -2,7 +2,20 @@ import * as ArweaveWebModule from 'arweave/web/index.js';
 import { parseEnvelope } from '../../../web/src/lib/crypto/envelope';
 import { TREASURY_ADDRESS } from './ledger';
 export type PreparedFundTx = { raw:string; reward:string };
-export type FundNetworkTx = {confirmed:boolean; reward:string|null};
+export type FundNetworkTx = {state:'not_found'|'pending'|'confirmed';confirmed:boolean;reward:string|null;confirmations:number|null};
+export type FundArchiveExpected = {digest:string;bytes:number;vaultId:string};
+export type FundVerification = {
+  stage:'awaiting_confirmation'|'checking_archive'|'verified'|'attention';
+  transactionConfirmed:boolean;
+  confirmations:number|null;
+  reason:'network_pending'|'network_unavailable'|'archive_unavailable'|'archive_verification_failed'|'reward_mismatch'|'transaction_mismatch'|null;
+  checkedAt:number;
+};
+export type FundCheckResult = {confirmed:boolean;reward:string|null;verification:FundVerification};
+// One verification pass, including all fallback requests and response bodies,
+// must leave room for the ledger response inside the browser's 30 second wait.
+export const FUND_CHECK_TIMEOUT_MS = 22_000;
+const CHECK_REQUEST_TIMEOUT_MS = 4_000;
 export interface FundedArweaveProvider {
   getSignerAddress():Promise<string>;
   getBalance():Promise<string>;
@@ -10,9 +23,9 @@ export interface FundedArweaveProvider {
   prepareTransaction(bytes:Uint8Array,tags:{name:string;value:string}[]):Promise<PreparedFundTx>;
   sign(prepared:PreparedFundTx):Promise<{id:string;raw:string;reward:string}>;
   submit(raw:string):Promise<void>;
-  getTransaction(id:string):Promise<FundNetworkTx>;
-  getRawData(id:string):Promise<Uint8Array|null>;
-  verify(id:string,expected:{digest:string;bytes:number;vaultId:string}):Promise<{confirmed:boolean;reward:string|null}>;
+  getTransaction(id:string,deadline?:number):Promise<FundNetworkTx>;
+  getRawData(id:string,expected?:FundArchiveExpected,deadline?:number):Promise<Uint8Array|null>;
+  verify(id:string,expected:FundArchiveExpected,transaction?:FundNetworkTx,deadline?:number):Promise<FundCheckResult>;
 }
 function arweaveRuntime(){
   let value:unknown=ArweaveWebModule;
@@ -72,14 +85,87 @@ export async function publicAnchor():Promise<string>{
   throw Error('anchor_unavailable');
 }
 async function digest(bytes:Uint8Array){return Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',bytes)),x=>x.toString(16).padStart(2,'0')).join('');}
-async function boundedRaw(id:string,max:number):Promise<Uint8Array|null>{
-  for(const host of gateways){
-    try{const r=await fetch(`${host}/raw/${id}`,{redirect:'error',signal:AbortSignal.timeout(15000)});if(r.status===404||r.status===202)continue;if(!r.ok||!r.body)continue;
-      const reader=r.body.getReader(),parts:Uint8Array[]=[];let length=0;
-      try{for(;;){const chunk=await reader.read();if(chunk.done)break;length+=chunk.value.length;if(length>max){await reader.cancel();throw Error('retrieved_archive_too_large');}parts.push(chunk.value);}}finally{reader.releaseLock();}
-      const bytes=new Uint8Array(length);let offset=0;for(const part of parts){bytes.set(part,offset);offset+=part.length;}return bytes;
-    }catch(e){if(e instanceof Error&&e.message==='retrieved_archive_too_large')throw e;}
-  }return null;
+function checkSignal(deadline:number){
+  const remaining=deadline-Date.now();
+  if(remaining<=0)throw Error('transaction_unavailable');
+  return AbortSignal.timeout(Math.min(CHECK_REQUEST_TIMEOUT_MS,remaining));
+}
+async function discard(response:Response){try{await response.body?.cancel();}catch{ /* response already closed */ }}
+async function boundedBytes(response:Response,max:number){
+  if(!response.ok||!response.body)throw Error('gateway_unavailable');
+  const reader=response.body.getReader(),parts:Uint8Array[]=[];let length=0;
+  try{for(;;){const chunk=await reader.read();if(chunk.done)break;length+=chunk.value.length;
+    if(length>max){await reader.cancel();throw Error('retrieved_archive_too_large');}parts.push(chunk.value);}}
+  finally{reader.releaseLock();}
+  const bytes=new Uint8Array(length);let offset=0;for(const part of parts){bytes.set(part,offset);offset+=part.length;}return bytes;
+}
+async function archiveMatches(bytes:Uint8Array,expected?:FundArchiveExpected){
+  if(expected&&(bytes.length!==expected.bytes||await digest(bytes)!==expected.digest))return false;
+  try{const envelope=parseEnvelope(JSON.parse(new TextDecoder('utf-8',{fatal:true,ignoreBOM:false}).decode(bytes)));
+    return !expected||envelope.vault_id===expected.vaultId;
+  }catch{return false;}
+}
+// Arweave's isolated data host is the lower-case base32 encoding of this TX ID.
+// A gateway may redirect only to the exact TX's host/path, never an arbitrary URL.
+function sandboxLabel(id:string){
+  const alphabet='abcdefghijklmnopqrstuvwxyz234567';let value=0,bits=0,label='';
+  for(const byte of b64UrlBytes(id)){value=(value<<8)|byte;bits+=8;
+    while(bits>=5){bits-=5;label+=alphabet[(value>>>bits)&31];}value&=(1<<bits)-1;}
+  if(bits)label+=alphabet[(value<<(5-bits))&31];return label;
+}
+function trustedArchiveUrl(url:URL,host:string,id:string){
+  const base=new URL(host),isolated=`${sandboxLabel(id)}.${base.hostname}`;
+  return url.protocol==='https:'&&!url.username&&!url.password&&!url.port&&!url.search&&!url.hash&&
+    (url.hostname===base.hostname||url.hostname===isolated)&&
+    (url.pathname===`/raw/${id}`||url.pathname===`/${id}`);
+}
+async function archiveResponse(host:string,path:string,id:string,deadline:number){
+  const signal=checkSignal(deadline);let url=new URL(path,host);
+  const visited=new Set<string>();
+  for(let redirects=0;redirects<=2;redirects++){
+    if(!trustedArchiveUrl(url,host,id)||visited.has(url.href))throw Error('gateway_redirected');
+    visited.add(url.href);
+    // Fresh Worker requests carry no browser cookies or incoming Admin headers.
+    const response=await fetch(url.href,{redirect:'manual',signal});
+    if(response.url&&!trustedArchiveUrl(new URL(response.url),host,id)){await discard(response);throw Error('gateway_redirected');}
+    if(![301,302,303,307,308].includes(response.status))return response;
+    const location=response.headers.get('Location');await discard(response);
+    if(!location||location.length>2048)throw Error('gateway_redirected');
+    url=new URL(location,url);
+  }
+  throw Error('gateway_redirected');
+}
+async function boundedRaw(id:string,max:number,expected:FundArchiveExpected|undefined,deadline:number):Promise<Uint8Array|null>{
+  let mismatch=false;
+  // Keep /raw as the preferred exact-byte path. Canonical data URLs are fallback
+  // candidates and receive the very same size, digest and envelope checks.
+  for(const path of [`/raw/${id}`,`/${id}`])for(const host of gateways){
+    if(Date.now()>=deadline)break;
+    try{
+      const response=await archiveResponse(host,path,id,deadline);
+      if(response.status===202||!response.ok||!response.body){await discard(response);continue;}
+      const bytes=await boundedBytes(response,Math.min(max,expected?.bytes??max));
+      if(await archiveMatches(bytes,expected))return bytes;
+      mismatch=true;
+    }catch(error){if(error instanceof Error&&error.message==='retrieved_archive_too_large')mismatch=true;}
+  }
+  if(mismatch)throw Error('archive_integrity_failed');
+  return null;
+}
+function observation(transaction:FundNetworkTx,stage:FundVerification['stage'],reason:FundVerification['reason']):FundVerification{
+  return {stage,transactionConfirmed:transaction.confirmed,confirmations:transaction.confirmations,reason,checkedAt:Date.now()};
+}
+async function verifyArchive(provider:FundedArweaveProvider,id:string,expected:FundArchiveExpected,transaction:FundNetworkTx,deadline:number):Promise<FundCheckResult>{
+  if(!transaction.confirmed)return {confirmed:false,reward:transaction.reward,verification:observation(transaction,'awaiting_confirmation','network_pending')};
+  try{
+    const bytes=await provider.getRawData(id,expected,deadline);
+    if(!bytes)return {confirmed:false,reward:transaction.reward,verification:observation(transaction,'checking_archive','archive_unavailable')};
+    if(!await archiveMatches(bytes,expected))throw Error('archive_integrity_failed');
+    return {confirmed:true,reward:transaction.reward,verification:observation(transaction,'verified',null)};
+  }catch(error){
+    const mismatch=error instanceof Error&&['archive_integrity_failed','vault_integrity_failed'].includes(error.message);
+    return {confirmed:false,reward:transaction.reward,verification:observation(transaction,mismatch?'attention':'checking_archive',mismatch?'archive_verification_failed':'archive_unavailable')};
+  }
 }
 export async function publicBalance():Promise<string>{
   for(const host of gateways)try{
@@ -128,33 +214,68 @@ export class DirectArweaveFundProvider implements FundedArweaveProvider {
     return {id:tx.id,raw:JSON.stringify(tx.toJSON()),reward:tx.reward};}
   async submit(raw:string){const ar=client(),tx=ar.transactions.fromRaw(JSON.parse(raw));if(!tx.id||!await ar.transactions.verify(tx))throw Error('signed_tx_invalid');
     const r=await ar.transactions.post(tx);if(r.status!==200&&r.status!==202&&r.status!==208)throw Error('submit_uncertain');}
-  async getTransaction(id:string):Promise<FundNetworkTx>{if(!txId.test(id))throw Error('invalid_tx_id');const ar=client();const status=await ar.transactions.getStatus(id);
-    if(status.status===404)return {confirmed:false,reward:null};if(status.status!==200)throw Error('transaction_unavailable');
-    const response=await fetch(`https://arweave.net/tx/${id}`,{signal:AbortSignal.timeout(10000)});if(!response.ok)throw Error('transaction_unavailable');
-    const tx=await response.json() as {id:string;owner:string;reward:string};
-    if(tx.id!==id||await ar.wallets.ownerToAddress(tx.owner)!==TREASURY_ADDRESS)throw Error('transaction_mismatch');amount(tx.reward);
-    return {confirmed:Boolean(status.confirmed&&status.confirmed.number_of_confirmations>=1),reward:tx.reward};}
-  getRawData(id:string){if(!txId.test(id))throw Error('invalid_tx_id');return boundedRaw(id,524288);}
-  async verify(id:string,expected:{digest:string;bytes:number;vaultId:string}){const tx=await this.getTransaction(id);if(!tx.confirmed)return tx;
-    const bytes=await this.getRawData(id);if(!bytes)return {confirmed:false,reward:tx.reward};
-    if(bytes.length!==expected.bytes||await digest(bytes)!==expected.digest)throw Error('archive_integrity_failed');
-    const parsed=parseEnvelope(JSON.parse(new TextDecoder('utf-8',{fatal:true,ignoreBOM:false}).decode(bytes)));
-    if(parsed.vault_id!==expected.vaultId)throw Error('vault_integrity_failed');return tx;}
+  async getTransaction(id:string,deadline=Date.now()+FUND_CHECK_TIMEOUT_MS):Promise<FundNetworkTx>{
+    if(!txId.test(id))throw Error('invalid_tx_id');
+    let missing=0,mismatch=false;
+    for(const host of gateways){
+      if(Date.now()>=deadline)break;
+      try{
+        const statusUrl=`${host}/tx/${id}/status`;
+        const response=await fetch(statusUrl,{redirect:'error',signal:checkSignal(deadline)});
+        if(response.url&&response.url!==statusUrl){await discard(response);throw Error('transaction_unavailable');}
+        if(response.status===404){missing++;await discard(response);continue;}
+        if(response.status===202){await discard(response);return {state:'pending',confirmed:false,reward:null,confirmations:0};}
+        if(response.status!==200){await discard(response);continue;}
+        const status=JSON.parse(await boundedText(response,16384)) as {number_of_confirmations?:unknown}|null;
+        const confirmations=status?.number_of_confirmations;
+        if(typeof confirmations!=='number'||!Number.isSafeInteger(confirmations)||confirmations<0)continue;
+        const metadataUrl=`${host}/tx/${id}`;
+        const metadata=await fetch(metadataUrl,{redirect:'error',signal:checkSignal(deadline)});
+        if(metadata.url&&metadata.url!==metadataUrl){await discard(metadata);throw Error('transaction_unavailable');}
+        const tx=JSON.parse(await boundedText(metadata,65536)) as {id?:unknown;owner?:unknown;reward?:unknown}|null;
+        if(!tx||tx.id!==id||typeof tx.owner!=='string'||typeof tx.reward!=='string')throw Error('transaction_mismatch');
+        try{amount(tx.reward);if(await addressFromModulus(tx.owner)!==TREASURY_ADDRESS)throw Error('transaction_mismatch');}
+        catch{throw Error('transaction_mismatch');}
+        return {state:confirmations>=1?'confirmed':'pending',confirmed:confirmations>=1,reward:tx.reward,confirmations};
+      }catch(error){if(error instanceof Error&&error.message==='transaction_mismatch')mismatch=true;}
+    }
+    // One missing index and one broken gateway do not establish absence.
+    if(missing===gateways.length)return {state:'not_found',confirmed:false,reward:null,confirmations:null};
+    throw Error(mismatch?'transaction_mismatch':'transaction_unavailable');
+  }
+  getRawData(id:string,expected?:FundArchiveExpected,deadline=Date.now()+FUND_CHECK_TIMEOUT_MS){
+    if(!txId.test(id))throw Error('invalid_tx_id');
+    return boundedRaw(id,524288,expected,deadline);
+  }
+  async verify(id:string,expected:FundArchiveExpected,transaction?:FundNetworkTx,deadline=Date.now()+FUND_CHECK_TIMEOUT_MS){
+    return verifyArchive(this,id,expected,transaction??await this.getTransaction(id,deadline),deadline);
+  }
 }
 export class MockFundedArweaveProvider implements FundedArweaveProvider {
-  balance='68000000000000';price='3000000000';estimate='3000000000';actual='3000000000';failure='';delay=false; submissions=0;signerAddress=TREASURY_ADDRESS;
+  balance='68000000000000';price='3000000000';estimate='3000000000';actual='3000000000';failure='';delay=false;submissions=0;signings=0;signerAddress=TREASURY_ADDRESS;
   private transactions=new Map<string,{raw:string;data:Uint8Array;accepted:boolean}>();
   async getSignerAddress(){return this.signerAddress;}
   async getBalance(){if(this.failure==='balance')throw Error('balance_unavailable');return this.balance;}
   async getPrice(_bytes:number){if(this.failure==='price')throw Error('price_unavailable');return this.estimate;}
   async prepareTransaction(bytes:Uint8Array,tags:{name:string;value:string}[]){return {raw:JSON.stringify({data:Array.from(bytes),tags}),reward:this.price};}
-  async sign(prepared:PreparedFundTx){const raw=prepared.raw;const hash=new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(raw)));
+  async sign(prepared:PreparedFundTx){this.signings++;const raw=prepared.raw;const hash=new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(raw)));
     const id=btoa(String.fromCharCode(...hash)).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');this.transactions.set(id,{raw,data:new Uint8Array(JSON.parse(raw).data),accepted:false});return {id,raw,reward:prepared.reward};}
   async submit(raw:string){this.submissions++;if(this.failure==='upload')throw Error('submit_uncertain');
     const transaction=[...this.transactions.values()].find(x=>x.raw===raw);if(!transaction)throw Error('signed_tx_missing');transaction.accepted=true;
     if(this.failure==='lost_response')throw Error('submit_uncertain');}
-  async getTransaction(id:string){const transaction=this.transactions.get(id);if(!transaction?.accepted)return {confirmed:false,reward:null};return {confirmed:!this.delay,reward:this.actual};}
-  async getRawData(id:string){if(this.failure==='verification')throw Error('archive_integrity_failed');return this.delay?null:this.transactions.get(id)?.data??null;}
-  async verify(id:string,expected:{digest:string;bytes:number;vaultId:string}){const tx=await this.getTransaction(id);if(!tx.confirmed)return tx;const bytes=await this.getRawData(id);if(!bytes)return {confirmed:false,reward:tx.reward};if(bytes.length!==expected.bytes||await digest(bytes)!==expected.digest)throw Error('archive_integrity_failed');
-    if(parseEnvelope(JSON.parse(new TextDecoder().decode(bytes))).vault_id!==expected.vaultId)throw Error('vault_integrity_failed');return tx;}
+  async getTransaction(id:string):Promise<FundNetworkTx>{
+    if(this.failure==='network')throw Error('synthetic gateway failure');
+    const transaction=this.transactions.get(id);
+    if(!transaction?.accepted)return {state:'not_found',confirmed:false,reward:null,confirmations:null};
+    return {state:this.delay?'pending':'confirmed',confirmed:!this.delay,reward:this.actual,confirmations:this.delay?0:1};
+  }
+  async getRawData(id:string,expected?:FundArchiveExpected){
+    if(this.failure==='verification')throw Error('archive_integrity_failed');
+    if(this.failure==='archive_unavailable'||this.delay)return null;
+    const bytes=this.transactions.get(id)?.data??null;
+    if(bytes&&!await archiveMatches(bytes,expected))throw Error('archive_integrity_failed');return bytes;
+  }
+  async verify(id:string,expected:FundArchiveExpected,transaction?:FundNetworkTx,deadline=Date.now()+FUND_CHECK_TIMEOUT_MS){
+    return verifyArchive(this,id,expected,transaction??await this.getTransaction(id),deadline);
+  }
 }

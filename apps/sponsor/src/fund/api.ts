@@ -2,7 +2,7 @@ import { DurableOrderStore } from '../checkout/durableStore';
 import { authorizeAdmin } from '../adminAuth';
 import { parseEnvelope, serializeEnvelope } from '../../../web/src/lib/crypto/envelope';
 import { envelopeDigest } from '../../../web/src/lib/solana/policy';
-import { DirectArweaveFundProvider, publicBalance, publicPrice, type FundedArweaveProvider } from './provider';
+import { DirectArweaveFundProvider, FUND_CHECK_TIMEOUT_MS, publicBalance, publicPrice, type FundedArweaveProvider, type FundNetworkTx, type FundVerification } from './provider';
 import { parseAr, TREASURY_ADDRESS, type FundOrder } from './ledger';
 export type FundEnv={FUND_API_ENABLED?:string;ARWEAVE_TREASURY_JWK?:string;PROMO_CODE_SECRET?:string;CHECKOUT_LEDGER?:DurableObjectNamespace;CHECKOUT_ALLOWED_ORIGINS?:string;ADMIN_TOKEN?:string;IDEMPOTENCY?:KVNamespace;MAX_ENVELOPE_BYTES?:string};
 const PREFIX='/api/fund';
@@ -29,25 +29,48 @@ async function body(request:Request,max=4096):Promise<Record<string,unknown>>{
 }
 function only(input:Record<string,unknown>,keys:string[]){if(Object.keys(input).some(k=>!keys.includes(k)))throw Error('forbidden_field');}
 async function issuer(request:Request){const raw=request.headers.get('CF-Connecting-IP')??'missing-ingress-ip';return envelopeDigest(raw);}
-async function settle(ledger:DurableOrderStore,provider:FundedArweaveProvider,order:FundOrder):Promise<FundOrder>{
-  if(order.status==='COMPLETED'||order.status==='FAILED'||order.status==='RELEASED'||!order.arweaveTxId)return order;
-  const txId=order.arweaveTxId;
+type CheckedFundOrder={order:FundOrder;verification?:FundVerification};
+function checkedOrder(order:FundOrder,verification?:FundVerification):CheckedFundOrder{
+  // A slower concurrent check cannot contradict the immutable completion in the ledger.
+  if(order.status==='COMPLETED'&&verification?.stage!=='verified')verification={stage:'verified',transactionConfirmed:true,confirmations:null,reason:null,checkedAt:order.verifiedAt??Date.now()};
+  return {order,...(verification?{verification}:{})};
+}
+const publicCheck=(result:CheckedFundOrder)=>({order:publicOrder(result.order),...(result.verification?{verification:result.verification}:{})});
+function unavailableCheck(order:FundOrder){
+  return checkedOrder(order,order.arweaveTxId?{stage:'attention',transactionConfirmed:false,confirmations:null,reason:'network_unavailable',checkedAt:Date.now()}:undefined);
+}
+async function settle(ledger:DurableOrderStore,provider:FundedArweaveProvider,order:FundOrder,options:{allowResubmit?:boolean;deadline?:number}={}):Promise<CheckedFundOrder>{
+  if(order.status==='COMPLETED'||order.status==='FAILED'||order.status==='RELEASED'||!order.arweaveTxId)return checkedOrder(order);
+  const txId=order.arweaveTxId,deadline=options.deadline??Date.now()+FUND_CHECK_TIMEOUT_MS;
+  let transaction:FundNetworkTx|undefined;
   try{
-    if(order.signedTransaction){
-      const existing=await provider.getTransaction(txId);
-      if(!existing.confirmed&&existing.reward===null){
-        await provider.submit(order.signedTransaction);
-        order=await ledger.call({action:'fundEvent',input:{orderId:order.orderId,status:'SUBMITTED'}});
-      }
+    transaction=await provider.getTransaction(txId,deadline);
+    // GET status checks never send bytes, create a reservation, or sign. Only an
+    // explicit existing-order POST/reconciliation may replay this persisted TX.
+    if(options.allowResubmit&&order.signedTransaction&&transaction.state==='not_found'){
+      await provider.submit(order.signedTransaction);
+      order=await ledger.call({action:'fundEvent',input:{orderId:order.orderId,status:'SUBMITTED'}});
+      transaction=await provider.getTransaction(txId,deadline);
     }
-    const result=await provider.verify(txId,{digest:order.archiveDigest,bytes:order.archiveSizeBytes,vaultId:order.vaultId});
-    if(!result.confirmed||!result.reward)return await ledger.call({action:'fundEvent',input:{orderId:order.orderId,status:'VERIFYING'}});
+    if(transaction.confirmed&&transaction.reward!==order.reservedRewardWinston)throw Error('network_reward_mismatch');
+    const result=await provider.verify(txId,{digest:order.archiveDigest,bytes:order.archiveSizeBytes,vaultId:order.vaultId},transaction,deadline);
+    if(!result.confirmed||!result.reward||result.verification.stage!=='verified'||!result.verification.transactionConfirmed){
+      const status=result.verification.stage==='attention'?'NEEDS_RECONCILIATION':'VERIFYING';
+      return checkedOrder(await ledger.call({action:'fundEvent',input:{orderId:order.orderId,status}}),result.verification);
+    }
     if(result.reward!==order.reservedRewardWinston)throw Error('network_reward_mismatch');
-    return await ledger.call({action:'fundEvent',input:{orderId:order.orderId,status:'COMPLETED',actual:result.reward}});
-  }catch{return await ledger.call({action:'fundEvent',input:{orderId:order.orderId,status:'NEEDS_RECONCILIATION'}});}
+    return checkedOrder(await ledger.call({action:'fundEvent',input:{orderId:order.orderId,status:'COMPLETED',actual:result.reward}}),result.verification);
+  }catch(error){
+    const code=error instanceof Error?error.message:'';
+    const reason:FundVerification['reason']=code==='network_reward_mismatch'?'reward_mismatch':code==='transaction_mismatch'?'transaction_mismatch':'network_unavailable';
+    return checkedOrder(await ledger.call({action:'fundEvent',input:{orderId:order.orderId,status:'NEEDS_RECONCILIATION'}}),{
+      stage:'attention',transactionConfirmed:transaction?.confirmed??false,confirmations:transaction?.confirmations??null,reason,checkedAt:Date.now()
+    });
+  }
 }
 export async function fundApi(request:Request,env:FundEnv,provided?:FundedArweaveProvider):Promise<Response|null>{
   const url=new URL(request.url);if(url.pathname!==PREFIX&&!url.pathname.startsWith(PREFIX+'/'))return null;
+  const checkDeadline=Date.now()+FUND_CHECK_TIMEOUT_MS;
   const headers:Record<string,string>={'Content-Type':'application/json','Cache-Control':'no-store','Referrer-Policy':'no-referrer','X-Content-Type-Options':'nosniff','Vary':'Origin'};
   const reply=(status:number,data:unknown)=>new Response(status===204?null:JSON.stringify(data),{status,headers});
   const origins=(env.CHECKOUT_ALLOWED_ORIGINS??'').split(',').map(x=>x.trim()).filter(Boolean),origin=request.headers.get('Origin');
@@ -140,9 +163,10 @@ export async function fundApi(request:Request,env:FundEnv,provided?:FundedArweav
         only(await body(request),[]);if(!provider)throw Error('fund_provider_unavailable');
         const summary=await ledger.call<{history:FundOrder[]}>({action:'fundSummary'});
         for(const item of summary.history.filter(x=>!['COMPLETED','FAILED','RELEASED'].includes(x.status)).slice(0,10)){
+          if(Date.now()>=checkDeadline)break;
           const row=await ledger.call<FundOrder|null>({action:'fundOrder',orderId:item.orderId});
           if(!row)throw Error('fund_ledger_inconsistent');
-          if(row.arweaveTxId)await settle(ledger,provider,row);
+          if(row.arweaveTxId)await settle(ledger,provider,row,{allowResubmit:true,deadline:checkDeadline});
           else if(row.status==='RESERVED'&&Date.now()-row.createdAt>10*60_000)
             await ledger.call({action:'fundEvent',input:{orderId:row.orderId,status:'RELEASED'}});
         }
@@ -174,7 +198,7 @@ export async function fundApi(request:Request,env:FundEnv,provided?:FundedArweav
       const envelope=parseEnvelope(JSON.parse(archive));if(serializeEnvelope(envelope)!==archive)throw Error('archive_not_canonical');
       const digest=await envelopeDigest(bytes),prior=await ledger.call<FundOrder|null>({action:'fundOrder',orderId:input.orderId});
       if(prior){if(prior.archiveDigest!==digest||prior.archiveSizeBytes!==bytes.length||prior.vaultId!==envelope.vault_id)throw Error('archive_changed');
-        return reply(200,{order:publicOrder(provider?await settle(ledger,provider,prior):prior)});}
+        return reply(200,publicCheck(provider?await settle(ledger,provider,prior,{allowResubmit:true,deadline:checkDeadline}):unavailableCheck(prior)));}
       const code=typeof input.code==='string'?normalized(input.code):'';if(!codeFormat.test(code))throw Error('promo_invalid');
       const s=await ledger.call<{enabled:number;code_hash:string}>({action:'fundSettings'});if(!s.enabled)throw Error('promo_disabled');
       const hash=await codeHash(env.PROMO_CODE_SECRET,code);if(hash!==s.code_hash)throw Error('promo_invalid');
@@ -186,21 +210,21 @@ export async function fundApi(request:Request,env:FundEnv,provided?:FundedArweav
       const reward=BigInt(prepared.reward);if(reward<=0n||balance<reward)throw Error('wallet_low');
       let saved=await ledger.call<FundOrder>({action:'fundReserve',input:{orderId:input.orderId,preservationId:input.preservationId,hash,archiveSizeBytes:bytes.length,
         archiveDigest:digest,vaultId:envelope.vault_id,reward:prepared.reward,estimated,prepared:prepared.raw,balance:balance.toString()}});
-      if(saved.arweaveTxId)return reply(202,{order:publicOrder(saved)});
+      if(saved.arweaveTxId)return reply(202,publicCheck(checkedOrder(saved)));
       try{const signed=await provider.sign({raw:saved.preparedTransaction!,reward:saved.reservedRewardWinston});
         if(signed.reward!==saved.reservedRewardWinston)throw Error('signed_reward_mismatch');
         saved=await ledger.call({action:'fundEvent',input:{orderId:saved.orderId,status:'SIGNED',txId:signed.id,signed:signed.raw}});
       }catch{const current=await ledger.call<FundOrder>({action:'fundOrder',orderId:input.orderId});if(!current.arweaveTxId)await ledger.call({action:'fundEvent',input:{orderId:input.orderId,status:'RELEASED'}});throw Error('fund_sign_failed');}
       if(!saved.signedTransaction)throw Error('signed_tx_not_persisted');
       try{await provider.submit(saved.signedTransaction);saved=await ledger.call({action:'fundEvent',input:{orderId:saved.orderId,status:'SUBMITTED'}});}
-      catch{saved=await ledger.call({action:'fundEvent',input:{orderId:saved.orderId,status:'NEEDS_RECONCILIATION'}});return reply(202,{order:publicOrder(saved)});}
-      saved=await settle(ledger,provider,saved);return reply(saved.status==='COMPLETED'?200:202,{order:publicOrder(saved)});
+      catch{saved=await ledger.call({action:'fundEvent',input:{orderId:saved.orderId,status:'NEEDS_RECONCILIATION'}});return reply(202,publicCheck(unavailableCheck(saved)));}
+      const checked=await settle(ledger,provider,saved,{deadline:checkDeadline});return reply(checked.order.status==='COMPLETED'?200:202,publicCheck(checked));
     }
     const match=/^\/api\/fund\/orders\/([a-f0-9]{32})$/.exec(url.pathname);
     if(match&&request.method==='GET'){
       await ledger.call({action:'fundRate',bucket:`poll:${ip}`,limit:60});const saved=await ledger.call<FundOrder|null>({action:'fundOrder',orderId:match[1]});
-      if(!saved)return reply(404,{error:'order_not_found'});const next=provider?await settle(ledger,provider,saved):saved;
-      return reply(200,{order:publicOrder(next)});
+      if(!saved)return reply(404,{error:'order_not_found'});const next=provider?await settle(ledger,provider,saved,{deadline:checkDeadline}):unavailableCheck(saved);
+      return reply(200,publicCheck(next));
     }
     return reply(404,{error:'not_found'});
   }catch(error){const code=error instanceof SyntaxError?'invalid_request':error instanceof Error?error.message:'fund_error';
