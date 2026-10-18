@@ -36,6 +36,8 @@ import {
 import { useI18n } from "../lib/i18n/I18nProvider";
 import { solanaMessages } from "../lib/solana/messages";
 import { LanguageSwitch } from "./LanguageSwitch";
+import { findFundAttempt } from "../lib/fund/journal";
+import { getFundedPromo } from "../lib/fund/preference";
 
 function uid() {
   return `p_${Math.random().toString(36).slice(2, 9)}`;
@@ -68,6 +70,12 @@ export function Workspace({ store, guide, onStoreChange, onGuideChange, onHome }
   const [pending, setPending] = useState<PendingAdd | null>(null);
   const [showPublish, setShowPublish] = useState(false);
   const [publishStore, setPublishStore] = useState<TreeStore | null>(null);
+  const [quickFundedCode, setQuickFundedCode] = useState<string | null>(null);
+  const [hasPendingFund, setHasPendingFund] = useState(false);
+  const [checkingFundAttempt, setCheckingFundAttempt] = useState(true);
+  const autoResumeTree = useRef<string | null>(null);
+  const latestStore = useRef(store);
+  latestStore.current = store;
   const [toast, setToast] = useState<ToastState | null>(null);
   const toastTimer = useRef<number | null>(null);
   const jsonInputRef = useRef<HTMLInputElement | null>(null);
@@ -80,6 +88,31 @@ export function Workspace({ store, guide, onStoreChange, onGuideChange, onHome }
   const [protocolView, setProtocolView] = useState<PersonProtocolView | null>(null);
   const [protocolLoading, setProtocolLoading] = useState(false);
   const vaultSession = getVaultSession();
+  const fundedSavingEnabled = import.meta.env.VITE_PRESERVATION_V2_ENABLED === '1';
+  const acceptedFundCode = fundedSavingEnabled && getSessionMnemonic() ? getFundedPromo(vaultSession?.vaultId) : null;
+
+  useEffect(() => {
+    if (!fundedSavingEnabled) { setCheckingFundAttempt(false); return; }
+    if (showPublish) return;
+    let live = true;
+    setCheckingFundAttempt(true);
+    const treeId = store.meta.id;
+    void findFundAttempt({ treeId, vaultId: getVaultSession()?.vaultId }).then(attempt => {
+      if (!live) return;
+      setHasPendingFund(Boolean(attempt));
+      // A reload resumes only the existing encrypted request. Opening this
+      // dialog never commits edits, reseals a vault, or creates a new order.
+      if (attempt && autoResumeTree.current !== treeId) {
+        setQuickFundedCode(null);
+        setPublishStore(latestStore.current);
+        setShowPublish(true);
+      }
+      autoResumeTree.current = treeId;
+    }).catch(() => {
+      if (live) setHasPendingFund(true); // The modal explains a blocked journal.
+    }).finally(() => { if (live) setCheckingFundAttempt(false); });
+    return () => { live = false; };
+  }, [store.meta.id, showPublish, fundedSavingEnabled]);
 
   const shezhireLine = useMemo(
     () => formatShezhireAffiliation(store.meta?.zhuz, store.meta?.clanName),
@@ -288,6 +321,13 @@ export function Workspace({ store, guide, onStoreChange, onGuideChange, onHome }
   }
 
   function openPublish() {
+    if (checkingFundAttempt) return;
+    if (hasPendingFund) {
+      setPublishStore(store);
+      setQuickFundedCode(null);
+      setShowPublish(true);
+      return;
+    }
     if (!people.length) {
       flash(t.workspace.flashNeedPerson);
       return;
@@ -301,6 +341,9 @@ export function Workspace({ store, guide, onStoreChange, onGuideChange, onHome }
       /* локальное зеркало не должно ломать сохранение сейфа */
     });
     setPublishStore(next);
+    // Only this explicit click authorizes a new free save. A resumed attempt
+    // never receives a promo code or triggers automatic submission.
+    setQuickFundedCode(hasPendingFund ? null : acceptedFundCode);
     setShowPublish(true);
   }
 
@@ -449,8 +492,8 @@ export function Workspace({ store, guide, onStoreChange, onGuideChange, onHome }
         </div>
         <nav className="top-actions">
           <LanguageSwitch placement="chrome" />
-          <button type="button" className="btn" onClick={openPublish}>
-            {t.workspace.save}
+          <button type="button" className="btn" disabled={checkingFundAttempt} onClick={openPublish}>
+            {hasPendingFund ? 'Продолжить сохранение' : acceptedFundCode ? 'Сохранить бесплатно' : t.workspace.save}
           </button>
           <details className="top-more" ref={moreRef}>
             <summary className="btn ghost" aria-label={t.workspace.moreMenu}>
@@ -658,13 +701,17 @@ export function Workspace({ store, guide, onStoreChange, onGuideChange, onHome }
           store={publishStore}
           parentTxId={getVaultSession()?.headTxId ?? null}
           knownMnemonic={getSessionMnemonic()}
+          quickFundedCode={quickFundedCode}
           onClose={() => {
             setShowPublish(false);
             setPublishStore(null);
+            setQuickFundedCode(null);
           }}
           onPublished={({ mode, txId, mock, isNewVersion }) => {
             setShowPublish(false);
             setPublishStore(null);
+            setQuickFundedCode(null);
+            setHasPendingFund(false);
             const ver = isNewVersion ? t.workspace.publishedNewVersion : "";
             const short = txId?.slice(0, 10) ?? "";
             const shorter = txId?.slice(0, 8) ?? "";

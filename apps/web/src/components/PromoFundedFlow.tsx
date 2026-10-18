@@ -1,16 +1,33 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { EnvelopeV1 } from '../lib/crypto/encrypt';
 import { serializeEnvelope } from '../lib/crypto/envelope';
 import { FundApiError, journalKey, preserveFunded, readFundOrder, validatePromo, type FundOrderResult, type FundOrderView } from '../lib/fund/client';
 import { fundError, fundStatus, rejectedBeforeReservation, terminalFundStatus } from '../lib/fund/status';
+import { clearFundAttempt, findFundAttempt, saveFundAttempt } from '../lib/fund/journal';
+import { rememberFundedPromo } from '../lib/fund/preference';
+import { envelopeDigest } from '../lib/solana/policy';
 
 const POLL_MS = 6000;
 const validOrderId = /^[a-f0-9]{32}$/;
 const steps = ['Запрос принят', 'Подтверждение Arweave', 'Архив проверен'];
 
-type Props = { envelope: EnvelopeV1; onDone?: (order: FundOrderView) => void };
+async function assertCompletedArchive(order: FundOrderView, envelope: EnvelopeV1) {
+  const archive = serializeEnvelope(envelope);
+  if (order?.status !== 'COMPLETED' || !order.arweaveTxId || !/^[A-Za-z0-9_-]{43}$/.test(order.arweaveTxId) ||
+      order.vaultId !== envelope.vault_id || order.archiveDigest !== await envelopeDigest(archive) ||
+      order.archiveSizeBytes !== new TextEncoder().encode(archive).byteLength) throw Error('invalid_order_response');
+}
 
-export function PromoFundedFlow({ envelope, onDone }: Props) {
+type Props = {
+  envelope: EnvelopeV1;
+  parentTxId?: string | null;
+  treeId?: string | null;
+  autoSaveCode?: string | null;
+  autoComplete?: boolean;
+  onDone?: (order: FundOrderView) => void | Promise<void>;
+};
+
+export function PromoFundedFlow({ envelope, parentTxId, treeId, autoSaveCode, autoComplete = false, onDone }: Props) {
   const [code, setCode] = useState('');
   const [result, setResult] = useState<FundOrderResult | null>(null);
   const [orderId, setOrderId] = useState('');
@@ -24,9 +41,14 @@ export function PromoFundedFlow({ envelope, onDone }: Props) {
   const [startedAt, setStartedAt] = useState<number | null>(null);
   const [now, setNow] = useState(Date.now);
   const [refresh, setRefresh] = useState(0);
+  const [completing, setCompleting] = useState(false);
+  const [completionError, setCompletionError] = useState(false);
   const context = useRef({ active: false });
   const saving = useRef(false);
   const reading = useRef(false);
+  const finishing = useRef(false);
+  const completionAttempt = useRef('');
+  const autoStarted = useRef('');
   // Exact ciphertext keeps a parent render from resetting an active check.
   const archive = serializeEnvelope(envelope);
   const order = result?.order ?? null;
@@ -38,27 +60,68 @@ export function PromoFundedFlow({ envelope, onDone }: Props) {
     let live = true;
     setResult(null); setOrderId(''); setKey(''); setError('');
     setCheckedAt(null); setStartedAt(null); setInitializing(true); setSubmitting(false); setRejected(null);
-    void journalKey(JSON.parse(archive) as EnvelopeV1).then(nextKey => {
+    setCompleting(false); setCompletionError(false); completionAttempt.current = '';
+    const exactEnvelope = JSON.parse(archive) as EnvelopeV1;
+    void (async () => {
+      const [keyResult, pendingResult] = await Promise.allSettled([
+        journalKey(exactEnvelope),
+        findFundAttempt({ vaultId: exactEnvelope.vault_id, treeId }),
+      ]);
       if (!live) return;
-      let id: string | null;
-      let rejection: string | null;
+      if (keyResult.status === 'rejected') throw keyResult.reason;
+      const nextKey = keyResult.value;
+      let pending;
+      if (pendingResult.status === 'fulfilled') pending = pendingResult.value;
+      else {
+        // An imported original file can recover an old session-only ID even
+        // when the old envelope cache is absent. The journal verifies both its
+        // exact digest and ID; this path only resumes a GET, never a new POST.
+        if (!(pendingResult.reason instanceof Error) || pendingResult.reason.message !== 'fund_attempt_in_progress') throw pendingResult.reason;
+        let legacyId: string | null = null;
+        try { legacyId = sessionStorage.getItem(nextKey); } catch { /* retain the original blocker */ }
+        if (!legacyId || !validOrderId.test(legacyId)) throw pendingResult.reason;
+        pending = await saveFundAttempt({ orderId: legacyId, envelope: exactEnvelope, parentTxId, treeId });
+        if (!live) return;
+      }
+      if (pending) {
+        if (serializeEnvelope(pending.envelope) === archive) {
+          setKey(nextKey); setOrderId(pending.orderId); setStartedAt(pending.createdAt);
+          return;
+        }
+        if (autoComplete || treeId) throw Error('fund_attempt_in_progress');
+        // Standalone imports retain their success screen and support reopening
+        // the same file. A different file can replace only a proven completion.
+        const previous = await readFundOrder(pending.orderId);
+        if (previous.order?.orderId !== pending.orderId || previous.order.status !== 'COMPLETED') throw Error('fund_attempt_in_progress');
+        await assertCompletedArchive(previous.order, pending.envelope);
+        if (!live) return;
+        await clearFundAttempt(pending.orderId, pending.vaultId);
+      }
+      let id: string | null = null;
+      let rejection: string | null = null;
       try { id = sessionStorage.getItem(nextKey); rejection = sessionStorage.getItem(nextKey + ':rejected'); }
-      catch { throw Error('storage_unavailable'); }
+      catch { /* The durable journal, not sessionStorage, protects a new save. */ }
       if (id && !validOrderId.test(id)) throw Error('invalid_saved_order');
-      setKey(nextKey);
-      if (id) { setOrderId(id); setStartedAt(Date.now()); }
+      let savedRejection: string | null = null;
       if (id && rejection) {
         try {
           const saved = JSON.parse(rejection) as { version?: number; orderId?: string; code?: string };
           if (saved.version === 1 && saved.orderId === id && saved.code && rejectedBeforeReservation.has(saved.code)) {
-            setRejected(saved.code); setError(fundError(new Error(saved.code)));
+            savedRejection = saved.code;
           }
         } catch { /* An unreadable hint must still check the existing order. */ }
       }
-    }).catch(e => { if (live) setError(fundError(e)); })
+      if (id && !savedRejection) {
+        await saveFundAttempt({ orderId: id, envelope: exactEnvelope, parentTxId, treeId });
+      }
+      if (!live) return;
+      setKey(nextKey);
+      if (id) { setOrderId(id); setStartedAt(Date.now()); }
+      if (savedRejection) { setRejected(savedRejection); setError(fundError(new Error(savedRejection))); }
+    })().catch(e => { if (live) setError(fundError(e)); })
       .finally(() => { if (live) setInitializing(false); });
     return () => { live = false; current.active = false; };
-  }, [archive]);
+  }, [archive, parentTxId, treeId, autoComplete]);
 
   useEffect(() => {
     if (!orderId || submitting || terminal || rejected) return;
@@ -105,58 +168,113 @@ export function PromoFundedFlow({ envelope, onDone }: Props) {
     return () => clearInterval(timer);
   }, [orderId, submitting, terminal, rejected]);
 
-  async function save() {
-    if (saving.current || (orderId && !rejected) || !key || !code.trim()) return;
+  const save = useCallback(async (selectedCode = code) => {
+    if (saving.current || (orderId && !rejected) || !key || !selectedCode.trim()) return;
     const current = context.current;
     let attemptedId: string | null = null;
     saving.current = true; setSubmitting(true); setError(''); setStartedAt(Date.now());
     try {
-      await validatePromo(code);
+      const validation = await validatePromo(selectedCode);
+      if (!validation.accepted) throw Error('promo_invalid');
       if (!current.active) return;
+      rememberFundedPromo(envelope.vault_id, selectedCode);
       // Persist before the only order POST. A timeout must resume this request.
       const id = orderId || crypto.randomUUID().replace(/-/g, '');
+      await saveFundAttempt({ orderId: id, envelope, parentTxId, treeId });
       try { sessionStorage.setItem(key, id); sessionStorage.removeItem(key + ':rejected'); }
-      catch { throw Error('storage_unavailable'); }
-      setOrderId(id); setRejected(null); attemptedId = id;
-      const next = await preserveFunded(envelope, code, id);
+      catch { /* The exact encrypted request is already durable. */ }
+      attemptedId = id;
+      if (current.active) { setOrderId(id); setRejected(null); }
+      // Closing the dialog after journaling must not abandon the accepted click.
+      const next = await preserveFunded(envelope, selectedCode, id);
       if (!next.order || next.order.orderId !== id) throw Error('invalid_order_response');
       if (current.active) {
         setResult(next); setCheckedAt(next.verification?.checkedAt ?? Date.now());
         setStartedAt(next.order.createdAt); setCode('');
       }
     } catch (e) {
+      let safeRejection: string | null = null;
+      if (attemptedId && e instanceof FundApiError && rejectedBeforeReservation.has(e.message)) {
+        try {
+          await clearFundAttempt(attemptedId, envelope.vault_id);
+          safeRejection = e.message;
+          try {
+            sessionStorage.setItem(key, attemptedId);
+            sessionStorage.setItem(key + ':rejected', JSON.stringify({ version: 1, orderId: attemptedId, code: e.message }));
+          } catch { /* The server explicitly refused before reservation. */ }
+        } catch { /* If cleanup fails, retain and check the existing request. */ }
+      }
       if (current.active) {
         setError(fundError(e, attemptedId === null));
-        if (attemptedId && e instanceof FundApiError && rejectedBeforeReservation.has(e.message)) {
-          setRejected(e.message);
-          try { sessionStorage.setItem(key + ':rejected', JSON.stringify({ version: 1, orderId: attemptedId, code: e.message })); }
-          catch { /* Keep the id; a reload will conservatively check it. */ }
-        }
+        if (safeRejection) setRejected(safeRejection);
       }
     } finally {
       saving.current = false;
       if (current.active) setSubmitting(false);
     }
-  }
+  }, [code, orderId, rejected, key, envelope, parentTxId, treeId]);
+
+  useEffect(() => {
+    if (!autoSaveCode || initializing || !key || orderId || rejected || autoStarted.current === key) return;
+    // Only a fresh, explicit Workspace click supplies autoSaveCode. StrictMode
+    // cleanup cancels its first timer before validation or a POST can start.
+    const timer = setTimeout(() => {
+      autoStarted.current = key;
+      setCode(autoSaveCode);
+      void save(autoSaveCode);
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [autoSaveCode, initializing, key, orderId, rejected, save]);
 
   function checkNow() {
     if (reading.current || submitting || terminal) return;
     setRefresh(value => value + 1);
   }
 
-  function retryStopped() {
+  async function retryStopped() {
     if (!terminal || !order || order.arweaveTxId || !key) return;
-    try { sessionStorage.removeItem(key); sessionStorage.removeItem(key + ':rejected'); }
+    try {
+      await clearFundAttempt(order.orderId, envelope.vault_id);
+      sessionStorage.removeItem(key); sessionStorage.removeItem(key + ':rejected');
+    }
     catch { setError(fundError(new Error('storage_unavailable'))); return; }
     setResult(null); setOrderId(''); setStartedAt(null); setCheckedAt(null);
     setCode(''); setError(''); setRejected(null);
   }
 
-  function finish() {
-    if (order?.status !== 'COMPLETED' || !order.arweaveTxId || !onDone) return;
-    try { onDone(order); }
-    catch { setError('Запись в Arweave подтверждена, но обновить историю в этом браузере пока не удалось. Сохраните ссылку Arweave TX; повторное сохранение не требуется.'); }
-  }
+  const finish = useCallback(async () => {
+    if (finishing.current || order?.status !== 'COMPLETED' || !order.arweaveTxId || !onDone) return;
+    const current = context.current;
+    finishing.current = true; setCompleting(true); setCompletionError(false); setError('');
+    try {
+      await assertCompletedArchive(order, JSON.parse(archive) as EnvelopeV1);
+      if (!current.active) return;
+      // The editor callback writes/read-checks local history and HEAD before
+      // clearing its journal. Standalone imports have no editor to finalize.
+      if (!autoComplete) await clearFundAttempt(order.orderId, envelope.vault_id);
+      if (!current.active) return;
+      await onDone(order);
+    } catch {
+      if (current.active) {
+        setCompletionError(true);
+        setError('Запись в Arweave подтверждена, но обновить историю в этом браузере пока не удалось. Ссылка Arweave TX сохранена. «Повторить завершение» обновит только историю, без нового сохранения и списания.');
+      }
+    } finally {
+      finishing.current = false;
+      if (current.active) setCompleting(false);
+    }
+  }, [order, onDone, envelope.vault_id, archive, autoComplete]);
+
+  useEffect(() => {
+    if (!autoComplete || !onDone || order?.status !== 'COMPLETED' || !order.arweaveTxId) return;
+    const id = order.orderId + ':' + order.arweaveTxId;
+    if (completionAttempt.current === id) return;
+    const timer = setTimeout(() => {
+      completionAttempt.current = id;
+      void finish();
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [autoComplete, onDone, order, finish]);
 
   const tracking = Boolean((orderId && !rejected) || submitting);
   const presentation = fundStatus(order, result?.verification, submitting);
@@ -197,8 +315,10 @@ export function PromoFundedFlow({ envelope, onDone }: Props) {
       <div className="funded-actions">
         {!terminal && <button type="button" className="btn ghost" disabled={checking || submitting}
           onClick={checkNow}>{checking ? 'Проверяем…' : 'Проверить статус'}</button>}
-        {completed && onDone && <button type="button" className="btn" onClick={finish}>Готово</button>}
-        {terminal && !completed && !order?.arweaveTxId && <button type="button" className="btn ghost" onClick={retryStopped}>Попробовать снова</button>}
+        {completed && onDone && (!autoComplete || completionError) && <button type="button" className="btn" disabled={completing}
+          onClick={() => void finish()}>{completionError ? 'Повторить завершение' : 'Готово'}</button>}
+        {completed && completing && <p role="status">Записываем результат в историю…</p>}
+        {terminal && !completed && !order?.arweaveTxId && <button type="button" className="btn ghost" onClick={() => void retryStopped()}>Попробовать снова</button>}
         {order?.arweaveTxId && <a href={'https://arweave.net/' + order.arweaveTxId} target="_blank" rel="noreferrer">Arweave TX ↗</a>}
       </div>
       {checkedAt !== null && <p className="funded-check-time">Статус проверен: {new Date(checkedAt).toLocaleTimeString('ru-RU')}</p>}

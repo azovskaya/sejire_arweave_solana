@@ -85,3 +85,34 @@ The owner explicitly approved publication with “да”. The verified correcti
 - At **2026-10-18 10:59:16 UTC / 15:59:16 Asia/Almaty**, public GET [build-provenance.json](https://azovskaya.github.io/sejire_arweave_solana/native-admin/build-provenance.json) returned HTTP 200 and the expected source/publishedBy `89546179…`, checks run, artifact ID and ZIP digest above.
 
 The updated site is [native-admin](https://azovskaya.github.io/sejire_arweave_solana/native-admin/). Existing Pages root content was preserved. No production order POST, signing or Arweave submission was used to publish or verify this correction. The authenticated Fund Admin dashboard remains unobserved: publication and on-chain confirmation do not establish internal completion or cleared reservations. Continue with the already created order and the owner's existing Admin access; never request another “Сохранить бесплатно” click or secrets in chat.
+
+
+## 2026-10-18 one-click editor continuation
+
+The owner explicitly changed the next step: use SEJIRE as an ordinary user and preserve trees with one button, without Admin/terminal diagnostic tasks. The earlier request to have the owner inspect Fund Admin is superseded. Existing permission to publish fixes continues; no new production order, signature, transfer, secret entry or administrative mutation was performed for testing.
+
+### User behavior
+
+- A confirmed funded order automatically writes the exact encrypted archive, original parent and TX to local vault history, verifies the writes, then returns to the editor with the existing success message. A separate Done click is no longer required in the editor.
+- If the browser cannot write history/session or clear the active journal, the confirmed TX stays visible. “Повторить завершение” repeats only local finalization. It does not validate the promo, create an order or pay again.
+- The editor finds a pending attempt by tree/vault before resealing. Closing/reopening resumes that exact attempt. Reload in the editor can resume by tree even without the mnemonic or old session-only ID. Manual “Продолжить сохранение” leaves newer draft edits and their dirty/head state intact.
+- After the first accepted promo, the existing unlocked session offers “Сохранить бесплатно” in the editor. One explicit click prepares the edited vault, validates the selected promo, journals and submits one request, polls the same ID and finalizes automatically. The code is remembered only in memory per vault; initial recovery-word backup/consent and first promo entry remain necessary.
+- Standalone encrypted-file import retains its readable completion screen. Reopening the same file reads the existing order; a different ciphertext for that vault can proceed only after the previous journal has been strictly matched to a server-confirmed completion.
+
+### Recovery and money boundaries
+
+`src/lib/fund/journal.ts` stores `sejire.fundAttempt.v1.<orderId>` in localStorage, with version, orderId, envelope, archiveDigest, vaultId, parentTxId, treeId and createdAt. It contains ciphertext and public identifiers only; no recovery words, plaintext tree or promo code. Reads validate the exact schema, serialized envelope and digest. New writes require the browser Web Lock and successful readback before the initial POST. There are at most eight active records and a 512 KiB archive limit; an unresolved record is never evicted to make room.
+
+Legacy session IDs migrate only with the matching encrypted cache or an imported exact original envelope with the same ID and digest. A tree association is not guessed. Recognized pre-reservation refusal hints retain explicit same-ID retry; unknown/404/network outcomes keep the original attempt. Clearing an attempt removes and verifies only its matching legacy entries before removing and verifying the durable entry. A completed archive cannot roll a newer vault HEAD backwards, and an unrelated in-memory key is not retained with different vault metadata.
+
+The editor promo/choose branch does not start paid V2 init/reconcile/prepare effects. The separate paid entry and explicit Solana selection remain available. The GET-only funded continuation does not sign, reserve, submit or automatically resubmit an Arweave transaction.
+
+### Verification and release state
+
+- Root `npm test`: PASS, including the new journal invariants/migration/storage-failure suite and existing web/sponsor tests.
+- Native production build with the configured Fund API origin: PASS.
+- TypeScript and `git diff --check`: PASS. Web lint: zero errors, the same 16 existing warnings.
+- Fund browser acceptance: 18/18 PASS using synthetic editor data and mocked HTTP/WebSocket requests restricted to localhost. Covered automatic success, local archive/session/clear failures, close/reopen, reload with lost key/session metadata, new edits during pending, one-click edited successor with the original parent and preservation of a newer HEAD.
+- Fund security scan: PASS. No production wallet, keychain, admin credential or funded POST was used.
+- Existing V2 browser compatibility: 15/15 PASS with the original spec through a temporary wrapper outside the repository, blocking external HTTP/WebSocket requests and unmocked local APIs. No paid V2 source/spec/config was rewritten for this check.
+- The updated source is local at this checkpoint; public deployment must be recorded below after exact-commit CI and public provenance are confirmed. Worker source/config is unchanged from the previously deployed status fix. A current internal ledger read has not been obtained and must not be inferred from the externally confirmed TX.

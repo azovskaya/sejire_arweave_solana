@@ -7,7 +7,17 @@ import type { SaveSession } from '../lib/preserveV2/types';
 import type { FundOrderView } from '../lib/fund/client';
 import { PromoFundedFlow } from './PromoFundedFlow';
 
-type Props = { envelope?: EnvelopeV1 | null; treeName?: string; onBack?: () => void; onBusy?: (busy: boolean) => void; onFundedDone?: (order: FundOrderView) => void };
+type Props = {
+  envelope?: EnvelopeV1 | null;
+  treeName?: string;
+  treeId?: string;
+  parentTxId?: string | null;
+  resumeFunded?: boolean;
+  quickFundedCode?: string | null;
+  onBack?: () => void;
+  onBusy?: (busy: boolean) => void;
+  onFundedDone?: (order: FundOrderView) => void | Promise<void>;
+};
 const message = (error: unknown) => {
   const code = error instanceof Error ? error.message : 'unknown_error';
   const known: Record<string,string> = {
@@ -22,16 +32,18 @@ const message = (error: unknown) => {
   return known[code] ?? 'Операция пока не завершена. Прогресс сохранён; проверьте его позже.';
 };
 
-export function PreservationV2({envelope,treeName,onBack,onBusy,onFundedDone}: Props) {
+export function PreservationV2({envelope,treeName,treeId,parentTxId,resumeFunded,quickFundedCode,onBack,onBusy,onFundedDone}: Props) {
   const [session,setSession] = useState<SaveSession>();
   const [busy,setBusy] = useState(false);
   const [error,setError] = useState('');
   const [info,setInfo] = useState('');
   const [reward,setReward] = useState<string>();
   const [promoEnvelope,setPromoEnvelope] = useState<EnvelopeV1|null>(null);
-  const [saveMethod,setSaveMethod] = useState<'choose'|'promo'|'solana'>('choose');
+  const [saveMethod,setSaveMethod] = useState<'choose'|'promo'|'solana'>(resumeFunded || quickFundedCode ? 'promo' : 'choose');
+  const paidFlowActive = saveMethod === 'solana' || (!envelope && !promoEnvelope);
   const running = useRef(false);
   useEffect(() => {
+    if (!paidFlowActive) return;
     let live=true;
     void (async()=>{
       try {
@@ -44,10 +56,11 @@ export function PreservationV2({envelope,treeName,onBack,onBusy,onFundedDone}: P
       } catch(e) { if(live) setError(message(e)); }
     })();
     return()=>{live=false;};
-  },[envelope]);
+  },[envelope,paidFlowActive]);
 
   // Pending network work is always reconciled from the durable session, including after reload.
   useEffect(()=>{
+    if (!paidFlowActive) return;
     const recoverableBlocked=session?.state==='BLOCKED' && session.lastError==='signed_ar_transaction_mismatch' &&
       Boolean(session.arSignedTransaction&&session.arTransactionId);
     if(!['SOLANA_PENDING','AR_SIGNED','AR_UPLOADING','AR_PENDING_CONFIRMATION'].includes(session?.state??'') &&
@@ -60,17 +73,17 @@ export function PreservationV2({envelope,treeName,onBack,onBusy,onFundedDone}: P
     };
     timer=setTimeout(()=>void tick(),250);
     return()=>{active=false;clearTimeout(timer);};
-  },[session?.state,session?.arSigningStarted]);
+  },[session?.state,session?.arSigningStarted,paidFlowActive]);
 
   useEffect(()=>{
-    if(busy || (session?.state!=='SOLANA_PAID'&&session?.state!=='AR_READY'))return;
+    if(!paidFlowActive || busy || (session?.state!=='SOLANA_PAID'&&session?.state!=='AR_READY'))return;
     if(session.arSigningStarted || (session.state==='AR_READY'&&reward))return;
     let active=true;
     void prepareArweave().then(({session:next,reward:price})=>{
       if(active){setSession(next);setReward(price);setError('');}
     }).catch(e=>{if(active)setError(message(e));});
     return()=>{active=false;};
-  },[session?.state,session?.arSigningStarted,reward,busy]);
+  },[session?.state,session?.arSigningStarted,reward,busy,paidFlowActive]);
 
   async function run(action:()=>Promise<SaveSession | void>) {
     if(running.current) return;
@@ -117,7 +130,8 @@ export function PreservationV2({envelope,treeName,onBack,onBusy,onFundedDone}: P
 
   if(activeEnvelope&&saveMethod==='promo')return <section className="native-checkout" aria-label="Сохранить по промокоду">
     <h1>Сохранить семейную историю</h1>
-    <PromoFundedFlow envelope={activeEnvelope} onDone={onFundedDone??onBack}/>
+    <PromoFundedFlow envelope={activeEnvelope} parentTxId={parentTxId} treeId={treeId}
+      autoSaveCode={resumeFunded ? null : quickFundedCode} autoComplete={Boolean(onFundedDone)} onDone={onFundedDone??onBack}/>
     <button className="btn ghost" type="button" onClick={()=>setSaveMethod('choose')}>Назад</button>
   </section>;
 
@@ -157,7 +171,8 @@ export function PreservationV2({envelope,treeName,onBack,onBusy,onFundedDone}: P
     {state==='BLOCKED' && <p role="alert">{blockedAfterPayment?'Оплата подтверждена. Проверяем уже подписанную транзакцию Wander; новая оплата и новая подпись не запускаются.':'Сохранение остановлено для предотвращения повторного расхода. Нужна проверка операции.'}</p>}
     {info && state!=='BLOCKED' && <p role="status">{info}</p>}{error && <p role="alert">{error}</p>}
     {!envelope&&!promoEnvelope&&<label>Зашифрованный архив для промокода<input type="file" accept="application/json,.json" onChange={e=>void choosePromo(e.target.files?.[0])}/></label>}
-    {(envelope||promoEnvelope)&&<PromoFundedFlow envelope={(envelope||promoEnvelope)!} onDone={onFundedDone??onBack}/>}
+    {(envelope||promoEnvelope)&&<PromoFundedFlow envelope={(envelope||promoEnvelope)!} parentTxId={parentTxId} treeId={treeId}
+      autoSaveCode={resumeFunded ? null : quickFundedCode} autoComplete={Boolean(onFundedDone)} onDone={onFundedDone??onBack}/>}
     {onBack && <button className="btn ghost" disabled={busy} onClick={onBack}>Назад</button>}
   </section>;
 }

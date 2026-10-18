@@ -35,6 +35,89 @@ async function savePromo(page,code='TEST-PENSIONER'){
  await promo(page).getByRole('button',{name:'Сохранить бесплатно',exact:true}).click();
 }
 
+async function openEditor(page){
+ await page.goto('/');
+ // Generate synthetic words and family data inside this isolated page only.
+ // The words never leave browser memory or appear in snapshots/test output.
+ const encrypted=await page.evaluate(async()=>{
+  window.promoEditorFixture=await(await import('/tests/browser-fixture.ts')).fixture();
+  return window.promoEditorFixture.serialized;
+ });
+ await page.getByRole('button',{name:'Открыть по 12 словам',exact:true}).click();
+ await page.getByRole('button',{name:'Открыть из файла',exact:true}).click();
+ await page.locator('input[type=file]').setInputFiles({name:'synthetic-editor.json',mimeType:'application/json',buffer:Buffer.from(encrypted)});
+ await page.getByRole('textbox',{name:'12 слов восстановления SEJIRE'}).evaluate(input=>{
+  const setValue=Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype,'value').set;
+  setValue.call(input,window.promoEditorFixture.words);
+  input.dispatchEvent(new Event('input',{bubbles:true}));
+ });
+ await page.getByRole('button',{name:'Восстановить архив',exact:true}).click();
+ await expect(page.getByRole('button',{name:'Сохранить',exact:true}).first()).toBeVisible();
+}
+
+async function openEditorPromo(page){
+ await page.getByRole('button',{name:'Сохранить',exact:true}).first().click();
+ await page.getByRole('dialog').getByRole('button',{name:'Сохранить через Solana',exact:true}).click();
+ await page.getByRole('dialog').getByRole('button',{name:'Промокод',exact:true}).click();
+ await expect(promo(page)).toBeVisible();
+}
+
+async function editChildName(page,name){
+ await page.locator('.person-card').filter({hasText:'Child corrected'}).click();
+ await page.getByRole('dialog',{name:'Профиль: Child corrected',exact:true}).getByLabel('Имя',{exact:true}).fill(name);
+ // Let the editor's ordinary debounce and focus scroll settle before closing.
+ await page.clock.runFor(400);
+ await expect.poll(()=>page.evaluate(async name=>(await import('/src/lib/draftStorage.ts')).loadDraftTree()?.draft.persons.child?.name===name,name)).toBe(true);
+ await page.getByRole('dialog',{name:`Профиль: ${name}`,exact:true}).getByRole('button',{name:'Закрыть',exact:true}).click();
+ await expect(page.getByRole('dialog')).toHaveCount(0);
+}
+
+async function editorDraftRevision(page){
+ return page.evaluate(async()=>{
+  const draft=(await import('/src/lib/draftStorage.ts')).loadDraftTree();
+  return {head:draft?.meta.head,nextVersion:draft?.meta.next_version,dirty:draft?.dirty};
+ });
+}
+
+async function savedEditorArchive(page,transactionId){
+ return page.evaluate(async tx=>{
+  const session=(await import('/src/lib/vaultSession/session.ts')).getVaultSession();
+  const version=session&&(await import('/src/lib/vaultSession/localArchive.ts')).getLocalVaultVersion(session.vaultId,tx);
+  return {headTxId:session?.headTxId,vaultId:session?.vaultId,source:version?.source,parentId:version?.parentId,archive:version?JSON.stringify(version.envelope):null};
+ },transactionId);
+}
+
+function requireDurableEditorAttempt(page,api){
+ api.beforePost=async body=>{
+  const stored=await page.evaluate(async orderId=>{
+   const raw=localStorage.getItem(`sejire.fundAttempt.v1.${orderId}`);
+   const session=await import('/src/lib/vaultSession/session.ts');
+   const words=session.getSessionMnemonic();
+   return {record:raw?JSON.parse(raw):null,
+    treeId:(await import('/src/lib/draftStorage.ts')).loadDraftTree()?.meta.id,
+    parentTxId:session.getVaultSession()?.headTxId??null,
+    containsWords:Boolean(raw&&words&&raw.includes(words))};
+  },body.orderId);
+  expect(stored.record).not.toBeNull();
+  expect(Object.keys(stored.record).sort()).toEqual(['version','orderId','envelope','archiveDigest','vaultId','parentTxId','treeId','createdAt'].sort());
+  expect(stored.record.version).toBe(1);expect(stored.record.orderId).toBe(body.orderId);
+  expect(JSON.stringify(stored.record.envelope)).toBe(body.archive);
+  expect(stored.record.archiveDigest).toBe(createHash('sha256').update(body.archive).digest('hex'));
+  expect(stored.record.vaultId).toBe(JSON.parse(body.archive).vault_id);
+  expect(stored.record.treeId).toBe(stored.treeId);expect(stored.record.parentTxId).toBe(stored.parentTxId);
+  expect(stored.containsWords).toBe(false);expect(JSON.stringify(stored.record)).not.toContain(body.code);
+ };
+}
+
+async function activeFundAttempts(page){
+ return page.evaluate(()=>Object.keys(localStorage).filter(key=>key.startsWith('sejire.fundAttempt.v1.')).map(key=>JSON.parse(localStorage.getItem(key))));
+}
+
+async function reopenEditorSave(page){
+ await page.getByRole('button',{name:'Продолжить сохранение',exact:true}).click();
+ await expect(promo(page)).toBeVisible();
+}
+
 function orderFrom(body,status='SUBMITTED'){
  const completed=status==='COMPLETED';
  const signed=!['RESERVED','FAILED','RELEASED'].includes(status);
@@ -49,7 +132,7 @@ function verification(stage,transactionConfirmed=false){
 }
 
 async function mockPreservation(page,{status='SUBMITTED',losePostResponse=false,expectedArchive=archive}={}){
- const state={order:null,verification:undefined,posts:[],reads:[],validations:0,validationFailure:false,postRejection:null,readError:0,readGate:null,inFlight:0,maxInFlight:0};
+ const state={order:null,verification:undefined,posts:[],reads:[],validations:0,validationFailure:false,postRejection:null,readError:0,readGate:null,inFlight:0,maxInFlight:0,nextStatus:status,nextTx:tx,beforePost:null};
  state.complete=()=>{
   state.order={...state.order,status:'COMPLETED',actualRewardWinston:'3000000000',verifiedAt:Date.now()};
   state.verification=verification('verified',true);
@@ -72,11 +155,13 @@ async function mockPreservation(page,{status='SUBMITTED',losePostResponse=false,
     expect(Object.keys(JSON.parse(body.archive)).sort()).toEqual(Object.keys(JSON.parse(archive)).sort());
     expect(JSON.stringify(body)).not.toMatch(/recoveryWords|seedPhrase|plaintextTree|familyName|Synthetic family|Child corrected/);
    }
+   if(state.beforePost)await state.beforePost(body);
    state.posts.push(body);
    if(state.postRejection)return json(route,{error:state.postRejection.error},state.postRejection.status);
-   state.order=orderFrom(body,status);
+   state.order=orderFrom(body,state.nextStatus);
+   if(state.order.arweaveTxId)state.order.arweaveTxId=state.nextTx;
    if(losePostResponse)return route.abort('failed');
-   return json(route,{order:state.order},status==='COMPLETED'?200:202);
+   return json(route,{order:state.order},state.nextStatus==='COMPLETED'?200:202);
   }
   if(url.pathname.startsWith('/api/fund/orders/')&&request.method()==='GET'){
    const id=url.pathname.split('/').at(-1);
@@ -177,28 +262,12 @@ test('Pending transaction explains confirmation and archive verification before 
  expect(api.reads).toHaveLength(reads);expect(api.posts).toHaveLength(1);
 });
 
-test('Editor promo modal stays usable on mobile and Done returns to the tree with its confirmed archive',async({page},testInfo)=>{
+test('Editor completion is automatic and local storage failures only retry local completion on mobile',async({page},testInfo)=>{
  const api=await mockPreservation(page,{expectedArchive:null});
- await page.setViewportSize({width:390,height:844});await page.goto('/');
- // Generate synthetic words and family data inside this isolated page only.
- // The words never leave browser memory or appear in snapshots/test output.
- const encrypted=await page.evaluate(async()=>{
-  window.promoEditorFixture=await(await import('/tests/browser-fixture.ts')).fixture();
-  return window.promoEditorFixture.serialized;
- });
- await page.getByRole('button',{name:'Открыть по 12 словам',exact:true}).click();
- await page.getByRole('button',{name:'Открыть из файла',exact:true}).click();
- await page.locator('input[type=file]').setInputFiles({name:'synthetic-editor.json',mimeType:'application/json',buffer:Buffer.from(encrypted)});
- await page.getByRole('textbox',{name:'12 слов восстановления SEJIRE'}).evaluate(input=>{
-  const setValue=Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype,'value').set;
-  setValue.call(input,window.promoEditorFixture.words);
-  input.dispatchEvent(new Event('input',{bubbles:true}));
- });
- await page.getByRole('button',{name:'Восстановить архив',exact:true}).click();
- await page.getByRole('button',{name:'Сохранить',exact:true}).first().click();
+ requireDurableEditorAttempt(page,api);
+ await page.clock.install();
+ await page.setViewportSize({width:390,height:844});await openEditor(page);await openEditorPromo(page);
  const dialog=page.getByRole('dialog');
- await dialog.getByRole('button',{name:'Сохранить через Solana',exact:true}).click();
- await dialog.getByRole('button',{name:'Промокод',exact:true}).click();
  await savePromo(page);
  await expect(promo(page).getByRole('status')).toContainText('Ждём подтверждения Arweave');
  await expect(promo(page).getByRole('button',{name:'Проверить статус',exact:true})).toBeEnabled();
@@ -211,61 +280,196 @@ test('Editor promo modal stays usable on mobile and Done returns to the tree wit
  }
  await promo(page).getByRole('status').scrollIntoViewIfNeeded();
  await page.screenshot({path:testInfo.outputPath('promo-editor-waiting-mobile.png'),fullPage:true});
- api.complete();await checkNow(page);
- await expect(promo(page).getByRole('status')).toContainText('Семейная история сохранена');
- await expect.poll(()=>dialog.locator('.modal').evaluate(el=>el.scrollWidth<=el.clientWidth)).toBe(true);
- const done=promo(page).getByRole('button',{name:'Готово',exact:true});
- await done.scrollIntoViewIfNeeded();await expect(done).toBeInViewport({ratio:0.99});await done.click({trial:true});
- const link=promo(page).getByRole('link',{name:/Arweave/});
- await link.scrollIntoViewIfNeeded();await expect(link).toBeInViewport({ratio:0.99});await link.click({trial:true});
- await page.screenshot({path:testInfo.outputPath('promo-editor-completed-mobile.png'),fullPage:true});
  // A confirmed network save must stay visible if this browser cannot remember
- // its archive or head. Retrying Done only repairs that local bookkeeping.
+ // its archive/head or remove the active attempt. Retry only repairs local state.
  await page.evaluate(()=>{
-  window.promoStorageFault={original:Storage.prototype.setItem,prefix:'sejire.vaultArchive.v1.',rejections:0};
+  window.promoStorageFault={original:Storage.prototype.setItem,remove:Storage.prototype.removeItem,prefix:'sejire.vaultArchive.v1.',clear:false,rejections:0};
   Storage.prototype.setItem=function(key,value){
-   if(String(key).startsWith(window.promoStorageFault.prefix)){
+   if(window.promoStorageFault.prefix&&String(key).startsWith(window.promoStorageFault.prefix)){
     window.promoStorageFault.rejections++;
     throw new DOMException('Synthetic quota fault','QuotaExceededError');
    }
    return window.promoStorageFault.original.call(this,key,value);
   };
+  Storage.prototype.removeItem=function(key){
+   if(window.promoStorageFault.clear&&String(key).startsWith('sejire.fundAttempt.v1.')){
+    window.promoStorageFault.rejections++;
+    throw new DOMException('Synthetic storage fault','SecurityError');
+   }
+   return window.promoStorageFault.remove.call(this,key);
+  };
  });
+ const retry=promo(page).getByRole('button',{name:'Повторить завершение',exact:true});
+ let readsAfterConfirmation;
  try{
-  await done.click();
+  api.complete();await checkNow(page);
   await expect(dialog).toBeVisible();
   await expect(promo(page).getByRole('status')).toContainText('Семейная история сохранена');
   await expect(promo(page).getByRole('alert')).toContainText('обновить историю в этом браузере пока не удалось');
-  await expect(promo(page).getByRole('alert')).toContainText('повторное сохранение не требуется');
-  expect(await page.evaluate(()=>window.promoStorageFault.rejections)).toBeGreaterThan(0);
+  await expect(promo(page).getByRole('alert')).toContainText('без нового сохранения и списания');
+  await expect.poll(()=>page.evaluate(()=>window.promoStorageFault.rejections)).toBeGreaterThan(0);
+  await expect(promo(page).getByRole('button',{name:'Готово',exact:true})).toHaveCount(0);
+  await expect.poll(()=>dialog.locator('.modal').evaluate(el=>el.scrollWidth<=el.clientWidth)).toBe(true);
+  await retry.scrollIntoViewIfNeeded();await expect(retry).toBeInViewport({ratio:0.99});await retry.click({trial:true});
+  const link=promo(page).getByRole('link',{name:/Arweave/});
+  await link.scrollIntoViewIfNeeded();await expect(link).toBeInViewport({ratio:0.99});await link.click({trial:true});
+  await page.screenshot({path:testInfo.outputPath('promo-editor-local-retry-mobile.png'),fullPage:true});
+  readsAfterConfirmation=api.reads.length;
+  const failedWrites=await page.evaluate(()=>window.promoStorageFault.rejections);
+  await page.clock.runFor(20_000);
+  expect(await page.evaluate(()=>window.promoStorageFault.rejections)).toBe(failedWrites);
   expect(api.posts).toHaveLength(1);
 
   await page.evaluate(()=>{window.promoStorageFault.prefix='sejire.vaultSession.v1';window.promoStorageFault.rejections=0;});
-  await done.click();
+  await retry.click();
   await expect(dialog).toBeVisible();
   await expect(promo(page).getByRole('status')).toContainText('Семейная история сохранена');
   await expect(promo(page).getByRole('alert')).toContainText('обновить историю в этом браузере пока не удалось');
-  expect(await page.evaluate(()=>window.promoStorageFault.rejections)).toBeGreaterThan(0);
+  await expect.poll(()=>page.evaluate(()=>window.promoStorageFault.rejections)).toBeGreaterThan(0);
   expect(await page.evaluate(async tx=>{
    const session=(await import('/src/lib/vaultSession/session.ts')).getVaultSession();
    const version=session&&(await import('/src/lib/vaultSession/localArchive.ts')).getLocalVaultVersion(session.vaultId,tx);
    return Boolean(version)&&session.headTxId!==tx;
   },tx)).toBe(true);
   expect(api.posts).toHaveLength(1);
+
+  await page.evaluate(()=>{window.promoStorageFault.prefix=null;window.promoStorageFault.clear=true;window.promoStorageFault.rejections=0;});
+  await retry.click();
+  await expect.poll(()=>page.evaluate(()=>window.promoStorageFault.rejections)).toBeGreaterThan(0);
+  await expect(dialog).toBeVisible();
+  await expect(promo(page).getByRole('status')).toContainText('Семейная история сохранена');
+  await expect(promo(page).getByRole('alert')).toBeVisible();
+  expect(await activeFundAttempts(page)).toHaveLength(1);
+  expect(api.posts).toHaveLength(1);expect(api.reads).toHaveLength(readsAfterConfirmation);
  }finally{
-  await page.evaluate(()=>{Storage.prototype.setItem=window.promoStorageFault.original;delete window.promoStorageFault;});
+  await page.evaluate(()=>{Storage.prototype.setItem=window.promoStorageFault.original;Storage.prototype.removeItem=window.promoStorageFault.remove;delete window.promoStorageFault;});
  }
- await done.click();await expect(dialog).toHaveCount(0);
- await expect(page.getByRole('button',{name:'Сохранить',exact:true}).first()).toBeVisible();
+ await retry.click();await expect(dialog).toHaveCount(0);
+ await expect(page.getByRole('button',{name:'Сохранить бесплатно',exact:true}).first()).toBeVisible();
  await expect(page.getByRole('button',{name:'Сохранить через Solana',exact:true})).toHaveCount(0);
  expect(api.posts).toHaveLength(1);expect(api.validations).toBe(1);
- const saved=await page.evaluate(async tx=>{
-  const session=(await import('/src/lib/vaultSession/session.ts')).getVaultSession();
-  const version=session&&(await import('/src/lib/vaultSession/localArchive.ts')).getLocalVaultVersion(session.vaultId,tx);
-  return {headTxId:session?.headTxId,vaultId:session?.vaultId,source:version?.source,archive:version?JSON.stringify(version.envelope):null};
- },tx);
+ const saved=await savedEditorArchive(page,tx);
  expect(saved.headTxId).toBe(tx);expect(saved.vaultId).toBe(api.order.vaultId);expect(saved.source).toBe('network');
  expect(saved.archive).toBe(api.posts[0].archive);
+ expect(await activeFundAttempts(page)).toHaveLength(0);expect(api.reads).toHaveLength(readsAfterConfirmation);
+});
+
+test('Closing and reopening the actual editor resumes the exact pending archive without a successor',async({page})=>{
+ const api=await mockPreservation(page,{expectedArchive:null});requireDurableEditorAttempt(page,api);
+ await page.clock.install();await openEditor(page);await openEditorPromo(page);await savePromo(page);
+ await expect(promo(page).getByRole('status')).toContainText('Ждём подтверждения Arweave');
+ const original=api.posts[0],attempts=await activeFundAttempts(page);
+ expect(attempts).toHaveLength(1);
+ await page.keyboard.press('Escape');await expect(page.getByRole('dialog')).toHaveCount(0);
+ await editChildName(page,'Child awaiting save');
+ const draftBeforeResume=await editorDraftRevision(page);
+ expect(draftBeforeResume.dirty).toBe(true);
+ await reopenEditorSave(page);
+ await expect(promo(page).getByRole('status')).toContainText('Ждём подтверждения Arweave');
+ await expect(promo(page).getByRole('button',{name:'Сохранить бесплатно',exact:true})).toHaveCount(0);
+ await page.clock.runFor(20_000);
+ expect(api.posts).toHaveLength(1);expect(api.validations).toBe(1);
+ expect(new Set(api.reads)).toEqual(new Set([original.orderId]));
+ expect(await activeFundAttempts(page)).toEqual(attempts);
+ expect(await editorDraftRevision(page)).toEqual(draftBeforeResume);
+ api.complete();await page.clock.runFor(6001);
+ await expect(page.getByRole('dialog')).toHaveCount(0);
+ const saved=await savedEditorArchive(page,tx);
+ expect(saved.headTxId).toBe(tx);expect(saved.archive).toBe(original.archive);
+ expect(await editorDraftRevision(page)).toEqual(draftBeforeResume);
+ await page.clock.runFor(20_000);
+ expect(api.posts).toHaveLength(1);expect(await activeFundAttempts(page)).toHaveLength(0);
+});
+
+test('Reloading the editor without session words or metadata recovers the pending attempt by tree',async({page})=>{
+ const api=await mockPreservation(page,{expectedArchive:null});requireDurableEditorAttempt(page,api);
+ await page.clock.install();await openEditor(page);await openEditorPromo(page);await savePromo(page);
+ await expect(promo(page).getByRole('status')).toContainText('Ждём подтверждения Arweave');
+ const original=api.posts[0],attempts=await activeFundAttempts(page);
+ expect(await page.evaluate(()=>{
+  const words=window.promoEditorFixture.words;
+  return [localStorage,sessionStorage].some(storage=>Object.keys(storage).some(key=>String(storage.getItem(key)).includes(words)));
+ })).toBe(false);
+ // Keep the nonsecret navigation marker so this is an editor reload. Remove
+ // vault metadata and every old digest map: recovery must use the durable tree.
+ expect(await page.evaluate(()=>{
+  const lastScreen=sessionStorage.getItem('sejire.lastScreen');
+  sessionStorage.clear();if(lastScreen)sessionStorage.setItem('sejire.lastScreen',lastScreen);
+  return Object.keys(sessionStorage).filter(key=>key!=='sejire.lastScreen').length;
+ })).toBe(0);
+ await page.reload();
+ expect(await page.evaluate(async()=>({
+  words:(await import('/src/lib/vaultSession/session.ts')).getSessionMnemonic(),
+  fixturePresent:Boolean(window.promoEditorFixture),
+ }))).toEqual({words:null,fixturePresent:false});
+ // Reload opens only the existing attempt; no click authorizes a successor.
+ await expect(promo(page)).toBeVisible();
+ await expect(promo(page).getByRole('status')).toContainText('Ждём подтверждения Arweave');
+ await expect(page.getByRole('textbox')).toHaveCount(0);
+ expect(api.posts).toHaveLength(1);expect(api.validations).toBe(1);
+ expect(await activeFundAttempts(page)).toEqual(attempts);
+ api.complete();await page.clock.runFor(6001);
+ await expect(page.getByRole('dialog')).toHaveCount(0);
+ const saved=await savedEditorArchive(page,tx);
+ expect(saved.headTxId).toBe(tx);expect(saved.vaultId).toBe(api.order.vaultId);expect(saved.archive).toBe(original.archive);
+ expect(await page.evaluate(async()=>(await import('/src/lib/vaultSession/session.ts')).getSessionMnemonic())).toBeNull();
+ expect(new Set(api.reads)).toEqual(new Set([original.orderId]));
+ await page.clock.runFor(20_000);
+ expect(api.posts).toHaveLength(1);expect(await activeFundAttempts(page)).toHaveLength(0);
+});
+
+test('A confirmed editor save finishes automatically and the next edited version needs one explicit free-save click',async({page},testInfo)=>{
+ const api=await mockPreservation(page,{expectedArchive:null,status:'COMPLETED'});requireDurableEditorAttempt(page,api);
+ await page.clock.install();await page.setViewportSize({width:390,height:844});
+ await openEditor(page);await openEditorPromo(page);await savePromo(page);
+ await expect(page.getByRole('dialog')).toHaveCount(0);
+ await expect(page.getByText(/^Сохранено в Arweave /)).toBeVisible();
+ await expect(page.getByRole('button',{name:'Готово',exact:true})).toHaveCount(0);
+ const freeSave=page.getByRole('button',{name:'Сохранить бесплатно',exact:true});
+ await expect(freeSave).toBeEnabled();
+ const first=api.posts[0],firstSaved=await savedEditorArchive(page,tx);
+ expect(firstSaved.headTxId).toBe(tx);expect(firstSaved.archive).toBe(first.archive);
+ expect(await activeFundAttempts(page)).toHaveLength(0);
+ await expect.poll(()=>page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
+ await page.screenshot({path:testInfo.outputPath('promo-editor-auto-completed-mobile.png'),fullPage:true});
+ await page.clock.runFor(20_000);expect(api.posts).toHaveLength(1);
+
+ await editChildName(page,'Child revised');
+ api.nextStatus='SUBMITTED';api.nextTx='B'.repeat(43);api.verification=undefined;
+ await freeSave.click();
+ await expect.poll(()=>api.posts.length).toBe(2);
+ await expect(promo(page).getByRole('status')).toContainText('Ждём подтверждения Arweave');
+ await expect(promo(page).getByRole('textbox')).toHaveCount(0);
+ await expect(promo(page).getByRole('button',{name:'Сохранить бесплатно',exact:true})).toHaveCount(0);
+ expect(api.posts[1].orderId).not.toBe(first.orderId);expect(api.posts[1].archive).not.toBe(first.archive);
+ expect(api.validations).toBe(2);
+ expect(await page.evaluate(async serialized=>{
+  const words=(await import('/src/lib/vaultSession/session.ts')).getSessionMnemonic();
+  const keys=(await import('/src/lib/crypto/keys.ts')).deriveKeysFromMnemonic(words);
+  const vault=await(await import('/src/lib/crypto/vault.ts')).openEnvelope(keys,JSON.parse(serialized));
+  return JSON.stringify(vault).includes('Child revised');
+ },api.posts[1].archive)).toBe(true);
+ api.complete();await page.clock.runFor(6001);
+ await expect(page.getByRole('dialog')).toHaveCount(0);
+ const nextSaved=await savedEditorArchive(page,api.nextTx);
+ expect(nextSaved.headTxId).toBe(api.nextTx);expect(nextSaved.parentId).toBe(tx);expect(nextSaved.archive).toBe(api.posts[1].archive);
+ await page.clock.runFor(20_000);expect(api.posts).toHaveLength(2);
+});
+
+test('Completing an older funded attempt preserves a newer editor head',async({page})=>{
+ const api=await mockPreservation(page,{expectedArchive:null});requireDurableEditorAttempt(page,api);
+ await page.clock.install();await openEditor(page);await openEditorPromo(page);await savePromo(page);
+ await expect(promo(page).getByRole('status')).toContainText('Ждём подтверждения Arweave');
+ const newerTx='B'.repeat(43);
+ await page.evaluate(async newerTx=>{
+  const session=await import('/src/lib/vaultSession/session.ts');
+  session.setVaultSession({...session.getVaultSession(),headTxId:newerTx,source:'publish'});
+ },newerTx);
+ api.complete();await page.clock.runFor(6001);
+ await expect(page.getByRole('dialog')).toHaveCount(0);
+ const saved=await savedEditorArchive(page,tx);
+ expect(saved.headTxId).toBe(newerTx);expect(saved.archive).toBe(api.posts[0].archive);
+ expect(api.posts).toHaveLength(1);expect(await activeFundAttempts(page)).toHaveLength(0);
 });
 
 for(const status of ['FAILED','RELEASED']){
