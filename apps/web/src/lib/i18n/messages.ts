@@ -186,6 +186,9 @@ export type UiMessages = {
     open: string;
     searching: string;
     pickTitle: string;
+    singleLocalTitle: string;
+    localPickHint: string;
+    availablePickHint: string;
     pickHint: (fp: string) => string;
     localCopy: string;
     inBrowser: string;
@@ -589,6 +592,9 @@ const ru: UiMessages = {
     open: "Открыть",
     searching: "Ищем…",
     pickTitle: "Выберите версию",
+    singleLocalTitle: "Доступна копия в браузере",
+    localPickHint: "Можно открыть сохранённую копию из этого браузера.",
+    availablePickHint: "Выберите версию, которую хотите открыть.",
     pickHint: (fp) => `Сейф ${fp}: найдено несколько сохранений. Можно открыть любое.`,
     localCopy: "Текущая локальная копия",
     inBrowser: "в этом браузере",
@@ -1010,6 +1016,9 @@ const kk: UiMessages = {
     open: "Ашу",
     searching: "Іздеп жатырмыз…",
     pickTitle: "Нұсқаны таңдаңыз",
+    singleLocalTitle: "Браузерде көшірме бар",
+    localPickHint: "Осы браузерде сақталған көшірмені ашуға болады.",
+    availablePickHint: "Ашқыңыз келетін нұсқаны таңдаңыз.",
     pickHint: (fp) => `Сейф ${fp}: бірнеше сақтау табылды. Кез келгенін ашуға болады.`,
     localCopy: "Қазіргі жергілікті көшірме",
     inBrowser: "осы браузерде",
@@ -1432,6 +1441,9 @@ const en: UiMessages = {
     open: "Open",
     searching: "Searching…",
     pickTitle: "Choose a version",
+    singleLocalTitle: "A browser copy is available",
+    localPickHint: "You can open a copy saved in this browser.",
+    availablePickHint: "Choose the version you want to open.",
     pickHint: (fp) => `Vault ${fp}: several saves found. You can open any of them.`,
     localCopy: "Current local copy",
     inBrowser: "in this browser",

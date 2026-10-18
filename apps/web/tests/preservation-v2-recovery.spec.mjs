@@ -7,15 +7,36 @@ const b64=text=>Buffer.from(text).toString('base64url');
 const tag=(name,value)=>({name:b64(name),value:b64(value)});
 const meta=(version,options={})=>({id:version.id,tags:[tag('App-Name','SEJIRE'),tag('Type','vault-envelope'),
   ...(!options.noVault?[tag('Vault-Id',version.vaultId)]:[]),
-  ...(!options.legacy?[tag('Archive-SHA256',sha(version.raw)),tag('Archive-Bytes',String(Buffer.byteLength(version.raw))),tag('Schema','sejire/envelope/v1'),tag('Protocol-Version','sejire/v0.3')]:[]),
+  ...(!options.legacy?[tag('Archive-SHA256',sha(version.raw)),tag('Archive-Bytes',String(Buffer.byteLength(version.raw))),tag('Schema','sejire/envelope/v1'),
+    // Exact original fund publisher: both identity/integrity bindings and fund
+    // markers were present, but Protocol-Version was not published on chain.
+    ...(options.funded?[tag('Preservation-Id','1'.repeat(32)),tag('Promo-Funded','true')]:
+      options.missingProtocol?[]:[tag('Protocol-Version','sejire/v0.3')])]:[]),
   ...(version.parent?[tag('Parent-Tx',version.parent)]:[])],block:{height:version.height,timestamp:1700000000+version.height}});
+
+const localOrigin='http://127.0.0.1:5178';
+async function guardNetwork(context,onBlocked=()=>{}){
+  await context.route('**/*',async route=>{
+    const url=new URL(route.request().url());
+    if(url.origin!==localOrigin){onBlocked();return route.abort('blockedbyclient');}
+    if(url.pathname.startsWith('/api/')){
+      onBlocked();return route.fulfill({status:404,contentType:'application/json',body:'{"error":"unmocked_test_api"}'});
+    }
+    return route.continue();
+  });
+  await context.routeWebSocket('**/*',route=>{
+    if(new URL(route.url()).origin==='ws://127.0.0.1:5178')route.connectToServer();
+    else{onBlocked();route.close({code:1008,reason:'External network disabled in recovery tests'});}
+  });
+}
+test.beforeEach(async({context})=>guardNetwork(context));
 
 async function setup(browser,preparer,mode={}){
   await preparer.goto('/');
   const family=await preparer.evaluate(async()=> (await import('/tests/browser-fixture.ts')).fixture());
   const base={id:tx(0),raw:family.serialized,vaultId:family.vault.vault_id,height:100,parent:null};
   const versions=mode.versions??[base];
-  const context=await browser.newContext({locale:'ru-RU'});
+  const context=await browser.newContext({locale:'ru-RU',serviceWorkers:'block'});
   expect((await context.storageState()).origins).toEqual([]);
   const page=await context.newPage();
   const legacy=mode.legacy??false;
@@ -26,9 +47,11 @@ async function setup(browser,preparer,mode={}){
     window.phantom={solana:{connect:()=>{window.__walletCalls++;throw Error('wallet forbidden');},signAndSendTransaction:()=>{window.__walletCalls++;throw Error('wallet forbidden');}}};
     window.arweaveWallet={connect:()=>{window.__walletCalls++;throw Error('wallet forbidden');},sign:()=>{window.__walletCalls++;throw Error('wallet forbidden');}};
   },entries);
-  const counts={graphql:[],metadata:[],raw:[],rendered:0,writes:0,peers:0};
+  const counts={graphql:[],metadata:[],raw:[],rendered:0,writes:0,peers:0,blocked:0,wordsInRequests:0};
+  await guardNetwork(context,()=>{counts.blocked++;});
   await context.route('https://**/*',async route=>{
     const req=route.request(),url=new URL(req.url()),host=url.hostname;
+    if(req.postData()?.includes(family.words))counts.wordsInRequests++;
     if(url.pathname==='/ar-io/peers'){
       counts.peers++;
       if(mode.peersDown){await route.fulfill({status:503,body:'down'});return;}
@@ -49,7 +72,7 @@ async function setup(browser,preparer,mode={}){
     if(url.pathname.startsWith('/tx/')&&version){
       counts.metadata.push(host);
       if(mode.metadataDown?.includes(host)){await route.fulfill({status:503,body:'down'});return;}
-      const record=meta(version,{legacy,noVault:legacy});
+      const record=meta(version,{legacy,noVault:legacy,funded:mode.funded,missingProtocol:mode.missingProtocol});
       if(mode.mismatchedTag)record.tags=record.tags.map(t=>t.name===b64('Vault-Id')?tag('Vault-Id','f'.repeat(32)):t);
       await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(record)});return;
     }
@@ -72,7 +95,84 @@ async function runUi(page,words){
   await page.getByRole('textbox',{name:'12 слов восстановления SEJIRE'}).fill(words);
   await page.getByRole('button',{name:'Открыть',exact:true}).click();
 }
-function readOnly(counts){expect(counts.writes).toBe(0);expect(counts.rendered).toBe(0);}
+function readOnly(counts){expect(counts.writes).toBe(0);expect(counts.rendered).toBe(0);expect(counts.blocked).toBe(0);expect(counts.wordsInRequests).toBe(0);}
+
+async function localCopy(s){
+  await s.page.evaluate(envelope=>localStorage.setItem(`sejire.envelope.${envelope.vault_id}`,JSON.stringify(envelope)),s.family.envelope);
+}
+
+async function expectFullTree(s,{source,headTxId}){
+  await expect(s.page.getByRole('button',{name:'Сохранить',exact:true}).first()).toBeVisible();
+  const opened=await s.page.evaluate(async()=>{
+    const session=await import('/src/lib/vaultSession/session.ts');
+    const words=session.getSessionMnemonic();
+    const keys=(await import('/src/lib/crypto/keys.ts')).deriveKeysFromMnemonic(words);
+    const vault=await(await import('/src/lib/crypto/vault.ts')).openLocalVault(keys);
+    const draft=(await import('/src/lib/draftStorage.ts')).loadDraftTree();
+    return {session:session.getVaultSession(),trees:vault?.trees,activeId:draft?.meta.id,people:Object.keys(draft?.draft.persons??{}).sort()};
+  });
+  // Includes both independent trees, all people, and their earlier commits.
+  expect(opened.trees).toEqual(s.family.vault.trees);
+  expect(opened.activeId).toBe(s.family.vault.active_tree_id);
+  expect(opened.people).toEqual(Object.keys(s.family.vault.trees[s.family.vault.active_tree_id].draft.persons).sort());
+  expect(opened.session).toMatchObject({vaultId:s.base.vaultId,source,headTxId});
+  await expect(s.page.getByRole('button',{name:/^Child corrected /})).toBeVisible();
+  expect(await s.page.evaluate(()=>window.__walletCalls)).toBe(0);readOnly(s.counts);
+}
+
+for(const cached of [false,true]){
+  test(`Funded archive without Protocol-Version opens the full network tree ${cached?'with a local copy present':'in a clean browser'}`,async({browser,page:preparer},testInfo)=>{
+    const s=await setup(browser,preparer,{funded:true});try{
+      await s.page.setViewportSize({width:390,height:844});
+      if(cached)await localCopy(s);
+      await runUi(s.page,s.family.words);
+      await expectFullTree(s,{source:'network',headTxId:s.base.id});
+      expect(s.counts.metadata.length).toBeGreaterThan(0);expect(s.counts.raw.length).toBeGreaterThan(0);
+      await expect(s.page.getByRole('heading',{name:'Выберите версию',exact:true})).toHaveCount(0);
+      await expect(s.page.getByText('Найденная запись не прошла проверку.')).toHaveCount(0);
+      await expect.poll(()=>s.page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
+      if(!cached)await s.page.screenshot({path:testInfo.outputPath('funded-words-restored-mobile.png'),fullPage:true});
+    }finally{await s.context.close();}
+  });
+}
+
+test('One local fallback is described as a browser copy and opens the complete tree',async({browser,page:preparer},testInfo)=>{
+  // The exception is specific to funded metadata. An ordinary record missing
+  // Protocol-Version still fails network verification; its local copy is usable.
+  const s=await setup(browser,preparer,{missingProtocol:true});try{
+    await s.page.setViewportSize({width:390,height:844});await localCopy(s);
+    await runUi(s.page,s.family.words);
+    const local=s.page.getByRole('button',{name:/Текущая локальная копия/});
+    await expect(local).toBeVisible();
+    await expect(s.page.getByRole('heading',{name:'Доступна копия в браузере',exact:true})).toBeVisible();
+    await expect(s.page.getByText('Можно открыть сохранённую копию из этого браузера.',{exact:true})).toBeVisible();
+    await expect(s.page.locator('.vault-version-item')).toHaveCount(1);
+    await expect(s.page.getByText(/Найдено несколько проверенных сохранений/)).toHaveCount(0);
+    await expect(s.page.getByText(/несколько веток сохранения/)).toHaveCount(0);
+    await expect(s.page.getByText(/Найденная запись не прошла проверку/)).toBeVisible();
+    expect(s.counts.raw).toHaveLength(0);
+    await expect.poll(()=>s.page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
+    await s.page.screenshot({path:testInfo.outputPath('local-copy-fallback-mobile.png'),fullPage:true});
+    await local.click();await expectFullTree(s,{source:'local',headTxId:null});
+  }finally{await s.context.close();}
+});
+
+test('Verified network forks remain a real version choice and honor the selected branch',async({browser,page:preparer},testInfo)=>{
+  const s=await setup(browser,preparer);try{
+    s.versions.push({...s.base,id:tx(1),height:101,parent:tx(0)},{...s.base,id:tx(2),height:102,parent:tx(0)});
+    await s.page.setViewportSize({width:390,height:844});
+    await runUi(s.page,s.family.words);
+    await expect(s.page.getByRole('heading',{name:'Выберите версию',exact:true})).toBeVisible();
+    await expect(s.page.getByText('Выберите версию, которую хотите открыть.',{exact:true})).toBeVisible();
+    await expect(s.page.locator('.vault-version-item')).toHaveCount(3);
+    await expect(s.page.getByText(/несколько веток сохранения/)).toBeVisible();
+    await expect(s.page.getByRole('button',{name:/Текущая локальная копия/})).toHaveCount(0);
+    await expect.poll(()=>s.page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
+    await s.page.screenshot({path:testInfo.outputPath('verified-forks-mobile.png'),fullPage:true});
+    await s.page.getByRole('button',{name:/Сеть · версия 2/}).click();
+    await expectFullTree(s,{source:'network',headTxId:tx(1)});
+  }finally{await s.context.close();}
+});
 
 for(const [name,mode] of [
   ['A primary Vault-Id GraphQL and raw gateway',{}],

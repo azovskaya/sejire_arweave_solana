@@ -205,6 +205,7 @@ export async function fundApi(request:Request,env:FundEnv,provided?:FundedArweav
       if(!provider)throw Error('fund_provider_unavailable');const balance=BigInt(await provider.getBalance());
       const estimated=await provider.getPrice(bytes.length);
       const prepared=await provider.prepareTransaction(bytes,[{name:'App-Name',value:'SEJIRE'},{name:'Type',value:'vault-envelope'},{name:'Schema',value:'sejire/envelope/v1'},
+        {name:'Protocol-Version',value:envelope.protocol},
         {name:'Vault-Id',value:envelope.vault_id},{name:'Archive-SHA256',value:digest},{name:'Archive-Bytes',value:String(bytes.length)},
         {name:'Preservation-Id',value:input.preservationId},{name:'Promo-Funded',value:'true'}]).catch(()=>{throw Error('fund_prepare_failed');});
       const reward=BigInt(prepared.reward);if(reward<=0n||balance<reward)throw Error('wallet_low');

@@ -6,6 +6,7 @@ import { resolve } from 'node:path';
 import { FundLedger } from '../src/fund/ledger.ts';
 import { fundApi } from '../src/fund/api.ts';
 import { MockFundedArweaveProvider } from '../src/fund/provider.ts';
+import { validateMetadata } from '../../web/src/lib/recovery/retrieve.ts';
 const temp=await mkdtemp(resolve(tmpdir(),'sejire-fund-sqlite-'));
 const admin='synthetic-admin-token-32-characters',origin='https://preview.example';
 const archive=JSON.stringify({schema:'sejire/envelope/v1',vault_id:'a'.repeat(32),cipher:'aes-gcm-256',kdf:'hkdf-sha256',iv:'AAAAAAAAAAAAAAAA',ciphertext:'A'.repeat(32),protocol:'sejire/v0.3'});
@@ -45,7 +46,15 @@ try{
   assert.equal((await call('/validate',{code:'WRONG-PENSIONER'})).body.error,'promo_invalid');assert.equal((await change('TEST-PENSIONER-2')).body.promo.revision,2);
   assert.equal((await call('/validate',{code:'TEST-PENSIONER'})).body.error,'promo_invalid');assert.equal((await call('/validate',{code:'TEST-PENSIONER-2'})).status,200);
   await call('/admin/enabled',{enabled:false},{admin:true});assert.equal((await call('/validate',{code:'TEST-PENSIONER-2'})).body.error,'promo_disabled');await call('/admin/enabled',{enabled:true},{admin:true});});
- await test('success uses confirmed transaction reward and no plaintext promo',async()=>{const r=await call('/orders',make('a','TEST-PENSIONER-2'),{estimate:'2800000000'});assert.equal(r.status,200);assert.equal(r.body.order.estimatedRewardWinston,'2800000000');assert.equal(r.body.order.actualRewardWinston,'3000000000');assert.equal(r.body.order.status,'COMPLETED');
+ await test('success uses confirmed transaction reward and words-recoverable metadata, with no plaintext promo',async()=>{
+  const prepare=mock.prepareTransaction;let preparedTags;
+  mock.prepareTransaction=async function(bytes,tags){preparedTags=structuredClone(tags);return prepare.call(this,bytes,tags);};
+  let r;try{r=await call('/orders',make('a','TEST-PENSIONER-2'),{estimate:'2800000000'});}finally{mock.prepareTransaction=prepare;}
+  assert.equal(r.status,200);assert.equal(r.body.order.estimatedRewardWinston,'2800000000');assert.equal(r.body.order.actualRewardWinston,'3000000000');assert.equal(r.body.order.status,'COMPLETED');
+  assert.equal(preparedTags.filter(tag=>tag.name==='Protocol-Version').length,1);
+  assert.equal(preparedTags.find(tag=>tag.name==='Protocol-Version').value,JSON.parse(archive).protocol);
+  assert.doesNotThrow(()=>validateMetadata({id:r.body.order.arweaveTxId,tags:preparedTags,blockHeight:1,blockTimestamp:1},
+    {txId:r.body.order.arweaveTxId,source:'fund-contract',archiveBytes:new TextEncoder().encode(archive).length,archiveSha256:r.body.order.archiveDigest},JSON.parse(archive).vault_id));
   const d=(await dash()).body;assert.equal(d.successfulTrees,1);assert.equal(d.actualSpentWinston,'3000000000');assert.equal(d.currentRevisionTrees,1);
   assert.equal(JSON.stringify(d).includes('TEST-PENSIONER-2'),false);assert.equal(JSON.stringify(r.body).includes('ciphertext'),false);});
  await test('duplicate POST and polling preserve same tx and accounting',async()=>{const prior=(await call('/orders',make('a','TEST-PENSIONER-2'))).body.order;

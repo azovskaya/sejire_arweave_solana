@@ -261,8 +261,8 @@ export function RestoreSeed({ onRestored, onBack }: Props) {
           SEJIRE
         </button>
         <div className="panel" style={{ textAlign: "left", width: "100%" }}>
-          <h2>{t.restore.pickTitle}</h2>
-          <p className="sub">Найдено несколько проверенных сохранений. Выберите нужную версию.</p>
+          <h2>{picker.length === 1 && networkCount === 0 ? t.restore.singleLocalTitle : t.restore.pickTitle}</h2>
+          <p className="sub">{networkCount === 0 ? t.restore.localPickHint : t.restore.availablePickHint}</p>
           <ul className="vault-version-list">
             {picker.map((item) => {
               if (item.kind === "local") {

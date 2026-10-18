@@ -5,6 +5,7 @@ import {gatewayHost} from './diagnostics';
 import type {GatewayPool,HeadCandidate,RecoveryContext,SafeRecoveryDiagnostics} from './types';
 
 export type TxMetadata={id:string;tags:{name:string;value:string}[];blockHeight:number|null;blockTimestamp:number|null};
+const HISTORICAL_FUND_TAGS=new Set(['App-Name','Type','Schema','Vault-Id','Archive-SHA256','Archive-Bytes','Preservation-Id','Promo-Funded']);
 function decodeBase64Url(value:string):string {
   const base=value.replace(/-/g,'+').replace(/_/g,'/');
   return new TextDecoder('utf-8',{fatal:true}).decode(Uint8Array.from(atob(base.padEnd(Math.ceil(base.length/4)*4,'=')),c=>c.charCodeAt(0)));
@@ -30,7 +31,12 @@ export function validateMetadata(meta:TxMetadata,candidate:HeadCandidate,vaultId
   const bytes=tagValue(meta,'Archive-Bytes');if(bytes!==null&&(!/^[1-9]\d*$/.test(bytes)||Number(bytes)>MAX_BACKUP_BYTES))throw new RecoveryFailure('METADATA_MISMATCH');
   const digest=tagValue(meta,'Archive-SHA256');if(digest!==null&&!/^[a-f0-9]{64}$/.test(digest))throw new RecoveryFailure('METADATA_MISMATCH');
   const protocol=tagValue(meta,'Protocol-Version');if(protocol!==null&&protocol!=='sejire/v0.3')throw new RecoveryFailure('METADATA_MISMATCH');
-  if((digest!==null||bytes!==null)&&(!digest||!bytes||schema!=='sejire/envelope/v1'||protocol!=='sejire/v0.3'))throw new RecoveryFailure('METADATA_MISMATCH');
+  // Early fund transactions omitted this tag. Their immutable eight-tag format
+  // still binds the full envelope hash/size/vault; parseEnvelope and AES-GCM remain mandatory below.
+  const historicalFund=protocol===null&&taggedVault===vaultId&&schema==='sejire/envelope/v1'&&digest!==null&&bytes!==null&&
+    meta.tags.length===HISTORICAL_FUND_TAGS.size&&meta.tags.every(tag=>HISTORICAL_FUND_TAGS.has(tag.name))&&
+    tagValue(meta,'Promo-Funded')==='true'&&/^[a-f0-9]{32}$/.test(tagValue(meta,'Preservation-Id')??'');
+  if((digest!==null||bytes!==null)&&(!digest||!bytes||schema!=='sejire/envelope/v1'||protocol!=='sejire/v0.3'&&!historicalFund))throw new RecoveryFailure('METADATA_MISMATCH');
   const parent=tagValue(meta,'Parent-Tx');if(parent!==null&&!/^[A-Za-z0-9_-]{43}$/.test(parent))throw new RecoveryFailure('METADATA_MISMATCH');
   if(candidate.archiveBytes!==undefined&&bytes!==null&&Number(bytes)!==candidate.archiveBytes)throw new RecoveryFailure('METADATA_MISMATCH');
   if(candidate.archiveSha256!==undefined&&digest!==null&&digest!==candidate.archiveSha256)throw new RecoveryFailure('METADATA_MISMATCH');
