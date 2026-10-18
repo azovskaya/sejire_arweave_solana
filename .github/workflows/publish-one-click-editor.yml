@@ -1,0 +1,88 @@
+name: Publish accepted one-click editor
+
+# Release the already checked static snapshot from the actual Pages source branch.
+# This release does not rebuild the app, write refs, or contact the Fund API.
+on:
+  push:
+    branches: [gh-pages]
+    paths: ['.github/workflows/publish-one-click-editor.yml']
+
+permissions:
+  contents: read
+  actions: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: gh-pages-deploy
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 2
+
+      - name: Verify the accepted static snapshot and successful source checks
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          APPROVED_PAGES: 132f904be61fcddecb45e45fe34cc450e1ea8c17
+          APPROVED_TREE: 7d4033886072dd70073daa32ac85479ca4c226b6
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD^)" = "$APPROVED_PAGES"
+          test "$(git rev-parse "$APPROVED_PAGES^{tree}")" = "$APPROVED_TREE"
+          test "$(git diff --name-only "$APPROVED_PAGES" HEAD)" = '.github/workflows/publish-one-click-editor.yml'
+          node --input-type=module <<'NODE'
+          import { readFileSync } from 'node:fs';
+          const source = '6fbc25f96f85cf7170f3d4d315ec276610ff9aa6';
+          const digest = '1a3fdf62028f46e0b7fce2456d9c06ae1e06fb2df800ac48f3e516586297bd6f';
+          const p = JSON.parse(readFileSync('native-admin/build-provenance.json', 'utf8'));
+          if (p.sourceCommit !== source || p.publishedByCommit !== source ||
+              p.run !== 39133246030 || p.artifact !== 'native-admin-build' ||
+              p.artifactId !== 12139050709 || p.zipSha256 !== digest) {
+            throw new Error('Staged build provenance differs from the accepted release');
+          }
+          async function api(path) {
+            const r = await fetch(`https://api.github.com/repos/${process.env.GITHUB_REPOSITORY}/${path}`, {
+              headers: { Authorization: `Bearer ${process.env.GH_TOKEN}`, Accept: 'application/vnd.github+json' },
+              signal: AbortSignal.timeout(20000),
+            });
+            if (!r.ok) throw new Error(`GitHub verification HTTP ${r.status}`);
+            return r.json();
+          }
+          const run = await api(`actions/runs/${p.run}`);
+          if (run.head_sha !== source || run.name !== 'SEJIRE checks' ||
+              run.status !== 'completed' || run.conclusion !== 'success') {
+            throw new Error('Accepted source checks are not successful');
+          }
+          const { artifacts } = await api(`actions/runs/${p.run}/artifacts`);
+          const matches = artifacts.filter(a => a.name === p.artifact && !a.expired);
+          if (matches.length !== 1 || matches[0].id !== p.artifactId ||
+              matches[0].workflow_run.head_sha !== source ||
+              matches[0].digest !== `sha256:${digest}`) {
+            throw new Error('Accepted artifact identity differs');
+          }
+          const head = await api('git/ref/heads/gh-pages');
+          if (head.object.sha !== process.env.GITHUB_SHA) throw new Error('Pages branch advanced; refuse stale release');
+          console.log('Accepted static tree, source, successful checks and artifact digest verified.');
+          NODE
+          mkdir .pages-public
+          git archive "$APPROVED_PAGES" | tar -x -C .pages-public
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          name: github-pages-${{ github.run_id }}-${{ github.run_attempt }}
+          path: .pages-public
+
+      - name: Deploy the verified static site
+        id: deployment
+        uses: actions/deploy-pages@v4
+        with:
+          artifact_name: github-pages-${{ github.run_id }}-${{ github.run_attempt }}
