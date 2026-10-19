@@ -249,6 +249,10 @@ export type UiMessages = {
     leadDemo: string;
     leadSponsor: string;
     leadTreasury: string;
+    saveWithPromo: string;
+    saveWithSolana: string;
+    solanaUnavailable: string;
+    continueSave: string;
     newVersionHint: string;
     prevKept: (id: string) => string;
     oldKept: string;
@@ -656,6 +660,10 @@ const ru: UiMessages = {
       " Сейчас на сайте включён демо-режим: версии хранятся в этом браузере (без оплаты и без Arweave), чтобы проверить сценарий.",
     leadSponsor: " Вечность — через кассир",
     leadTreasury: " Сеть оплачивает казна проекта из кассы. 12 слов только шифруют сейф.",
+    saveWithPromo: "По промокоду",
+    saveWithSolana: "Через Solana",
+    solanaUnavailable: "Оплата через Solana пока недоступна. Вы можете сохранить дерево по промокоду.",
+    continueSave: "Продолжить",
     newVersionHint: "Сохранить текущее древо как новую версию теми же 12 словами",
     prevKept: (id) => ` Предыдущая версия останется (${id}…).`,
     oldKept: " Если сейф уже сохраняли — старые версии останутся.",
@@ -1080,6 +1088,10 @@ const kk: UiMessages = {
       " Қазір сайтта демо-режим: нұсқалар осы браузерде сақталады (төлемсіз, Arweave-сіз) — сценарийді тексеру үшін.",
     leadSponsor: " Мәңгілік — кассир арқылы",
     leadTreasury: " Желіні жоба қазынасы төлейді. 12 сөз тек сейфті шифрлайды.",
+    saveWithPromo: "Промокодпен",
+    saveWithSolana: "Solana арқылы",
+    solanaUnavailable: "Solana арқылы төлем әзірге қолжетімсіз. Шежірені промокодпен сақтай аласыз.",
+    continueSave: "Жалғастыру",
     newVersionHint: "Қазіргі шежірені сол 12 сөзбен жаңа нұсқа ретінде сақтау",
     prevKept: (id) => ` Алдыңғы нұсқа қалады (${id}…).`,
     oldKept: " Егер сейф бұрын сақталса — ескі нұсқалар қалады.",
@@ -1505,6 +1517,10 @@ const en: UiMessages = {
       " Demo mode is on: versions stay in this browser (no payment, no Arweave) so you can try the flow.",
     leadSponsor: " Forever — through the cashier",
     leadTreasury: " The project treasury pays the network. The 12 words only encrypt the vault.",
+    saveWithPromo: "With a promo code",
+    saveWithSolana: "With Solana",
+    solanaUnavailable: "Solana payments are not available yet. You can save your family tree with a promo code.",
+    continueSave: "Continue",
     newVersionHint: "Save the current tree as a new version with the same 12 words",
     prevKept: (id) => ` The previous version will remain (${id}…).`,
     oldKept: " If this vault was saved before, older versions stay.",

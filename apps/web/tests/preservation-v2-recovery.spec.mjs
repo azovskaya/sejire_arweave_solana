@@ -35,6 +35,9 @@ async function setup(browser,preparer,mode={}){
   await preparer.goto('/');
   const family=await preparer.evaluate(async()=> (await import('/tests/browser-fixture.ts')).fixture());
   const base={id:tx(0),raw:family.serialized,vaultId:family.vault.vault_id,height:100,parent:null};
+  // A trailing JSON space keeps the envelope valid while ensuring base64 has
+  // unused final bits, so a permissive decoder can be distinguished reliably.
+  if(mode.dataFallback==='noncanonical-bits'&&Buffer.byteLength(base.raw)%3===0)base.raw+=' ';
   const versions=mode.versions??[base];
   const context=await browser.newContext({locale:'ru-RU',serviceWorkers:'block'});
   expect((await context.storageState()).origins).toEqual([]);
@@ -47,7 +50,7 @@ async function setup(browser,preparer,mode={}){
     window.phantom={solana:{connect:()=>{window.__walletCalls++;throw Error('wallet forbidden');},signAndSendTransaction:()=>{window.__walletCalls++;throw Error('wallet forbidden');}}};
     window.arweaveWallet={connect:()=>{window.__walletCalls++;throw Error('wallet forbidden');},sign:()=>{window.__walletCalls++;throw Error('wallet forbidden');}};
   },entries);
-  const counts={graphql:[],metadata:[],raw:[],rendered:0,writes:0,peers:0,blocked:0,wordsInRequests:0};
+  const counts={graphql:[],metadata:[],raw:[],data:[],rendered:0,writes:0,peers:0,blocked:0,wordsInRequests:0};
   await guardNetwork(context,()=>{counts.blocked++;});
   await context.route('https://**/*',async route=>{
     const req=route.request(),url=new URL(req.url()),host=url.hostname;
@@ -67,9 +70,28 @@ async function setup(browser,preparer,mode={}){
       const edges=(mode.emptyGraphql||legacy||mode.noCandidates||body.variables.vaultId!==base.vaultId?[]:versions.map(v=>({cursor:v.id,node:{id:v.id,block:{height:v.height,timestamp:1700000000+v.height}}})));
       await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({data:{transactions:{pageInfo:{hasNextPage:false},edges}}})});return;
     }
+    const dataPath=/^\/tx\/([A-Za-z0-9_-]{43})\/data$/.exec(url.pathname);
+    if(dataPath){
+      const version=versions.find(v=>v.id===dataPath[1]);
+      expect(req.method()).toBe('GET');expect(version).toBeDefined();
+      expect(counts.raw).toContain(host);counts.data.push(host);
+      // Opt-in only: older corrupt/unavailable-raw fixtures must never gain a
+      // valid copy through this endpoint and accidentally pass recovery.
+      if(!mode.dataFallback){await route.fulfill({status:503,body:'data unavailable in this fixture'});return;}
+      let encoded=b64(version.raw);
+      if(mode.dataFallback==='invalid-character')encoded='!'+encoded.slice(1);
+      if(mode.dataFallback==='noncanonical-bits'){
+        const alphabet='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
+        const last=alphabet.indexOf(encoded.at(-1));
+        encoded=encoded.slice(0,-1)+alphabet[last|1];
+        expect(Buffer.from(encoded,'base64url')).toEqual(Buffer.from(version.raw));
+        expect(encoded).not.toBe(b64(version.raw));
+      }
+      await route.fulfill({status:200,contentType:'text/plain',body:encoded});return;
+    }
     const id=url.pathname.split('/').at(-1);const version=versions.find(v=>v.id===id);
     if(url.pathname===`/${id}`&&version){counts.rendered++;await route.fulfill({status:200,contentType:'text/html',body:'<html>rendered</html>'});return;}
-    if(url.pathname.startsWith('/tx/')&&version){
+    if(url.pathname===`/tx/${id}`&&version){
       counts.metadata.push(host);
       if(mode.metadataDown?.includes(host)){await route.fulfill({status:503,body:'down'});return;}
       const record=meta(version,{legacy,noVault:legacy,funded:mode.funded,missingProtocol:mode.missingProtocol});
@@ -79,7 +101,11 @@ async function setup(browser,preparer,mode={}){
     if(url.pathname.startsWith('/raw/')&&version){
       counts.raw.push(host);
       if(mode.rawDown?.includes(host)||mode.allRawDown){await route.fulfill({status:503,body:'down'});return;}
-      await route.fulfill({status:200,contentType:'application/octet-stream',body:mode.rawOverride??version.raw});return;
+      const raw=mode.wrongSameLengthRaw
+        ?version.raw.replace(/("ciphertext":")([^"])/,(_,prefix,char)=>prefix+(char==='A'?'B':'A'))
+        :mode.rawOverride??version.raw;
+      if(mode.wrongSameLengthRaw){expect(Buffer.byteLength(raw)).toBe(Buffer.byteLength(version.raw));expect(sha(raw)).not.toBe(sha(version.raw));}
+      await route.fulfill({status:200,contentType:'application/octet-stream',body:raw});return;
     }
     if(req.method()!=='GET'&&url.pathname!=='/graphql')counts.writes++;
     await route.abort();
@@ -132,6 +158,34 @@ for(const cached of [false,true]){
       await expect(s.page.getByText('Найденная запись не прошла проверку.')).toHaveCount(0);
       await expect.poll(()=>s.page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
       if(!cached)await s.page.screenshot({path:testInfo.outputPath('funded-words-restored-mobile.png'),fullPage:true});
+    }finally{await s.context.close();}
+  });
+}
+
+test('Same-gateway base64url data repairs wrong same-length raw and restores every encrypted tree',async({browser,page:preparer})=>{
+  const s=await setup(browser,preparer,{funded:true,wrongSameLengthRaw:true,dataFallback:'valid'});try{
+    await runUi(s.page,s.family.words);
+    await expectFullTree(s,{source:'network',headTxId:s.base.id});
+    expect(s.counts.data.length).toBeGreaterThan(0);
+    for(const host of s.counts.data)expect(s.counts.raw).toContain(host);
+  }finally{await s.context.close();}
+});
+
+for(const dataFallback of ['invalid-character','noncanonical-bits']){
+  test(`Invalid base64url fallback (${dataFallback}) cannot turn wrong same-length raw into a restored vault`,async({browser,page:preparer})=>{
+    const s=await setup(browser,preparer,{funded:true,wrongSameLengthRaw:true,dataFallback});try{
+      await runUi(s.page,s.family.words);
+      await expect(s.page.locator('.form-error')).toContainText('Архив повреждён или не совпадает с опубликованной записью.');
+      await expect(s.page.getByRole('button',{name:'Сохранить',exact:true})).toHaveCount(0);
+      await expect(s.page.locator('.person-card')).toHaveCount(0);
+      expect(s.counts.data.length).toBeGreaterThan(0);
+      expect(await s.page.evaluate(async()=>({
+        session:(await import('/src/lib/vaultSession/session.ts')).getVaultSession(),
+        draft:(await import('/src/lib/draftStorage.ts')).loadDraftTree(),
+        cachedEnvelope:Object.keys(localStorage).some(key=>key.startsWith('sejire.envelope.')),
+        walletCalls:window.__walletCalls,
+      }))).toEqual({session:null,draft:null,cachedEnvelope:false,walletCalls:0});
+      readOnly(s.counts);
     }finally{await s.context.close();}
   });
 }

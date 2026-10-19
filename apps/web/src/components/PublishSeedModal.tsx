@@ -127,10 +127,10 @@ export function PublishSeedModal({
   const solanaBusy = useRef(false);
   const freshKey = useRef(false);
   const solanaReturnMode = useRef<Mode>("create-ready");
-  const sponsorOn = isSponsorPublishEnabled();
-  const demoOn = isDemoPublishEnabled();
-  const treasuryOn = isTreasuryPublishEnabled();
   const preservationV2 = import.meta.env.VITE_PRESERVATION_V2_ENABLED === "1";
+  const sponsorOn = !preservationV2 && isSponsorPublishEnabled();
+  const demoOn = !preservationV2 && isDemoPublishEnabled();
+  const treasuryOn = !preservationV2 && isTreasuryPublishEnabled();
   const session = getVaultSession();
   const knownMnemonic = knownMnemonicProp ?? getSessionMnemonic();
   const parentTxId = parentTxProp ?? session?.headTxId ?? null;
@@ -156,6 +156,7 @@ export function PublishSeedModal({
   const [publishParentTx, setPublishParentTx] = useState<string | null>(parentTxId);
   const [resumeFunded, setResumeFunded] = useState(false);
   const [quickFlowCode, setQuickFlowCode] = useState<string | null>(null);
+  const [initialSaveMethod, setInitialSaveMethod] = useState<"choose" | "promo" | "solana">("choose");
   const [resumeCheckRevision, setResumeCheckRevision] = useState(0);
   const live = useRef(false);
   const lifetime = useRef(0);
@@ -368,6 +369,7 @@ export function PublishSeedModal({
     setPublishParentTx(attempt.parentTxId);
     setMnemonic(phraseForVault(phrase, attempt.vaultId) ?? "");
     setResumeFunded(true);
+    setInitialSaveMethod("promo");
     setQuickFlowCode(null);
     setError(null);
     setStatus("");
@@ -376,6 +378,7 @@ export function PublishSeedModal({
 
   async function startSolanaFlow(phrase: string, options?: {
     quickCode?: string;
+    initialMethod?: "choose" | "promo" | "solana";
     isActive?: () => boolean;
     returnMode?: Mode;
   }) {
@@ -408,6 +411,7 @@ export function PublishSeedModal({
       if (!isActive()) return;
       setSealedEnvelope(envelope); setPublishParentTx(parentTx); setMnemonic(normalized);
       setResumeFunded(false);
+      setInitialSaveMethod(options?.initialMethod ?? "choose");
       setQuickFlowCode(options?.quickCode ?? null);
       setMode("solana"); setStatus("");
     } catch (e) {
@@ -515,6 +519,10 @@ export function PublishSeedModal({
   }
 
   async function runSelfFundPublish(phrase: string) {
+    if (preservationV2) {
+      await startSolanaFlow(phrase);
+      return;
+    }
     setMode("busy");
     setError(null);
     setWalletAddress(null);
@@ -743,7 +751,7 @@ export function PublishSeedModal({
     }
     setMnemonic(phrase);
     freshKey.current = false;
-    if (import.meta.env.VITE_PUBLISH_MODE === "solana") await startSolanaFlow(phrase);
+    if (preservationV2 || import.meta.env.VITE_PUBLISH_MODE === "solana") await startSolanaFlow(phrase);
     else if (sponsorOn) await startSponsorFlow(phrase);
     else if (demoOn) await runDemoPublish(phrase);
     else if (treasuryOn) await runTreasuryPublish(phrase);
@@ -803,6 +811,7 @@ export function PublishSeedModal({
         {mode === "solana" && sealedEnvelope && import.meta.env.VITE_PRESERVATION_V2_ENABLED === "1" && (
           <PreservationV2 envelope={sealedEnvelope} treeName={store.meta.title}
             treeId={store.meta.id} parentTxId={publishParentTx}
+            initialMethod={initialSaveMethod}
             resumeFunded={resumeFunded} quickFundedCode={quickFlowCode}
             onBusy={(busy) => { solanaBusy.current = busy; }}
             onFundedDone={finishFunded}
@@ -836,7 +845,11 @@ export function PublishSeedModal({
                 : t.publish.oldKept}
             </p>
             <div className="actions" style={{ flexDirection: "column", alignItems: "stretch" }}>
-              {!demoOn && <button className="btn" type="button" onClick={() => void startSolanaFlow(mnemonic)}>{st.save}</button>}
+              {preservationV2 && <>
+                <button className="btn" type="button" onClick={() => void startSolanaFlow(mnemonic, { initialMethod: "promo" })}>{t.publish.saveWithPromo}</button>
+                <button className="btn ghost" type="button" onClick={() => void startSolanaFlow(mnemonic, { initialMethod: "solana" })}>{t.publish.saveWithSolana}</button>
+              </>}
+              {!preservationV2 && !demoOn && <button className="btn" type="button" onClick={() => void startSolanaFlow(mnemonic)}>{st.save}</button>}
               {demoOn && (
                 <button className="btn" type="button" onClick={() => void runDemoPublish(mnemonic)}>
                   {primarySaveLabel}
@@ -860,7 +873,7 @@ export function PublishSeedModal({
                   {primarySaveLabel}
                 </button>
               )}
-              {!demoOn && (
+              {!preservationV2 && !demoOn && (
                 <button
                   className="btn ghost"
                   type="button"
@@ -869,9 +882,9 @@ export function PublishSeedModal({
                   {sponsorOn || treasuryOn ? t.publish.selfArNew : t.publish.networkNew}
                 </button>
               )}
-              <button className="btn ghost" type="button" onClick={() => void runLocalExport(mnemonic)}>
+              {!preservationV2 && <button className="btn ghost" type="button" onClick={() => void runLocalExport(mnemonic)}>
                 {t.publish.localCipher}
-              </button>
+              </button>}
               <button
                 className="btn ghost"
                 type="button"
@@ -964,7 +977,11 @@ export function PublishSeedModal({
               <button className="btn" type="button" onClick={saveSeedFile}>
                 {seedFileSaved ? t.publish.seedJsonAgain : t.publish.seedJson}
               </button>
-              {!demoOn && <button className="btn" type="button" onClick={() => void startSolanaFlow(mnemonic)}>{st.save}</button>}
+              {preservationV2 && <>
+                <button className="btn" type="button" onClick={() => void startSolanaFlow(mnemonic, { initialMethod: "promo" })}>{t.publish.saveWithPromo}</button>
+                <button className="btn ghost" type="button" onClick={() => void startSolanaFlow(mnemonic, { initialMethod: "solana" })}>{t.publish.saveWithSolana}</button>
+              </>}
+              {!preservationV2 && !demoOn && <button className="btn" type="button" onClick={() => void startSolanaFlow(mnemonic)}>{st.save}</button>}
               {demoOn && (
                 <button className="btn" type="button" onClick={() => void runDemoPublish(mnemonic)}>
                   {t.publish.demoSave}
@@ -988,7 +1005,7 @@ export function PublishSeedModal({
                   {t.publish.treasurySave}
                 </button>
               )}
-              {!demoOn && (
+              {!preservationV2 && !demoOn && (
                 <button
                   className="btn ghost"
                   type="button"
@@ -997,9 +1014,9 @@ export function PublishSeedModal({
                   {sponsorOn || treasuryOn ? t.publish.selfArFallback : t.publish.selfArMain}
                 </button>
               )}
-              <button className="btn ghost" type="button" onClick={() => void exportFileOnly()}>
+              {!preservationV2 && <button className="btn ghost" type="button" onClick={() => void exportFileOnly()}>
                 {t.publish.localTree}
-              </button>
+              </button>}
               <button className="btn ghost" type="button" onClick={() => setMode("create-confirm")}>
                 {t.back}
               </button>
@@ -1061,7 +1078,7 @@ export function PublishSeedModal({
                 {t.back}
               </button>
               <button className="btn" type="submit">
-                {import.meta.env.VITE_PUBLISH_MODE === "solana" ? st.save : demoOn
+                {preservationV2 ? t.publish.continueSave : import.meta.env.VITE_PUBLISH_MODE === "solana" ? st.save : demoOn
                   ? t.publish.demoSaveBtn
                   : sponsorOn
                     ? t.publish.encryptPay
@@ -1084,7 +1101,7 @@ export function PublishSeedModal({
           </div>
         )}
 
-        {mode === "fund-wait" && (
+        {mode === "fund-wait" && !preservationV2 && (
           <div>
             <p className="sub">{t.publish.fundLead}</p>
             {walletAddress && (

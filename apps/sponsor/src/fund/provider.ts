@@ -135,6 +135,23 @@ async function archiveResponse(host:string,path:string,id:string,deadline:number
   }
   throw Error('gateway_redirected');
 }
+async function encodedArchiveBytes(host:string,id:string,max:number,expected:FundArchiveExpected|undefined,deadline:number):Promise<Uint8Array|null>{
+  const url=`${host}/tx/${id}/data`;
+  const response=await fetch(url,{method:'GET',redirect:'error',signal:checkSignal(deadline)});
+  if(response.url&&response.url!==url){await discard(response);throw Error('gateway_redirected');}
+  if(response.status!==200||!response.body){await discard(response);return null;}
+  const maxBytes=Math.min(max,expected?.bytes??max);
+  const body=await boundedBytes(response,Math.ceil(maxBytes*4/3));
+  try{
+    // The node endpoint returns plain, unpadded base64url, not an envelope JSON.
+    // Preserve a BOM so the alphabet check rejects it rather than hiding it.
+    const encoded=new TextDecoder('utf-8',{fatal:true,ignoreBOM:true}).decode(body);
+    if(!/^[A-Za-z0-9_-]+$/.test(encoded)||encoded.length%4===1)throw Error('invalid_archive_encoding');
+    const bytes=b64UrlBytes(encoded);
+    if(bytes.length>maxBytes||expected&&bytes.length!==expected.bytes||b64Url(bytes)!==encoded)throw Error('invalid_archive_encoding');
+    return bytes;
+  }catch{throw Error('archive_integrity_failed');}
+}
 async function boundedRaw(id:string,max:number,expected:FundArchiveExpected|undefined,deadline:number):Promise<Uint8Array|null>{
   let mismatch=false;
   // Keep /raw as the preferred exact-byte path. Canonical data URLs are fallback
@@ -148,6 +165,17 @@ async function boundedRaw(id:string,max:number,expected:FundArchiveExpected|unde
       if(await archiveMatches(bytes,expected))return bytes;
       mismatch=true;
     }catch(error){if(error instanceof Error&&error.message==='retrieved_archive_too_large')mismatch=true;}
+  }
+  // Some gateways expose the correct immutable bytes only through the node API.
+  // Reuse the same deadline and require the same archive checks after decoding.
+  for(const host of gateways){
+    if(Date.now()>=deadline)break;
+    try{
+      const bytes=await encodedArchiveBytes(host,id,max,expected,deadline);
+      if(!bytes)continue;
+      if(await archiveMatches(bytes,expected))return bytes;
+      mismatch=true;
+    }catch(error){if(error instanceof Error&&['retrieved_archive_too_large','archive_integrity_failed'].includes(error.message))mismatch=true;}
   }
   if(mismatch)throw Error('archive_integrity_failed');
   return null;

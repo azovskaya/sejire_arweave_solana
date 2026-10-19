@@ -6,6 +6,7 @@ import { beginSave, currentSession, pay, prepareArweave, reconcileSave, saveToAr
 import type { SaveSession } from '../lib/preserveV2/types';
 import type { FundOrderView } from '../lib/fund/client';
 import { PromoFundedFlow } from './PromoFundedFlow';
+import { useI18n } from '../lib/i18n/I18nProvider';
 
 type Props = {
   envelope?: EnvelopeV1 | null;
@@ -14,6 +15,7 @@ type Props = {
   parentTxId?: string | null;
   resumeFunded?: boolean;
   quickFundedCode?: string | null;
+  initialMethod?: 'choose' | 'promo' | 'solana';
   onBack?: () => void;
   onBusy?: (busy: boolean) => void;
   onFundedDone?: (order: FundOrderView) => void | Promise<void>;
@@ -32,15 +34,16 @@ const message = (error: unknown) => {
   return known[code] ?? 'Операция пока не завершена. Прогресс сохранён; проверьте его позже.';
 };
 
-export function PreservationV2({envelope,treeName,treeId,parentTxId,resumeFunded,quickFundedCode,onBack,onBusy,onFundedDone}: Props) {
+export function PreservationV2({envelope,treeName,treeId,parentTxId,resumeFunded,quickFundedCode,initialMethod='choose',onBack,onBusy,onFundedDone}: Props) {
+  const { t } = useI18n();
   const [session,setSession] = useState<SaveSession>();
   const [busy,setBusy] = useState(false);
   const [error,setError] = useState('');
   const [info,setInfo] = useState('');
   const [reward,setReward] = useState<string>();
   const [promoEnvelope,setPromoEnvelope] = useState<EnvelopeV1|null>(null);
-  const [saveMethod,setSaveMethod] = useState<'choose'|'promo'|'solana'>(resumeFunded || quickFundedCode ? 'promo' : 'choose');
-  const paidFlowActive = saveMethod === 'solana' || (!envelope && !promoEnvelope);
+  const [saveMethod,setSaveMethod] = useState<'choose'|'promo'|'solana'>(resumeFunded || quickFundedCode ? 'promo' : initialMethod);
+  const paidFlowActive = (saveMethod === 'solana' && import.meta.env.VITE_NATIVE_SOL_MAINNET === '1') || (!envelope && !promoEnvelope);
   const running = useRef(false);
   useEffect(() => {
     if (!paidFlowActive) return;
@@ -122,8 +125,8 @@ export function PreservationV2({envelope,treeName,treeId,parentTxId,resumeFunded
     <h1>Сохранить семейную историю</h1>
     <h2>{treeName || 'Мой род'}</h2>
     <div className="actions" style={{flexDirection:'column',alignItems:'stretch',gap:'12px'}}>
-      <button className="btn" type="button" onClick={()=>setSaveMethod('promo')}>Промокод</button>
-      <button className="btn ghost" type="button" onClick={()=>setSaveMethod('solana')}>Оплатить 0.03 SOL</button>
+      <button className="btn" type="button" onClick={()=>setSaveMethod('promo')}>{t.publish.saveWithPromo}</button>
+      <button className="btn ghost" type="button" onClick={()=>setSaveMethod('solana')}>{t.publish.saveWithSolana}</button>
     </div>
     {onBack&&<button className="btn ghost" type="button" onClick={onBack}>Назад</button>}
   </section>;
@@ -136,8 +139,8 @@ export function PreservationV2({envelope,treeName,treeId,parentTxId,resumeFunded
   </section>;
 
   if(activeEnvelope&&saveMethod==='solana'&&import.meta.env.VITE_NATIVE_SOL_MAINNET!=='1')return <section className="native-checkout" aria-label="Оплата SOL">
-    <h1>Оплатить 0.03 SOL</h1>
-    <p>Реальная оплата Solana Mainnet ещё не подключена. Тестовый Devnet здесь больше не используется.</p>
+    <h1>{t.publish.saveWithSolana}</h1>
+    <p>{t.publish.solanaUnavailable}</p>
     <button className="btn ghost" type="button" onClick={()=>setSaveMethod('choose')}>Назад</button>
   </section>;
 

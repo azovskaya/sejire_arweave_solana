@@ -88,7 +88,7 @@ async function metadataFor(rawText:string):Promise<TxMetadata>{
 }
 const validFundMetadata=await metadataFor(raw);
 const requests:{url:string;method:string}[]=[];
-async function readFundedArchive(rawText:string,metadata:TxMetadata,openKeys=keys){
+async function readFundedArchive(rawText:string,metadata:TxMetadata,openKeys=keys,options:{rawStatus?:number;nativeData?:string|(()=>Response)}={}){
   const gateway='https://synthetic-gateway.example';
   const encodedMetadata={...metadata,tags:metadata.tags.map(tag=>({
     name:Buffer.from(tag.name).toString('base64url'),value:Buffer.from(tag.value).toString('base64url'),
@@ -105,8 +105,14 @@ async function readFundedArchive(rawText:string,metadata:TxMetadata,openKeys=key
       return new Response(JSON.stringify({data:{transactions:{pageInfo:{hasNextPage:false},edges:[{node:{id,block:{height:42,timestamp:123}}}]}}}));
     }
     assert.equal(method,'GET','archive retrieval never submits a transaction');
+    assert.equal(init?.credentials,'omit','gateway reads carry no browser credentials');
+    assert.equal(init?.referrerPolicy,'no-referrer','gateway reads carry no page referrer');
     if(address===`${gateway}/tx/${id}`)return new Response(JSON.stringify(encodedMetadata));
-    if(address===`${gateway}/raw/${id}`)return new Response(rawText);
+    if(address===`${gateway}/raw/${id}`)return new Response(rawText,{status:options.rawStatus??200});
+    if(address===`${gateway}/tx/${id}/data`&&options.nativeData!==undefined){
+      assert.equal(init?.redirect,'error','native data remains on the selected gateway');
+      return typeof options.nativeData==='string'?new Response(options.nativeData):options.nativeData();
+    }
     throw Error('Unexpected synthetic request');
   };
   const context:RecoveryContext={vaultId:openKeys.vaultId,fetcher,signal:new AbortController().signal};
@@ -134,6 +140,35 @@ const changedCipher=envelope.ciphertext.startsWith('A')?'B':'A';
 const changedRaw=JSON.stringify({...envelope,ciphertext:changedCipher+envelope.ciphertext.slice(1)});
 assert.equal(changedRaw.length,raw.length);
 await assert.rejects(()=>readFundedArchive(changedRaw,validFundMetadata),isFailure('RAW_HASH_MISMATCH'),'exact published hash remains enforced');
+
+// A confirmed transaction can have a broken raw gateway route while the node API
+// returns its correct, committed archive as base64url. This never creates a write.
+const base64Archive=Buffer.from(raw).toString('base64url');
+const beforeFallback=requests.length;
+const rescued=await readFundedArchive(changedRaw,validFundMetadata,keys,{nativeData:base64Archive});
+assert.deepEqual(rescued.head.vault,testVault,'native data fallback preserves both trees, history and active tree');
+assert.deepEqual(requests.slice(beforeFallback).map(request=>request.method),['POST','GET','GET','GET']);
+assert.equal(requests.at(-1)?.url,`https://synthetic-gateway.example/tx/${id}/data`);
+assert.deepEqual((await readFundedArchive('',validFundMetadata,keys,{rawStatus:503,nativeData:base64Archive})).head.vault,testVault,'fallback also handles raw HTTP failure');
+for(const invalidBase64 of [base64Archive+'=',base64Archive+'\n','!'+base64Archive.slice(1),'A',Buffer.from(raw.slice(0,-1)).toString('base64url'),Buffer.from(changedRaw).toString('base64url')]){
+  await assert.rejects(()=>readFundedArchive(changedRaw,validFundMetadata,keys,{nativeData:invalidBase64}),isFailure('RAW_HASH_MISMATCH'),'invalid base64, size or hash cannot restore');
+}
+const canonicalRaw=raw.length%3===0?raw+' ':raw;
+const canonicalEncoded=Buffer.from(canonicalRaw).toString('base64url');
+const alphabet='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
+const noncanonicalEncoded=canonicalEncoded.slice(0,-1)+alphabet[alphabet.indexOf(canonicalEncoded.at(-1)!)|1];
+assert.notEqual(noncanonicalEncoded,canonicalEncoded);
+assert.deepEqual(Buffer.from(noncanonicalEncoded,'base64url'),Buffer.from(canonicalRaw),'noncanonical fixture has identical decoded bytes');
+await assert.rejects(async()=>readFundedArchive('x'.repeat(canonicalRaw.length),await metadataFor(canonicalRaw),keys,{nativeData:noncanonicalEncoded}),isFailure('RAW_HASH_MISMATCH'),'nonzero unused base64 bits are rejected');
+let oversizedBodyCancelled=false;
+const encodedLimit=Math.ceil(raw.length*4/3);
+await assert.rejects(()=>readFundedArchive(changedRaw,validFundMetadata,keys,{nativeData:()=>new Response(new ReadableStream({
+  start(controller){controller.enqueue(new Uint8Array(encodedLimit+1).fill(65));},
+  cancel(){oversizedBodyCancelled=true;},
+}))}),isFailure('RAW_HASH_MISMATCH'),'encoded stream is bounded before decoding');
+assert.equal(oversizedBodyCancelled,true);
+await assert.rejects(()=>readFundedArchive(changedRaw,validFundMetadata,keys,{nativeData:()=>new Response(base64Archive,{headers:{'Content-Length':String(encodedLimit+1)}})}),isFailure('RAW_HASH_MISMATCH'),'oversized declared body is rejected');
+await assert.rejects(async()=>readFundedArchive('',await metadataFor(changedRaw),keys,{rawStatus:503,nativeData:Buffer.from(changedRaw).toString('base64url')}),isFailure('DECRYPT_FAILED'),'native fallback still enforces AES-GCM after a matching hash');
 await assert.rejects(async()=>readFundedArchive(changedRaw,await metadataFor(changedRaw)),isFailure('DECRYPT_FAILED'),'matching hash does not bypass AES-GCM');
 const wrongEnvelopeVault=JSON.stringify({...envelope,vault_id:'b'.repeat(32)});
 await assert.rejects(async()=>readFundedArchive(wrongEnvelopeVault,await metadataFor(wrongEnvelopeVault)),isFailure('VAULT_ID_MISMATCH'),'envelope vault remains enforced');
@@ -141,4 +176,4 @@ const wrongEnvelopeProtocol=JSON.stringify({...envelope,protocol:'sejire/v9'});
 await assert.rejects(async()=>readFundedArchive(wrongEnvelopeProtocol,await metadataFor(wrongEnvelopeProtocol)),isFailure('RAW_HASH_MISMATCH'),'envelope protocol remains enforced');
 const invalidVault=serializeEnvelope(await encryptJson(keys.encKey,keys.vaultId,{...testVault,trees:{invalid:{}}}));
 await assert.rejects(async()=>readFundedArchive(invalidVault,await metadataFor(invalidVault)),isFailure('INVALID_VAULT'),'decrypted tree structure remains enforced');
-console.log('Recovery provider, strict historical fund metadata, raw/hash/AES/vault checks and HEAD selftests passed');
+console.log('Recovery provider, strict historical fund metadata, bounded native data fallback, raw/hash/AES/vault checks and HEAD selftests passed');

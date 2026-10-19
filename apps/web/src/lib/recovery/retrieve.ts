@@ -54,27 +54,76 @@ export async function fetchMetadata(ctx:RecoveryContext,pool:GatewayPool,candida
     finally{diagnostics.gateways.push({host:gatewayHost(target.url),operation:'metadata',status});}
   },ctx.signal);}catch{throw mismatch??new RecoveryFailure('DATA_UNAVAILABLE');}
 }
+
+// The node data API returns plain base64url, whereas /raw returns archive bytes.
+// Bound the whole response, including its body, before allocating or decoding it.
+async function readArchiveResponse(fetcher:typeof fetch,url:string,maxBytes:number,signal:AbortSignal,onStatus:(status:string)=>void,nativeData:boolean):Promise<Uint8Array>{
+  const controller=new AbortController();let reader:ReadableStreamDefaultReader<Uint8Array>|undefined;
+  const abort=()=>{controller.abort();void reader?.cancel().catch(()=>{});};
+  const timer=setTimeout(abort,5000);signal.addEventListener('abort',abort,{once:true});
+  try{
+    if(signal.aborted)abort();
+    if(controller.signal.aborted)throw Error('archive_read_aborted');
+    const response=await fetcher(url,{signal:controller.signal,credentials:'omit',referrerPolicy:'no-referrer',...(nativeData?{redirect:'error' as const}:{})});
+    onStatus(String(response.status));
+    if(!response.ok)throw Error('archive_unavailable');
+    if(nativeData&&response.url&&response.url!==url)throw Error('archive_redirect_rejected');
+    const length=response.headers.get('content-length');
+    if(length!==null&&(!/^\d+$/.test(length)||Number(length)>maxBytes)){
+      void response.body?.cancel().catch(()=>{});throw new RecoveryFailure('RAW_HASH_MISMATCH');
+    }
+    if(!response.body)throw Error('archive_body_unavailable');
+    reader=response.body.getReader();const chunks:Uint8Array[]=[];let size=0;
+    for(;;){
+      if(controller.signal.aborted)throw Error('archive_read_aborted');
+      const item=await reader.read();
+      if(controller.signal.aborted)throw Error('archive_read_aborted');
+      if(item.done)break;
+      size+=item.value.length;
+      if(size>maxBytes){void reader.cancel().catch(()=>{});throw new RecoveryFailure('RAW_HASH_MISMATCH');}
+      chunks.push(item.value);
+    }
+    const bytes=new Uint8Array(size);let offset=0;
+    for(const chunk of chunks){bytes.set(chunk,offset);offset+=chunk.length;}
+    return bytes;
+  }finally{
+    clearTimeout(timer);signal.removeEventListener('abort',abort);reader?.releaseLock();
+  }
+}
+
+function decodeNativeData(encodedBytes:Uint8Array,maxBytes:number):Uint8Array{
+  try{
+    const encoded=new TextDecoder('utf-8',{fatal:true,ignoreBOM:true}).decode(encodedBytes);
+    if(!encoded.length||/[^A-Za-z0-9_-]/.test(encoded)||encoded.length%4===1)throw Error('bad_base64url');
+    const base=encoded.replace(/-/g,'+').replace(/_/g,'/');
+    const binary=atob(base.padEnd(Math.ceil(base.length/4)*4,'='));
+    if(binary.length>maxBytes||btoa(binary).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'')!==encoded)throw Error('bad_base64url');
+    return Uint8Array.from(binary,c=>c.charCodeAt(0));
+  }catch{throw new RecoveryFailure('RAW_HASH_MISMATCH');}
+}
+
 export async function fetchRaw(ctx:RecoveryContext,pool:GatewayPool,candidate:HeadCandidate,meta:TxMetadata,diagnostics:SafeRecoveryDiagnostics):Promise<Uint8Array>{
   const targets=await pool.candidates(ctx);let mismatch:RecoveryFailure|undefined;
   const expectedBytes=tagValue(meta,'Archive-Bytes')?Number(tagValue(meta,'Archive-Bytes')):candidate.archiveBytes;
   const expectedHash=tagValue(meta,'Archive-SHA256')??candidate.archiveSha256;
+  if(expectedBytes!==undefined&&(!Number.isSafeInteger(expectedBytes)||expectedBytes<=0||expectedBytes>MAX_BACKUP_BYTES))throw new RecoveryFailure('RAW_HASH_MISMATCH');
+  const maxBytes=expectedBytes??MAX_BACKUP_BYTES;
   try{return await firstUsable(targets,async(target,signal)=>{
-    const start=performance.now();let status='unavailable';
-    try {
-      const response=await timedFetch(ctx.fetcher,`${target.url}/raw/${candidate.txId}`,{},5000,signal);status=String(response.status);
-      if(!response.ok)throw Error('raw_unavailable');
-      const length=response.headers.get('content-length');if(length&&Number(length)>MAX_BACKUP_BYTES)throw new RecoveryFailure('RAW_HASH_MISMATCH');
-      if(!response.body)throw Error('raw_body_unavailable');
-      const reader=response.body.getReader();const chunks:Uint8Array[]=[];let size=0;
-      try{for(;;){const item=await reader.read();if(item.done)break;size+=item.value.length;
-        if(size>MAX_BACKUP_BYTES){await reader.cancel();throw new RecoveryFailure('RAW_HASH_MISMATCH');}chunks.push(item.value);}}
-      finally{reader.releaseLock();}
-      const bytes=new Uint8Array(size);let offset=0;for(const chunk of chunks){bytes.set(chunk,offset);offset+=chunk.length;}
-      if(bytes.length>MAX_BACKUP_BYTES||expectedBytes!==undefined&&bytes.length!==expectedBytes)throw new RecoveryFailure('RAW_HASH_MISMATCH');
-      const digest=await crypto.subtle.digest('SHA-256',bytes as BufferSource);const hash=[...new Uint8Array(digest)].map(b=>b.toString(16).padStart(2,'0')).join('');
-      if(expectedHash&&hash!==expectedHash)throw new RecoveryFailure('RAW_HASH_MISMATCH');
-      pool.markSuccess(target.url,performance.now()-start);return bytes;
-    }catch(error){pool.markFailure(target.url);if(error instanceof RecoveryFailure)mismatch??=error;throw error;}
-    finally{diagnostics.gateways.push({host:gatewayHost(target.url),operation:'raw',status});}
+    const start=performance.now();let lastError:unknown;
+    for(const nativeData of [false,true]){
+      if(signal.aborted)throw Error('archive_read_aborted');
+      let status='unavailable';
+      try{
+        const path=nativeData?`/tx/${candidate.txId}/data`:`/raw/${candidate.txId}`;
+        const body=await readArchiveResponse(ctx.fetcher,`${target.url}${path}`,nativeData?Math.ceil(maxBytes*4/3):maxBytes,signal,value=>{status=value;},nativeData);
+        const bytes=nativeData?decodeNativeData(body,maxBytes):body;
+        if(expectedBytes!==undefined&&bytes.length!==expectedBytes)throw new RecoveryFailure('RAW_HASH_MISMATCH');
+        const digest=await crypto.subtle.digest('SHA-256',bytes as BufferSource);const hash=[...new Uint8Array(digest)].map(b=>b.toString(16).padStart(2,'0')).join('');
+        if(expectedHash&&hash!==expectedHash)throw new RecoveryFailure('RAW_HASH_MISMATCH');
+        pool.markSuccess(target.url,performance.now()-start);return bytes;
+      }catch(error){lastError=error;if(error instanceof RecoveryFailure)mismatch??=error;}
+      finally{diagnostics.gateways.push({host:gatewayHost(target.url),operation:'raw',status});}
+    }
+    pool.markFailure(target.url);throw lastError;
   },ctx.signal);}catch{throw mismatch??new RecoveryFailure('DATA_UNAVAILABLE');}
 }

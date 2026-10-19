@@ -114,6 +114,88 @@ try {
   assert.equal((await provider.verify(id,expected,confirmed)).confirmed,true);
   assert.deepEqual(canonicalCalls,[`https://arweave.net/raw/${id}`,`https://g8way.io/raw/${id}`,`https://arweave.net/${id}`]);
 
+  // Reproduce the larger-archive failure: /raw returns wrong bytes and the
+  // canonical URL is unavailable, while the node API has the exact ciphertext.
+  const largeEnvelope=JSON.parse(new TextDecoder().decode(encoded));
+  const cipherLength=39305-JSON.stringify({...largeEnvelope,ciphertext:''}).length;
+  assert.equal(cipherLength%4,0);
+  largeEnvelope.ciphertext='A'.repeat(cipherLength);
+  const largeBytes=new TextEncoder().encode(JSON.stringify(largeEnvelope));
+  const largeExpected={bytes:largeBytes.length,digest:Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',largeBytes)),n=>n.toString(16).padStart(2,'0')).join(''),vaultId:largeEnvelope.vault_id};
+  assert.equal(largeBytes.length,39305);
+  const nodeData=Buffer.from(largeBytes).toString('base64url'),nodeCalls=[];
+  globalThis.fetch=async (url,options)=>{
+    nodeCalls.push([url,options]);
+    assert.equal(options.method??'GET','GET');
+    if(url.endsWith(`/tx/${id}/data`))return responseAt(url,nodeData);
+    return url.includes('/raw/')?responseAt(url,new Uint8Array(largeBytes.length)):responseAt(url,'missing',{status:404});
+  };
+  const nodeRecovered=await provider.verify(id,largeExpected,confirmed);
+  assert.equal(nodeRecovered.confirmed,true);assert.equal(nodeRecovered.verification.stage,'verified');
+  assert.equal(nodeRecovered.verification.transactionConfirmed,true);
+  assert.deepEqual(nodeCalls.map(([url])=>url),[`https://arweave.net/raw/${id}`,`https://g8way.io/raw/${id}`,`https://arweave.net/${id}`,`https://g8way.io/${id}`,`https://arweave.net/tx/${id}/data`]);
+  assert.equal(nodeCalls.at(-1)[1].redirect,'error');
+  assert.equal(nodeCalls.every(([,options])=>options.signal instanceof AbortSignal&&!options.headers),true);
+
+  const alphabet='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
+  const noncanonical=nodeData.slice(0,-1)+alphabet[alphabet.indexOf(nodeData.at(-1))|1];
+  assert.notEqual(noncanonical,nodeData);
+  assert.deepEqual(Buffer.from(noncanonical,'base64url'),Buffer.from(largeBytes),'noncanonical trailing bits must not be accepted even when decoded bytes match');
+  const changedBytes=largeBytes.slice();changedBytes[changedBytes.lastIndexOf(65)]=66;
+  for(const [name,body] of [
+    ['invalid alphabet','*'+nodeData.slice(1)],
+    ['noncanonical trailing bits',noncanonical],
+    ['invalid encoded length','A'],
+    ['unexpected decoded length',Buffer.from(largeBytes.subarray(0,-1)).toString('base64url')],
+    ['oversized encoded body','A'.repeat(Math.ceil(largeBytes.length*4/3)+1)],
+    ['different archive digest',Buffer.from(changedBytes).toString('base64url')],
+    ['unexpected JSON wrapper',JSON.stringify(nodeData)],
+  ]){
+    globalThis.fetch=async (url,options)=>{
+      assert.equal(options.method??'GET','GET');
+      return url.endsWith(`/tx/${id}/data`)?responseAt(url,body):responseAt(url,'missing',{status:404});
+    };
+    const failed=await provider.verify(id,largeExpected,confirmed);
+    assert.equal(failed.confirmed,false,name);assert.equal(failed.verification.stage,'attention',name);
+    assert.equal(failed.verification.reason,'archive_verification_failed',name);
+    assert.equal(failed.verification.transactionConfirmed,true,name);
+  }
+  globalThis.fetch=async url=>url.endsWith(`/tx/${id}/data`)?responseAt(url,nodeData):responseAt(url,'missing',{status:404});
+  const wrongVault=await provider.verify(id,{...largeExpected,vaultId:'b'.repeat(32)},confirmed);
+  assert.equal(wrongVault.confirmed,false);assert.equal(wrongVault.verification.reason,'archive_verification_failed');
+
+  let cancelledOversizeBodies=0;
+  globalThis.fetch=async url=>{
+    if(!url.endsWith(`/tx/${id}/data`))return responseAt(url,'missing',{status:404});
+    return responseAt(url,new ReadableStream({
+      start(controller){controller.enqueue(new Uint8Array(Math.ceil(largeBytes.length*4/3)+1).fill(65));},
+      cancel(){cancelledOversizeBodies++;},
+    }));
+  };
+  const oversized=await provider.verify(id,largeExpected,confirmed);
+  assert.equal(oversized.confirmed,false);assert.equal(oversized.verification.reason,'archive_verification_failed');
+  assert.equal(cancelledOversizeBodies,2,'both oversized node responses are cancelled at the encoded-byte limit');
+
+  const nodeFallbackCalls=[];
+  globalThis.fetch=async (url,options)=>{
+    nodeFallbackCalls.push([url,options]);
+    return url.endsWith(`/tx/${id}/data`)?responseAt(url,url.startsWith('https://arweave.net/')?'!':nodeData):responseAt(url,'missing',{status:404});
+  };
+  assert.equal((await provider.verify(id,largeExpected,confirmed)).confirmed,true);
+  assert.deepEqual(nodeFallbackCalls.slice(-2).map(([url])=>url),[`https://arweave.net/tx/${id}/data`,`https://g8way.io/tx/${id}/data`]);
+
+  for(const target of [`https://attacker.example/tx/${id}/data`,`https://arweave.net/tx/${'B'.repeat(43)}/data`]){
+    const nodeRedirectCalls=[];
+    globalThis.fetch=async (url,options)=>{
+      nodeRedirectCalls.push(url);
+      if(!url.endsWith(`/tx/${id}/data`))return responseAt(url,'missing',{status:404});
+      assert.equal(options.redirect,'error');
+      return responseAt(target,nodeData);
+    };
+    const rejected=await provider.verify(id,largeExpected,confirmed);
+    assert.equal(rejected.confirmed,false);assert.equal(nodeRedirectCalls.includes(target),false);
+  }
+
   const sandbox=`https://${'a'.repeat(52)}.arweave.net/${id}`,redirectCalls=[];
   globalThis.fetch=async (url,options)=>{
     redirectCalls.push([url,options]);
@@ -143,5 +225,19 @@ try {
     assert.ok(Date.now()-started<800,'one shared deadline bounds stalled response bodies and fallback attempts');
     assert.ok(timeoutCalls.length<=2);
   }finally{clearTimeout(hold);}
-  console.log('fund-provider: PASS; pending/confirmed distinction, verified bounded fallback, trusted redirects and shared check deadline; zero posts');
+  // The added node-API body also observes the original shared deadline.
+  let nodeTimeoutCalls=0;const nodeStarted=Date.now();
+  globalThis.fetch=async (url,{signal})=>{
+    if(!url.endsWith(`/tx/${id}/data`))return responseAt(url,'missing',{status:404});
+    nodeTimeoutCalls++;
+    return responseAt(url,new ReadableStream({start(controller){signal.addEventListener('abort',()=>controller.error(Error('synthetic node timeout')),{once:true});}}));
+  };
+  const nodeHold=setTimeout(()=>{},1000);
+  try{
+    const timedOut=await provider.verify(id,largeExpected,confirmed,Date.now()+30);
+    assert.equal(timedOut.confirmed,false);assert.equal(timedOut.verification.reason,'archive_unavailable');
+    assert.equal(timedOut.verification.transactionConfirmed,true);
+    assert.ok(nodeTimeoutCalls>=1&&nodeTimeoutCalls<=2);assert.ok(Date.now()-nodeStarted<800);
+  }finally{clearTimeout(nodeHold);}
+  console.log('fund-provider: PASS; pending/confirmed distinction, bounded raw/canonical/node-data verification, strict base64url, trusted redirects and shared check deadline; zero posts');
 } finally { globalThis.fetch=originalFetch; }

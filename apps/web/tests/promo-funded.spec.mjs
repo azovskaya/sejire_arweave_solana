@@ -6,26 +6,28 @@ const tx='A'.repeat(43),initial='13000000000000';
 const origin='http://127.0.0.1:5183';
 const promo=page=>page.getByRole('region',{name:'Сохранение по промокоду',exact:true});
 const json=(route,value,status=200)=>route.fulfill({status,contentType:'application/json',body:JSON.stringify(value)});
+const networkGuards=new WeakMap();
 
 // Test only the real local UI. No request may reach an Arweave gateway,
 // a production Worker, a Solana RPC, or an unmocked local API proxy.
 test.beforeEach(async({context})=>{
+ const blocked={http:0,websocket:0,api:0};networkGuards.set(context,blocked);
  await context.route('**/*',async route=>{
   const url=new URL(route.request().url());
-  if(url.origin!==origin)return route.abort('blockedbyclient');
-  if(url.pathname.startsWith('/api/'))return json(route,{error:'unmocked_test_api'},404);
+  if(url.origin!==origin){blocked.http++;return route.abort('blockedbyclient');}
+  if(url.pathname.startsWith('/api/')){blocked.api++;return json(route,{error:'unmocked_test_api'},404);}
   return route.continue();
  });
  await context.routeWebSocket('**/*',route=>{
   if(new URL(route.url()).origin==='ws://127.0.0.1:5183')route.connectToServer();
-  else route.close({code:1008,reason:'External network disabled in this test'});
+  else{blocked.websocket++;route.close({code:1008,reason:'External network disabled in this test'});}
  });
 });
 
 async function openPromo(page,contents=archive,reload=false){
  if(reload)await page.reload();else await page.goto('/#/save');
  await page.getByLabel('Зашифрованный архив для промокода').setInputFiles({name:'synthetic.json',mimeType:'application/json',buffer:Buffer.from(contents)});
- await page.getByRole('button',{name:'Промокод',exact:true}).click();
+ await page.getByRole('button',{name:'По промокоду',exact:true}).click();
  await expect(promo(page)).toBeVisible();
  return promo(page);
 }
@@ -57,9 +59,102 @@ async function openEditor(page){
 
 async function openEditorPromo(page){
  await page.getByRole('button',{name:'Сохранить',exact:true}).first().click();
- await page.getByRole('dialog').getByRole('button',{name:'Сохранить через Solana',exact:true}).click();
- await page.getByRole('dialog').getByRole('button',{name:'Промокод',exact:true}).click();
+ await page.getByRole('dialog').getByRole('button',{name:'По промокоду',exact:true}).click();
  await expect(promo(page)).toBeVisible();
+}
+
+async function openNewEditor(page){
+ await page.goto('/');
+ expect(await page.evaluate(async()=>({
+  draft:(await import('/src/lib/draftStorage.ts')).loadDraftTree(),
+  session:(await import('/src/lib/vaultSession/session.ts')).getVaultSession(),
+ }))).toEqual({draft:null,session:null});
+ await page.getByRole('button',{name:'Создать моё древо',exact:true}).click();
+ await page.getByRole('button',{name:'Добавить себя',exact:true}).click();
+ await page.getByRole('dialog').getByLabel('Имя',{exact:true}).fill('Synthetic new member');
+ await page.getByRole('dialog').getByRole('button',{name:'Добавить',exact:true}).click();
+ await expect(page.getByRole('dialog')).toHaveCount(0);
+ await expect(page.locator('.person-card').filter({hasText:'Synthetic new member'})).toBeVisible();
+}
+
+async function confirmNewWords(page){
+ const dialog=page.getByRole('dialog');
+ await dialog.getByRole('button',{name:'Создать 12 слов',exact:true}).click();
+ await expect(dialog.locator('.seed-grid li')).toHaveCount(12);
+ // Read and repeat only the phrase that this isolated UI just generated. It
+ // stays in page memory; screenshots are taken after the seed grid is gone.
+ await dialog.locator('.seed-grid').evaluate(grid=>{
+  window.promoNewWords=[...grid.querySelectorAll('li')].map(item=>item.textContent.replace(/^\d+\.\s*/, '').trim()).join(' ');
+ });
+ await dialog.getByRole('button',{name:'Я записал(а)',exact:true}).click();
+ await dialog.getByRole('textbox').evaluate(input=>{
+  Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype,'value').set.call(input,window.promoNewWords);
+  input.dispatchEvent(new Event('input',{bubbles:true}));
+ });
+ await dialog.getByRole('button',{name:'Далее',exact:true}).click();
+ await expect(dialog.locator('.seed-grid')).toHaveCount(0);
+ await expect(dialog.getByRole('textbox')).toHaveCount(0);
+}
+
+async function expectNativeMethods(container){
+ await expect(container.getByRole('button',{name:/^(По промокоду|Через Solana)$/})).toHaveText(['По промокоду','Через Solana']);
+ await expect(container.getByRole('button',{name:/за свой AR|казн|[Дд]емо|Касси|Kaspi|децентрализованную сеть|Новая версия в сеть|Навсегда · оплата|Сохранить через Solana/})).toHaveCount(0);
+ await expect(container.getByText(/На адресе из ваших 12 слов нет AR|Адрес из 12 слов:|Сеть оплачивает казна|включён демо-режим/)).toHaveCount(0);
+}
+
+async function enableSyntheticLegacySettings(page){
+ expect(await page.evaluate(async()=>{
+  const ops=await import('/src/lib/opsDesk/store.ts');
+  await ops.activateOpsPassword('synthetic-browser-password');
+  // Deliberately unusable fixture key: enough to activate the old UI flag,
+  // incapable of signing a transaction. No admin screen or real secret is used.
+  await ops.applyOpsKeyPatch({turboJwk:JSON.stringify({kty:'RSA',n:'synthetic-not-a-key',d:'synthetic-not-a-key'}),hotAddress:'Z'.repeat(43),paymentProvider:'kaspi',publishPriceMinor:'777',publishCurrency:'KZT',kaspiApiBase:'https://legacy-payments.invalid'});
+  return {treasury:ops.isTreasuryPublishEnabled(),provider:ops.getOpsSettings().paymentProvider};
+ })).toEqual({treasury:true,provider:'kaspi'});
+}
+
+async function mockReadOnlyDiscoveryAndRejectWallets(page){
+ await page.addInitScript(()=>{
+  window.promoWalletCalls=0;
+  const forbidden=async()=>{window.promoWalletCalls++;throw Error('Unexpected wallet call in promo UI test');};
+  window.phantom={solana:{connect:forbidden,signMessage:forbidden,signTransaction:forbidden,signAndSendTransaction:forbidden}};
+  window.arweaveWallet={connect:forbidden,sign:forbidden,dispatch:forbidden};
+ });
+ await page.route('**/graphql',async route=>{
+  expect(route.request().method()).toBe('POST');
+  return json(route,{data:{transactions:{edges:[],pageInfo:{hasNextPage:false}}}});
+ });
+}
+
+async function rememberExpectedTrees(page){
+ return page.evaluate(async()=>{
+  const current=(await import('/src/lib/draftStorage.ts')).loadDraftTree();
+  window.promoExpectedTrees={...(window.promoEditorFixture?.vault.trees??{}),[current.meta.id]:current};
+  return Object.keys(window.promoExpectedTrees).length;
+ });
+}
+
+async function expectCompleteEditorVault(page,api,treeCount){
+ await expect(page.getByRole('dialog')).toHaveCount(0);
+ await expect(page.getByText(/^Сохранено в Arweave /)).toBeVisible();
+ expect(api.posts).toHaveLength(1);expect(api.validations).toBe(1);
+ expect(await page.evaluate(async serialized=>{
+  const session=(await import('/src/lib/vaultSession/session.ts'));
+  const keys=(await import('/src/lib/crypto/keys.ts')).deriveKeysFromMnemonic(session.getSessionMnemonic());
+  const vault=await(await import('/src/lib/crypto/vault.ts')).openEnvelope(keys,JSON.parse(serialized));
+  const current=(await import('/src/lib/draftStorage.ts')).loadDraftTree();
+  return {allTreesMatch:JSON.stringify(vault.trees)===JSON.stringify(window.promoExpectedTrees),
+   count:Object.keys(vault.trees).length,activeTreeMatches:vault.active_tree_id===current.meta.id,
+   wordsInRequest:serialized.includes(session.getSessionMnemonic())};
+ },api.posts[0].archive)).toEqual({allTreesMatch:true,count:treeCount,activeTreeMatches:true,wordsInRequest:false});
+ const saved=await savedEditorArchive(page,tx);
+ expect(saved.headTxId).toBe(tx);expect(saved.archive).toBe(api.posts[0].archive);expect(saved.source).toBe('network');
+ expect(await activeFundAttempts(page)).toHaveLength(0);
+}
+
+async function expectNoPaymentSideEffects(page){
+ expect(networkGuards.get(page.context())).toEqual({http:0,websocket:0,api:0});
+ expect(await page.evaluate(()=>window.promoWalletCalls)).toBe(0);
 }
 
 async function editChildName(page,name){
@@ -92,7 +187,7 @@ function requireDurableEditorAttempt(page,api){
   const stored=await page.evaluate(async orderId=>{
    const raw=localStorage.getItem(`sejire.fundAttempt.v1.${orderId}`);
    const session=await import('/src/lib/vaultSession/session.ts');
-   const words=session.getSessionMnemonic();
+   const words=session.getSessionMnemonic()??window.promoNewWords??window.promoEditorFixture?.words;
    return {record:raw?JSON.parse(raw):null,
     treeId:(await import('/src/lib/draftStorage.ts')).loadDraftTree()?.meta.id,
     parentTxId:session.getVaultSession()?.headTxId??null,
@@ -262,6 +357,84 @@ test('Pending transaction explains confirmation and archive verification before 
  expect(api.reads).toHaveLength(reads);expect(api.posts).toHaveLength(1);
 });
 
+test('A genuinely new tree confirms its words and saves directly by promo with only two network choices',async({page},testInfo)=>{
+ await mockReadOnlyDiscoveryAndRejectWallets(page);
+ const api=await mockPreservation(page,{expectedArchive:null,status:'COMPLETED'});requireDurableEditorAttempt(page,api);
+ await page.clock.install();await page.setViewportSize({width:390,height:844});
+ await openNewEditor(page);await enableSyntheticLegacySettings(page);
+ await page.getByRole('button',{name:'Сохранить',exact:true}).first().click();
+ await confirmNewWords(page);
+ const dialog=page.getByRole('dialog');
+ await expectNativeMethods(dialog);
+ await expect(dialog.getByRole('button',{name:'12 слов · JSON',exact:true})).toBeEnabled();
+ expect(await rememberExpectedTrees(page)).toBe(1);
+ expect(api.validations).toBe(0);expect(api.posts).toHaveLength(0);
+ await expect.poll(()=>dialog.locator('.modal').evaluate(el=>el.scrollWidth<=el.clientWidth)).toBe(true);
+ await expect.poll(()=>page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
+ await page.screenshot({path:testInfo.outputPath('new-tree-native-choices-mobile.png'),fullPage:true});
+ await dialog.getByRole('button',{name:'По промокоду',exact:true}).click();
+ await expect(promo(page).getByLabel('Промокод',{exact:true})).toBeVisible();
+ await expect(dialog.getByRole('button',{name:'Через Solana',exact:true})).toHaveCount(0);
+ expect(api.posts).toHaveLength(0);
+ await savePromo(page);await expectCompleteEditorVault(page,api,1);
+ await page.clock.runFor(20_000);expect(api.posts).toHaveLength(1);
+ await expectNoPaymentSideEffects(page);
+});
+
+test('Existing vault offers direct native choices despite legacy settings and Solana stays unavailable without payment',async({page},testInfo)=>{
+ await mockReadOnlyDiscoveryAndRejectWallets(page);
+ const api=await mockPreservation(page,{expectedArchive:null,status:'COMPLETED'});requireDurableEditorAttempt(page,api);
+ await page.clock.install();await page.setViewportSize({width:390,height:844});
+ await openEditor(page);await enableSyntheticLegacySettings(page);
+ await page.getByRole('button',{name:'Сохранить',exact:true}).first().click();
+ const dialog=page.getByRole('dialog');
+ await expectNativeMethods(dialog);
+ expect(await rememberExpectedTrees(page)).toBe(2);
+ await dialog.getByRole('button',{name:'Через Solana',exact:true}).click();
+ const solana=dialog.getByRole('region',{name:'Оплата SOL',exact:true});
+ await expect(solana.getByRole('heading',{name:'Через Solana',exact:true})).toBeVisible();
+ await expect(solana).toContainText('Оплата через Solana пока недоступна. Вы можете сохранить дерево по промокоду.');
+ await expect(solana.getByRole('button',{name:/Оплатить|Phantom|Wander/})).toHaveCount(0);
+ await expect(promo(page)).toHaveCount(0);
+ const sealed=await page.evaluate(()=>JSON.stringify(JSON.parse(localStorage.getItem(`sejire.envelope.${window.promoEditorFixture.envelope.vault_id}`))));
+ await page.clock.runFor(20_000);
+ expect(api.posts).toHaveLength(0);expect(api.validations).toBe(0);expect(api.reads).toHaveLength(0);
+ await expectNoPaymentSideEffects(page);
+ await expect.poll(()=>page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
+ await page.screenshot({path:testInfo.outputPath('native-solana-unavailable-mobile.png'),fullPage:true});
+ await solana.getByRole('button',{name:'Назад',exact:true}).click();
+ await expectNativeMethods(dialog);
+ await dialog.getByRole('button',{name:'По промокоду',exact:true}).click();
+ await savePromo(page);await expectCompleteEditorVault(page,api,2);
+ expect(api.posts[0].archive).toBe(sealed);
+ await expectNoPaymentSideEffects(page);
+});
+
+test('Existing words continue to the same two methods and promo preserves every tree in that vault',async({page})=>{
+ await mockReadOnlyDiscoveryAndRejectWallets(page);
+ const api=await mockPreservation(page,{expectedArchive:null,status:'COMPLETED'});requireDurableEditorAttempt(page,api);
+ await page.clock.install();await openNewEditor(page);await enableSyntheticLegacySettings(page);
+ // Two encrypted prior trees plus a genuinely new editor tree. This fixture
+ // does not set a session key, so the real existing-words form is required.
+ await page.evaluate(async()=>{window.promoEditorFixture=await(await import('/tests/browser-fixture.ts')).fixture();});
+ await page.getByRole('button',{name:'Сохранить',exact:true}).first().click();
+ const dialog=page.getByRole('dialog');
+ await dialog.getByRole('button',{name:'У меня уже есть слова (новая версия)',exact:true}).click();
+ await dialog.getByRole('textbox').evaluate(input=>{
+  Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype,'value').set.call(input,window.promoEditorFixture.words);
+  input.dispatchEvent(new Event('input',{bubbles:true}));
+ });
+ expect(await rememberExpectedTrees(page)).toBe(3);
+ await dialog.getByRole('button',{name:'Продолжить',exact:true}).click();
+ await expectNativeMethods(dialog);
+ await expect(dialog.getByRole('textbox')).toHaveCount(0);
+ expect(api.posts).toHaveLength(0);expect(api.validations).toBe(0);
+ await dialog.getByRole('button',{name:'По промокоду',exact:true}).click();
+ await savePromo(page);await expectCompleteEditorVault(page,api,3);
+ await page.clock.runFor(20_000);expect(api.posts).toHaveLength(1);
+ await expectNoPaymentSideEffects(page);
+});
+
 test('Editor completion is automatic and local storage failures only retry local completion on mobile',async({page},testInfo)=>{
  const api=await mockPreservation(page,{expectedArchive:null});
  requireDurableEditorAttempt(page,api);
@@ -346,7 +519,7 @@ test('Editor completion is automatic and local storage failures only retry local
  }
  await retry.click();await expect(dialog).toHaveCount(0);
  await expect(page.getByRole('button',{name:'Сохранить бесплатно',exact:true}).first()).toBeVisible();
- await expect(page.getByRole('button',{name:'Сохранить через Solana',exact:true})).toHaveCount(0);
+ await expect(page.getByRole('button',{name:'Через Solana',exact:true})).toHaveCount(0);
  expect(api.posts).toHaveLength(1);expect(api.validations).toBe(1);
  const saved=await savedEditorArchive(page,tx);
  expect(saved.headTxId).toBe(tx);expect(saved.vaultId).toBe(api.order.vaultId);expect(saved.source).toBe('network');
