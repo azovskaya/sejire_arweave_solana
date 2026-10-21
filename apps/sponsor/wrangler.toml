@@ -6,6 +6,11 @@ compatibility_flags = ["nodejs_compat"]
 [vars]
 PAYMENT_PROVIDER = "mock"
 FUND_API_ENABLED = "true"
+# General paid flow is implemented independently of the historical devnet pilot.
+# Activation requires explicit public recipients and a separate AR budget; an
+# admission pause does not erase existing paid orders or their stored TX bytes.
+CHECKOUT_PAID_ENABLED = "false"
+CHECKOUT_PAID_EXECUTION_ENABLED = "false"
 CHECKOUT_ALLOWED_ORIGINS = "https://azovskaya.github.io,https://sejire.ar.io"
 PUBLISH_PRICE_MINOR = "1500"
 PUBLISH_CURRENCY = "KZT"

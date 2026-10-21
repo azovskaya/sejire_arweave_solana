@@ -15,7 +15,7 @@ import {
   sealVault,
 } from "../lib/crypto/vault";
 import type { EnvelopeV1 } from "../lib/crypto/encrypt";
-import { serializeEnvelope } from "../lib/crypto/envelope";
+import { parseEnvelope, serializeEnvelope } from "../lib/crypto/envelope";
 import { loadVaultForPublish } from "../lib/arweave/loadVault";
 import { addressFromJwk, jwkFromSeed } from "../lib/arweave/wallet";
 import { getWalletBalanceAr, publishEnvelope } from "../lib/arweave/publish";
@@ -54,7 +54,11 @@ import { CheckoutPublishPanel, SolanaPublishPanel } from '@sejire/payment-panels
 import { solanaMessages } from "../lib/solana/messages";
 import type { PreservationReceipt } from "../lib/solana/client";
 import type { FundOrderView } from "../lib/fund/client";
-import { clearFundAttempt, findFundAttempt, type FundAttempt } from "../lib/fund/journal";
+import type { FundAttempt } from "../lib/fund/journal";
+import { clearGuardedFundAttempt as clearFundAttempt, findPreservationAttempt, type PreservationAttempt } from "../lib/checkout/vaultGuard";
+import { completePaidLocally, paidCompletion } from "../lib/checkout/paidClient";
+import { readPaidOperation } from "../lib/checkout/paidJournal";
+import type { PaidCompletion, PaidOperation } from "../lib/checkout/paidTypes";
 import { envelopeDigest } from "../lib/solana/policy";
 
 type Props = {
@@ -66,6 +70,7 @@ type Props = {
     address?: string;
     mock?: boolean;
     isNewVersion?: boolean;
+    paidReceipt?: PaidCompletion['receipt'];
   }) => void;
   /** Previous network TX under the same 12 words (for Parent-Tx). */
   parentTxId?: string | null;
@@ -155,6 +160,7 @@ export function PublishSeedModal({
   const [priceHint, setPriceHint] = useState<string | null>(null);
   const [publishParentTx, setPublishParentTx] = useState<string | null>(parentTxId);
   const [resumeFunded, setResumeFunded] = useState(false);
+  const [resumeCheckoutId, setResumeCheckoutId] = useState<string | null>(null);
   const [quickFlowCode, setQuickFlowCode] = useState<string | null>(null);
   const [initialSaveMethod, setInitialSaveMethod] = useState<"choose" | "promo" | "solana">("choose");
   const [resumeCheckRevision, setResumeCheckRevision] = useState(0);
@@ -163,9 +169,14 @@ export function PublishSeedModal({
   const solanaStarting = useRef<symbol | null>(null);
   const quickStarted = useRef(false);
   const resumedAttempt = useRef<FundAttempt | null>(null);
+  const resumedPaid = useRef<PaidOperation | null>(null);
   const fundedStartSession = useRef<VaultSessionMeta | null>(session);
   const fundedCompletion = useRef<Promise<void> | null>(null);
   const fundedCompleted = useRef<string | null>(null);
+  const paidFinishing = useRef<Promise<void> | null>(null);
+  const paidFinished = useRef<string | null>(null);
+  const publishContext = useRef('');
+  publishContext.current = `${mode}:${sealedEnvelope ? serializeEnvelope(sealedEnvelope) : ''}:${publishParentTx}:${resumeCheckoutId}`;
   const words = useMemo(() => (mnemonic ? splitWords(mnemonic) : []), [mnemonic]);
 
   useEffect(() => {
@@ -180,10 +191,10 @@ export function PublishSeedModal({
 
   const initializeFundedFlow = useEffectEvent(async (isActive: () => boolean) => {
     try {
-      const attempt = await findFundAttempt({ vaultId: knownVaultId, treeId: store.meta.id });
+      const attempt = await findPreservationAttempt({ vaultId: knownVaultId, treeId: store.meta.id });
       if (!isActive()) return;
       if (attempt) {
-        restoreFundedAttempt(attempt, knownPhrase);
+        restorePreservationAttempt(attempt, knownPhrase);
         return;
       }
       setMode(initialMode);
@@ -362,6 +373,8 @@ export function PublishSeedModal({
 
   function restoreFundedAttempt(attempt: FundAttempt, phrase: string) {
     resumedAttempt.current = attempt;
+    resumedPaid.current = null;
+    setResumeCheckoutId(null);
     fundedStartSession.current = getVaultSession();
     freshKey.current = false;
     solanaReturnMode.current = initialMode;
@@ -374,6 +387,22 @@ export function PublishSeedModal({
     setError(null);
     setStatus("");
     setMode("solana");
+  }
+
+  function restorePreservationAttempt(found: PreservationAttempt, phrase: string) {
+    if (found.method === 'promo') { restoreFundedAttempt(found.attempt, phrase); return; }
+    const attempt = found.attempt;
+    resumedAttempt.current = null;
+    resumedPaid.current = attempt;
+    fundedStartSession.current = getVaultSession();
+    freshKey.current = false;
+    solanaReturnMode.current = initialMode;
+    setSealedEnvelope(parseEnvelope(JSON.parse(attempt.serialized)));
+    setPublishParentTx(attempt.archive.parentTxId);
+    setMnemonic(phraseForVault(phrase, attempt.archive.vaultId) ?? '');
+    setResumeFunded(false); setResumeCheckoutId(attempt.id);
+    setInitialSaveMethod('solana'); setQuickFlowCode(null);
+    setError(null); setStatus(''); setMode('solana');
   }
 
   async function startSolanaFlow(phrase: string, options?: {
@@ -395,22 +424,24 @@ export function PublishSeedModal({
       const normalized = normalizeMnemonic(phrase);
       setStatus("Проверяем прежнее сохранение…");
       const vaultId = isValidMnemonic(normalized) ? deriveKeysFromMnemonic(normalized).vaultId : knownVaultId;
-      const attempt = await findFundAttempt({ vaultId, treeId: store.meta.id });
+      const attempt = await findPreservationAttempt({ vaultId, treeId: store.meta.id });
       if (!isActive()) return;
       if (attempt) {
         if (!preservationV2) throw Error("fund_attempt_in_progress");
-        restoreFundedAttempt(attempt, normalized);
+        restorePreservationAttempt(attempt, normalized);
         return;
       }
       resumeChecked = true;
       if (!isActive()) return;
       if (!isValidMnemonic(normalized)) throw Error(t.publish.badMnemonic);
       resumedAttempt.current = null;
+      resumedPaid.current = null;
       fundedStartSession.current = getVaultSession();
       const { envelope, parentTx } = await sealForPhrase(normalized, isActive);
       if (!isActive()) return;
       setSealedEnvelope(envelope); setPublishParentTx(parentTx); setMnemonic(normalized);
       setResumeFunded(false);
+      setResumeCheckoutId(null);
       setInitialSaveMethod(options?.initialMethod ?? "choose");
       setQuickFlowCode(options?.quickCode ?? null);
       setMode("solana"); setStatus("");
@@ -495,6 +526,43 @@ export function PublishSeedModal({
     } finally {
       if (fundedCompletion.current === completion) fundedCompletion.current = null;
     }
+  }
+
+  async function finishPaid(result: PaidCompletion): Promise<void> {
+    if (paidFinished.current === result.operationId) return;
+    if (paidFinishing.current) return paidFinishing.current;
+    const generation = lifetime.current, selectedContext = publishContext.current;
+    const isActive = () => live.current && generation === lifetime.current && selectedContext === publishContext.current;
+    const finishing = (async () => {
+      const saved = await readPaidOperation(result.operationId);
+      const checked = saved && await paidCompletion(saved);
+      if (!checked || checked.txId !== result.txId || checked.serialized !== result.serialized ||
+          checked.order.id !== result.order.id || checked.order.archive.parentTxId !== publishParentTx ||
+          !sealedEnvelope || serializeEnvelope(sealedEnvelope) !== checked.serialized ||
+          (resumeCheckoutId && resumeCheckoutId !== checked.operationId)) throw Error('paid_completion_mismatch');
+      if (!isActive()) throw Error('publish_cancelled');
+      const { envelope, txId } = checked, parentTx = checked.order.archive.parentTxId;
+      archiveLocalVaultVersion({ id: txId, vaultId: envelope.vault_id, parentId: parentTx, source: 'network', envelope });
+      const archived = getLocalVaultVersion(envelope.vault_id, txId);
+      if (!archived || archived.source !== 'network' || archived.parentId !== parentTx ||
+          serializeEnvelope(archived.envelope) !== checked.serialized) throw Error('paid_history_unavailable');
+      const current = getVaultSession();
+      const canAdvanceHead = !current || (!resumedPaid.current && sameVaultSession(current, fundedStartSession.current)) ||
+        (current.vaultId === envelope.vault_id && (!current.headTxId || current.headTxId === parentTx || current.headTxId === txId));
+      const expected: VaultSessionMeta = canAdvanceHead ? { vaultId: envelope.vault_id, headTxId: txId, source: 'publish' } : current;
+      const phrase = phraseForVault(mnemonic, expected.vaultId) ?? phraseForVault(getSessionMnemonic(), expected.vaultId);
+      setVaultSession(expected, phrase);
+      const remembered = getVaultSession();
+      if (!remembered || !sameVaultSession(remembered, expected) || remembered.source !== expected.source) throw Error('paid_history_unavailable');
+      if (!isActive()) throw Error('publish_cancelled');
+      await completePaidLocally(checked.operationId);
+      if (!isActive()) return;
+      freshKey.current = false;
+      paidFinished.current = checked.operationId;
+      onPublished({ mode: 'arweave', txId, isNewVersion: Boolean(parentTx), paidReceipt: checked.receipt });
+    })();
+    paidFinishing.current = finishing;
+    try { await finishing; } finally { if (paidFinishing.current === finishing) paidFinishing.current = null; }
   }
 
   async function runDemoPublish(phrase: string) {
@@ -813,9 +881,12 @@ export function PublishSeedModal({
             treeId={store.meta.id} parentTxId={publishParentTx}
             initialMethod={initialSaveMethod}
             resumeFunded={resumeFunded} quickFundedCode={quickFlowCode}
+            resumeCheckoutOperationId={resumeCheckoutId}
             onBusy={(busy) => { solanaBusy.current = busy; }}
             onFundedDone={finishFunded}
-            onBack={() => resumeFunded || quickFlowCode ? onClose() : setMode(solanaReturnMode.current)} />
+            onPaidDone={finishPaid}
+            onResumeAttempt={(attempt) => restorePreservationAttempt(attempt, mnemonic || knownMnemonic || '')}
+            onBack={() => resumeFunded || resumeCheckoutId || quickFlowCode ? onClose() : setMode(solanaReturnMode.current)} />
         )}
         {mode === "solana" && sealedEnvelope && import.meta.env.VITE_PRESERVATION_V2_ENABLED !== "1" && (
           <SolanaSavePanel {...(import.meta.env.VITE_NATIVE_AR_ENABLED === "1" ? {treeName:store.meta.title,recoveryKeyInMemory:isValidMnemonic(normalizeMnemonic(mnemonic))} : {})} envelope={sealedEnvelope} parentTxId={publishParentTx}

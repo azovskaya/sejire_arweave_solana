@@ -3,7 +3,7 @@ import type { EnvelopeV1 } from '../lib/crypto/encrypt';
 import { serializeEnvelope } from '../lib/crypto/envelope';
 import { assertFundOrderParent, FundApiError, journalKey, preserveFunded, readFundOrder, validatePromo, type FundOrderResult, type FundOrderView } from '../lib/fund/client';
 import { fundError, fundStatus, rejectedBeforeReservation, terminalFundStatus } from '../lib/fund/status';
-import { clearFundAttempt, findFundAttempt, saveFundAttempt } from '../lib/fund/journal';
+import { clearGuardedFundAttempt as clearFundAttempt, findGuardedFundAttempt as findFundAttempt, saveGuardedFundAttempt as saveFundAttempt } from '../lib/checkout/vaultGuard';
 import { rememberFundedPromo } from '../lib/fund/preference';
 import { envelopeDigest } from '../lib/solana/policy';
 

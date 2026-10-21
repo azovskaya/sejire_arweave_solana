@@ -57,9 +57,16 @@ export class SqliteAtomicOrderStore implements AtomicOrderStore {
     await this.storage.sync();
   }
   async beginReconciliation(id: string, signature: string): Promise<StoredOrder> {
+    return this.beginReconciliationLinked(id,signature);
+  }
+  /** v2 signature proof is checked before entry; the linked guard rechecks
+   * cancellation/preparation in the SAME transaction as the reservation. */
+  async beginReconciliationLinked(id: string, signature: string, guard?:()=>void): Promise<StoredOrder> {
     assertBase58(signature, 64);
     const record = this.storage.transactionSync(() => {
       const saved = this.read(id); if (!saved) throw new Error('order_not_found');
+      if(saved.order.schema==='sejire/order/v2'&&!guard)throw Error('paid_order_requires_linked_reserve');
+      guard?.();
       if (saved.pendingSignature && saved.pendingSignature !== signature) throw new Error('previous_payment_unresolved');
       if (saved.payment) {
         if (saved.payment.signature !== signature) throw new Error('order_already_paid');
@@ -74,8 +81,14 @@ export class SqliteAtomicOrderStore implements AtomicOrderStore {
     return record;
   }
   async commitPayment(payment: ValidatedPayment): Promise<CommitResult> {
+    if(this.read(payment.orderId)?.order.schema==='sejire/order/v2')throw new Error('paid_order_requires_linked_commit');
+    return this.commitPaymentLinked(payment);
+  }
+  /** A paid-v2 storage job must become durable in the same transaction as SOL credits. */
+  async commitPaymentLinked(payment: ValidatedPayment, link?: () => void): Promise<CommitResult> {
     const result = this.storage.transactionSync<CommitResult>(() => {
       const saved = this.read(payment.orderId); if (!saved) throw new Error('order_not_found');
+      if(saved.order.schema==='sejire/order/v2'&&!link)throw new Error('paid_order_requires_linked_commit');
       if (saved.payment) {
         if (JSON.stringify(saved.payment) !== JSON.stringify(payment)) throw new Error('payment_conflict');
         return { status: 'already-credited', record: saved };
@@ -99,6 +112,7 @@ export class SqliteAtomicOrderStore implements AtomicOrderStore {
       const states: OrderStates = { payment: 'verified', preservation: saved.order.kind === 'preservation' ? 'ready' : 'not-applicable',
         contribution: saved.order.fundContribution.amount === '0' ? 'not-requested' : 'received' };
       this.sql.exec('UPDATE orders SET payment_json=?,states_json=? WHERE id=?', JSON.stringify(payment), JSON.stringify(states), payment.orderId);
+      link?.();
       return { status: 'credited', record: { ...saved, payment, states } };
     });
     await this.storage.sync();

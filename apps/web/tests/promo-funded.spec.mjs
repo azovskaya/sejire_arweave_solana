@@ -22,6 +22,9 @@ async function guardNetwork(context){
   if(new URL(route.url()).origin==='ws://127.0.0.1:5183')route.connectToServer();
   else{blocked.websocket++;route.close({code:1008,reason:'External network disabled in this test'});}
  });
+ await context.route('**/api/checkout/policy',route=>{
+  expect(route.request().method()).toBe('GET');return json(route,{ready:false,reason:'paid_unavailable'});
+ });
 }
 test.beforeEach(async({context})=>guardNetwork(context));
 

@@ -3,6 +3,8 @@ import type { ValidatedPayment } from './paymentValidator';
 import { SqliteAtomicOrderStore } from './sqliteStore';
 import type { UploadPlan, UploadAcceptance } from './preservation';
 
+export type PaidRequestCancellation = { schema:'sejire/paid-request-cancellation/v1';status:'cancelled';key:string };
+
 /** All ownership, idempotency and quotas live in the SAME global ledger SQLite.
  * No browser-controlled action, SQL, timestamp or quota reaches this service. */
 export class ApiLedger {
@@ -13,6 +15,8 @@ export class ApiLedger {
       CREATE TABLE IF NOT EXISTS api_sessions(hash TEXT PRIMARY KEY, expires_at INTEGER NOT NULL);
       CREATE TABLE IF NOT EXISTS api_orders(order_id TEXT PRIMARY KEY REFERENCES orders(id), owner TEXT NOT NULL REFERENCES api_sessions(hash),
         idem_key TEXT NOT NULL, intent TEXT NOT NULL, verification_json TEXT, UNIQUE(owner,idem_key));
+      CREATE TABLE IF NOT EXISTS paid_cancelled_keys(owner TEXT NOT NULL REFERENCES api_sessions(hash),key TEXT NOT NULL,
+        PRIMARY KEY(owner,key));
       CREATE TABLE IF NOT EXISTS api_rates(bucket TEXT PRIMARY KEY, start INTEGER NOT NULL, count INTEGER NOT NULL);
       CREATE TABLE IF NOT EXISTS api_execution(order_id TEXT PRIMARY KEY REFERENCES orders(id), plan_json TEXT NOT NULL,
         lease_until INTEGER NOT NULL, accepted_json TEXT, retrieved INTEGER NOT NULL DEFAULT 0);`));
@@ -20,9 +24,46 @@ export class ApiLedger {
   private session(hash: string, now: number): void {
     if (!/^[a-f0-9]{64}$/.test(hash) || !this.sql.exec('SELECT hash FROM api_sessions WHERE hash=? AND expires_at>?', hash, now).toArray().length) throw new Error('unauthorized');
   }
-  private owner(hash: string, id: string, now: number): void {
+  /** An expired bearer can only close its own still-unadmitted request. This
+   * does not renew admission auth or grant access to another owner's orders. */
+  authenticateCancellation(hash:string):void{
+    if(!/^[a-f0-9]{64}$/.test(hash)||!this.sql.exec('SELECT hash FROM api_sessions WHERE hash=?',hash).toArray().length)throw Error('unauthorized');
+  }
+  requestCancellation(hash:string,key:string):PaidRequestCancellation|null{
+    if(!/^[a-f0-9]{64}$/.test(hash)||!/^[A-Za-z0-9_-]{16,128}$/.test(key))return null;
+    return this.sql.exec(`SELECT c.key FROM paid_cancelled_keys c JOIN api_sessions s ON s.hash=c.owner
+      WHERE c.owner=? AND c.key=?`,hash,key).toArray().length?
+      {schema:'sejire/paid-request-cancellation/v1',status:'cancelled',key}:null;
+  }
+  /** Call inside the same createLinked transaction as the new order and hold. */
+  assertRequestActive(hash:string,key:string):void{
+    if(this.requestCancellation(hash,key))throw Error('paid_request_cancelled');
+  }
+  owner(hash: string, id: string, now: number): void {
     this.session(hash, now);
     if (!this.sql.exec('SELECT order_id FROM api_orders WHERE owner=? AND order_id=?', hash, id).toArray().length) throw new Error('order_not_found');
+  }
+  /** The original bearer remains a capability for this already-owned v2 order.
+   * It cannot create orders, enumerate history, renew a session or reach v1. */
+  ownerPaid(hash:string,id:string):void{
+    if(!/^[a-f0-9]{64}$/.test(hash)||!this.sql.exec(`SELECT a.order_id FROM api_sessions s
+      JOIN api_orders a ON a.owner=s.hash JOIN paid_orders p ON p.order_id=a.order_id
+      WHERE s.hash=? AND a.order_id=?`,hash,id).toArray().length)throw Error('order_not_found');
+  }
+  paidIdByKey(hash:string,key:string):string{
+    if(!/^[a-f0-9]{64}$/.test(hash))throw Error('order_not_found');
+    const row=this.sql.exec<{order_id:string}>(`SELECT a.order_id FROM api_sessions s
+      JOIN api_orders a ON a.owner=s.hash JOIN paid_orders p ON p.order_id=a.order_id
+      WHERE s.hash=? AND a.idem_key=?`,hash,key).toArray()[0];
+    if(!row)throw Error('order_not_found');return row.order_id;
+  }
+  authenticateResume(hash:string,id:string|undefined,key:string|undefined,now:number):void{
+    try{this.session(hash,now);return;}catch{/* Only the exact owned v2 capability can outlive admission auth. */}
+    try{
+      if(id&&!key)this.ownerPaid(hash,id);
+      else if(key&&!id){if(!this.requestCancellation(hash,key))this.paidIdByKey(hash,key);}
+      else throw Error('unauthorized');
+    }catch{throw Error('unauthorized');}
   }
   /** Fixed window, global and per-principal quotas are updated together, also across restarts. */
   async rate(buckets: string[], limit: number, now: number): Promise<void> {
@@ -46,7 +87,7 @@ export class ApiLedger {
   async existing(hash: string, key: string, intent: string, now: number) {
     this.session(hash, now);
     const previous = this.sql.exec<{ order_id: string; intent: string }>('SELECT order_id,intent FROM api_orders WHERE owner=? AND idem_key=?', hash, key).toArray()[0];
-    if (!previous) return null;
+    if (!previous) { this.assertRequestActive(hash,key); return null; }
     if (previous.intent !== intent) throw new Error('idempotency_conflict');
     return { reused: true, record: await this.orders.get(previous.order_id) };
   }
@@ -58,7 +99,10 @@ export class ApiLedger {
       return { reused: true, record: await this.orders.get(previous.order_id) };
     }
     // No await from duplicate check until both INSERTs complete. DO interleaving starts after sync.
-    await this.orders.createLinked(order, () => this.sql.exec('INSERT INTO api_orders(order_id,owner,idem_key,intent) VALUES(?,?,?,?)', order.id, hash, key, intent));
+    await this.orders.createLinked(order, () => {
+      this.assertRequestActive(hash,key);
+      this.sql.exec('INSERT INTO api_orders(order_id,owner,idem_key,intent) VALUES(?,?,?,?)', order.id, hash, key, intent);
+    });
     return { reused: false, record: await this.orders.get(order.id) };
   }
   async get(hash: string, id: string, now: number) {

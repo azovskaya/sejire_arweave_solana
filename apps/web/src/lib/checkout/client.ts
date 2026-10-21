@@ -4,11 +4,12 @@ import bs58 from 'bs58';
 import { Buffer } from 'buffer';
 import type { SolanaWalletAdapter } from '@ardrive/turbo-sdk/web';
 import { parseAmount, totalUnits } from '../../../../../packages/checkout/amounts';
-import { assertOrder, type Order } from '../../../../../packages/checkout/order';
+import { assertOrder, type LegacyOrder as Order } from '../../../../../packages/checkout/order';
 import type { EnvelopeV1 } from '../crypto/encrypt';
 import { serializeEnvelope } from '../crypto/envelope';
 import { envelopeDigest } from '../solana/policy';
 import type { PreservationReceipt } from '../solana/receipt';
+import { reserveLegacyPreservation } from './vaultGuard';
 export type Intent = { kind: 'preservation' | 'contribution'; contribution: string; payer: string; archive?: { digest: string; bytes: number } };
 export type Snapshot = { record: { order: Order; pendingSignature?: string; states: { payment: string; contribution: string; preservation: string }; payment?: { signature: string; feeLamports: string } };
   execution?: { id: string; accepted: { id: string; winc: string; [key: string]: unknown } | null; retrieved: boolean; vaultId: string } | null; verification?: { status: string; reason?: string } };
@@ -44,7 +45,7 @@ async function save<T extends { id: string }>(store: string, value: T): Promise<
 export const saveOperation = (op: Operation) => save('operations', op);
 export async function operations(): Promise<Operation[]> {
   const database = await db();
-  try { return await new Promise((resolve, reject) => { const request = database.transaction('operations').objectStore('operations').getAll(); request.onsuccess = () => resolve(request.result); request.onerror = () => reject(new Error('checkout_journal_unavailable')); }); }
+  try { return await new Promise((resolve, reject) => { const request = database.transaction('operations').objectStore('operations').getAll(); request.onsuccess = () => resolve(request.result.filter((value: { version?: number }) => value.version !== 2)); request.onerror = () => reject(new Error('checkout_journal_unavailable')); }); }
   finally { database.close(); }
 }
 async function access(): Promise<string> {
@@ -63,7 +64,10 @@ export async function startOrder(payer: string, contribution: string, envelope?:
   const intent: Intent = { kind: envelope ? 'preservation' : 'contribution', payer, contribution,
     ...(serialized ? { archive: { digest: await envelopeDigest(serialized), bytes: new TextEncoder().encode(serialized).length } } : {}) };
   const op: Operation = { id: crypto.randomUUID().replace(/-/g, ''), token: await access(), intent, ...(envelope ? { envelope } : {}) };
-  await saveOperation(op); // Idempotency key + intent survive LOST create response.
+  // The legacy branch retains its own protocol, but shares the modern vault
+  // exclusion boundary. Its durable v1 record also blocks a new paid/promo save.
+  if (envelope) await reserveLegacyPreservation(envelope.vault_id, () => saveOperation(op));
+  else await saveOperation(op);
   return createOrResume(op, wallet);
 }
 export async function createOrResume(op: Operation, wallet?: SolanaWalletAdapter): Promise<Operation> {
@@ -71,7 +75,7 @@ export async function createOrResume(op: Operation, wallet?: SolanaWalletAdapter
     const result = await api<Snapshot & {authorization?:Record<string,unknown>}>('/orders', op.token, op.intent, op.id);
     assertOrder(result.record.order);
     const order = result.record.order;
-    if (order.network !== 'devnet' || order.asset.symbol !== 'SOL' || order.payer !== op.intent.payer || order.kind !== op.intent.kind || order.fundContribution.amount !== parseAmount(op.intent.contribution, 9) || (op.intent.kind === 'preservation' ? BigInt(order.servicePayment.amount) <= 0n : order.servicePayment.amount !== '0') || order.archive?.digest !== op.intent.archive?.digest || order.archive?.bytes !== op.intent.archive?.bytes) throw new Error('checkout_order_mismatch');
+    if (order.schema !== 'sejire/order/v1' || order.network !== 'devnet' || order.asset.symbol !== 'SOL' || order.payer !== op.intent.payer || order.kind !== op.intent.kind || order.fundContribution.amount !== parseAmount(op.intent.contribution, 9) || (op.intent.kind === 'preservation' ? BigInt(order.servicePayment.amount) <= 0n : order.servicePayment.amount !== '0') || order.archive?.digest !== op.intent.archive?.digest || order.archive?.bytes !== op.intent.archive?.bytes) throw new Error('checkout_order_mismatch');
     op.order = order; op.snapshot = result;
     if (result.authorization) {
       const cap=Keypair.fromSeed(Buffer.from(op.token,'hex')).publicKey.toBase58();

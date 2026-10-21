@@ -1,3 +1,4 @@
+import { TreasuryGuard } from '../checkout/treasuryGuard';
 export const TREASURY_ADDRESS = 'qgoIFw9WsusMRapWzcFg4jNW08HSWvQkpAKOz86BUuI';
 export const INITIAL_LIMIT = '13000000000000';
 export type FundStatus = 'RESERVED'|'SIGNED'|'SUBMITTED'|'VERIFYING'|'COMPLETED'|'FAILED'|'RELEASED'|'NEEDS_RECONCILIATION';
@@ -16,6 +17,7 @@ export function parseAr(value: string): string {
 export type FundOrder = {preservationId:string;orderId:string;promoRevision:number;archiveSizeBytes:number;archiveDigest:string;vaultId:string;parentTxId?:string|null;estimatedRewardWinston:string;reservedRewardWinston:string;actualRewardWinston:string|null;arweaveTxId:string|null;status:FundStatus;createdAt:number;uploadedAt:number|null;verifiedAt:number|null;signedTransaction?:string|null;preparedTransaction?:string|null};
 export class FundLedger {
   private sql: SqlStorage;
+  readonly treasury: TreasuryGuard;
   constructor(private storage: DurableObjectStorage) {
     this.sql=storage.sql;
     storage.transactionSync(()=>this.sql.exec(`
@@ -29,6 +31,7 @@ export class FundLedger {
       CREATE TABLE IF NOT EXISTS fund_meta(id INTEGER PRIMARY KEY CHECK(id=1),reconciled_at INTEGER);`));
     this.sql.exec('INSERT OR IGNORE INTO fund_settings VALUES(1,0,\'\',\'\',0,0,0,?)',INITIAL_LIMIT);
     this.sql.exec('INSERT OR IGNORE INTO fund_meta(id,reconciled_at) VALUES(1,NULL)');
+    this.treasury = new TreasuryGuard(storage);
   }
   settings(){return this.sql.exec<{enabled:number;code_hash:string;display_hint:string;revision:number;created_at:number;updated_at:number;limit_winston:string}>('SELECT * FROM fund_settings WHERE id=1').toArray()[0];}
   private orders(includeSigned=false):FundOrder[]{
@@ -83,14 +86,14 @@ export class FundLedger {
     this.storage.transactionSync(()=>{this.sql.exec('UPDATE fund_settings SET limit_winston=? WHERE id=1',value);
       this.sql.exec('INSERT INTO fund_audit(action,details,at) VALUES(?,?,?)','FUND_LIMIT_CHANGED',JSON.stringify({oldLimit:s.limit_winston,newLimit:value}),now);});await this.storage.sync();return this.summary();
   }
-  async reserve(input:{orderId:string;preservationId:string;hash:string;archiveSizeBytes:number;archiveDigest:string;vaultId:string;parentTxId?:string|null;reward:string;estimated:string;prepared:string;balance:string},now=Date.now()){
+  async reserve(input:{orderId:string;preservationId:string;hash:string;archiveSizeBytes:number;archiveDigest:string;vaultId:string;parentTxId?:string|null;reward:string;estimated:string;prepared:string;balance:string;balanceRevision?:number},now=Date.now()){
     const parentTxId=fundParentTxId(input.parentTxId);
     const amount=money(input.reward);money(input.estimated);const walletBalance=money(input.balance);if(amount<=0n)throw Error('invalid_reward');
     const result=this.storage.transactionSync(()=>{
       const prior=this.order(input.orderId,true);if(prior){if(prior.archiveDigest!==input.archiveDigest||prior.archiveSizeBytes!==input.archiveSizeBytes||prior.vaultId!==input.vaultId||(prior.parentTxId??null)!==parentTxId)throw Error('archive_changed');return prior;}
       const s=this.settings();if(!s.enabled)throw Error('promo_disabled');if(!s.code_hash||s.code_hash!==input.hash)throw Error('promo_invalid');
       const summary=this.summary(now);if(amount>money(summary.budgetRemainingWinston))throw Error('fund_exhausted');
-      if(amount+money(summary.reservedWinston)>walletBalance)throw Error('wallet_low');
+      this.treasury.assertBalance(TREASURY_ADDRESS,TREASURY_ADDRESS,walletBalance.toString(),input.reward,input.balanceRevision);
       this.sql.exec('INSERT INTO fund_orders VALUES(?,?,?,?,?,?,?,?,?,?)',input.orderId,input.preservationId,s.revision,input.archiveSizeBytes,input.archiveDigest,input.vaultId,input.estimated,input.reward,now,input.prepared);
       // Omitted by older clients: preserve their unbound local-parent recovery semantics.
       // New clients explicitly send null (genesis) or the immutable parent TX.
@@ -105,6 +108,7 @@ export class FundLedger {
       if(prior.arweaveTxId&&input.txId&&prior.arweaveTxId!==input.txId)throw Error('tx_conflict');
       if(input.status==='COMPLETED'&&(!prior.arweaveTxId||!input.actual||money(input.actual)<=0n||money(input.actual)>money(prior.reservedRewardWinston)))throw Error('invalid_actual_reward');
       if((input.status==='FAILED'||input.status==='RELEASED')&&prior.arweaveTxId)throw Error('signed_tx_must_reconcile');
+      if(input.status==='COMPLETED')this.treasury.debit(TREASURY_ADDRESS,input.actual!);
       this.sql.exec('INSERT INTO fund_events(order_id,status,tx_id,actual,signed_json,at) VALUES(?,?,?,?,?,?)',input.orderId,input.status,input.txId??prior.arweaveTxId,input.actual??prior.actualRewardWinston,input.signed??prior.signedTransaction,now);
       return this.order(input.orderId,true)!;});await this.storage.sync();return next;
   }

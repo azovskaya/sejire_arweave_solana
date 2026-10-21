@@ -18,6 +18,6 @@ export async function verifyCandidate(bytes:Uint8Array,meta:TxMetadata,candidate
   for(const [id,tree] of trees)if(!coerceTreeStore(tree)||id==='__proto__'||id==='constructor')throw new RecoveryFailure('INVALID_VAULT');
   if(vault.active_tree_id!==null&&!Object.hasOwn(vault.trees,vault.active_tree_id))throw new RecoveryFailure('INVALID_VAULT');
   if(vault.active_tree_id===null)vault={...vault,active_tree_id:trees[0][0]};
-  return {txId:candidate.txId,vault,parentTxId:tagValue(meta,'Parent-Tx'),blockHeight:meta.blockHeight??candidate.blockHeight??null,
+  return {txId:candidate.txId,vault,envelope,parentTxId:tagValue(meta,'Parent-Tx'),blockHeight:meta.blockHeight??candidate.blockHeight??null,
     blockTimestamp:meta.blockTimestamp??candidate.blockTimestamp??null,sources:candidate.source.split(',')};
 }

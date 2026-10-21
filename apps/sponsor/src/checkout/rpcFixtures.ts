@@ -3,7 +3,7 @@
  * strings encode repeated public fixture bytes; they are NOT cryptographic signatures.
  * Sources/provenance: docs/verification/2026-09-30-a2-1.md.
  */
-import { createOrder, type OrderInput } from '../../../../packages/checkout/order';
+import { createOrder, type OrderInput, type Order } from '../../../../packages/checkout/order';
 import { COMPUTE_BUDGET } from './rpcDecoder';
 import { DEVNET_GENESIS } from './rpcReader';
 const ALPHABET = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
@@ -28,7 +28,7 @@ export function instructionData(op: number, amount: string, token = false) {
   if (token) bytes[9] = 6;
   return encode58(bytes);
 }
-export function fixtureTransaction(order = fixtureOrder(), signature = sig(5), version: 'legacy' | 0 = 'legacy') {
+export function fixtureTransaction(order: Order = fixtureOrder(), signature = sig(5), version: 'legacy' | 0 = 'legacy') {
   const isToken = order.asset.symbol === 'USDC';
   const keys = isToken ? [order.payer, addr(11), addr(12), addr(13), order.asset.mint!, order.asset.program, order.reference, COMPUTE_BUDGET] :
     [order.payer, order.servicePayment.recipient, order.fundContribution.recipient, order.asset.program, order.reference, COMPUTE_BUDGET];

@@ -1,4 +1,5 @@
-import { assertBase58, createOrder, type Order } from '../../../../packages/checkout/order';
+import { assertBase58, createOrder, validatePaidArchive, type Order } from '../../../../packages/checkout/order';
+import { paidPolicyHash, createPaidOrderFromPolicy, type PaidPolicy, type DurablePaymentPreparation } from '../../../../packages/checkout/paid';
 import { parseAmount } from '../../../../packages/checkout/amounts';
 import { DurableOrderStore } from './durableStore';
 import type { AtomicOrderStore, StoredOrder, CommitResult } from './store';
@@ -8,8 +9,11 @@ import { SolanaRpcReader } from './rpcReader';
 import { RpcPaymentPreparer, type PaymentPreparer } from './paymentPreparation';
 import { TestnetPreservationService, checkedArchive, type PreservationEnv, type PreservationService, type UploadPlan, type UploadAcceptance } from './preservation';
 import { envelopeDigest } from '../../../web/src/lib/solana/policy';
+import { configuredPaidPolicy, checkedPaidArchive, type PaidEnv } from './paidPolicy';
+import { paidProvider } from './paidRunner';
+import type { PaidLedger } from './paidLedger';
 
-export type CheckoutApiEnv = PreservationEnv & {
+export type CheckoutApiEnv = PreservationEnv & PaidEnv & {
   CHECKOUT_API_ENABLED?: string;
   CHECKOUT_LEDGER?: DurableObjectNamespace;
   CHECKOUT_ALLOWED_ORIGINS?: string;
@@ -29,7 +33,7 @@ function fields(value: unknown, allowed: string[], required: string[] = allowed)
   if (Object.keys(obj).some(k => !allowed.includes(k)) || required.some(k => !Object.hasOwn(obj, k))) return bad('forbidden_or_missing_field');
   return obj;
 }
-async function body(request: Request, maxBytes = BODY_BYTES): Promise<unknown> {
+async function body(request: Request, maxBytes = BODY_BYTES, measured?: (bytes:number)=>void): Promise<unknown> {
   if (!/^application\/json(?:\s*;.*)?$/i.test(request.headers.get('Content-Type') ?? '')) throw new HttpError(415, 'json_required');
   if (request.headers.has('Content-Encoding')) throw new HttpError(415, 'encoding_not_supported');
   const length = request.headers.get('Content-Length');
@@ -45,6 +49,7 @@ async function body(request: Request, maxBytes = BODY_BYTES): Promise<unknown> {
     }
   } finally { reader.releaseLock(); }
   const buffer = new Uint8Array(bytes); let offset = 0;
+  measured?.(bytes);
   for (const chunk of chunks) { buffer.set(chunk, offset); offset += chunk.length; }
   try { return JSON.parse(new TextDecoder('utf-8', { fatal: true, ignoreBOM: false }).decode(buffer)); }
   catch { return bad('invalid_json'); }
@@ -104,27 +109,52 @@ export async function checkoutApi(request: Request, env: CheckoutApiEnv,
     if (status === 429) headers['Retry-After'] = '60';
     return new Response(status === 204 ? null : JSON.stringify(payload), { status, headers });
   };
-  if (env.CHECKOUT_API_ENABLED !== 'true') return reply(404, { error: 'not_found' });
   try {
-    if (!env.CHECKOUT_LEDGER || !env.CHECKOUT_SERVICE_RECIPIENT || !env.CHECKOUT_FUND_RECIPIENT || !env.CHECKOUT_POLICY_VERSION || !env.CHECKOUT_ALLOWED_ORIGINS) throw new HttpError(503, 'checkout_not_configured');
+    const legacyEnabled=env.CHECKOUT_API_ENABLED==='true',paidEnabled=env.CHECKOUT_PAID_ENABLED==='true';
+    const policyRoute=url.pathname===PREFIX+'/policy';
+    const resumeRoute=/^\/api\/checkout\/orders\/(?:[a-f0-9]{32}(?:\/(?:verify|reconcile|reserve|prepare|execute|cancel))?|by-key\/[A-Za-z0-9_-]{16,128}(?:\/cancel)?)$/.test(url.pathname);
+    if(!legacyEnabled&&!paidEnabled&&!policyRoute&&!resumeRoute)return reply(404,{error:'not_found'});
+    if (!env.CHECKOUT_LEDGER || !env.CHECKOUT_ALLOWED_ORIGINS) throw new HttpError(503, 'checkout_not_configured');
     const origins = env.CHECKOUT_ALLOWED_ORIGINS.split(',');
     if (origins.some(o => { try { return new URL(o).origin !== o || (!o.startsWith('https://') && !o.startsWith('http://localhost:') && !o.startsWith('http://127.0.0.1:')); } catch { return true; } })) throw new HttpError(503, 'checkout_not_configured');
     const requestedOrigin = request.headers.get('Origin');
     if (requestedOrigin && !origins.includes(requestedOrigin)) throw new HttpError(403, 'origin_denied');
     origin = requestedOrigin;
     if (url.search || url.hash) return bad('query_not_supported'); // No secrets in URL.
-    const match = /^\/api\/checkout\/orders\/([a-f0-9]{32})(?:\/(verify|reconcile|reserve|prepare|execute))?$/.exec(url.pathname);
+    const match = /^\/api\/checkout\/orders\/([a-f0-9]{32})(?:\/(verify|reconcile|reserve|prepare|execute|cancel))?$/.exec(url.pathname);
+    const byKey=/^\/api\/checkout\/orders\/by-key\/([A-Za-z0-9_-]{16,128})(?:\/(cancel))?$/.exec(url.pathname);
     const sessionRoute = url.pathname === PREFIX + '/session';
     const createRoute = url.pathname === PREFIX + '/orders';
-    if (!match && !sessionRoute && !createRoute) return reply(404, { error: 'not_found' });
-    const method = match && !match[2] ? 'GET' : 'POST';
+    if (!match && !sessionRoute && !createRoute && !policyRoute && !byKey) return reply(404, { error: 'not_found' });
+    const ledger = new DurableOrderStore(env.CHECKOUT_LEDGER);
+    // A never-activated disabled installation keeps all old routes closed.
+    // Exact owned keys can be cancelled/read even before the first order exists.
+    // Their bearer checks below do not enable admission or expose other owners.
+    if(!legacyEnabled&&!paidEnabled&&resumeRoute&&!byKey&&!await ledger.call<boolean>({action:'paidHasOrders'}))return reply(404,{error:'not_found'});
+    const method = policyRoute||byKey&&!byKey[2]||match&&!match[2] ? 'GET' : 'POST';
     if (request.method === 'OPTIONS') return reply(204, null);
     if (request.method !== method) return reply(405, { error: 'method_not_allowed' });
-    const ledger = new DurableOrderStore(env.CHECKOUT_LEDGER);
     // This header is trusted ONLY behind Cloudflare's ingress. Ignore X-Forwarded-For and client IP fields.
     // Missing header uses a shared bucket (fail closed), not a new arbitrary identity.
     const ip = await digest(request.headers.get('CF-Connecting-IP') ?? 'missing-ingress-ip');
     await ledger.call({ action: 'apiRate', buckets: ['all', `ingress:${ip}`], limit: 600 });
+    if(policyRoute){
+      if(!paidEnabled)return reply(200,{ready:false,reason:'paid_disabled'});
+      let policy:PaidPolicy,budgetLimit:string;
+      try{({policy,budgetLimit}=configuredPaidPolicy(env));}catch{return reply(200,{ready:false,reason:'paid_not_configured'});}
+      const hash=await paidPolicyHash(policy);
+      if(env.CHECKOUT_PAID_EXECUTION_ENABLED!=='true'||!env.ARWEAVE_TREASURY_JWK)return reply(200,{ready:false,reason:'executor_paused',policy,policyHash:hash});
+      await ledger.call({action:'apiRate',buckets:[`paid-policy:${ip}`],limit:30});
+      try{
+        const ready=await paidProvider(env,policy).ready(Math.min(6144,policy.storage.maxBytes));
+        const totals=await ledger.call<{reservedWinston:string;actualSpentWinston:string}>({action:'paidTotals',budgetId:policy.storage.budgetId});
+        const held=await ledger.call<string>({action:'treasuryHeld',address:policy.storage.treasuryAddress});
+        const effective=await ledger.call<string>({action:'treasuryEffectiveBalance',address:policy.storage.treasuryAddress,balance:ready.balanceWinston});
+        const sufficient=BigInt(effective)>=BigInt(held)+BigInt(policy.storage.maxRewardWinston)&&
+          BigInt(budgetLimit)>=BigInt(totals.reservedWinston)+BigInt(totals.actualSpentWinston)+BigInt(policy.storage.maxRewardWinston);
+        return reply(200,{ready:sufficient,...(!sufficient?{reason:'paid_budget_unavailable'}:{}),policy,policyHash:hash});
+      }catch{return reply(200,{ready:false,reason:'storage_not_ready',policy,policyHash:hash});}
+    }
     if (sessionRoute) {
       await ledger.call({ action: 'apiRate', buckets: ['sessions:all'], limit: 100 });
       await ledger.call({ action: 'apiRate', buckets: [`sessions:${ip}`], limit: 10 });
@@ -136,14 +166,51 @@ export async function checkoutApi(request: Request, env: CheckoutApiEnv,
     const auth = /^Bearer ([a-f0-9]{64})$/.exec(request.headers.get('Authorization') ?? '');
     if (!auth) throw new HttpError(401, 'unauthorized');
     const hash = await digest(auth[1]);
-    await ledger.call({ action: 'apiAuth', hash });
+    await ledger.call({ action: byKey?.[2]?'apiCancelAuth':resumeRoute?'apiResumeAuth':'apiAuth', hash,
+      ...(match?{id:match[1]}:{}),...(byKey?{key:byKey[1]}:{}) });
     const owned = new OwnedOrders(ledger, hash);
+    if(byKey){
+      await ledger.call({action:'apiRate',buckets:[`${byKey[2]?'cancel':'read'}:${hash}`],limit:byKey[2]?30:120});
+      if(byKey[2])fields(await body(request),[]);
+      return reply(200,await ledger.call({action:byKey[2]?'paidCancelByKey':'paidByKey',hash,key:byKey[1]}));
+    }
     if (createRoute) {
       await ledger.call({ action: 'apiRate', buckets: [`create:${hash}`], limit: 20 });
       await ledger.call({ action: 'apiRate', buckets: [`create-ip:${ip}`], limit: 60 });
       const key = request.headers.get('Idempotency-Key');
       if (!key || !/^[A-Za-z0-9_-]{16,128}$/.test(key)) return bad('invalid_idempotency_key');
-      const input = intent(await body(request)), now = Date.now();
+      let requestBytes=0;
+      const max=Math.min(524288,Math.max(1,Number(env.MAX_ENVELOPE_BYTES)||524288));
+      const raw=await body(request,paidEnabled?max*2+BODY_BYTES:BODY_BYTES,n=>{requestBytes=n;});
+      const modern=raw&&typeof raw==='object'&&Object.hasOwn(raw,'policyHash');
+      if(modern){
+        const input=fields(raw,['kind','payer','contribution','policyHash','archive','serialized']);
+        if(input.kind!=='preservation'||typeof input.payer!=='string'||typeof input.contribution!=='string'||typeof input.policyHash!=='string'||
+          !/^[a-f0-9]{64}$/.test(input.policyHash)||typeof input.serialized!=='string')return bad();
+        assertBase58(input.payer,32);const archive=validatePaidArchive(input.archive),contribution=parseAmount(input.contribution,9);
+        await checkedPaidArchive(input.serialized,archive,max);
+        const normalized=JSON.stringify({schema:'sejire/order/v2',kind:'preservation',payer:input.payer,contribution,policyHash:input.policyHash,archive});
+        const existing=await ledger.call<{record:StoredOrder}|null>({action:'apiExisting',hash,key,intent:normalized});
+        if(existing)return reply(200,{reused:true,...await ledger.call<object>({action:'paidGet',hash,id:existing.record.order.id})});
+        if(!paidEnabled||env.CHECKOUT_PAID_EXECUTION_ENABLED!=='true'||!env.ARWEAVE_TREASURY_JWK)throw new HttpError(503,'paid_not_ready');
+        const {policy,budgetLimit}=configuredPaidPolicy(env);
+        if(await paidPolicyHash(policy)!==input.policyHash)throw new HttpError(409,'paid_policy_changed');
+        const now=Date.now(),order=await createPaidOrderFromPolicy(policy,{id:randomHex(16),payer:input.payer,reference:reference(),createdAt:now,expiresAt:now+15*60000,archive,contribution});
+        const provider=paidProvider(env,policy);
+        const balanceRevision=await ledger.call<number>({action:'treasuryRevision',address:policy.storage.treasuryAddress});
+        const ready=await provider.ready(archive.bytes);
+        const prepared=await provider.prepare({orderId:order.id,serialized:input.serialized,archive});
+        // Account/network/balance readiness precedes the offer. This temporary
+        // message is not returned to the browser; /prepare saves its own message.
+        await new RpcPaymentPreparer(new SolanaRpcReader({network:order.network})).preparePaid(order);
+        const result=await ledger.call<{reused:boolean}>({action:'paidCreate',input:{hash,key,intent:normalized,order,policy,
+          serialized:input.serialized,prepared,budgetLimit,balance:ready.balanceWinston,balanceRevision}});
+        return reply(result.reused?200:201,result);
+      }
+      if(!legacyEnabled)return reply(404,{error:'not_found'});
+      if(!env.CHECKOUT_SERVICE_RECIPIENT||!env.CHECKOUT_FUND_RECIPIENT||!env.CHECKOUT_POLICY_VERSION)throw new HttpError(503,'checkout_not_configured');
+      if(requestBytes>BODY_BYTES)throw new HttpError(413,'request_too_large');
+      const input = intent(raw), now = Date.now();
       const existing = await ledger.call({ action: 'apiExisting', hash, key, intent: JSON.stringify(input) });
       if (existing) return reply(200, existing);
       const order: Order = createOrder({ id: randomHex(16), kind: input.kind, payer: input.payer, reference: reference(), network: 'devnet', asset: 'SOL',
@@ -158,7 +225,41 @@ export async function checkoutApi(request: Request, env: CheckoutApiEnv,
     }
     const id = match![1], snapshot = await owned.snapshot(id); // B cannot change A's pendingSignature or even invoke RPC.
     await ledger.call({ action: 'apiRate', buckets: [`${method === 'GET' ? 'read' : 'verify'}:${hash}`], limit: method === 'GET' ? 120 : 30 });
+    if(snapshot.record.order.schema==='sejire/order/v2'){
+      type Snapshot=ReturnType<PaidLedger['snapshot']>;
+      const paid=await ledger.call<Snapshot>({action:'paidGet',hash,id});
+      if(method==='GET')return reply(200,paid);
+      if(match![2]==='prepare'){
+        fields(await body(request),[]);
+        if(paid.expired)throw new HttpError(409,'order_expired');
+        if(paid.preparation)return reply(200,paid.preparation);
+        if(paid.record.payment||paid.record.pendingSignature)throw new HttpError(409,'previous_payment_unresolved');
+        if(paid.record.order.expiresAt<=Date.now())throw new HttpError(409,'order_expired');
+        const candidate=await new RpcPaymentPreparer(new SolanaRpcReader({network:paid.record.order.network})).preparePaid(paid.record.order);
+        return reply(200,await ledger.call<DurablePaymentPreparation>({action:'paidPrepare',hash,id,preparation:candidate}));
+      }
+      if(match![2]==='reserve'){
+        const input=fields(await body(request),['signature','preparationId']);
+        if(typeof input.signature!=='string'||typeof input.preparationId!=='string')return bad();
+        await ledger.call({action:'paidReserve',hash,id,signature:input.signature,preparationId:input.preparationId});
+        return reply(202,await ledger.call({action:'paidGet',hash,id}));
+      }
+      if(match![2]==='cancel'){
+        const input=fields(await body(request),['preparationId']);
+        if(input.preparationId!==null&&typeof input.preparationId!=='string')return bad();
+        return reply(200,await ledger.call({action:'paidCancel',hash,id,preparationId:input.preparationId}));
+      }
+      if(match![2]==='verify'){
+        const input=fields(await body(request),['signature']);
+        if(typeof input.signature!=='string'||input.signature!==paid.record.pendingSignature)throw new HttpError(409,'payment_not_reserved');
+      }else fields(await body(request),[]);
+      if(match![2]==='execute'&&!paid.record.payment)throw new HttpError(409,'preservation_not_paid');
+      const result=await ledger.call<Snapshot>({action:'paidRun',hash,id});
+      return reply(result.execution?.status==='completed'?200:202,result);
+    }
+    if(!legacyEnabled)return reply(404,{error:'not_found'});
     if (method === 'GET') return reply(200, snapshot);
+    if(match![2]==='cancel')return reply(404,{error:'not_found'});
     if (match![2] === 'reserve') {
       const input = fields(await body(request), ['signature']);
       if (typeof input.signature !== 'string') return bad('invalid_signature');
@@ -222,8 +323,9 @@ export async function checkoutApi(request: Request, env: CheckoutApiEnv,
     if (code === 'unauthorized') return reply(401, { error: code });
     if (code === 'order_not_found') return reply(404, { error: code });
     if (code === 'rate_limited') return reply(429, { error: code });
-    if (['idempotency_conflict', 'previous_payment_unresolved', 'order_already_paid', 'preservation_not_paid'].includes(code)) return reply(409, { error: code });
-    if (['invalid_base58', 'invalid_amount', 'excess_precision', 'technical_amount_overflow', 'invalid_contribution_order', 'recipient_roles_overlap', 'invalid_order_id_or_policy', 'archive_mismatch', 'invalid_envelope', 'envelope_too_large'].includes(code)) return reply(400, { error: code });
+    if (['idempotency_conflict', 'previous_payment_unresolved', 'order_already_paid', 'preservation_not_paid','order_expired','payment_not_prepared','payment_not_reserved','paid_hold_not_releasable','paid_request_cancelled','preparation_changed','paid_policy_changed'].includes(code)) return reply(409, { error: code });
+    if(['paid_not_configured','paid_not_ready','paid_budget_exhausted','balance_observation_stale','wallet_low','payment_balance_not_ready','recipient_not_ready','payment_network_not_ready'].includes(code))return reply(503,{error:code});
+    if (['invalid_base58', 'invalid_amount', 'excess_precision', 'technical_amount_overflow', 'invalid_contribution_order', 'recipient_roles_overlap', 'invalid_order_id_or_policy', 'archive_mismatch', 'invalid_envelope', 'envelope_too_large','invalid_paid_archive','archive_not_canonical','invalid_payment_signature','invalid_payment_preparation','invalid_idempotency_key'].includes(code)) return reply(400, { error: code });
     // Transport/commit failure can mean commit succeeded. No unpaid claim, no fresh-payment instruction.
     return reply(503, { error: 'checkout_requires_reconciliation' });
   }

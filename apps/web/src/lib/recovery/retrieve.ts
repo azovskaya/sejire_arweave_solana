@@ -4,7 +4,7 @@ import {firstUsable,timedFetch} from './gateways';
 import {gatewayHost} from './diagnostics';
 import type {GatewayPool,HeadCandidate,RecoveryContext,SafeRecoveryDiagnostics} from './types';
 
-export type TxMetadata={id:string;tags:{name:string;value:string}[];blockHeight:number|null;blockTimestamp:number|null};
+export type TxMetadata={id:string;tags:{name:string;value:string}[];blockHeight:number|null;blockTimestamp:number|null;owner?:string;rewardWinston?:string};
 const HISTORICAL_FUND_TAGS=new Set(['App-Name','Type','Schema','Vault-Id','Archive-SHA256','Archive-Bytes','Preservation-Id','Promo-Funded']);
 function decodeBase64Url(value:string):string {
   const base=value.replace(/-/g,'+').replace(/_/g,'/');
@@ -12,10 +12,11 @@ function decodeBase64Url(value:string):string {
 }
 function parseMetadata(raw:unknown):TxMetadata {
   if(!raw||typeof raw!=='object')throw Error('bad_metadata');
-  const tx=raw as {id?:string;tags?:{name:string;value:string}[];block?:{height?:number;timestamp?:number};blockHeight?:number;blockTimestamp?:number};
+  const tx=raw as {id?:string;tags?:{name:string;value:string}[];block?:{height?:number;timestamp?:number};blockHeight?:number;blockTimestamp?:number;owner?:unknown;reward?:unknown};
   if(!tx.id||!/^[A-Za-z0-9_-]{43}$/.test(tx.id)||!Array.isArray(tx.tags)||tx.tags.length>40)throw Error('bad_metadata');
   const tags=tx.tags.map(tag=>({name:decodeBase64Url(tag.name),value:decodeBase64Url(tag.value)}));
-  return {id:tx.id,tags,blockHeight:tx.block?.height??tx.blockHeight??null,blockTimestamp:tx.block?.timestamp??tx.blockTimestamp??null};
+  return {id:tx.id,tags,blockHeight:tx.block?.height??tx.blockHeight??null,blockTimestamp:tx.block?.timestamp??tx.blockTimestamp??null,
+    ...(typeof tx.owner==='string'?{owner:tx.owner}:{}),...(typeof tx.reward==='string'?{rewardWinston:tx.reward}:{})};
 }
 export function tagValue(meta:TxMetadata,name:string):string|null {
   const matches=meta.tags.filter(tag=>tag.name===name);if(matches.length>1)throw new RecoveryFailure('METADATA_MISMATCH');

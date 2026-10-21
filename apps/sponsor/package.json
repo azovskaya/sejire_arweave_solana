@@ -5,13 +5,15 @@
   "type": "module",
   "scripts": {
     "check": "tsc --noEmit -p tsconfig.json",
-    "test": "tsx src/selftest.ts && npm run test:checkout && npm run test:rpc && npm run test:fund",
+    "test": "tsx src/selftest.ts && npm run test:checkout && npm run test:rpc && npm run test:fund && npm run test:paid",
     "dev": "echo 'Use: npx wrangler dev (Cloudflare login). Default PAYMENT_PROVIDER=mock.'",
     "test:checkout": "tsx src/checkout/selftest.ts",
     "test:rpc": "tsx src/checkout/rpc.selftest.ts",
     "test:sqlite": "node tests/sqlite-runtime.mjs",
     "test:fund": "node --loader ../../scripts/offline-ts-loader.mjs tests/fund-provider.mjs && node --experimental-sqlite --loader ../../scripts/offline-ts-loader.mjs tests/fund.local.mjs",
     "test:fund-runtime": "node tests/fund-runtime.mjs",
+    "test:paid": "tsx src/checkout/paid.selftest.ts && tsx src/checkout/directPreservation.selftest.ts && node --experimental-sqlite --loader ../../scripts/offline-ts-loader.mjs tests/paid.local.mjs",
+    "test:paid-runtime": "node tests/direct-preservation-runtime.mjs && node tests/paid-api-runtime.mjs",
     "test:api": "node tests/api-runtime.mjs",
     "test:preservation": "tsx src/checkout/preparation.selftest.ts && tsx src/checkout/preservation.selftest.ts",
     "test:protocol": "tsx src/protocol/selftest.ts"

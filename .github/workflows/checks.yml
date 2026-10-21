@@ -22,6 +22,8 @@ jobs:
       - run: npm test
       - run: npm run check --prefix apps/sponsor
       - run: npm run test:fund-runtime
+      - name: Paid SOL archive, durable continuation and mainnet adapters (synthetic network)
+        run: npm run test:paid-runtime
       - run: npm run test:checkout
       - run: npm run test:rpc
       - run: npm run test:sqlite
@@ -72,6 +74,8 @@ jobs:
       - run: npm run test:v2-recovery-browser --prefix apps/web
       - name: Promo save, reload recovery and automatic editor completion (mocked network)
         run: npm run test:fund-browser --prefix apps/web
+      - name: Paid SOL save, cross-method recovery and editor completion (mocked network)
+        run: npm run test:paid-browser
       - name: Read-only Arweave recovery gateway and CORS acceptance
         run: node scripts/verify-recovery-network.mjs
       - run: npm run test:native-journey --prefix apps/web

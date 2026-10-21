@@ -35,8 +35,9 @@ import {
 import { useI18n } from "../lib/i18n/I18nProvider";
 import { solanaMessages } from "../lib/solana/messages";
 import { LanguageSwitch } from "./LanguageSwitch";
-import { findFundAttempt } from "../lib/fund/journal";
+import { findPreservationAttempt, subscribePreservationChanges } from "../lib/checkout/vaultGuard";
 import { getFundedPromo } from "../lib/fund/preference";
+import { downloadJson } from "../lib/download";
 
 function uid() {
   return `p_${Math.random().toString(36).slice(2, 9)}`;
@@ -72,7 +73,9 @@ export function Workspace({ store, guide, onStoreChange, onGuideChange, onHome }
   const [quickFundedCode, setQuickFundedCode] = useState<string | null>(null);
   const [hasPendingFund, setHasPendingFund] = useState(false);
   const [checkingFundAttempt, setCheckingFundAttempt] = useState(true);
+  const [attemptRevision, setAttemptRevision] = useState(0);
   const autoResumeTree = useRef<string | null>(null);
+  const openingPublish = useRef(false);
   const latestStore = useRef(store);
   latestStore.current = store;
   const [toast, setToast] = useState<ToastState | null>(null);
@@ -90,13 +93,15 @@ export function Workspace({ store, guide, onStoreChange, onGuideChange, onHome }
   const fundedSavingEnabled = import.meta.env.VITE_PRESERVATION_V2_ENABLED === '1';
   const acceptedFundCode = fundedSavingEnabled && getSessionMnemonic() ? getFundedPromo(vaultSession?.vaultId) : null;
 
+  useEffect(() => subscribePreservationChanges(() => setAttemptRevision(value => value + 1)), []);
+
   useEffect(() => {
     if (!fundedSavingEnabled) { setCheckingFundAttempt(false); return; }
     if (showPublish) return;
     let live = true;
     setCheckingFundAttempt(true);
     const treeId = store.meta.id;
-    void findFundAttempt({ treeId, vaultId: getVaultSession()?.vaultId }).then(attempt => {
+    void findPreservationAttempt({ treeId, vaultId: getVaultSession()?.vaultId }).then(attempt => {
       if (!live) return;
       setHasPendingFund(Boolean(attempt));
       // A reload resumes only the existing encrypted request. Opening this
@@ -111,7 +116,7 @@ export function Workspace({ store, guide, onStoreChange, onGuideChange, onHome }
       if (live) setHasPendingFund(true); // The modal explains a blocked journal.
     }).finally(() => { if (live) setCheckingFundAttempt(false); });
     return () => { live = false; };
-  }, [store.meta.id, showPublish, fundedSavingEnabled]);
+  }, [store.meta.id, showPublish, fundedSavingEnabled, attemptRevision]);
 
   const shezhireLine = useMemo(
     () => formatShezhireAffiliation(store.meta?.zhuz, store.meta?.clanName),
@@ -319,31 +324,42 @@ export function Workspace({ store, guide, onStoreChange, onGuideChange, onHome }
     setPending(null);
   }
 
-  function openPublish() {
-    if (checkingFundAttempt) return;
-    if (hasPendingFund) {
-      setPublishStore(store);
-      setQuickFundedCode(null);
+  async function openPublish() {
+    if (checkingFundAttempt || openingPublish.current) return;
+    openingPublish.current = true;
+    const treeId = store.meta.id;
+    try {
+      // Recheck under the shared guard: another tab can create an attempt
+      // after the button was rendered. Pending work never commits new edits.
+      let pending = hasPendingFund;
+      if (fundedSavingEnabled) {
+        try { pending = Boolean(await findPreservationAttempt({ treeId, vaultId: getVaultSession()?.vaultId })); }
+        catch { pending = true; } // The modal explains an unreadable journal.
+      }
+      const current = latestStore.current;
+      if (current.meta.id !== treeId) return;
+      setHasPendingFund(pending);
+      if (pending) {
+        setPublishStore(current);
+        setQuickFundedCode(null);
+        setShowPublish(true);
+        return;
+      }
+      if (!Object.keys(current.draft.persons).length) {
+        flash(t.workspace.flashNeedPerson);
+        return;
+      }
+      const next = current.dirty ? commitDraft(current, t.workspace.commitBeforeSave) : current;
+      if (next !== current) persist(next);
+      void mirrorStoreToProtocol(next).catch(() => {
+        /* локальное зеркало не должно ломать сохранение сейфа */
+      });
+      setPublishStore(next);
+      // Only this explicit click authorizes a new free save. A resumed
+      // attempt never receives a promo code or submits a successor.
+      setQuickFundedCode(acceptedFundCode);
       setShowPublish(true);
-      return;
-    }
-    if (!people.length) {
-      flash(t.workspace.flashNeedPerson);
-      return;
-    }
-    let next = store;
-    if (store.dirty) {
-      next = commitDraft(store, t.workspace.commitBeforeSave);
-      persist(next);
-    }
-    void mirrorStoreToProtocol(next).catch(() => {
-      /* локальное зеркало не должно ломать сохранение сейфа */
-    });
-    setPublishStore(next);
-    // Only this explicit click authorizes a new free save. A resumed attempt
-    // never receives a promo code or triggers automatic submission.
-    setQuickFundedCode(hasPendingFund ? null : acceptedFundCode);
-    setShowPublish(true);
+    } finally { openingPublish.current = false; }
   }
 
   function setFocus(id: string) {
@@ -705,7 +721,7 @@ export function Workspace({ store, guide, onStoreChange, onGuideChange, onHome }
             setPublishStore(null);
             setQuickFundedCode(null);
           }}
-          onPublished={({ mode, txId, mock, isNewVersion }) => {
+          onPublished={({ mode, txId, mock, isNewVersion, paidReceipt }) => {
             setShowPublish(false);
             setPublishStore(null);
             setQuickFundedCode(null);
@@ -724,7 +740,9 @@ export function Workspace({ store, guide, onStoreChange, onGuideChange, onHome }
                   : t.workspace.publishedForever(shorter, ver)
               );
             } else if (mode === "arweave") {
-              flash(t.workspace.publishedArweave(shorter, ver));
+              flash(t.workspace.publishedArweave(shorter, ver),
+                paidReceipt ? () => downloadJson(paidReceipt, `sejire-paid-receipt-${paidReceipt.orderId}.json`) : undefined,
+                paidReceipt ? 'Скачать квитанцию' : undefined);
             } else {
               flash(t.workspace.publishedFile(short, ver));
             }

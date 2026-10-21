@@ -2,6 +2,7 @@ import { assertBase58, assetFor, SYSTEM_PROGRAM, TOKEN_PROGRAM } from '../../../
 import { assertUnits } from '../../../../packages/checkout/amounts';
 import type { ChainPolicy, TransactionEvidence, Transfer } from './paymentValidator';
 import { RpcEvidenceError } from './rpcErrors';
+import { serializeLegacyPaymentMessage } from '../../../../packages/checkout/paid';
 
 // Compiled instruction data, not parsed browser amounts or balance deltas.
 const ALPHABET = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
@@ -59,7 +60,7 @@ export function decodeTransaction(result: unknown, signature: string, chain: Cha
   const readonlySigned = integer(header.numReadonlySignedAccounts, required);
   const readonlyUnsigned = integer(header.numReadonlyUnsignedAccounts, staticKeys.length - required);
   if (required !== 1 || readonlySigned !== 0 || staticKeys.length < 2) fail('unsupported-transaction');
-  address(message.recentBlockhash);
+  const recentBlockhash = address(message.recentBlockhash);
   const loaded = tx.version === 0 ? object(meta.loadedAddresses ?? fail('missing-metadata')) : { writable: [], readonly: [] };
   if (tx.version === 'legacy' && meta.loadedAddresses !== undefined) {
     const legacyLoaded = object(meta.loadedAddresses);
@@ -135,6 +136,18 @@ export function decodeTransaction(result: unknown, signature: string, chain: Cha
   const blockTimeMs = integer(tx.blockTime) * 1000;
   if (!Number.isSafeInteger(blockTimeMs)) fail();
   const fee = integer(meta.fee);
+  let messageBase64: string | undefined;
+  if (tx.version === 'legacy') {
+    try {
+      messageBase64 = serializeLegacyPaymentMessage({ accountKeys: staticKeys, recentBlockhash,
+        header: { numRequiredSignatures: required, numReadonlySignedAccounts: readonlySigned, numReadonlyUnsignedAccounts: readonlyUnsigned },
+        instructions: instructions.map(value => {
+          const ix = object(value);
+          return { programIdIndex: keyIndex(ix.programIdIndex), accounts: list(ix.accounts, 5).map(keyIndex), data: dataBytes(ix.data) };
+        }) });
+    } catch { fail('unsupported-transaction'); }
+  }
   return { signature, network: chain.network, genesisHash: chain.genesisHash, commitment: 'finalized', error: null,
-    slot: integer(tx.slot), blockTimeMs, feeLamports: String(fee), feePayer: payer, signers: [payer], transfers };
+    slot: integer(tx.slot), blockTimeMs, feeLamports: String(fee), feePayer: payer, signers: [payer], transfers,
+    recentBlockhash, ...(messageBase64 ? { messageBase64 } : {}) };
 }

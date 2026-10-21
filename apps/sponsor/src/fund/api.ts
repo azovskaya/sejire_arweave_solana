@@ -137,12 +137,14 @@ export async function fundApi(request:Request,env:FundEnv,provided?:FundedArweav
         const quoteBytes=Number(summary.averageArchiveBytes??6144);
         try{currentQuoteWinston=await (provider?provider.getPrice(quoteBytes):publicPrice(quoteBytes));}catch{ /* separate price failure */ }
         const budget=BigInt(String(summary.budgetRemainingWinston));
-        const walletFree=walletBalanceWinston===null?null:BigInt(walletBalanceWinston)>BigInt(String(summary.reservedWinston))?BigInt(walletBalanceWinston)-BigInt(String(summary.reservedWinston)):0n;
+        const sharedReservedWinston=await ledger.call<string>({action:'treasuryHeld',address:TREASURY_ADDRESS});
+        const guardedBalance=walletBalanceWinston===null?null:await ledger.call<string>({action:'treasuryEffectiveBalance',address:TREASURY_ADDRESS,balance:walletBalanceWinston});
+        const walletFree=guardedBalance===null?null:BigInt(guardedBalance)>BigInt(sharedReservedWinston)?BigInt(guardedBalance)-BigInt(sharedReservedWinston):0n;
         const effective=walletFree===null?null:(budget<walletFree?budget:walletFree).toString();
         const average=summary.averageActualWinston?BigInt(String(summary.averageActualWinston)):null;
         const quote=currentQuoteWinston?BigInt(currentQuoteWinston):null;
         const cost=average===null?null:quote===null?average:average>quote?average:quote;
-        return reply(200,{...summary,walletBalanceWinston,lastBalanceCheck,currentQuoteWinston,currentQuoteBytes:quoteBytes,effectiveAvailableWinston:effective,signerVerified,
+        return reply(200,{...summary,walletBalanceWinston,sharedReservedWinston,lastBalanceCheck,currentQuoteWinston,currentQuoteBytes:quoteBytes,effectiveAvailableWinston:effective,signerVerified,
           estimatedTreesRemaining:cost&&cost>0n&&effective!==null?(BigInt(effective)/cost).toString():null,
           fundStatus:!signerVerified||walletBalanceWinston===null||currentQuoteWinston===null?'PROVIDER ERROR':budget===0n||cost&&budget<cost?'EXHAUSTED':walletFree===0n||cost&&walletFree!==null&&walletFree<cost?'WALLET LOW':budget*10n<BigInt(String(summary.limitWinston))?'LOW':'HEALTHY'});
       }
@@ -203,7 +205,9 @@ export async function fundApi(request:Request,env:FundEnv,provided?:FundedArweav
       const code=typeof input.code==='string'?normalized(input.code):'';if(!codeFormat.test(code))throw Error('promo_invalid');
       const s=await ledger.call<{enabled:number;code_hash:string}>({action:'fundSettings'});if(!s.enabled)throw Error('promo_disabled');
       const hash=await codeHash(env.PROMO_CODE_SECRET,code);if(hash!==s.code_hash)throw Error('promo_invalid');
-      if(!provider)throw Error('fund_provider_unavailable');const balance=BigInt(await provider.getBalance());
+      if(!provider)throw Error('fund_provider_unavailable');
+      const balanceRevision=await ledger.call<number>({action:'treasuryRevision',address:TREASURY_ADDRESS});
+      const balance=BigInt(await provider.getBalance());
       const estimated=await provider.getPrice(bytes.length);
       const prepared=await provider.prepareTransaction(bytes,[{name:'App-Name',value:'SEJIRE'},{name:'Type',value:'vault-envelope'},{name:'Schema',value:'sejire/envelope/v1'},
         {name:'Protocol-Version',value:envelope.protocol},
@@ -212,7 +216,7 @@ export async function fundApi(request:Request,env:FundEnv,provided?:FundedArweav
         ...(parentTxId?[{name:'Parent-Tx',value:parentTxId}]:[])]).catch(()=>{throw Error('fund_prepare_failed');});
       const reward=BigInt(prepared.reward);if(reward<=0n||balance<reward)throw Error('wallet_low');
       let saved=await ledger.call<FundOrder>({action:'fundReserve',input:{orderId:input.orderId,preservationId:input.preservationId,hash,archiveSizeBytes:bytes.length,
-        archiveDigest:digest,vaultId:envelope.vault_id,...(Object.hasOwn(input,'parentTxId')?{parentTxId}:{}),reward:prepared.reward,estimated,prepared:prepared.raw,balance:balance.toString()}});
+        archiveDigest:digest,vaultId:envelope.vault_id,...(Object.hasOwn(input,'parentTxId')?{parentTxId}:{}),reward:prepared.reward,estimated,prepared:prepared.raw,balance:balance.toString(),balanceRevision}});
       if(saved.arweaveTxId)return reply(202,publicCheck(checkedOrder(saved)));
       try{const signed=await provider.sign({raw:saved.preparedTransaction!,reward:saved.reservedRewardWinston});
         if(signed.reward!==saved.reservedRewardWinston)throw Error('signed_reward_mismatch');
@@ -232,6 +236,6 @@ export async function fundApi(request:Request,env:FundEnv,provided?:FundedArweav
     return reply(404,{error:'not_found'});
   }catch(error){const code=error instanceof SyntaxError?'invalid_request':error instanceof Error?error.message:'fund_error';
     const known=['promo_invalid','promo_disabled','promo_missing','fund_exhausted','archive_changed','limit_below_spent','limit_below_reserved','invalid_ar_amount','invalid_promo_format','promo_confirmation_mismatch','wallet_low','fund_provider_unavailable','balance_unavailable','price_unavailable','fund_prepare_failed','fund_prepare_signer_failed','fund_prepare_client_failed','fund_prepare_price_failed','fund_prepare_network_failed','fund_prepare_anchor_failed','fund_prepare_create_failed','fund_prepare_tags_failed','fund_prepare_reward_failed','fund_prepare_serialize_failed','fund_sign_readiness_prepare_failed','fund_sign_readiness_failed','fund_signer_check_failed','fund_price_unavailable','fund_price_invalid','fund_network_unavailable','fund_anchor_unavailable','fund_create_failed','fund_tags_failed','fund_reward_invalid','fund_serialize_failed','invalid_request','invalid_envelope','envelope_too_large','forbidden_field','json_required','encoding_not_supported','request_too_large','archive_size_invalid','archive_not_canonical','rate_limited','order_not_found','fund_sign_failed','signed_tx_not_persisted','treasury_address_mismatch','signer_address_unavailable','fund_ledger_unavailable','fund_ledger_inconsistent'];
-    const safe=known.includes(code)?code:'fund_requires_reconciliation';return reply(code==='rate_limited'?429:code==='order_not_found'?404:code==='request_too_large'?413:code==='json_required'||code==='encoding_not_supported'?415:code==='promo_invalid'||code==='invalid_request'||code==='invalid_envelope'||code==='envelope_too_large'||code==='forbidden_field'||code==='archive_size_invalid'||code==='archive_changed'||code==='archive_not_canonical'||code==='invalid_ar_amount'||code==='invalid_promo_format'||code==='promo_confirmation_mismatch'?400:code==='promo_disabled'||code==='fund_exhausted'||code==='limit_below_spent'||code==='limit_below_reserved'?409:503,{error:safe});
+    const safe=known.includes(code)||code==='balance_observation_stale'?code:'fund_requires_reconciliation';return reply(code==='rate_limited'?429:code==='order_not_found'?404:code==='request_too_large'?413:code==='json_required'||code==='encoding_not_supported'?415:code==='promo_invalid'||code==='invalid_request'||code==='invalid_envelope'||code==='envelope_too_large'||code==='forbidden_field'||code==='archive_size_invalid'||code==='archive_changed'||code==='archive_not_canonical'||code==='invalid_ar_amount'||code==='invalid_promo_format'||code==='promo_confirmation_mismatch'?400:code==='promo_disabled'||code==='fund_exhausted'||code==='limit_below_spent'||code==='limit_below_reserved'?409:503,{error:safe});
   }
 }

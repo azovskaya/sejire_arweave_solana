@@ -19,7 +19,10 @@ const namespace={idFromName(){return 'single-ledger';},get(){return {async fetch
   case 'fundRate':result=await ledger.rate(f.bucket,f.limit,now);break;case 'fundPromo':result=await ledger.promo(f.hash,f.hint,now);break;
   case 'fundEnable':result=await ledger.enable(f.enabled,now);break;case 'fundLimit':result=await ledger.limit(f.value,now);break;
   case 'fundReserve':result=await ledger.reserve(f.input,now);break;case 'fundEvent':result=await ledger.event(f.input,now);break;
-  case 'fundReconciled':result=await ledger.reconciled(now);break;default:throw Error('unknown_action');}
+  case 'fundReconciled':result=await ledger.reconciled(now);break;
+  case 'treasuryRevision':result=ledger.treasury.revision(f.address);break;
+  case 'treasuryHeld':result=ledger.treasury.held(f.address,'qgoIFw9WsusMRapWzcFg4jNW08HSWvQkpAKOz86BUuI');break;
+  case 'treasuryEffectiveBalance':result=ledger.treasury.effectiveBalance(f.address,f.balance);break;default:throw Error('unknown_action');}
   return Response.json(result??null);
  }catch(e){return Response.json({error:e.message},{status:409});}}};}};
 const env={FUND_API_ENABLED:'true',CHECKOUT_ALLOWED_ORIGINS:origin,CHECKOUT_LEDGER:namespace,PROMO_CODE_SECRET:'synthetic-only-test-secret-32-characters',ADMIN_TOKEN:admin,MAX_ENVELOPE_BYTES:'524288'};

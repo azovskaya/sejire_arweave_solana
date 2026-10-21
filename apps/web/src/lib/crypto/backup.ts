@@ -4,8 +4,10 @@ import { parseSeedBackup } from "./seedBackup";
 import { parsePreservationReceipt, type PreservationReceipt } from "../solana/receipt";
 
 import { parseNativeReceipt, type NativeReceipt } from "../native/receipt";
+import { validatePaidReceipt, type PaidReceipt } from "../../../../../packages/checkout/paid";
 
 export type PortableBackup =
+  | { kind: "paidReceipt"; receipt: PaidReceipt }
   | { kind: "nativeReceipt"; receipt: NativeReceipt }
   | { kind: "words"; mnemonic: string }
   | { kind: "receipt"; receipt: PreservationReceipt }
@@ -19,6 +21,9 @@ export function parsePortableBackup(text: string): PortableBackup {
   if (mnemonic) return { kind: "words", mnemonic };
   if (raw && typeof raw === "object" && "schema" in raw && raw.schema === "sejire/preservation-receipt/v1") {
     return { kind: "receipt", receipt: parsePreservationReceipt(raw) };
+  }
+  if (raw && typeof raw === "object" && "schema" in raw && raw.schema === "sejire/preservation-receipt/v2") {
+    return { kind: "paidReceipt", receipt: validatePaidReceipt(raw) };
   }
   if (raw && typeof raw === "object" && "schema" in raw && raw.schema === "sejire/native-receipt/v1") return { kind: "nativeReceipt", receipt: parseNativeReceipt(raw) };
   return { kind: "vault", envelope: parseEnvelope(raw) };

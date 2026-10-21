@@ -7,6 +7,9 @@ import type { SaveSession } from '../lib/preserveV2/types';
 import type { FundOrderView } from '../lib/fund/client';
 import { PromoFundedFlow } from './PromoFundedFlow';
 import { useI18n } from '../lib/i18n/I18nProvider';
+import { PaidSolanaFlow } from './PaidSolanaFlow';
+import { findPreservationAttempt, type PreservationAttempt } from '../lib/checkout/vaultGuard';
+import type { PaidCompletion } from '../lib/checkout/paidTypes';
 
 type Props = {
   envelope?: EnvelopeV1 | null;
@@ -19,6 +22,9 @@ type Props = {
   onBack?: () => void;
   onBusy?: (busy: boolean) => void;
   onFundedDone?: (order: FundOrderView) => void | Promise<void>;
+  resumeCheckoutOperationId?: string | null;
+  onPaidDone?: (result: PaidCompletion) => Promise<void>;
+  onResumeAttempt?: (attempt: PreservationAttempt) => void;
 };
 const message = (error: unknown) => {
   const code = error instanceof Error ? error.message : 'unknown_error';
@@ -34,7 +40,7 @@ const message = (error: unknown) => {
   return known[code] ?? 'Операция пока не завершена. Прогресс сохранён; проверьте его позже.';
 };
 
-export function PreservationV2({envelope,treeName,treeId,parentTxId,resumeFunded,quickFundedCode,initialMethod='choose',onBack,onBusy,onFundedDone}: Props) {
+export function PreservationV2({envelope,treeName,treeId,parentTxId,resumeFunded,quickFundedCode,initialMethod='choose',onBack,onBusy,onFundedDone,resumeCheckoutOperationId,onPaidDone,onResumeAttempt}: Props) {
   const { t } = useI18n();
   const [session,setSession] = useState<SaveSession>();
   const [busy,setBusy] = useState(false);
@@ -42,8 +48,15 @@ export function PreservationV2({envelope,treeName,treeId,parentTxId,resumeFunded
   const [info,setInfo] = useState('');
   const [reward,setReward] = useState<string>();
   const [promoEnvelope,setPromoEnvelope] = useState<EnvelopeV1|null>(null);
-  const [saveMethod,setSaveMethod] = useState<'choose'|'promo'|'solana'>(resumeFunded || quickFundedCode ? 'promo' : initialMethod);
-  const paidFlowActive = (saveMethod === 'solana' && import.meta.env.VITE_NATIVE_SOL_MAINNET === '1') || (!envelope && !promoEnvelope);
+  const [saveMethod,setSaveMethod] = useState<'choose'|'promo'|'solana'>(resumeCheckoutOperationId ? 'solana' : resumeFunded || quickFundedCode ? 'promo' : initialMethod);
+  const [pendingAttempt, setPendingAttempt] = useState<PreservationAttempt | null>(null);
+  const [checkingMethod, setCheckingMethod] = useState(false);
+  const activeEnvelope = pendingAttempt?.method === 'promo' ? pendingAttempt.attempt.envelope : envelope || promoEnvelope;
+  const paidId = pendingAttempt?.method === 'paid' ? pendingAttempt.attempt.id : resumeCheckoutOperationId;
+  const actualMethod = paidId ? 'solana' : pendingAttempt?.method === 'promo' ? 'promo' : saveMethod;
+  // The fixed pilot is retained only for its explicit standalone entrypoint.
+  // An editor archive always uses the general policy-bound checkout below.
+  const paidFlowActive = !activeEnvelope && !paidId;
   const running = useRef(false);
   useEffect(() => {
     if (!paidFlowActive) return;
@@ -120,29 +133,51 @@ export function PreservationV2({envelope,treeName,treeId,parentTxId,resumeFunded
       return saveToArweave(confirmedReward);
     });
   }
-  const activeEnvelope=envelope||promoEnvelope;
-  if(activeEnvelope&&saveMethod==='choose')return <section className="native-checkout" aria-label="Сохранить семейную историю">
+  async function chooseMethod(method: 'choose' | 'promo' | 'solana') {
+    if (checkingMethod) return;
+    const importedPromo = method === 'promo' && Boolean(promoEnvelope) && !envelope && !treeId && !onResumeAttempt;
+    setCheckingMethod(true); setError('');
+    try {
+      const pending = await findPreservationAttempt({ vaultId: activeEnvelope?.vault_id, treeId });
+      if (pending) {
+        // The standalone promo reader already verifies a previous completion
+        // before accepting a different imported ciphertext. Preserve that
+        // check, and its exact-file migration of old digest-only markers.
+        if (importedPromo && pending.method === 'promo') { setPendingAttempt(null); setSaveMethod('promo'); return; }
+        if (method === 'choose' && onBack) { onBack(); return; }
+        setPendingAttempt(pending); onResumeAttempt?.(pending);
+        setSaveMethod(pending.method === 'paid' ? 'solana' : 'promo');
+      } else { setPendingAttempt(null); setSaveMethod(method); }
+    } catch (error) {
+      if (importedPromo && error instanceof Error && error.message === 'fund_attempt_in_progress') { setPendingAttempt(null); setSaveMethod('promo'); }
+      else setError('Не удалось проверить прежнее сохранение. Новый запрос пока не начинается.');
+    }
+    finally { setCheckingMethod(false); }
+  }
+
+  if(activeEnvelope&&actualMethod==='choose')return <section className="native-checkout" aria-label="Сохранить семейную историю">
     <h1>Сохранить семейную историю</h1>
     <h2>{treeName || 'Мой род'}</h2>
     <div className="actions" style={{flexDirection:'column',alignItems:'stretch',gap:'12px'}}>
-      <button className="btn" type="button" onClick={()=>setSaveMethod('promo')}>{t.publish.saveWithPromo}</button>
-      <button className="btn ghost" type="button" onClick={()=>setSaveMethod('solana')}>{t.publish.saveWithSolana}</button>
+      <button className="btn" type="button" disabled={checkingMethod} onClick={()=>void chooseMethod('promo')}>{t.publish.saveWithPromo}</button>
+      <button className="btn ghost" type="button" disabled={checkingMethod} onClick={()=>void chooseMethod('solana')}>{t.publish.saveWithSolana}</button>
     </div>
+    {error && <p role="alert">{error}</p>}
     {onBack&&<button className="btn ghost" type="button" onClick={onBack}>Назад</button>}
   </section>;
 
-  if(activeEnvelope&&saveMethod==='promo')return <section className="native-checkout" aria-label="Сохранить по промокоду">
+  if(activeEnvelope&&actualMethod==='promo')return <section className="native-checkout" aria-label="Сохранить по промокоду">
     <h1>Сохранить семейную историю</h1>
-    <PromoFundedFlow envelope={activeEnvelope} parentTxId={parentTxId} treeId={treeId}
-      autoSaveCode={resumeFunded ? null : quickFundedCode} autoComplete={Boolean(onFundedDone)} onDone={onFundedDone??onBack}/>
-    <button className="btn ghost" type="button" onClick={()=>setSaveMethod('choose')}>Назад</button>
+    <PromoFundedFlow envelope={activeEnvelope} parentTxId={pendingAttempt?.method==='promo'?pendingAttempt.attempt.parentTxId:parentTxId} treeId={treeId}
+      autoSaveCode={resumeFunded || pendingAttempt ? null : quickFundedCode} autoComplete={Boolean(onFundedDone)} onDone={onFundedDone??onBack}/>
+    {error && <p role="alert">{error}</p>}
+    <button className="btn ghost" type="button" disabled={checkingMethod} onClick={()=>void chooseMethod('choose')}>Назад</button>
   </section>;
 
-  if(activeEnvelope&&saveMethod==='solana'&&import.meta.env.VITE_NATIVE_SOL_MAINNET!=='1')return <section className="native-checkout" aria-label="Оплата SOL">
-    <h1>{t.publish.saveWithSolana}</h1>
-    <p>{t.publish.solanaUnavailable}</p>
-    <button className="btn ghost" type="button" onClick={()=>setSaveMethod('choose')}>Назад</button>
-  </section>;
+  if((activeEnvelope || paidId)&&actualMethod==='solana')return <PaidSolanaFlow
+    input={paidId ? {mode:'resume',operationId:paidId} : {mode:'create',envelope:activeEnvelope!,treeId:treeId??null,parentTxId:parentTxId??null}}
+    onBack={hasAttempt=>{if(hasAttempt&&onBack)onBack();else void chooseMethod('choose');}} onBusy={onBusy} onComplete={onPaidDone}
+    onAdoptAttempt={attempt=>{const pending:PreservationAttempt={method:'paid',attempt};setPendingAttempt(pending);onResumeAttempt?.(pending);}}/>;
 
   const state=session?.state;
   const blockedAfterPayment=state==='BLOCKED' && Boolean(session?.arSignedTransaction||session?.arTransactionId||session?.arSigningStarted);

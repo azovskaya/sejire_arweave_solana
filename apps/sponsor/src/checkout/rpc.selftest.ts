@@ -178,7 +178,7 @@ await test('client cannot provide paid/evidence/finalized/recipient/amount/RPC',
     await assert.rejects(async () => verifyRequest(store, reader, { orderId: order.id, signature: sig(5), [key]: true }), /invalid_verification_request/);
   assert.equal((await store.get(order.id))?.pendingSignature, undefined);
   assert.deepEqual(parseVerificationRequest({ orderId: order.id, signature: sig(5) }), { orderId: order.id, signature: sig(5) });
-  assert.throws(() => new SolanaRpcReader({ network: 'mainnet-beta' } as never));
+  assert.throws(() => new SolanaRpcReader({ network: 'testnet' } as never));
   assert.throws(() => new SolanaRpcReader({ network: 'devnet', rpcUrl: 'https://attacker' } as never));
 });
 await test('bounded RPC response and missing result reject without credit', async () => {

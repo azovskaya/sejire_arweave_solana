@@ -1,10 +1,16 @@
 import type { AtomicOrderStore, CommitResult } from './store';
-import { validatePayment, type TransactionEvidence, type ChainPolicy } from './paymentValidator';
+import { validatePayment, type TransactionEvidence, type ChainPolicy, type ValidatedPayment } from './paymentValidator';
 import { RpcEvidenceError, type RpcFailure } from './rpcErrors';
+import type { PaidOrder } from '../../../../packages/checkout/order';
+import type { DurablePaymentPreparation } from '../../../../packages/checkout/paid';
+export type ReferencePaymentResult = Readonly<{ status: 'found'; signature: string; evidence: TransactionEvidence; payment: ValidatedPayment }> |
+  Readonly<{ status: 'requires-reconciliation'; reason: RpcFailure | 'not-found' | 'reference-ambiguous' | 'reference-scan-incomplete' | 'validation-rejected' }>;
 /** Server-only port. SolanaRpcReader supplies raw-RPC evidence; browser JSON never does. */
 export interface TrustedTransactionReader {
   readonly chain: ChainPolicy;
   read(signature: string): Promise<TransactionEvidence | null>;
+  /** Discovery is read-only. The owner-scoped/internal ledger must bind the found signature before commit. */
+  findByReference?(order: PaidOrder, preparation: DurablePaymentPreparation): Promise<ReferencePaymentResult>;
 }
 export type ReconciliationResult = CommitResult | Readonly<{ status: 'requires-reconciliation'; reason: RpcFailure | 'not-found' | 'missing-block-time' | 'validation-rejected' | 'credit-conflict' }>;
 export async function reconcilePayment(store: AtomicOrderStore, reader: TrustedTransactionReader, orderId: string, signature: string): Promise<ReconciliationResult> {

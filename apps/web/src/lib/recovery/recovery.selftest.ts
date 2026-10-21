@@ -34,7 +34,7 @@ assert.throws(()=>validateMetadata({...meta,id:'B'.repeat(43)},{txId:id,source:'
 assert.throws(()=>validateMetadata(meta,{txId:id,source:'test'},'b'.repeat(32)),(error:unknown)=>error instanceof RecoveryFailure&&error.code==='VAULT_ID_MISMATCH');
 assert.throws(()=>validateMetadata({...meta,tags:meta.tags.filter(t=>t.name!=='Vault-Id')},{txId:id,source:'test'},vaultId));
 assert.doesNotThrow(()=>validateMetadata({...meta,tags:meta.tags.filter(t=>t.name!=='Vault-Id')},{txId:id,source:'legacy',legacy:true},vaultId));
-const version=(txId:string,parentTxId:string|null,blockHeight:number):VerifiedVersion=>({txId,parentTxId,blockHeight,blockTimestamp:blockHeight,vault:{schema:'sejire/vault/v1',vault_id:vaultId,updated_at:'',trees:{},active_tree_id:null},sources:['test']});
+const version=(txId:string,parentTxId:string|null,blockHeight:number):VerifiedVersion=>({txId,parentTxId,blockHeight,blockTimestamp:blockHeight,vault:{schema:'sejire/vault/v1',vault_id:vaultId,updated_at:'',trees:{},active_tree_id:null},envelope:{schema:'sejire/envelope/v1',vault_id:vaultId,cipher:'aes-gcm-256',kdf:'hkdf-sha256',iv:'A'.repeat(16),ciphertext:'A'.repeat(24),protocol:'sejire/v0.3'},sources:['test']});
 const v1=version('A'.repeat(43),null,1),v2=version('B'.repeat(43),v1.txId,2),v3=version('C'.repeat(43),v2.txId,3);
 assert.equal(resolveHead([v2,v1,v3]).head.txId,v3.txId);
 assert.equal(resolveHead([v1,v2,version('D'.repeat(43),v1.txId,4)]).forks.length,1);
@@ -130,6 +130,7 @@ async function readFundedArchive(rawText:string,metadata:TxMetadata,openKeys=key
 const recovered=await readFundedArchive(raw,validFundMetadata);
 assert.equal(recovered.head.txId,id);assert.equal(recovered.forks.length,0);
 assert.deepEqual(recovered.head.vault,testVault,'both trees, version history and active tree survive historical fund recovery');
+assert.equal(serializeEnvelope(recovered.head.envelope),raw,'recovery retains the exact encrypted envelope instead of resealing');
 assert.deepEqual(requests.map(request=>request.method),['POST','GET','GET'],'only discovery and archive reads');
 assert.equal((await readFundedArchive(raw,{...validFundMetadata,tags:[...validFundMetadata.tags,{name:'Protocol-Version',value:'sejire/v0.3'}]})).head.txId,id,'future fund format also opens');
 

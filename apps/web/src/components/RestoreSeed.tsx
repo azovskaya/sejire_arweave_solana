@@ -7,8 +7,10 @@ import { readCache } from "../lib/native/cache";
 import { retrieveNativeReceipt } from "../lib/native/receipt";
 import { DATA_GATEWAYS } from "../lib/arweave/gateways";
 import { retrieveReceiptEnvelope } from "../lib/solana/receipt";
+import { retrievePaidReceipt } from "../lib/checkout/paidReceipt";
 import { preservationError, solanaMessages } from "../lib/solana/messages";
-import { MAX_BACKUP_BYTES } from "../lib/crypto/envelope";
+import { MAX_BACKUP_BYTES, parseEnvelope, serializeEnvelope } from "../lib/crypto/envelope";
+import type { EnvelopeV1 } from "../lib/crypto/encrypt";
 import { openEnvelope, openLocalVault, sealVault, type VaultV1 } from "../lib/crypto/vault";
 import {recoverVaultFromWords} from "../lib/recovery/recover";
 import type {VerifiedVersion,SafeRecoveryDiagnostics,RecoveryErrorCode,RecoveryStage} from "../lib/recovery/types";
@@ -19,7 +21,8 @@ import { defaultGuide, saveGuide } from "../lib/guide";
 import { pickHomeFocus } from "../lib/pedigree";
 import { activePersons } from "../lib/treeEngine";
 import { setVaultSession } from "../lib/vaultSession/session";
-import {listLocalVaultVersions,type LocalVaultVersion} from "../lib/vaultSession/localArchive";
+import {archiveLocalVaultVersion,getLocalVaultVersion,listLocalVaultVersions,type LocalVaultVersion} from "../lib/vaultSession/localArchive";
+import { setLocalJson } from "../lib/storageQuota";
 
 import { useI18n } from "../lib/i18n/I18nProvider";
 import { formatUiDateTime } from "../lib/i18n/messages";
@@ -69,13 +72,16 @@ export function RestoreSeed({ onRestored, onBack }: Props) {
 
   async function finishWithVault(
     vault: VaultV1,
-    opts: { vaultId: string; headTxId: string | null; mnemonic: string; source: "network" | "local" | "file" }
+    opts: { vaultId: string; headTxId: string | null; parentTxId?: string | null; envelope?: EnvelopeV1; mnemonic: string; source: "network" | "local" | "file" }
   ) {
     if (!vault || vault.schema !== "sejire/vault/v1" || vault.vault_id !== opts.vaultId ||
         !vault.trees || typeof vault.trees !== "object" || Array.isArray(vault.trees)) {
       throw new Error(t.restore.badFile);
     }
     const treeId = vault.active_tree_id;
+    for (const [id, tree] of Object.entries(vault.trees)) {
+      if (id === '__proto__' || id === 'constructor' || !coerceTreeStore(tree)) throw new Error(t.restore.badFile);
+    }
     const store = coerceTreeStore(treeId ? vault.trees[treeId] : Object.values(vault.trees)[0]);
     if (!store) throw new Error(t.restore.noTrees);
     const existing = loadDraftTree();
@@ -84,9 +90,20 @@ export function RestoreSeed({ onRestored, onBack }: Props) {
       if (!ok) return;
     }
     const selfId = pickHomeFocus(store.draft, null);
-    // Preserve every tree in an imported/network vault, not only the active tree
-    // displayed by the editor. A later offline save must retain the full archive.
-    await sealVault(deriveKeysFromMnemonic(opts.mnemonic), vault);
+    // Keep the verified ciphertext, including every tree. Resealing a downloaded
+    // HEAD would break its SHA/size binding and make a later offline save unsafe.
+    if (opts.envelope) {
+      const envelope = parseEnvelope(opts.envelope);
+      if (envelope.vault_id !== opts.vaultId) throw new Error(t.restore.badFile);
+      if (opts.headTxId && /^[A-Za-z0-9_-]{43}$/.test(opts.headTxId)) {
+        archiveLocalVaultVersion({ id: opts.headTxId, vaultId: opts.vaultId, parentId: opts.parentTxId ?? null, source: 'network', envelope });
+        const saved = getLocalVaultVersion(opts.vaultId, opts.headTxId);
+        if (!saved || saved.parentId !== (opts.parentTxId ?? null) || serializeEnvelope(saved.envelope) !== serializeEnvelope(envelope)) {
+          throw Error('Браузер не смог сохранить локальную историю архива. Освободите место и повторите восстановление.');
+        }
+      }
+      if (!setLocalJson('sejire.envelope.' + opts.vaultId, envelope)) throw Error('Браузер не смог сохранить локальную копию архива. Освободите место и повторите восстановление.');
+    } else await sealVault(deriveKeysFromMnemonic(opts.mnemonic), vault);
     saveDraftTree(store);
     saveGuide({ ...defaultGuide(), step: "done", selfId });
     setVaultSession(
@@ -111,6 +128,7 @@ export function RestoreSeed({ onRestored, onBack }: Props) {
       if (backup) {
         const envelope = backup.kind === "receipt"
           ? await retrieveReceiptEnvelope(backup.receipt, { vaultId: keys.vaultId })
+          : backup.kind === "paidReceipt" ? await retrievePaidReceipt(backup.receipt, { vaultId: keys.vaultId })
           : backup.kind === "nativeReceipt" ? await retrieveNativeReceipt(backup.receipt, nativeGateway ? [nativeGateway, ...DATA_GATEWAYS] : [...DATA_GATEWAYS]) : backup.envelope;
         let vault: VaultV1;
         try {
@@ -120,7 +138,9 @@ export function RestoreSeed({ onRestored, onBack }: Props) {
         }
         await finishWithVault(vault, {
           vaultId: keys.vaultId,
-          headTxId: backup.kind === "nativeReceipt" ? backup.receipt.transactionId : backup.kind === "receipt" && backup.receipt.network === "mainnet-beta" ? backup.receipt.receipt.id : null,
+          headTxId: backup.kind === "paidReceipt" ? backup.receipt.txId : backup.kind === "nativeReceipt" ? backup.receipt.transactionId : backup.kind === "receipt" && backup.receipt.network === "mainnet-beta" ? backup.receipt.receipt.id : null,
+          parentTxId: backup.kind === "paidReceipt" ? backup.receipt.archive.parentTxId : null,
+          envelope,
           mnemonic: normalized, source: backup.kind !== "vault" ? "network" : "file",
         });
         return;
@@ -133,7 +153,9 @@ export function RestoreSeed({ onRestored, onBack }: Props) {
       let networkError: string | null = null;
       if(!result.ok)networkError=recoveryMessage(result.code);
       if(result.ok&&!result.forks.length){
-        await finishWithVault(result.vault,{vaultId:keys.vaultId,headTxId:result.headTxId,mnemonic:normalized,source:'network'});return;
+        const head=result.versions.find(version=>version.txId===result.headTxId);
+        if(!head)throw Error(t.restore.badFile);
+        await finishWithVault(result.vault,{vaultId:keys.vaultId,headTxId:result.headTxId,parentTxId:head.parentTxId,envelope:head.envelope,mnemonic:normalized,source:'network'});return;
       }
       const versions=result.ok?[...result.versions].sort((a,b)=>(b.blockHeight??-1)-(a.blockHeight??-1)):[];
       const archive = listLocalVaultVersions(keys.vaultId);
@@ -208,6 +230,8 @@ export function RestoreSeed({ onRestored, onBack }: Props) {
         await finishWithVault(vault, {
           vaultId: useVaultId,
           headTxId: item.entry.id,
+          parentTxId: item.entry.parentId,
+          envelope: item.entry.envelope,
           mnemonic: usePhrase,
           source: "local",
         });
@@ -216,6 +240,8 @@ export function RestoreSeed({ onRestored, onBack }: Props) {
       await finishWithVault(item.version.vault, {
         vaultId: useVaultId,
         headTxId: item.version.txId,
+        parentTxId: item.version.parentTxId,
+        envelope: item.version.envelope,
         mnemonic: usePhrase,
         source: "network",
       });
@@ -370,6 +396,7 @@ export function RestoreSeed({ onRestored, onBack }: Props) {
             <p>{solanaMessages[locale].receiptRestore}</p>
             {backup.receipt.network === "devnet" && <p>{solanaMessages[locale].test}</p>}
           </>}
+          {backup.kind === "paidReceipt" && <p>Квитанция сохранения в Arweave. Архив проверяется перед открытием; для расшифровки нужны ваши слова SEJIRE.</p>}
           <button type="button" className="welcome-link-quiet" disabled={busy} onClick={() => {
             setBackup(null);
             setError(null);

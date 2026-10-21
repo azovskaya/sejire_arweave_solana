@@ -15,8 +15,12 @@ on:
       - '.github/workflows/deploy-promo-fund-worker.yml'
       - 'apps/sponsor/wrangler.toml'
       - 'apps/sponsor/src/fund/**'
+      - 'apps/sponsor/src/checkout/**'
+      - 'packages/checkout/**'
       - 'apps/sponsor/package.json'
       - 'apps/sponsor/tests/fund*.mjs'
+      - 'apps/sponsor/tests/paid*.mjs'
+      - 'apps/sponsor/tests/direct-preservation*.mjs'
 
 # rollout diagnostic: Worker-native signer address derivation
 permissions:
@@ -54,6 +58,12 @@ jobs:
 
       - name: Test fund in workerd with persistent SQLite Durable Object
         run: npm run test:fund-runtime
+
+      - name: Test paid SOL orders and shared treasury reservations (synthetic only)
+        run: npm run test:paid
+
+      - name: Test paid runtime and persistent automatic continuation (synthetic only)
+        run: npm run test:paid-runtime
 
       - name: Check native production build
         run: npm run native:build

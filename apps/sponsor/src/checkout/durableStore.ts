@@ -4,23 +4,35 @@ import type { AtomicOrderStore, StoredOrder, CommitResult } from './store';
 import { SqliteAtomicOrderStore } from './sqliteStore';
 import { ApiLedger } from './apiLedger';
 import type { UploadPlan, UploadAcceptance } from './preservation';
-import { FundLedger } from '../fund/ledger';
+import { FundLedger, TREASURY_ADDRESS } from '../fund/ledger';
+import { PaidLedger } from './paidLedger';
+import { runPaidOrder } from './paidRunner';
+import type { PaidEnv } from './paidPolicy';
+import type { DurablePaymentPreparation } from '../../../../packages/checkout/paid';
 
 export const LEDGER_OBJECT_NAME = 'sejire-checkout-ledger-v1';
-type Env = { CHECKOUT_LEDGER: DurableObjectNamespace };
+type Env = PaidEnv & { CHECKOUT_LEDGER: DurableObjectNamespace };
 /** Binding-only service. NOT a public HTTP checkout route. No create/commit forwarding from web.
  * All orders must share the named object; constructor refuses per-order object identities.
- * No production bindings or cloud migration are enabled in this stage.
+ * Public handlers select explicit operations; request bodies are never forwarded.
  */
 export class CheckoutLedger {
   private readonly store: SqliteAtomicOrderStore;
   private readonly api: ApiLedger;
   private readonly fund: FundLedger;
-  constructor(ctx: DurableObjectState, env: Env) {
+  private readonly paid: PaidLedger;
+  constructor(private readonly ctx: DurableObjectState, private readonly env: Env) {
     if (!ctx.id.equals(env.CHECKOUT_LEDGER.idFromName(LEDGER_OBJECT_NAME))) throw new Error('wrong_ledger_object');
     this.store = new SqliteAtomicOrderStore(ctx.storage);
     this.api = new ApiLedger(ctx.storage, this.store);
     this.fund = new FundLedger(ctx.storage);
+    this.paid = new PaidLedger(ctx.storage,this.store,this.api);
+    // Re-arm durable obligations after an isolate restart, without a browser token.
+    ctx.blockConcurrencyWhile(()=>this.paid.arm());
+  }
+  async alarm():Promise<void>{
+    try{for(const id of this.paid.due(Date.now(),3))await runPaidOrder(this.paid,this.env,id);}
+    finally{await this.paid.arm();}
   }
   async fetch(request: Request): Promise<Response> {
     if (request.method !== 'POST') return new Response('method_not_allowed', { status: 405 });
@@ -30,6 +42,23 @@ export class CheckoutLedger {
     const f=data as unknown as Record<string,unknown>;
     // Only trusted Worker service code has this binding. No browser input may invoke create/commit.
     switch (data.action) {
+      case 'treasuryRevision': return Response.json(this.fund.treasury.revision(String(f.address)));
+      case 'treasuryHeld': return Response.json(this.fund.treasury.held(String(f.address),TREASURY_ADDRESS));
+      case 'treasuryEffectiveBalance': return Response.json(this.fund.treasury.effectiveBalance(String(f.address),String(f.balance)));
+      case 'paidTotals': return Response.json(this.fund.treasury.paidTotals(typeof f.budgetId==='string'?f.budgetId:undefined));
+      case 'paidHasOrders': return Response.json(this.paid.hasOrders());
+      case 'paidCreate': return Response.json(await this.paid.create(f.input as Parameters<PaidLedger['create']>[0],now));
+      case 'paidGet': return Response.json(this.paid.get(data.hash,data.id,now));
+      case 'paidByKey': return Response.json(this.paid.byKey(data.hash,data.key,now));
+      case 'paidCancelByKey': return Response.json(await this.paid.cancelByKey(data.hash,data.key,now));
+      case 'paidPrepare': return Response.json(await this.paid.prepare(data.hash,data.id,f.preparation as DurablePaymentPreparation,now));
+      case 'paidReserve': return Response.json(await this.paid.reserve(data.hash,data.id,data.signature,String(f.preparationId),now));
+      case 'paidCancel': return Response.json(await this.paid.cancel(data.hash,data.id,f.preparationId===null?null:String(f.preparationId),now));
+      case 'paidRun': {
+        const snapshot=await this.paid.nudge(data.hash,data.id,now);
+        this.ctx.waitUntil(runPaidOrder(this.paid,this.env,data.id));
+        return Response.json(snapshot);
+      }
       case 'fundSummary': return Response.json(this.fund.summary(now));
       case 'fundSettings': return Response.json(this.fund.settings());
       case 'fundOrder': return Response.json(this.fund.order(String(f.orderId),true));
@@ -45,9 +74,14 @@ export class CheckoutLedger {
       case 'apiRate': await this.api.rate(data.buckets, data.limit, now); return Response.json(null);
       case 'apiIssue': await this.api.issue(data.hash, data.expiresAt); return Response.json(null);
       case 'apiAuth': this.api.authenticate(data.hash, now); return Response.json(null);
+      case 'apiResumeAuth': this.api.authenticateResume(data.hash,typeof f.id==='string'?f.id:undefined,typeof f.key==='string'?f.key:undefined,now);return Response.json(null);
+      case 'apiCancelAuth': this.api.authenticateCancellation(data.hash);return Response.json(null);
       case 'apiExisting': return Response.json(await this.api.existing(data.hash, data.key, data.intent, now));
       case 'apiCreate': return Response.json(await this.api.create(data.hash, data.key, data.intent, data.order, now));
-      case 'apiGet': return Response.json(await this.api.get(data.hash, data.id, now));
+      case 'apiGet': {
+        const record=await this.store.get(data.id);
+        return Response.json(record?.order.schema==='sejire/order/v2'?this.paid.get(data.hash,data.id,now):await this.api.get(data.hash,data.id,now));
+      }
       case 'apiBegin': return Response.json(await this.api.begin(data.hash, data.id, data.signature, now));
       case 'apiCommit': return Response.json(await this.api.commit(data.hash, data.payment, now));
       case 'apiResult': await this.api.result(data.hash, data.id, data.result, now); return Response.json(null);
@@ -61,6 +95,8 @@ export class CheckoutLedger {
     } catch (error) {
       const known = ['order_or_reference_exists', 'order_not_found', 'previous_payment_unresolved', 'order_already_paid',
         'payment_conflict', 'payment_not_reserved', 'credit_allocation_mismatch', 'payment_already_used',
+        'paid_budget_exhausted','balance_observation_stale','paid_hold_not_releasable','paid_request_cancelled','invalid_idempotency_key','order_expired','payment_not_prepared','preparation_changed',
+        'invalid_payment_signature','invalid_payment_preparation','invalid_paid_archive','archive_mismatch','archive_not_canonical','invalid_envelope','envelope_too_large',
         'promo_invalid','promo_disabled','promo_missing','fund_exhausted','archive_changed','limit_below_spent','limit_below_reserved','fund_ledger_inconsistent','wallet_low','invalid_ar_amount','invalid_winston','invalid_reward','invalid_signed_tx','tx_conflict','invalid_actual_reward','signed_tx_must_reconcile','order_not_found','unauthorized', 'idempotency_conflict', 'rate_limited', 'preservation_not_paid', 'execution_not_reserved', 'upload_receipt_mismatch'];
       const code = error instanceof Error && known.includes(error.message) ? error.message : 'ledger_operation_failed';
       return Response.json({ error: code }, { status: 409 });
