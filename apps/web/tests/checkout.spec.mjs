@@ -7,10 +7,28 @@ const base = 'http://127.0.0.1:5173';
 const b58 = fill => bs58.encode(new Uint8Array(32).fill(fill));
 let runtime, temp, protocol;
 const protocolMode=process.env.SEJIRE_PROTOCOL_TEST==='1';
-test.beforeEach(async ({page}) => {
+let guardedContexts=[];
+const networkGuards=new WeakMap();
+async function guardNetwork(context){
+  if(networkGuards.has(context))return;
+  const blocked=[];networkGuards.set(context,blocked);guardedContexts.push(blocked);
+  await context.route('**/*',route=>{
+    const request=route.request(),url=new URL(request.url());
+    if(url.origin===base&&!url.pathname.startsWith('/api/'))return route.continue();
+    blocked.push(`${request.method()} ${url.origin}${url.pathname}`);
+    return route.abort('blockedbyclient');
+  });
+  await context.routeWebSocket('**/*',route=>{
+    if(new URL(route.url()).origin==='ws://127.0.0.1:5173')route.connectToServer();
+    else {blocked.push('WebSocket '+new URL(route.url()).origin);route.close({code:1008,reason:'External network disabled in checkout tests'});}
+  });
+}
+test.beforeEach(async ({page,context}) => {
+  guardedContexts=[];await guardNetwork(context);
   page.on('pageerror', error => console.error('checkout pageerror:', error.message));
   page.on('requestfailed', request => console.error('checkout requestfailed:', request.url(), request.failure()?.errorText));
 });
+test.afterEach(()=>expect(guardedContexts.flat(),'Unmocked HTTP/WebSocket requests are forbidden').toEqual([]));
 test.beforeAll(async () => {
   temp = await mkdtemp(resolve(tmpdir(), 'sejire-browser-'));
   if(protocolMode){
@@ -30,6 +48,7 @@ test.beforeAll(async () => {
 });
 test.afterAll(async () => { await runtime?.dispose(); if (temp) await rm(temp, { recursive: true, force: true }); });
 async function externalFixtures(page, options = {}) {
+  await guardNetwork(page.context());
   let broadcast = false, lost = false; const archives = new Map(), counts = { send: 0, upload: 0 };
   const pilot=protocolMode?await protocol.pilot():null;
   if(pilot)pilot.control.missing=true;
@@ -37,7 +56,7 @@ async function externalFixtures(page, options = {}) {
   await page.addInitScript(() => localStorage.setItem('sejire.locale', 'ru'));
   // Publishing a recovered local vault checks Arweave version history before
   // opening checkout. Keep browser tests hermetic instead of waiting on a live gateway.
-  await page.route(/https:\/\/(?:arweave\.net|arweave-search\.goldsky\.com|ar-io\.dev)\/graphql/, route =>
+  await page.route(/https:\/\/(?:arweave\.net|arweave-search\.goldsky\.com|turbo-gateway\.com)\/graphql/, route =>
     route.fulfill({ contentType: 'application/json', body: JSON.stringify({ data: { transactions: { edges: [] } } }) }));
   await page.route('**/api/checkout/**', async route => {
     const request = route.request(), headers = { ...request.headers(), 'CF-Connecting-IP': '192.0.2.10', 'X-Test-Rpc': broadcast ? 'success' : 'null' };
@@ -98,14 +117,14 @@ for (const amount of ['0', '0.005']) test(`existing editor → SOL ${amount} con
   const receipt = JSON.parse(await readFile(await (await receiptEvent).path(), 'utf8'));
   expect(receipt.network).toBe('devnet'); expect(receipt.status).toBe('accepted-by-turbo');
   expect(external.counts.send).toBe(1); expect(external.counts.upload).toBe(1);
-  const clean = await browser.newContext(), cleanPage = await clean.newPage(); await externalFixtures(cleanPage);
+  const clean = await browser.newContext({serviceWorkers:'block'}), cleanPage = await clean.newPage(); await externalFixtures(cleanPage);
   // Independent gateway fixture returns the exact uploaded bytes, without session or payment wallet.
   await cleanPage.unroute('https://ar-io.dev/raw/**');
   await cleanPage.route('https://ar-io.dev/raw/**', route => route.fulfill({ contentType: 'application/json', body: external.archives.get(receipt.receipt.id) }));
   await cleanPage.goto('/'); await restore(cleanPage, fixture.words, JSON.stringify(receipt), true);
   const recovered = await cleanPage.evaluate(async words => (await import('/tests/browser-fixture.ts')).recovered(words), fixture.words);
   expect(recovered.trees).toEqual(fixture.vault.trees); expect(await cleanPage.evaluate(() => Boolean(window.phantom))).toBe(false); await clean.close();
-  const offline = await browser.newContext(), offlinePage = await offline.newPage(); await offlinePage.addInitScript(() => localStorage.setItem('sejire.locale', 'ru'));
+  const offline = await browser.newContext({serviceWorkers:'block'}), offlinePage = await offline.newPage(); await guardNetwork(offline); await offlinePage.addInitScript(() => localStorage.setItem('sejire.locale', 'ru'));
   await offlinePage.goto('/');
   // Warm local module code first; then block ALL external network. Recovery uses the downloaded file.
   await offlinePage.getByRole('button', { name: 'Открыть по 12 словам', exact: true }).click();
