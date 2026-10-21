@@ -1,0 +1,198 @@
+{
+  "schema": "sejire/public-arweave-read-check/v1",
+  "startedAt": "2026-10-21T10:59:35Z",
+  "treasuryAddressExpected": "qgoIFw9WsusMRapWzcFg4jNW08HSWvQkpAKOz86BUuI",
+  "requestPolicy": {
+    "maxGetCount": 6,
+    "redirectsFollowed": false,
+    "retries": 0,
+    "credentialsUsed": false,
+    "decryptionPerformed": false,
+    "workerOrAdminCalled": false
+  },
+  "transactions": {
+    "skB3SCGC2GNXGJ9VVA6cyAtgQ5EYB0Ips29d51oq92c": {
+      "expected": {
+        "bytes": 13005,
+        "sha256": "ef2987e9720e0a0358be1405277d1bfa9713578fa78bbcfb3e4d3c4d0aadcebb",
+        "rewardWinston": "3417993276"
+      },
+      "metadata": {
+        "url": "https://arweave.net/tx/skB3SCGC2GNXGJ9VVA6cyAtgQ5EYB0Ips29d51oq92c",
+        "method": "GET",
+        "requestedAt": "2026-10-21T10:59:35Z",
+        "httpStatus": 200,
+        "responseUrl": "https://arweave.net/tx/skB3SCGC2GNXGJ9VVA6cyAtgQ5EYB0Ips29d51oq92c",
+        "contentType": "application/json; charset=utf-8",
+        "contentEncoding": null,
+        "serverDate": "Wed, 21 Oct 2026 10:59:35 GMT",
+        "bodyBytes": 2222,
+        "value": {
+          "id": "skB3SCGC2GNXGJ9VVA6cyAtgQ5EYB0Ips29d51oq92c",
+          "format": 2,
+          "ownerAddress": "qgoIFw9WsusMRapWzcFg4jNW08HSWvQkpAKOz86BUuI",
+          "rewardWinston": "3417993276",
+          "dataSize": "13005",
+          "dataRoot": "iWhfABXa45WgLiPB0Gj-je2ChhVWmIkD-AynEOGe8_o",
+          "metadataDataFieldCharacters": 0,
+          "quantity": "0",
+          "target": "",
+          "tags": {
+            "App-Name": "SEJIRE",
+            "Type": "vault-envelope",
+            "Schema": "sejire/envelope/v1",
+            "Vault-Id": "eb19773d00ea952cc313f6496664613b",
+            "Archive-SHA256": "ef2987e9720e0a0358be1405277d1bfa9713578fa78bbcfb3e4d3c4d0aadcebb",
+            "Archive-Bytes": "13005",
+            "Preservation-Id": "4e55d33f276746828ea43b455a6af644",
+            "Promo-Funded": "true"
+          }
+        },
+        "elapsedMs": 78,
+        "completedAt": "2026-10-21T10:59:35Z"
+      },
+      "status": {
+        "url": "https://arweave.net/tx/skB3SCGC2GNXGJ9VVA6cyAtgQ5EYB0Ips29d51oq92c/status",
+        "method": "GET",
+        "requestedAt": "2026-10-21T10:59:35Z",
+        "httpStatus": 200,
+        "responseUrl": "https://arweave.net/tx/skB3SCGC2GNXGJ9VVA6cyAtgQ5EYB0Ips29d51oq92c/status",
+        "contentType": "application/json; charset=utf-8",
+        "contentEncoding": null,
+        "serverDate": "Wed, 21 Oct 2026 10:59:35 GMT",
+        "bodyBytes": 141,
+        "value": {
+          "block_height": 2023347,
+          "block_indep_hash": "E92wXRcWIBP0gAdxmnYVQbwiHYzgdEjlH0-jcqLP4wKc59jA01xxqWwWtR_lcS6W",
+          "number_of_confirmations": 2519
+        },
+        "elapsedMs": 99,
+        "completedAt": "2026-10-21T10:59:35Z"
+      },
+      "nodeData": {
+        "url": "https://arweave.net/tx/skB3SCGC2GNXGJ9VVA6cyAtgQ5EYB0Ips29d51oq92c/data",
+        "method": "GET",
+        "requestedAt": "2026-10-21T10:59:35Z",
+        "httpStatus": 200,
+        "responseUrl": "https://arweave.net/tx/skB3SCGC2GNXGJ9VVA6cyAtgQ5EYB0Ips29d51oq92c/data",
+        "contentType": "text/plain; charset=utf-8",
+        "contentEncoding": null,
+        "serverDate": "Wed, 21 Oct 2026 10:59:35 GMT",
+        "bodyBytes": 17340,
+        "value": {
+          "decodedBytes": 13005,
+          "sha256": "ef2987e9720e0a0358be1405277d1bfa9713578fa78bbcfb3e4d3c4d0aadcebb",
+          "zeroBytes": 0,
+          "first16Hex": "7b22736368656d61223a2273656a6972"
+        },
+        "elapsedMs": 100,
+        "completedAt": "2026-10-21T10:59:35Z"
+      },
+      "checks": {
+        "confirmed": true,
+        "metadataIdMatches": true,
+        "ownerMatches": true,
+        "rewardMatches": true,
+        "metadataSizeMatches": true,
+        "archiveTagSha256Matches": true,
+        "nodeDataSizeMatches": true,
+        "nodeDataSha256Matches": true
+      }
+    },
+    "BRw9ARMTCfRgaABRSIumqiR5VBUtOvRu4wrQ88TtSPs": {
+      "expected": {
+        "bytes": 39305,
+        "sha256": "08921aedb2c30bbbb1f2b24f48d232df1575a956076e70fc9fa16556dc350f32",
+        "rewardWinston": "3408198040"
+      },
+      "status": {
+        "url": "https://arweave.net/tx/BRw9ARMTCfRgaABRSIumqiR5VBUtOvRu4wrQ88TtSPs/status",
+        "method": "GET",
+        "requestedAt": "2026-10-21T10:59:35Z",
+        "httpStatus": 200,
+        "responseUrl": "https://arweave.net/tx/BRw9ARMTCfRgaABRSIumqiR5VBUtOvRu4wrQ88TtSPs/status",
+        "contentType": "application/json; charset=utf-8",
+        "contentEncoding": null,
+        "serverDate": "Wed, 21 Oct 2026 10:59:35 GMT",
+        "bodyBytes": 141,
+        "value": {
+          "block_height": 2023994,
+          "block_indep_hash": "r45EdULxL3vq9M2G6OXbFlKDs2fPUP_sB-_aXqGfshT2D8624faced1uCuE34mjB",
+          "number_of_confirmations": 1872
+        },
+        "elapsedMs": 70,
+        "completedAt": "2026-10-21T10:59:35Z"
+      },
+      "nodeData": {
+        "url": "https://arweave.net/tx/BRw9ARMTCfRgaABRSIumqiR5VBUtOvRu4wrQ88TtSPs/data",
+        "method": "GET",
+        "requestedAt": "2026-10-21T10:59:35Z",
+        "httpStatus": 200,
+        "responseUrl": "https://arweave.net/tx/BRw9ARMTCfRgaABRSIumqiR5VBUtOvRu4wrQ88TtSPs/data",
+        "contentType": "text/plain; charset=utf-8",
+        "contentEncoding": null,
+        "serverDate": "Wed, 21 Oct 2026 10:59:35 GMT",
+        "bodyBytes": 52407,
+        "value": {
+          "decodedBytes": 39305,
+          "sha256": "08921aedb2c30bbbb1f2b24f48d232df1575a956076e70fc9fa16556dc350f32",
+          "zeroBytes": 0,
+          "first16Hex": "7b22736368656d61223a2273656a6972"
+        },
+        "elapsedMs": 63,
+        "completedAt": "2026-10-21T10:59:35Z"
+      },
+      "metadata": {
+        "url": "https://arweave.net/tx/BRw9ARMTCfRgaABRSIumqiR5VBUtOvRu4wrQ88TtSPs",
+        "method": "GET",
+        "requestedAt": "2026-10-21T10:59:35Z",
+        "httpStatus": 200,
+        "responseUrl": "https://arweave.net/tx/BRw9ARMTCfRgaABRSIumqiR5VBUtOvRu4wrQ88TtSPs",
+        "contentType": "application/json; charset=utf-8",
+        "contentEncoding": null,
+        "serverDate": "Wed, 21 Oct 2026 10:59:35 GMT",
+        "bodyBytes": 2282,
+        "value": {
+          "id": "BRw9ARMTCfRgaABRSIumqiR5VBUtOvRu4wrQ88TtSPs",
+          "format": 2,
+          "ownerAddress": "qgoIFw9WsusMRapWzcFg4jNW08HSWvQkpAKOz86BUuI",
+          "rewardWinston": "3408198040",
+          "dataSize": "39305",
+          "dataRoot": "qWWcG61Rtfld56GfukszJ0AxjA6HVioTImTD3yPcMPc",
+          "metadataDataFieldCharacters": 0,
+          "quantity": "0",
+          "target": "",
+          "tags": {
+            "App-Name": "SEJIRE",
+            "Type": "vault-envelope",
+            "Schema": "sejire/envelope/v1",
+            "Protocol-Version": "sejire/v0.3",
+            "Vault-Id": "88753b53bf5839584b9816cdf592f937",
+            "Archive-SHA256": "08921aedb2c30bbbb1f2b24f48d232df1575a956076e70fc9fa16556dc350f32",
+            "Archive-Bytes": "39305",
+            "Preservation-Id": "8ba74ba4203545debfed0e9475f70986",
+            "Promo-Funded": "true"
+          }
+        },
+        "elapsedMs": 70,
+        "completedAt": "2026-10-21T10:59:35Z"
+      },
+      "checks": {
+        "confirmed": true,
+        "metadataIdMatches": true,
+        "ownerMatches": true,
+        "rewardMatches": true,
+        "metadataSizeMatches": true,
+        "archiveTagSha256Matches": true,
+        "nodeDataSizeMatches": true,
+        "nodeDataSha256Matches": true
+      }
+    }
+  },
+  "limitations": [
+    "Internal Fund ledger was not read; public evidence does not prove its COMPLETED state or accounting.",
+    "No new preservation order, signature, payment or transaction submission was performed.",
+    "This checks existing promo transactions; it does not establish a working paid SOL checkout."
+  ],
+  "completedAt": "2026-10-21T10:59:35Z"
+}

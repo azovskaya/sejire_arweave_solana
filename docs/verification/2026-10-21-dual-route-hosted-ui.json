@@ -1,0 +1,209 @@
+{
+  "checkedAt": "2026-10-21T11:03:46.707Z",
+  "url": "https://azovskaya.github.io/sejire_arweave_solana/",
+  "acceptedProvenance": {
+    "artifact": "native-admin-build",
+    "run": 39582617992,
+    "artifactId": 12337686315,
+    "sourceCommit": "d6a8a00d4b85ef5e0e5c614c7c7a98319a9511f9",
+    "zipSha256": "70c7e9d49bbd3aff7e1c95ccecbf795979262e951397f57aa3a1a7dda1773089",
+    "publishedByCommit": "d6a8a00d4b85ef5e0e5c614c7c7a98319a9511f9"
+  },
+  "scope": "Hosted accepted static application; mocked Fund and archive network; no live preservation or payment",
+  "result": "PASS",
+  "stage": "complete",
+  "staticProof": {
+    "index.html": {
+      "status": 200,
+      "bytes": 1103,
+      "gitBlob": "6d75b750eab67ba1b364a9cff61528e18b2822a0",
+      "matchesAcceptedBuild": true
+    },
+    "assets/cache-B3QL1hUm.js": {
+      "status": 200,
+      "bytes": 2838,
+      "gitBlob": "744b5df0cf7d874f9ce14ef5d7fc25f557349b7e",
+      "matchesAcceptedBuild": true
+    },
+    "assets/order-Byj5gyGK.js": {
+      "status": 200,
+      "bytes": 3931,
+      "gitBlob": "2521b6ce6b262192474d3e6e72587d9378a41e66",
+      "matchesAcceptedBuild": true
+    },
+    "assets/bs58-BpdPodED.js": {
+      "status": 200,
+      "bytes": 1741,
+      "gitBlob": "6798d9697a405b2a52c8f9f054e3287efface0e8",
+      "matchesAcceptedBuild": true
+    },
+    "assets/rolldown-runtime-CNC7AqOf.js": {
+      "status": 200,
+      "bytes": 879,
+      "gitBlob": "6d5d9a5305e36bf4c0b0d3be817a8388b61d7a48",
+      "matchesAcceptedBuild": true
+    },
+    "assets/index-D_DSbhqU.css": {
+      "status": 200,
+      "bytes": 39610,
+      "gitBlob": "50162636ac2bf3d5cf03f4de7f65f8f6ed51e2d7",
+      "matchesAcceptedBuild": true
+    },
+    "assets/index-Bki41Hv1.js": {
+      "status": 200,
+      "bytes": 923902,
+      "gitBlob": "5d284e6abf46c55d252b58e7b160c1e08a3dfe69",
+      "matchesAcceptedBuild": true
+    },
+    "assets/wallet-Dtw52RX8.js": {
+      "status": 200,
+      "bytes": 878804,
+      "gitBlob": "56f75da7d1f9b51d7120bc143a28a80eda4982d9",
+      "matchesAcceptedBuild": true
+    },
+    "assets/pdf-vendor-DQu28BpJ.js": {
+      "status": 200,
+      "bytes": 400816,
+      "gitBlob": "ad5c0682df8ed2569c804680c3318dc7e5e9dafd",
+      "matchesAcceptedBuild": true
+    },
+    "assets/work-sans-latin-700-normal-CEeo_t6l.woff2": {
+      "status": 200,
+      "bytes": 20840,
+      "gitBlob": "8236077f9f14b6826a492beb4aecf4149472c313",
+      "matchesAcceptedBuild": true
+    },
+    "assets/NotoSans-Bold-axMicgqH.ttf": {
+      "status": 200,
+      "bytes": 575740,
+      "gitBlob": "27131f8f479947ef1b6c1d0bc9ad5ab3d30bd831",
+      "matchesAcceptedBuild": true
+    },
+    "assets/NotoSans-Regular-Dpf_lrdO.ttf": {
+      "status": 200,
+      "bytes": 569208,
+      "gitBlob": "d55220958aa51eeeb85048d746eabe43d2cd9f14",
+      "matchesAcceptedBuild": true
+    },
+    "build-provenance.json": {
+      "status": 200,
+      "bytes": 302,
+      "gitBlob": "b211cfc6fa3b448db9629f5ae2143eff6f528d3e",
+      "matchesAcceptedBuild": true,
+      "sixPinsMatch": true
+    },
+    "admin-lock.json": {
+      "status": 200,
+      "bytes": 235,
+      "gitBlob": "9abb055bad188dfe754e07e1bcff15344824e322",
+      "matchesAcceptedBuild": true
+    },
+    "assets/work-sans-latin-400-normal-jUejSri3.woff2": {
+      "status": 200,
+      "bytes": 19900,
+      "gitBlob": "02a6a42cb637647d6c270144b89c87f4fa6b0a65",
+      "matchesAcceptedBuild": true
+    }
+  },
+  "contexts": [
+    {
+      "label": "hosted-editor",
+      "freshOrigins": 0,
+      "staticGets": 15,
+      "mocked": {
+        "fundValidate": 1,
+        "fundCreate": 1,
+        "fundRead": 2,
+        "graphql": 1,
+        "metadata": 0,
+        "raw": 0,
+        "data": 0,
+        "peers": 0
+      },
+      "blocked": [],
+      "websocket": 0,
+      "walletCalls": 0,
+      "pageErrors": []
+    },
+    {
+      "label": "clean-words-restore",
+      "freshOrigins": 0,
+      "staticGets": 13,
+      "mocked": {
+        "fundValidate": 0,
+        "fundCreate": 0,
+        "fundRead": 0,
+        "graphql": 5,
+        "metadata": 3,
+        "raw": 3,
+        "data": 3,
+        "peers": 2
+      },
+      "blocked": [],
+      "websocket": 0,
+      "walletCalls": 0,
+      "pageErrors": []
+    }
+  ],
+  "checks": {
+    "publishedBuildMatchesAccepted": true,
+    "bothMethodsVisible": true,
+    "solanaTruthfullyUnavailableWithoutPayment": true,
+    "promoFormOpensWithoutWorker": true,
+    "syntheticSingleOrderAndAutoCompletion": true,
+    "syntheticArchiveContainsBothTreesAndHistory": true,
+    "syntheticLocalHistoryMatchesExactCiphertext": true,
+    "cleanSyntheticWordsRestoreViaNodeData": true
+  },
+  "screenshots": [
+    {
+      "file": "01-methods-mobile.png",
+      "sha256": "aaf8c988550e6ec2fb5d796bd521a33ca0733f748ffab8e0790d24bc349c0a22"
+    },
+    {
+      "file": "02-solana-unavailable-mobile.png",
+      "sha256": "9a724015281888a565f08bf9748699e06b8143a023949e4ffc340d24a55b7f2d"
+    },
+    {
+      "file": "03-promo-form-mobile.png",
+      "sha256": "5135fb46638b0e818541e010a8ea3a38dbc3b76f83addb5f9000b33afe72d1f4"
+    },
+    {
+      "file": "04-synthetic-promo-waiting-mobile.png",
+      "sha256": "07935ea826d32a3ac573e55fb0b2c9a47664ac31c2ea5b9003fb611b8de71439"
+    },
+    {
+      "file": "05-synthetic-workspace-success-mobile.png",
+      "sha256": "b0c30b0c098cbaddf4d1dc258f9d517f442c74e557ccf2aecad0b720dd72d736"
+    },
+    {
+      "file": "06-synthetic-cold-restore-mobile.png",
+      "sha256": "5033e9b2f250a353a8e7760860b435bc1dffba8ab072a5a471dc11b455f0dfdb"
+    }
+  ],
+  "live": {
+    "workerRequests": 0,
+    "adminRequests": 0,
+    "orderPosts": 0,
+    "signatures": 0,
+    "payments": 0,
+    "arweaveSubmissions": 0
+  },
+  "limitations": [
+    "Live Fund/ledger was not contacted.",
+    "Solana production payments are disabled and were not executed.",
+    "No ArNS publication is performed by this verifier."
+  ],
+  "synthetic": {
+    "createCalls": 1,
+    "validateCalls": 1,
+    "statusReads": 2,
+    "treeCount": 2,
+    "archiveBytes": 5041,
+    "archiveSha256": "c0f54ae076fce72eebd71f596046522c3e46eadfe8d68236f9e6f907edf7424e",
+    "nodeDataFallbackUsed": true
+  },
+  "finishedAt": "2026-10-21T11:03:50.412Z",
+  "screenshotStorage": "Temporary verification captures; this JSON records their hashes, not versioned image files.",
+  "harnessSha256": "76baef3ac54d2c8aadd805cdbce6f1a50a49bdd8bd2a5a33c4d7b33cfb4863ad"
+}
