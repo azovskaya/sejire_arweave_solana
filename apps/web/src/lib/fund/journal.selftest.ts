@@ -2,6 +2,7 @@ import type { EnvelopeV1 } from '../crypto/encrypt';
 import { serializeEnvelope } from '../crypto/envelope';
 import { envelopeDigest } from '../solana/policy';
 import { clearFundAttempt, findFundAttempt, saveFundAttempt } from './journal';
+import { assertFundOrderParent } from './client';
 
 function assert(value: unknown, label: string): asserts value {
   if (!value) throw Error(label);
@@ -63,6 +64,15 @@ const payload = envelope(), serialized = serializeEnvelope(payload), digest = aw
 const legacyKey = 'sejire-funded:' + digest;
 const count = () => [...ls.data.keys()].filter((key) => key.startsWith(PREFIX)).length;
 const savedInput = { orderId: id(1), envelope: payload, parentTxId, treeId: 'tree_original' };
+
+assertFundOrderParent({ parentTxId }, parentTxId, true);
+assertFundOrderParent({ parentTxId: null }, null, true);
+assertFundOrderParent({}, parentTxId); // Historical GET: local parent was never signed by the old server.
+await rejects(async () => assertFundOrderParent({}, parentTxId, true), 'invalid_order_response', 'new POST must echo its bound parent');
+for (const wrongParent of [null, 'Q'.repeat(43), undefined]) {
+  await rejects(async () => assertFundOrderParent({ parentTxId: wrongParent }, parentTxId), 'invalid_order_response', 'present response binding must equal durable parent');
+}
+await rejects(async () => assertFundOrderParent({ parentTxId }, null), 'invalid_order_response', 'genesis cannot silently acquire a parent');
 
 reset();
 const first = await saveFundAttempt({ ...savedInput, privateNote: 'never-persist-this-value' } as typeof savedInput);
@@ -217,4 +227,4 @@ reset();
 await rejects(() => saveFundAttempt({ orderId: id(1), envelope: { ...payload, ciphertext: 'A'.repeat(524288) } }), 'envelope_too_large', 'fund archive size cap applies before storage');
 assert(count() === 0, 'oversized archive leaves no journal entry');
 
-console.log('fund journal.selftest: OK (exact ciphertext, conflicts, locking, legacy recovery/refusals, cleanup, storage failures, bounds)');
+console.log('fund journal.selftest: OK (exact ciphertext, parent response binding, conflicts, locking, legacy recovery/refusals, cleanup, storage failures, bounds)');

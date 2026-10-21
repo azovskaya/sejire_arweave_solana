@@ -22,7 +22,6 @@ import { formatShezhireAffiliation } from "../lib/zhuzRu";
 import { ShezhireMetaModal } from "./ShezhireMetaModal";
 import { ShezhireTemplateModal } from "./ShezhireTemplateModal";
 import {
-  clearVaultSession,
   getSessionMnemonic,
   getVaultSession,
 } from "../lib/vaultSession/session";
@@ -440,7 +439,6 @@ export function Workspace({ store, guide, onStoreChange, onGuideChange, onHome }
   }
 
   function goHome() {
-    clearVaultSession();
     onHome();
   }
 

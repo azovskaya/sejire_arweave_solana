@@ -19,7 +19,6 @@ import {
   startGuidedTree,
   type GuideState,
 } from "./lib/guide";
-import { clearVaultSession } from "./lib/vaultSession/session";
 import {
   readLastScreen,
   rememberScreen,
@@ -84,7 +83,8 @@ export default function App() {
   function startNew(title: string) {
     clearDraftTree();
     clearGuide();
-    clearVaultSession();
+    // A new tree belongs to the archive already unlocked in this tab. Closing
+    // that archive is a separate explicit action on the welcome screen.
     const started = startGuidedTree(title);
     saveDraftTree(started.store);
     saveGuide(started.guide);

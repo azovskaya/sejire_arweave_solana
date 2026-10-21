@@ -3,7 +3,7 @@ import { authorizeAdmin } from '../adminAuth';
 import { parseEnvelope, serializeEnvelope } from '../../../web/src/lib/crypto/envelope';
 import { envelopeDigest } from '../../../web/src/lib/solana/policy';
 import { DirectArweaveFundProvider, FUND_CHECK_TIMEOUT_MS, publicBalance, publicPrice, type FundedArweaveProvider, type FundNetworkTx, type FundVerification } from './provider';
-import { parseAr, TREASURY_ADDRESS, type FundOrder } from './ledger';
+import { fundParentTxId, parseAr, TREASURY_ADDRESS, type FundOrder } from './ledger';
 export type FundEnv={FUND_API_ENABLED?:string;ARWEAVE_TREASURY_JWK?:string;PROMO_CODE_SECRET?:string;CHECKOUT_LEDGER?:DurableObjectNamespace;CHECKOUT_ALLOWED_ORIGINS?:string;ADMIN_TOKEN?:string;IDEMPOTENCY?:KVNamespace;MAX_ENVELOPE_BYTES?:string};
 const PREFIX='/api/fund';
 const orderId=/^[a-f0-9]{32}$/;
@@ -191,13 +191,14 @@ export async function fundApi(request:Request,env:FundEnv,provided?:FundedArweav
     }
     if(url.pathname===PREFIX+'/orders'&&request.method==='POST'){
       await ledger.call({action:'fundRate',bucket:`fund:${ip}`,limit:5});
-      const input=await body(request,maxArchive*2+4096);only(input,['orderId','preservationId','code','archive']);
+      const input=await body(request,maxArchive*2+4096);only(input,['orderId','preservationId','code','archive','parentTxId']);
       if(typeof input.orderId!=='string'||!orderId.test(input.orderId)||typeof input.preservationId!=='string'||!orderId.test(input.preservationId)||typeof input.archive!=='string')throw Error('invalid_request');
+      const parentTxId=fundParentTxId(input.parentTxId);
       const archive=input.archive,bytes=new TextEncoder().encode(archive),max=Number(env.MAX_ENVELOPE_BYTES??String(maxArchive));
       if(bytes.length>maxArchive||bytes.length>max||bytes.length<100)throw Error('archive_size_invalid');
       const envelope=parseEnvelope(JSON.parse(archive));if(serializeEnvelope(envelope)!==archive)throw Error('archive_not_canonical');
       const digest=await envelopeDigest(bytes),prior=await ledger.call<FundOrder|null>({action:'fundOrder',orderId:input.orderId});
-      if(prior){if(prior.archiveDigest!==digest||prior.archiveSizeBytes!==bytes.length||prior.vaultId!==envelope.vault_id)throw Error('archive_changed');
+      if(prior){if(prior.archiveDigest!==digest||prior.archiveSizeBytes!==bytes.length||prior.vaultId!==envelope.vault_id||(prior.parentTxId??null)!==parentTxId)throw Error('archive_changed');
         return reply(200,publicCheck(provider?await settle(ledger,provider,prior,{allowResubmit:true,deadline:checkDeadline}):unavailableCheck(prior)));}
       const code=typeof input.code==='string'?normalized(input.code):'';if(!codeFormat.test(code))throw Error('promo_invalid');
       const s=await ledger.call<{enabled:number;code_hash:string}>({action:'fundSettings'});if(!s.enabled)throw Error('promo_disabled');
@@ -207,10 +208,11 @@ export async function fundApi(request:Request,env:FundEnv,provided?:FundedArweav
       const prepared=await provider.prepareTransaction(bytes,[{name:'App-Name',value:'SEJIRE'},{name:'Type',value:'vault-envelope'},{name:'Schema',value:'sejire/envelope/v1'},
         {name:'Protocol-Version',value:envelope.protocol},
         {name:'Vault-Id',value:envelope.vault_id},{name:'Archive-SHA256',value:digest},{name:'Archive-Bytes',value:String(bytes.length)},
-        {name:'Preservation-Id',value:input.preservationId},{name:'Promo-Funded',value:'true'}]).catch(()=>{throw Error('fund_prepare_failed');});
+        {name:'Preservation-Id',value:input.preservationId},{name:'Promo-Funded',value:'true'},
+        ...(parentTxId?[{name:'Parent-Tx',value:parentTxId}]:[])]).catch(()=>{throw Error('fund_prepare_failed');});
       const reward=BigInt(prepared.reward);if(reward<=0n||balance<reward)throw Error('wallet_low');
       let saved=await ledger.call<FundOrder>({action:'fundReserve',input:{orderId:input.orderId,preservationId:input.preservationId,hash,archiveSizeBytes:bytes.length,
-        archiveDigest:digest,vaultId:envelope.vault_id,reward:prepared.reward,estimated,prepared:prepared.raw,balance:balance.toString()}});
+        archiveDigest:digest,vaultId:envelope.vault_id,...(Object.hasOwn(input,'parentTxId')?{parentTxId}:{}),reward:prepared.reward,estimated,prepared:prepared.raw,balance:balance.toString()}});
       if(saved.arweaveTxId)return reply(202,publicCheck(checkedOrder(saved)));
       try{const signed=await provider.sign({raw:saved.preparedTransaction!,reward:saved.reservedRewardWinston});
         if(signed.reward!==saved.reservedRewardWinston)throw Error('signed_reward_mismatch');

@@ -10,7 +10,7 @@ const networkGuards=new WeakMap();
 
 // Test only the real local UI. No request may reach an Arweave gateway,
 // a production Worker, a Solana RPC, or an unmocked local API proxy.
-test.beforeEach(async({context})=>{
+async function guardNetwork(context){
  const blocked={http:0,websocket:0,api:0};networkGuards.set(context,blocked);
  await context.route('**/*',async route=>{
   const url=new URL(route.request().url());
@@ -22,7 +22,8 @@ test.beforeEach(async({context})=>{
   if(new URL(route.url()).origin==='ws://127.0.0.1:5183')route.connectToServer();
   else{blocked.websocket++;route.close({code:1008,reason:'External network disabled in this test'});}
  });
-});
+}
+test.beforeEach(async({context})=>guardNetwork(context));
 
 async function openPromo(page,contents=archive,reload=false){
  if(reload)await page.reload();else await page.goto('/#/save');
@@ -157,6 +158,64 @@ async function expectNoPaymentSideEffects(page){
  expect(await page.evaluate(()=>window.promoWalletCalls)).toBe(0);
 }
 
+async function editorHome(page){
+ await page.locator('summary[aria-label="Ещё"]').click();
+ await page.getByRole('button',{name:'На главную',exact:true}).click();
+ await expect(page.getByRole('button',{name:'Закрыть архив',exact:true})).toBeVisible();
+}
+
+async function addAnotherTree(page,name){
+ await editorHome(page);
+ page.once('dialog',dialog=>dialog.accept());
+ await page.getByRole('button',{name:'Новое древо',exact:true}).click();
+ await page.getByRole('button',{name:'Добавить себя',exact:true}).click();
+ await page.getByRole('dialog').getByLabel('Имя',{exact:true}).fill(name);
+ await page.getByRole('dialog').getByRole('button',{name:'Добавить',exact:true}).click();
+ await expect(page.getByRole('dialog')).toHaveCount(0);
+ await expect(page.getByRole('button',{name:'Сохранить бесплатно',exact:true})).toBeEnabled();
+}
+
+// Public metadata mirrors the Fund contract. The ciphertext and parent links
+// come from actual browser POSTs; all network replies remain synthetic.
+async function mockArchiveReads(context,versions,{staleIndex=false,nodeDataOnly=false}={}){
+ const counts={graphql:0,metadata:0,raw:0,data:0,unexpected:0};
+ const tag=(name,value)=>({name:Buffer.from(name).toString('base64url'),value:Buffer.from(value).toString('base64url')});
+ await context.route('https://**/*',async route=>{
+  const req=route.request(),url=new URL(req.url()),available=versions();
+  if(url.pathname==='/ar-io/peers'){
+   expect(req.method()).toBe('GET');return json(route,{gateways:{}});
+  }
+  if(url.pathname==='/graphql'){
+   counts.graphql++;expect(req.method()).toBe('POST');
+   const indexed=staleIndex?available.slice(0,1):available;
+   const edges=indexed.map((v,index)=>({cursor:v.id,node:{id:v.id,block:{height:100+index,timestamp:1700000100+index}}}));
+   return json(route,{data:{transactions:{pageInfo:{hasNextPage:false},edges}}});
+  }
+  const match=/^\/(tx|raw)\/([A-Za-z0-9_-]{43})(\/data)?$/.exec(url.pathname);
+  const version=match&&available.find(v=>v.id===match[2]);
+  if(version){
+   expect(req.method()).toBe('GET');
+   // A stale index and temporarily unavailable latest TX must not replace the
+   // exact confirmed local HEAD with a smaller, older network vault.
+   if(staleIndex&&version!==available[0])return json(route,{error:'not_propagated'},404);
+   if(match[3]){
+    counts.data++;return route.fulfill({status:200,contentType:'text/plain',body:Buffer.from(version.archive).toString('base64url')});
+   }
+   if(match[1]==='raw'){
+    counts.raw++;return route.fulfill({status:nodeDataOnly?404:200,contentType:'application/octet-stream',body:nodeDataOnly?'missing':version.archive});
+   }
+   counts.metadata++;
+   const envelope=JSON.parse(version.archive);
+   return json(route,{id:version.id,tags:[tag('App-Name','SEJIRE'),tag('Type','vault-envelope'),tag('Schema',envelope.schema),
+    tag('Protocol-Version',envelope.protocol),tag('Vault-Id',envelope.vault_id),tag('Archive-SHA256',createHash('sha256').update(version.archive).digest('hex')),
+    tag('Archive-Bytes',String(Buffer.byteLength(version.archive))),tag('Preservation-Id',version.preservationId),tag('Promo-Funded','true'),
+    ...(version.parentTxId?[tag('Parent-Tx',version.parentTxId)]:[])]});
+  }
+  counts.unexpected++;return route.abort('blockedbyclient');
+ });
+ return counts;
+}
+
 async function editChildName(page,name){
  await page.locator('.person-card').filter({hasText:'Child corrected'}).click();
  await page.getByRole('dialog',{name:'Профиль: Child corrected',exact:true}).getByLabel('Имя',{exact:true}).fill(name);
@@ -200,6 +259,7 @@ function requireDurableEditorAttempt(page,api){
   expect(stored.record.archiveDigest).toBe(createHash('sha256').update(body.archive).digest('hex'));
   expect(stored.record.vaultId).toBe(JSON.parse(body.archive).vault_id);
   expect(stored.record.treeId).toBe(stored.treeId);expect(stored.record.parentTxId).toBe(stored.parentTxId);
+  expect(body.parentTxId??null).toBe(stored.record.parentTxId);
   expect(stored.containsWords).toBe(false);expect(JSON.stringify(stored.record)).not.toContain(body.code);
  };
 }
@@ -218,6 +278,7 @@ function orderFrom(body,status='SUBMITTED'){
  const signed=!['RESERVED','FAILED','RELEASED'].includes(status);
  return {preservationId:body.preservationId,orderId:body.orderId,promoRevision:1,
   archiveSizeBytes:Buffer.byteLength(body.archive),archiveDigest:createHash('sha256').update(body.archive).digest('hex'),vaultId:JSON.parse(body.archive).vault_id,
+  ...(Object.hasOwn(body,'parentTxId')?{parentTxId:body.parentTxId}:{}),
   estimatedRewardWinston:'3000000000',reservedRewardWinston:'3000000000',actualRewardWinston:completed?'3000000000':null,
   arweaveTxId:signed?tx:null,status,createdAt:Date.now(),uploadedAt:signed?Date.now():null,verifiedAt:completed?Date.now():null};
 }
@@ -242,7 +303,7 @@ async function mockPreservation(page,{status='SUBMITTED',losePostResponse=false,
   }
   if(url.pathname==='/api/fund/orders'&&request.method()==='POST'){
    const body=request.postDataJSON();
-   expect(Object.keys(body).sort()).toEqual(['archive','code','orderId','preservationId']);
+   expect(Object.keys(body).sort()).toEqual(['archive','code','orderId','preservationId',...(Object.hasOwn(body,'parentTxId')?['parentTxId']:[])].sort());
    expect(body.orderId).toMatch(/^[a-f0-9]{32}$/);
    expect(body.preservationId).toBe(body.orderId);
    if(expectedArchive!==null)expect(body.archive).toBe(expectedArchive);
@@ -308,7 +369,7 @@ test('Admin changes one promo and cumulative limit; user preserves encrypted arc
   else if(path.endsWith('/limit')){limit=String(BigInt(body.limitAr)*1000000000000n);value=dashboard();}
   else if(path.endsWith('/validate')){if(!enabled){status=409;value={error:'promo_disabled'};}else if(body.code.trim().toUpperCase()!==code){status=400;value={error:'promo_invalid'};}else value={accepted:true};}
   else if(path==='/api/fund/orders'&&method==='POST'){
-   expect(Object.keys(body).sort()).toEqual(['archive','code','orderId','preservationId']);
+   expect(Object.keys(body).sort()).toEqual(['archive','code','orderId','preservationId',...(Object.hasOwn(body,'parentTxId')?['parentTxId']:[])].sort());
    expect(Object.keys(JSON.parse(body.archive)).sort()).toEqual(Object.keys(JSON.parse(archive)).sort());
    expect(JSON.stringify(body)).not.toMatch(/recoveryWords|seedPhrase|plaintextTree|familyName/);
    const row={...orderFrom(body,'COMPLETED'),promoRevision:revision};rows.push(row);spent+=3000000000n;value={order:row};}
@@ -659,6 +720,127 @@ test('Completing an older funded attempt preserves a newer editor head',async({p
  const saved=await savedEditorArchive(page,tx);
  expect(saved.headTxId).toBe(newerTx);expect(saved.archive).toBe(api.posts[0].archive);
  expect(api.posts).toHaveLength(1);expect(await activeFundAttempts(page)).toHaveLength(0);
+});
+
+test('A completed response with a changed parent cannot finalize the editor or discard its pending archive',async({page})=>{
+ await mockReadOnlyDiscoveryAndRejectWallets(page);
+ const api=await mockPreservation(page,{expectedArchive:null});requireDurableEditorAttempt(page,api);
+ await page.clock.install();await openEditor(page);await openEditorPromo(page);await savePromo(page);
+ await expect(promo(page).getByRole('status')).toContainText('Ждём подтверждения Arweave');
+ const original=api.posts[0];expect(original.parentTxId).toBeNull();
+ api.complete();api.order.parentTxId='P'.repeat(43);
+ await page.clock.runFor(6001);
+ await expect(promo(page)).toBeVisible();
+ await expect(page.getByText(/^Сохранено в Arweave /)).toHaveCount(0);
+ expect((await activeFundAttempts(page)).map(attempt=>attempt.orderId)).toEqual([original.orderId]);
+ expect((await savedEditorArchive(page,tx)).archive).toBeNull();
+ // Correcting only the GET evidence resumes the same attempt. No second save,
+ // signature or editor re-encryption is requested by this recovery path.
+ api.order.parentTxId=null;
+ await page.clock.runFor(15_001);
+ await expect(page.getByRole('dialog')).toHaveCount(0);
+ expect((await savedEditorArchive(page,tx)).archive).toBe(original.archive);
+ expect(api.posts).toHaveLength(1);expect(await activeFundAttempts(page)).toHaveLength(0);
+ await expectNoPaymentSideEffects(page);
+});
+
+test('Three new trees stay in one unlocked archive, preserve a parent chain and restore by words in a clean browser',async({page,browser},testInfo)=>{
+ await mockReadOnlyDiscoveryAndRejectWallets(page);
+ const api=await mockPreservation(page,{expectedArchive:null,status:'COMPLETED'});requireDurableEditorAttempt(page,api);
+ const ids=['A','B','C'].map(letter=>letter.repeat(43));
+ const versions=()=>api.posts.map((body,index)=>({...body,id:ids[index]}));
+ const sourceReads=await mockArchiveReads(page.context(),versions,{staleIndex:true});
+ await page.clock.install();await page.setViewportSize({width:390,height:844});
+ await openNewEditor(page);
+ await page.getByRole('button',{name:'Сохранить',exact:true}).first().click();
+ await confirmNewWords(page);
+ await page.getByRole('dialog').getByRole('button',{name:'По промокоду',exact:true}).click();
+ await savePromo(page);
+
+ let previousTrees={};
+ for(let index=0;index<3;index++){
+  if(index>0){
+   await addAnotherTree(page,`Synthetic member ${index+1}`);
+   api.nextTx=ids[index];
+   await page.getByRole('button',{name:'Сохранить бесплатно',exact:true}).click();
+  }
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await expect(page.getByText(/^Сохранено в Arweave /)).toBeVisible();
+  expect(api.posts).toHaveLength(index+1);expect(api.validations).toBe(index+1);
+  const body=api.posts[index];
+  expect(body.parentTxId??null).toBe(index===0?null:ids[index-1]);
+  const saved=await savedEditorArchive(page,ids[index]);
+  expect(saved.headTxId).toBe(ids[index]);expect(saved.parentId).toBe(index===0?null:ids[index-1]);
+  expect(saved.archive).toBe(body.archive);
+  const vault=await page.evaluate(async serialized=>{
+   const session=await import('/src/lib/vaultSession/session.ts');
+   const keys=(await import('/src/lib/crypto/keys.ts')).deriveKeysFromMnemonic(session.getSessionMnemonic());
+   const vault=await(await import('/src/lib/crypto/vault.ts')).openEnvelope(keys,JSON.parse(serialized));
+   const current=(await import('/src/lib/draftStorage.ts')).loadDraftTree();
+   return {trees:vault.trees,activeTreeMatches:vault.active_tree_id===current.meta.id};
+  },body.archive);
+  expect(Object.keys(vault.trees)).toHaveLength(index+1);expect(vault.activeTreeMatches).toBe(true);
+  for(const [id,tree] of Object.entries(previousTrees))expect(vault.trees[id]).toEqual(tree);
+  previousTrees=vault.trees;
+  expect(await activeFundAttempts(page)).toHaveLength(0);
+  await page.clock.runFor(20_000);expect(api.posts).toHaveLength(index+1);
+ }
+ expect(new Set(api.posts.map(body=>body.orderId)).size).toBe(3);
+ expect(new Set(api.posts.map(body=>JSON.parse(body.archive).vault_id)).size).toBe(1);
+ expect(sourceReads.unexpected).toBe(0);await expectNoPaymentSideEffects(page);
+ const words=await page.evaluate(async()=>(await import('/src/lib/vaultSession/session.ts')).getSessionMnemonic());
+ expect(await page.evaluate(words=>[localStorage,sessionStorage].some(storage=>Object.keys(storage).some(key=>String(storage.getItem(key)).includes(words))),words)).toBe(false);
+
+ const clean=await browser.newContext({baseURL:origin,locale:'ru-RU',serviceWorkers:'block',viewport:{width:390,height:844}});
+ try{
+  expect((await clean.storageState()).origins).toEqual([]);
+  await guardNetwork(clean);
+  const reads=await mockArchiveReads(clean,versions,{nodeDataOnly:true});
+  const restored=await clean.newPage();await restored.goto('/');
+  await restored.getByRole('button',{name:'Открыть по 12 словам',exact:true}).click();
+  await restored.getByRole('textbox',{name:'12 слов восстановления SEJIRE'}).fill(words);
+  await restored.getByRole('button',{name:'Открыть',exact:true}).click();
+  await expect(restored.getByRole('button',{name:'Сохранить',exact:true}).first()).toBeVisible();
+  await expect(restored.getByRole('heading',{name:'Выберите версию',exact:true})).toHaveCount(0);
+  const opened=await restored.evaluate(async()=>{
+   const session=await import('/src/lib/vaultSession/session.ts');
+   const keys=(await import('/src/lib/crypto/keys.ts')).deriveKeysFromMnemonic(session.getSessionMnemonic());
+   const vault=await(await import('/src/lib/crypto/vault.ts')).openLocalVault(keys);
+   return {trees:vault?.trees,head:session.getVaultSession()?.headTxId,source:session.getVaultSession()?.source};
+  });
+  expect(opened.trees).toEqual(previousTrees);expect(opened.head).toBe(ids[2]);expect(opened.source).toBe('network');
+  expect(reads.data).toBeGreaterThan(0);expect(reads.metadata).toBeGreaterThan(0);expect(reads.unexpected).toBe(0);
+  expect(networkGuards.get(clean)).toEqual({http:0,websocket:0,api:0});
+  await expect.poll(()=>restored.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
+  await restored.screenshot({path:testInfo.outputPath('three-new-trees-restored-mobile.png'),fullPage:true});
+ }finally{await clean.close();}
+});
+
+test('Closing the archive explicitly clears only the unlocked session and promo choice',async({page},testInfo)=>{
+ await mockReadOnlyDiscoveryAndRejectWallets(page);
+ const api=await mockPreservation(page,{expectedArchive:null,status:'COMPLETED'});requireDurableEditorAttempt(page,api);
+ await page.clock.install();await page.setViewportSize({width:390,height:844});
+ await openEditor(page);await openEditorPromo(page);await savePromo(page);
+ await expect(page.getByRole('dialog')).toHaveCount(0);
+ const vaultId=api.order.vaultId;
+ await editorHome(page);
+ await expect(page.getByText('Семейный архив открыт. Новые деревья будут сохраняться с теми же словами восстановления.',{exact:true})).toBeVisible();
+ await expect.poll(()=>page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
+ await page.screenshot({path:testInfo.outputPath('open-family-archive-mobile.png'),fullPage:true});
+ await page.getByRole('button',{name:'Закрыть архив',exact:true}).click();
+ await expect(page.getByText('Архив закрыт. При следующем сохранении нужно будет выбрать слова восстановления.',{exact:true})).toBeVisible();
+ expect(await page.evaluate(async vaultId=>{
+  const session=await import('/src/lib/vaultSession/session.ts');
+  return {hasWords:Boolean(session.getSessionMnemonic()),session:session.getVaultSession(),
+   promo:(await import('/src/lib/fund/preference.ts')).getFundedPromo(vaultId),
+   hasDraft:Boolean((await import('/src/lib/draftStorage.ts')).loadDraftTree()),
+   history:(await import('/src/lib/vaultSession/localArchive.ts')).listLocalVaultVersions(vaultId).map(version=>version.id)};
+ },vaultId)).toEqual({hasWords:false,session:null,promo:null,hasDraft:true,history:[tx]});
+ await page.getByRole('button',{name:'Продолжить',exact:true}).click();
+ await expect(page.getByRole('button',{name:'Сохранить бесплатно',exact:true})).toHaveCount(0);
+ await page.getByRole('button',{name:'Сохранить',exact:true}).first().click();
+ await expect(page.getByRole('dialog').getByRole('button',{name:'Создать 12 слов',exact:true})).toBeVisible();
+ expect(api.posts).toHaveLength(1);await expectNoPaymentSideEffects(page);
 });
 
 for(const status of ['FAILED','RELEASED']){

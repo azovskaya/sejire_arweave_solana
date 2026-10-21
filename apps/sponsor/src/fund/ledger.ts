@@ -3,12 +3,17 @@ export const INITIAL_LIMIT = '13000000000000';
 export type FundStatus = 'RESERVED'|'SIGNED'|'SUBMITTED'|'VERIFYING'|'COMPLETED'|'FAILED'|'RELEASED'|'NEEDS_RECONCILIATION';
 const active = new Set<FundStatus>(['RESERVED','SIGNED','SUBMITTED','VERIFYING','NEEDS_RECONCILIATION']);
 const terminal = new Set<FundStatus>(['COMPLETED','FAILED','RELEASED']);
+export function fundParentTxId(value: unknown): string | null {
+  if (value === undefined || value === null) return null;
+  if (typeof value !== 'string' || !/^[A-Za-z0-9_-]{43}$/.test(value)) throw Error('invalid_request');
+  return value;
+}
 const money = (s: string) => { if (!/^(0|[1-9][0-9]{0,29})$/.test(s)) throw Error('invalid_winston'); return BigInt(s); };
 export function parseAr(value: string): string {
   if (!/^(0|[1-9][0-9]{0,5})(?:\.[0-9]{1,12})?$/.test(value)) throw Error('invalid_ar_amount');
   const [whole, fraction=''] = value.split('.'); return (BigInt(whole)*1000000000000n+BigInt(fraction.padEnd(12,'0'))).toString();
 }
-export type FundOrder = {preservationId:string;orderId:string;promoRevision:number;archiveSizeBytes:number;archiveDigest:string;vaultId:string;estimatedRewardWinston:string;reservedRewardWinston:string;actualRewardWinston:string|null;arweaveTxId:string|null;status:FundStatus;createdAt:number;uploadedAt:number|null;verifiedAt:number|null;signedTransaction?:string|null;preparedTransaction?:string|null};
+export type FundOrder = {preservationId:string;orderId:string;promoRevision:number;archiveSizeBytes:number;archiveDigest:string;vaultId:string;parentTxId?:string|null;estimatedRewardWinston:string;reservedRewardWinston:string;actualRewardWinston:string|null;arweaveTxId:string|null;status:FundStatus;createdAt:number;uploadedAt:number|null;verifiedAt:number|null;signedTransaction?:string|null;preparedTransaction?:string|null};
 export class FundLedger {
   private sql: SqlStorage;
   constructor(private storage: DurableObjectStorage) {
@@ -16,6 +21,7 @@ export class FundLedger {
     storage.transactionSync(()=>this.sql.exec(`
       CREATE TABLE IF NOT EXISTS fund_settings(id INTEGER PRIMARY KEY CHECK(id=1),enabled INTEGER NOT NULL,code_hash TEXT NOT NULL,display_hint TEXT NOT NULL,revision INTEGER NOT NULL,created_at INTEGER NOT NULL,updated_at INTEGER NOT NULL,limit_winston TEXT NOT NULL);
       CREATE TABLE IF NOT EXISTS fund_orders(order_id TEXT PRIMARY KEY,preservation_id TEXT NOT NULL UNIQUE,revision INTEGER NOT NULL,archive_bytes INTEGER NOT NULL,digest TEXT NOT NULL,vault_id TEXT NOT NULL,estimate TEXT NOT NULL,reserved TEXT NOT NULL,created_at INTEGER NOT NULL,prepared_json TEXT NOT NULL);
+      CREATE TABLE IF NOT EXISTS fund_order_links(order_id TEXT PRIMARY KEY REFERENCES fund_orders(order_id),parent_tx_id TEXT);
       CREATE TABLE IF NOT EXISTS fund_events(seq INTEGER PRIMARY KEY AUTOINCREMENT,order_id TEXT NOT NULL,status TEXT NOT NULL,tx_id TEXT,actual TEXT,signed_json TEXT,at INTEGER NOT NULL);
       CREATE INDEX IF NOT EXISTS fund_events_order ON fund_events(order_id,seq);
       CREATE TABLE IF NOT EXISTS fund_audit(seq INTEGER PRIMARY KEY AUTOINCREMENT,action TEXT NOT NULL,details TEXT NOT NULL,at INTEGER NOT NULL);
@@ -26,11 +32,13 @@ export class FundLedger {
   }
   settings(){return this.sql.exec<{enabled:number;code_hash:string;display_hint:string;revision:number;created_at:number;updated_at:number;limit_winston:string}>('SELECT * FROM fund_settings WHERE id=1').toArray()[0];}
   private orders(includeSigned=false):FundOrder[]{
-    const rows=this.sql.exec<{order_id:string;preservation_id:string;revision:number;archive_bytes:number;digest:string;vault_id:string;estimate:string;reserved:string;created_at:number;prepared_json:string;status:FundStatus;tx_id:string|null;actual:string|null;signed_json:string|null;uploaded_at:number|null;verified_at:number|null}>(`SELECT o.*,e.status,e.tx_id,e.actual,e.signed_json,
+    const rows=this.sql.exec<{order_id:string;preservation_id:string;revision:number;archive_bytes:number;digest:string;vault_id:string;parent_bound_order_id:string|null;parent_tx_id:string|null;estimate:string;reserved:string;created_at:number;prepared_json:string;status:FundStatus;tx_id:string|null;actual:string|null;signed_json:string|null;uploaded_at:number|null;verified_at:number|null}>(`SELECT o.*,l.order_id AS parent_bound_order_id,l.parent_tx_id,e.status,e.tx_id,e.actual,e.signed_json,
       (SELECT MIN(at) FROM fund_events WHERE order_id=o.order_id AND status IN ('SUBMITTED','VERIFYING','COMPLETED')) AS uploaded_at,
       (SELECT MIN(at) FROM fund_events WHERE order_id=o.order_id AND status='COMPLETED') AS verified_at
-      FROM fund_orders o JOIN fund_events e ON e.seq=(SELECT MAX(seq) FROM fund_events WHERE order_id=o.order_id) ORDER BY o.created_at DESC`).toArray();
-    return rows.map(r=>({preservationId:r.preservation_id,orderId:r.order_id,promoRevision:r.revision,archiveSizeBytes:r.archive_bytes,archiveDigest:r.digest,vaultId:r.vault_id,estimatedRewardWinston:r.estimate,reservedRewardWinston:r.reserved,actualRewardWinston:r.actual,arweaveTxId:r.tx_id,status:r.status,createdAt:r.created_at,uploadedAt:r.uploaded_at,verifiedAt:r.verified_at,...(includeSigned?{signedTransaction:r.signed_json,preparedTransaction:r.prepared_json}:{})}));
+      FROM fund_orders o JOIN fund_events e ON e.seq=(SELECT MAX(seq) FROM fund_events WHERE order_id=o.order_id)
+      LEFT JOIN fund_order_links l ON l.order_id=o.order_id ORDER BY o.created_at DESC`).toArray();
+    // Missing link rows identify historical/old-client orders. Never infer or retrofit their signed tags.
+    return rows.map(r=>({preservationId:r.preservation_id,orderId:r.order_id,promoRevision:r.revision,archiveSizeBytes:r.archive_bytes,archiveDigest:r.digest,vaultId:r.vault_id,...(r.parent_bound_order_id?{parentTxId:r.parent_tx_id}:{}),estimatedRewardWinston:r.estimate,reservedRewardWinston:r.reserved,actualRewardWinston:r.actual,arweaveTxId:r.tx_id,status:r.status,createdAt:r.created_at,uploadedAt:r.uploaded_at,verifiedAt:r.verified_at,...(includeSigned?{signedTransaction:r.signed_json,preparedTransaction:r.prepared_json}:{})}));
   }
   order(id:string,includeSigned=false){return this.orders(includeSigned).find(x=>x.orderId===id)??null;}
   summary(now=Date.now()){
@@ -75,14 +83,18 @@ export class FundLedger {
     this.storage.transactionSync(()=>{this.sql.exec('UPDATE fund_settings SET limit_winston=? WHERE id=1',value);
       this.sql.exec('INSERT INTO fund_audit(action,details,at) VALUES(?,?,?)','FUND_LIMIT_CHANGED',JSON.stringify({oldLimit:s.limit_winston,newLimit:value}),now);});await this.storage.sync();return this.summary();
   }
-  async reserve(input:{orderId:string;preservationId:string;hash:string;archiveSizeBytes:number;archiveDigest:string;vaultId:string;reward:string;estimated:string;prepared:string;balance:string},now=Date.now()){
+  async reserve(input:{orderId:string;preservationId:string;hash:string;archiveSizeBytes:number;archiveDigest:string;vaultId:string;parentTxId?:string|null;reward:string;estimated:string;prepared:string;balance:string},now=Date.now()){
+    const parentTxId=fundParentTxId(input.parentTxId);
     const amount=money(input.reward);money(input.estimated);const walletBalance=money(input.balance);if(amount<=0n)throw Error('invalid_reward');
     const result=this.storage.transactionSync(()=>{
-      const prior=this.order(input.orderId,true);if(prior){if(prior.archiveDigest!==input.archiveDigest||prior.archiveSizeBytes!==input.archiveSizeBytes||prior.vaultId!==input.vaultId)throw Error('archive_changed');return prior;}
+      const prior=this.order(input.orderId,true);if(prior){if(prior.archiveDigest!==input.archiveDigest||prior.archiveSizeBytes!==input.archiveSizeBytes||prior.vaultId!==input.vaultId||(prior.parentTxId??null)!==parentTxId)throw Error('archive_changed');return prior;}
       const s=this.settings();if(!s.enabled)throw Error('promo_disabled');if(!s.code_hash||s.code_hash!==input.hash)throw Error('promo_invalid');
       const summary=this.summary(now);if(amount>money(summary.budgetRemainingWinston))throw Error('fund_exhausted');
       if(amount+money(summary.reservedWinston)>walletBalance)throw Error('wallet_low');
       this.sql.exec('INSERT INTO fund_orders VALUES(?,?,?,?,?,?,?,?,?,?)',input.orderId,input.preservationId,s.revision,input.archiveSizeBytes,input.archiveDigest,input.vaultId,input.estimated,input.reward,now,input.prepared);
+      // Omitted by older clients: preserve their unbound local-parent recovery semantics.
+      // New clients explicitly send null (genesis) or the immutable parent TX.
+      if(input.parentTxId!==undefined)this.sql.exec('INSERT INTO fund_order_links(order_id,parent_tx_id) VALUES(?,?)',input.orderId,parentTxId);
       this.sql.exec('INSERT INTO fund_events(order_id,status,at) VALUES(?,?,?)',input.orderId,'RESERVED',now);
       return this.order(input.orderId,true)!;});await this.storage.sync();return result;
   }

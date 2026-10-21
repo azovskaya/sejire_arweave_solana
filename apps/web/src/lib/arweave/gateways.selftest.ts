@@ -6,6 +6,7 @@ import {
   GatewayUnavailableError,
   RawEnvelopeMismatchError,
   fetchTxJson,
+  fetchWithTimeout,
   graphqlQuery,
   isGatewayUnavailable,
 } from "./gateways";
@@ -17,6 +18,7 @@ function assert(cond: unknown, msg: string): asserts cond {
 assert(GRAPHQL_ENDPOINTS.length >= 3, "graphql fallbacks");
 assert(GRAPHQL_ENDPOINTS[0].includes("arweave.net"), "primary graphql");
 assert(GRAPHQL_ENDPOINTS.some((u) => u.includes("goldsky")), "goldsky graphql");
+assert(GRAPHQL_ENDPOINTS.some((u) => u.includes("turbo-gateway.com")) && GRAPHQL_ENDPOINTS.every((u) => !u.includes("ar-io.dev")), "publisher discovery uses only mainnet indexes");
 assert(DATA_GATEWAYS.length >= 3, "data fallbacks");
 assert(ARWEAVE_HOSTS.includes("arweave.net") && ARWEAVE_HOSTS.includes("g8way.io"), "js client hosts");
 
@@ -51,6 +53,40 @@ const empty = await graphqlQuery<{ transactions: { edges: unknown[] } }>("query 
 });
 assert(empty.transactions.edges.length === 0, "empty vault is success, not 'down'");
 assert(gqlCalls >= 2, "walked past the failing primary");
+
+// A 200 header is not completion: bound the rest of a GraphQL response as well.
+let bodyCancelled = false;
+globalThis.fetch = async () => new Response(new ReadableStream<Uint8Array>({
+  start(controller) { controller.enqueue(new TextEncoder().encode('{"data":')); },
+  cancel() { bodyCancelled = true; },
+}));
+let stalledRefused = false;
+try { await fetchWithTimeout(GRAPHQL_ENDPOINTS[0], { method: "POST" }, 15); }
+catch { stalledRefused = true; }
+assert(stalledRefused && bodyCancelled, "headers-plus-stalled-body expires and cancels the stream");
+
+let bodyFailureCalls = 0;
+globalThis.fetch = async () => {
+  bodyFailureCalls++;
+  if (bodyFailureCalls === 1) return new Response(new ReadableStream({
+    start(controller) { controller.error(new Error("body interrupted")); },
+  }));
+  return new Response(JSON.stringify({ data: { transactions: { edges: [] } } }));
+};
+const afterBodyFailure = await graphqlQuery<{ transactions: { edges: unknown[] } }>("query { transactions { edges { node { id } } } }", {});
+assert(afterBodyFailure.transactions.edges.length === 0 && bodyFailureCalls === 2, "interrupted body moves to the next GraphQL host");
+
+const stop = new AbortController();let stoppedRequests = 0, stoppedBodies = 0;
+globalThis.fetch = async () => {
+  stoppedRequests++;
+  return new Response(new ReadableStream<Uint8Array>({ cancel() { stoppedBodies++; } }));
+};
+const stopTimer = setTimeout(() => stop.abort(), 15);
+let abortedGraphql = false;
+try { await graphqlQuery("query { ping }", {}, stop.signal); }
+catch (error) { abortedGraphql = isGatewayUnavailable(error); }
+finally { clearTimeout(stopTimer); }
+assert(abortedGraphql && stoppedRequests === 1 && stoppedBodies === 1, "whole-operation abort ends body read without starting another host");
 
 let dataCalls = 0;
 const envelope = {schema:"sejire/envelope/v1",vault_id:"a".repeat(32),cipher:"aes-gcm-256",kdf:"hkdf-sha256",iv:"AAAAAAAAAAAAAAAA",ciphertext:"AAAAAAAAAAAAAAAAAAAAAAAA",protocol:"sejire/v0.3"};

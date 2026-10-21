@@ -8,6 +8,7 @@ import { fundApi } from '../src/fund/api.ts';
 import { DirectArweaveFundProvider, MockFundedArweaveProvider } from '../src/fund/provider.ts';
 import { publicTreasuryOwner } from './fund-public-owner.mjs';
 import { validateMetadata } from '../../web/src/lib/recovery/retrieve.ts';
+import { assertFundOrderParent } from '../../web/src/lib/fund/client.ts';
 const temp=await mkdtemp(resolve(tmpdir(),'sejire-fund-sqlite-'));
 const admin='synthetic-admin-token-32-characters',origin='https://preview.example';
 const archive=JSON.stringify({schema:'sejire/envelope/v1',vault_id:'a'.repeat(32),cipher:'aes-gcm-256',kdf:'hkdf-sha256',iv:'AAAAAAAAAAAAAAAA',ciphertext:'A'.repeat(32),protocol:'sejire/v0.3'});
@@ -50,8 +51,10 @@ try{
  await test('success uses confirmed transaction reward and words-recoverable metadata, with no plaintext promo',async()=>{
   const prepare=mock.prepareTransaction;let preparedTags;
   mock.prepareTransaction=async function(bytes,tags){preparedTags=structuredClone(tags);return prepare.call(this,bytes,tags);};
-  let r;try{r=await call('/orders',make('a','TEST-PENSIONER-2'),{estimate:'2800000000'});}finally{mock.prepareTransaction=prepare;}
+  let r;try{r=await call('/orders',{...make('a','TEST-PENSIONER-2'),parentTxId:null},{estimate:'2800000000'});}finally{mock.prepareTransaction=prepare;}
   assert.equal(r.status,200);assert.equal(r.body.order.estimatedRewardWinston,'2800000000');assert.equal(r.body.order.actualRewardWinston,'3000000000');assert.equal(r.body.order.status,'COMPLETED');
+  assert.equal(Object.hasOwn(r.body.order,'parentTxId'),true);assert.equal(r.body.order.parentTxId,null);
+  assert.equal(preparedTags.some(tag=>tag.name==='Parent-Tx'),false,'genesis emits no invented parent');
   assert.equal(preparedTags.filter(tag=>tag.name==='Protocol-Version').length,1);
   assert.equal(preparedTags.find(tag=>tag.name==='Protocol-Version').value,JSON.parse(archive).protocol);
   assert.doesNotThrow(()=>validateMetadata({id:r.body.order.arweaveTxId,tags:preparedTags,blockHeight:1,blockTimestamp:1},
@@ -250,6 +253,119 @@ try{
    assert.equal(storage.sql.exec('SELECT COUNT(*) AS n FROM fund_events WHERE order_id=? AND status=?',orderId,'COMPLETED').toArray()[0].n,1);
    for(const privateField of ['signedTransaction','preparedTransaction','ciphertext','code_hash'])assert.equal(JSON.stringify(completed).includes(privateField),false);
   }finally{globalThis.fetch=originalFetch;}
+ });
+ await test('new parent is signed, immutable on replay and ledger reserve, and survives GET completion and restart',async()=>{
+  const parentTxId='P'.repeat(43),orderId='abc01234'.repeat(4);
+  const payload={orderId,preservationId:orderId,code:'TEST-PENSIONER-2',archive,parentTxId};
+  const before=ledger.summary(),prepare=mock.prepareTransaction;let preparations=0;
+  mock.prepareTransaction=async function(...args){preparations++;return prepare.apply(this,args);};
+  try{
+   const initial=await call('/orders',payload,{delay:true,ip:'192.0.2.120'});
+   assert.equal(initial.status,202);assert.equal(initial.body.order.status,'VERIFYING');assert.equal(initial.body.order.parentTxId,parentTxId);
+   const saved=ledger.order(orderId,true),txId=saved.arweaveTxId,submissions=mock.submissions,signings=mock.signings;
+   const tags=JSON.parse(saved.preparedTransaction).tags;
+   assert.deepEqual(tags.filter(tag=>tag.name==='Parent-Tx'),[{name:'Parent-Tx',value:parentTxId}]);
+   assert.deepEqual(JSON.parse(saved.signedTransaction).tags,tags,'signed bytes bind the prepared parent');
+   assert.doesNotThrow(()=>validateMetadata({id:txId,tags,blockHeight:1,blockTimestamp:1},
+    {txId,source:'fund-contract',archiveBytes:saved.archiveSizeBytes,archiveSha256:saved.archiveDigest},saved.vaultId));
+   const replay=await call('/orders',payload,{delay:true,ip:'192.0.2.121'});
+   assert.equal(replay.body.order.arweaveTxId,txId);assert.equal(replay.body.order.parentTxId,parentTxId);
+   assert.equal(preparations,1);assert.equal(mock.submissions,submissions);assert.equal(mock.signings,signings);
+   const eventCount=storage.sql.exec('SELECT COUNT(*) AS n FROM fund_events WHERE order_id=?',orderId).toArray()[0].n;
+   for(const [index,conflicting] of [{...payload,parentTxId:'Q'.repeat(43)},{...payload,parentTxId:null},
+    {orderId,preservationId:orderId,code:payload.code,archive}].entries()){
+    const rejected=await call('/orders',conflicting,{delay:true,ip:`192.0.2.${122+index}`});
+    assert.equal(rejected.status,400);assert.equal(rejected.body.error,'archive_changed');
+   }
+   const reserveInput={orderId,preservationId:orderId,hash:ledger.settings().code_hash,archiveSizeBytes:saved.archiveSizeBytes,
+    archiveDigest:saved.archiveDigest,vaultId:saved.vaultId,reward:saved.reservedRewardWinston,
+    estimated:saved.estimatedRewardWinston,prepared:saved.preparedTransaction,balance:'68000000000000',parentTxId};
+   assert.equal((await ledger.reserve(reserveInput)).arweaveTxId,txId);
+   await assert.rejects(()=>ledger.reserve({...reserveInput,parentTxId:'Q'.repeat(43)}),/archive_changed/);
+   assert.equal(preparations,1);assert.equal(mock.submissions,submissions);assert.equal(mock.signings,signings);
+   assert.equal(storage.sql.exec('SELECT COUNT(*) AS n FROM fund_events WHERE order_id=?',orderId).toArray()[0].n,eventCount);
+   assert.equal(ledger.order(orderId,true).preparedTransaction,saved.preparedTransaction);
+   assert.equal(ledger.order(orderId,true).signedTransaction,saved.signedTransaction);
+   assert.equal(ledger.summary().reservedWinston,(BigInt(before.reservedWinston)+3000000000n).toString());
+   for(let i=0;i<2;i++){
+    const completed=await call('/orders/'+orderId);
+    assert.equal(completed.body.order.status,'COMPLETED');assert.equal(completed.body.order.arweaveTxId,txId);
+    assert.equal(completed.body.order.parentTxId,parentTxId);
+   }
+   assert.equal(mock.submissions,submissions);assert.equal(mock.signings,signings);
+   assert.equal(ledger.summary().actualSpentWinston,(BigInt(before.actualSpentWinston)+3000000000n).toString());
+   assert.equal(ledger.summary().reservedWinston,before.reservedWinston);
+   assert.equal(storage.sql.exec('SELECT COUNT(*) AS n FROM fund_events WHERE order_id=? AND status=?',orderId,'COMPLETED').toArray()[0].n,1);
+   storage.close();storage=createStorage(resolve(temp,'ledger.sqlite'));ledger=new FundLedger(storage);
+   assert.equal(ledger.order(orderId).parentTxId,parentTxId);assert.equal(ledger.order(orderId,true).signedTransaction,saved.signedTransaction);
+   assert.equal((await call('/orders/'+orderId)).body.order.parentTxId,parentTxId);
+   assert.equal(ledger.summary().actualSpentWinston,(BigInt(before.actualSpentWinston)+3000000000n).toString());
+  }finally{mock.prepareTransaction=prepare;}
+ });
+ await test('invalid parents are rejected before reservation or signing; explicit null and omitted genesis replay identically',async()=>{
+  const before=ledger.summary(),submissions=mock.submissions,signings=mock.signings,prepare=mock.prepareTransaction;let preparations=0;
+  mock.prepareTransaction=async function(...args){preparations++;return prepare.apply(this,args);};
+  try{
+   for(const [index,parentTxId] of ['', 'P'.repeat(42), 'P'.repeat(44), 'https://arweave.net/'+'P'.repeat(43), ' '.repeat(43), 7, false, {}, []].entries()){
+    const orderId=(800+index).toString(16).padStart(32,'0');
+    const rejected=await call('/orders',{orderId,preservationId:orderId,code:'TEST-PENSIONER-2',archive,parentTxId},{ip:`192.0.2.${130+index}`});
+    assert.equal(rejected.status,400);assert.equal(rejected.body.error,'invalid_request');assert.equal(ledger.order(orderId),null);
+   }
+   const genesis=ledger.order('a'.repeat(32));
+   for(const payload of [make('a','TEST-PENSIONER-2'),{...make('a','TEST-PENSIONER-2'),parentTxId:null}]){
+    const replay=await call('/orders',payload,{ip:'192.0.2.140'});
+    assert.equal(replay.body.order.arweaveTxId,genesis.arweaveTxId);assert.equal(replay.body.order.parentTxId,null);
+   }
+   assert.equal(preparations,0);assert.equal(mock.submissions,submissions);assert.equal(mock.signings,signings);
+   assert.equal(ledger.summary().history.length,before.history.length);
+   assert.equal(ledger.summary().reservedWinston,before.reservedWinston);assert.equal(ledger.summary().actualSpentWinston,before.actualSpentWinston);
+  }finally{mock.prepareTransaction=prepare;}
+ });
+ await test('old-client omitted POST remains unbound across new-client GET resume with an existing local parent',async()=>{
+  const orderId='abc01235'.repeat(4),localParent='R'.repeat(43),before=ledger.summary();
+  const payload={orderId,preservationId:orderId,code:'TEST-PENSIONER-2',archive};
+  const first=await call('/orders',payload,{delay:true,ip:'192.0.2.145'});
+  assert.equal(first.body.order.status,'VERIFYING');assert.equal(Object.hasOwn(first.body.order,'parentTxId'),false);
+  const saved=ledger.order(orderId,true),submissions=mock.submissions,signings=mock.signings;
+  assert.equal(JSON.parse(saved.preparedTransaction).tags.some(tag=>tag.name==='Parent-Tx'),false);
+  const resumed=await call('/orders/'+orderId);
+  assert.equal(resumed.body.order.status,'COMPLETED');assert.equal(resumed.body.order.arweaveTxId,saved.arweaveTxId);
+  assert.doesNotThrow(()=>assertFundOrderParent(resumed.body.order,localParent),'legacy local parent must not trap an accepted old-client request');
+  assert.equal((await call('/orders',{...payload,parentTxId:localParent},{ip:'192.0.2.146'})).body.error,'archive_changed');
+  assert.equal(storage.sql.exec('SELECT COUNT(*) AS n FROM fund_order_links WHERE order_id=?',orderId).toArray()[0].n,0);
+  assert.equal(ledger.order(orderId,true).preparedTransaction,saved.preparedTransaction);
+  assert.equal(ledger.order(orderId,true).signedTransaction,saved.signedTransaction);
+  assert.equal(mock.submissions,submissions);assert.equal(mock.signings,signings);
+  assert.equal(ledger.summary().actualSpentWinston,(BigInt(before.actualSpentWinston)+3000000000n).toString());
+  assert.equal(ledger.summary().reservedWinston,before.reservedWinston);
+ });
+ await test('additive schema preserves historical prepared/signed bytes and GET settles the original parent-less order',async()=>{
+  const originalLedger=ledger,legacy=createStorage(resolve(temp,'legacy.sqlite')),old=ledger.order('a'.repeat(32),true);
+  const submissions=mock.submissions,signings=mock.signings;
+  legacy.sql.exec(`CREATE TABLE fund_orders(order_id TEXT PRIMARY KEY,preservation_id TEXT NOT NULL UNIQUE,revision INTEGER NOT NULL,archive_bytes INTEGER NOT NULL,digest TEXT NOT NULL,vault_id TEXT NOT NULL,estimate TEXT NOT NULL,reserved TEXT NOT NULL,created_at INTEGER NOT NULL,prepared_json TEXT NOT NULL);
+   CREATE TABLE fund_events(seq INTEGER PRIMARY KEY AUTOINCREMENT,order_id TEXT NOT NULL,status TEXT NOT NULL,tx_id TEXT,actual TEXT,signed_json TEXT,at INTEGER NOT NULL);`);
+  legacy.sql.exec('INSERT INTO fund_orders VALUES(?,?,?,?,?,?,?,?,?,?)',old.orderId,old.preservationId,old.promoRevision,old.archiveSizeBytes,old.archiveDigest,old.vaultId,old.estimatedRewardWinston,old.reservedRewardWinston,old.createdAt,old.preparedTransaction);
+  legacy.sql.exec('INSERT INTO fund_events(order_id,status,tx_id,signed_json,at) VALUES(?,?,?,?,?)',old.orderId,'NEEDS_RECONCILIATION',old.arweaveTxId,old.signedTransaction,old.createdAt);
+  try{
+   ledger=new FundLedger(legacy);
+   assert.equal(Object.hasOwn(ledger.order(old.orderId),'parentTxId'),false);
+   assert.equal(legacy.sql.exec('PRAGMA table_info(fund_orders)').toArray().length,10,'old writer column count remains compatible');
+   assert.equal(ledger.summary().reservedWinston,'3000000000');
+   const current=await call('/orders/'+old.orderId);
+   assert.equal(current.body.order.status,'COMPLETED');assert.equal(current.body.order.arweaveTxId,old.arweaveTxId);
+   assert.equal(Object.hasOwn(current.body.order,'parentTxId'),false,'legacy response does not invent a signed binding');
+   for(const payload of [make('a','TEST-PENSIONER-2'),{...make('a','TEST-PENSIONER-2'),parentTxId:null}]){
+    assert.equal((await call('/orders',payload,{ip:'192.0.2.150'})).body.order.arweaveTxId,old.arweaveTxId);
+   }
+   const rejected=await call('/orders',{...make('a','TEST-PENSIONER-2'),parentTxId:'P'.repeat(43)},{ip:'192.0.2.151'});
+   assert.equal(rejected.status,400);assert.equal(rejected.body.error,'archive_changed');
+   assert.equal(ledger.order(old.orderId,true).preparedTransaction,old.preparedTransaction);
+   assert.equal(ledger.order(old.orderId,true).signedTransaction,old.signedTransaction);
+   assert.equal(legacy.sql.exec('SELECT COUNT(*) AS n FROM fund_order_links').toArray()[0].n,0,'never retrofit a link onto historical signed bytes');
+   assert.equal(ledger.summary().actualSpentWinston,'3000000000');assert.equal(ledger.summary().reservedWinston,'0');
+   assert.equal(legacy.sql.exec('SELECT COUNT(*) AS n FROM fund_events WHERE order_id=? AND status=?',old.orderId,'COMPLETED').toArray()[0].n,1);
+   assert.equal(mock.submissions,submissions);assert.equal(mock.signings,signings);
+  }finally{ledger=originalLedger;legacy.close();}
  });
  console.log('fund.local: PASS; real SQLite, mocked gateway/provider responses, zero network calls or AR transactions');
 }finally{storage.close();await rm(temp,{recursive:true,force:true});}

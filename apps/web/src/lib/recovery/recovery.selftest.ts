@@ -6,6 +6,7 @@ import {fetchMetadata,fetchRaw,validateMetadata,type TxMetadata} from './retriev
 import {RecoveryFailure} from './errors';
 import {newDiagnostics} from './diagnostics';
 import {verifyCandidate} from './verify';
+import {firstUsable,MAX_GATEWAY_RESPONSE_BYTES,timedFetch,WayfinderGatewayPool} from './gateways';
 import {createMnemonic} from '../crypto/bip39';
 import {deriveKeysFromMnemonic} from '../crypto/keys';
 import {encryptJson} from '../crypto/encrypt';
@@ -176,4 +177,75 @@ const wrongEnvelopeProtocol=JSON.stringify({...envelope,protocol:'sejire/v9'});
 await assert.rejects(async()=>readFundedArchive(wrongEnvelopeProtocol,await metadataFor(wrongEnvelopeProtocol)),isFailure('RAW_HASH_MISMATCH'),'envelope protocol remains enforced');
 const invalidVault=serializeEnvelope(await encryptJson(keys.encKey,keys.vaultId,{...testVault,trees:{invalid:{}}}));
 await assert.rejects(async()=>readFundedArchive(invalidVault,await metadataFor(invalidVault)),isFailure('INVALID_VAULT'),'decrypted tree structure remains enforced');
-console.log('Recovery provider, strict historical fund metadata, bounded native data fallback, raw/hash/AES/vault checks and HEAD selftests passed');
+
+// Headers alone must not release the deadline or parent abort listener. A gateway
+// that returns 200 and then never completes JSON must not trap restore/publish.
+async function bounded<T>(task:Promise<T>):Promise<T>{
+  let timer:ReturnType<typeof setTimeout>|undefined;
+  try{return await Promise.race([task,new Promise<never>((_resolve,reject)=>{
+    timer=setTimeout(()=>reject(Error('selftest: response body escaped its deadline')),1000);
+  })]);}finally{clearTimeout(timer);}
+}
+let deadlineCancelled=false,deadlineSignal:AbortSignal|undefined;
+const stalledFetch:typeof fetch=async(_url,init)=>{
+  deadlineSignal=init?.signal??undefined;
+  return new Response(new ReadableStream<Uint8Array>({
+    start(controller){controller.enqueue(new TextEncoder().encode('{'));},
+    cancel(){deadlineCancelled=true;},
+  }));
+};
+await assert.rejects(()=>bounded(timedFetch(stalledFetch,'https://synthetic-gateway.example/metadata',{},15)),/gateway_read_aborted/);
+assert.equal(deadlineCancelled,true,'deadline cancels a stalled response body');
+assert.equal(deadlineSignal?.aborted,true,'deadline also cancels the underlying request');
+const cancelledBeforeStart=new AbortController();cancelledBeforeStart.abort();let cancelledFetches=0;
+await assert.rejects(()=>timedFetch(async()=>{cancelledFetches++;throw Error('must not fetch');},'https://synthetic-gateway.example/metadata',{},15,cancelledBeforeStart.signal));
+assert.equal(cancelledFetches,0,'already cancelled work never starts another request');
+let oversizedJsonCancelled=false;
+await assert.rejects(()=>bounded(timedFetch(async()=>new Response(new ReadableStream<Uint8Array>({
+  start(controller){controller.enqueue(new Uint8Array(MAX_GATEWAY_RESPONSE_BYTES+1));},
+  cancel(){oversizedJsonCancelled=true;},
+})),'https://synthetic-gateway.example/metadata')),/gateway_response_too_large/);
+assert.equal(oversizedJsonCancelled,true,'unbounded JSON cannot accumulate in memory');
+
+async function cancelledJsonConsumer(run:(context:RecoveryContext)=>Promise<unknown>,expectedBodies:number){
+  const abort=new AbortController();let cancelled=0,started=0;
+  const context:RecoveryContext={...ctx,signal:abort.signal,fetcher:async()=>{
+    started++;
+    return new Response(new ReadableStream<Uint8Array>({
+      start(controller){controller.enqueue(new TextEncoder().encode('{'));},
+      cancel(){cancelled++;},
+    }));
+  }};
+  const timer=setTimeout(()=>abort.abort(),15);
+  try{await bounded(run(context));}finally{clearTimeout(timer);}
+  assert.equal(started,expectedBodies);assert.equal(cancelled,expectedBodies,'parent cancellation remains linked through body completion');
+}
+await cancelledJsonConsumer(async context=>{
+  assert.equal((await provider.discover(context)).status,'unavailable');
+},1);
+await cancelledJsonConsumer(async context=>{
+  const pool:GatewayPool={candidates:async()=>[{url:'https://synthetic-gateway.example',source:'synthetic'}],markSuccess:()=>{},markFailure:()=>{}};
+  await assert.rejects(()=>fetchMetadata(context,pool,candidate,newDiagnostics()),isFailure('DATA_UNAVAILABLE'));
+},1);
+await cancelledJsonConsumer(async context=>{
+  assert.ok((await new WayfinderGatewayPool().candidates(context)).length>0,'failed peer reads retain fixed emergency gateways');
+},2);
+
+// Aborted parallel reads must not launch the next queued gateway afterward.
+const cancelGateways=new AbortController();let launched=0;
+const targets=Array.from({length:5},(_unused,index)=>({url:`https://gateway-${index}.example`,source:'synthetic'}));
+const pendingGateways=firstUsable(targets,async(_target,signal)=>{
+  launched++;
+  return new Promise<never>((_resolve,reject)=>signal.addEventListener('abort',()=>reject(Error('cancelled')),{once:true}));
+},cancelGateways.signal);
+await Promise.resolve();assert.equal(launched,3);
+cancelGateways.abort();await assert.rejects(()=>bounded(pendingGateways));
+await new Promise(resolve=>setTimeout(resolve,0));
+assert.equal(launched,3,'no fourth or fifth gateway launches after parent cancellation');
+await assert.rejects(()=>firstUsable(targets,async()=>{launched++;return true;},cancelGateways.signal));
+assert.equal(launched,3,'already aborted parallel work does not run');
+const immediateAbort=new AbortController();
+const neverLaunched=firstUsable(targets,async()=>{launched++;return true;},immediateAbort.signal);
+immediateAbort.abort();await assert.rejects(()=>neverLaunched);
+assert.equal(launched,3,'cancellation before scheduled work starts does not issue a request');
+console.log('Recovery provider, strict historical fund metadata, bounded native data/JSON reads, raw/hash/AES/vault checks and HEAD selftests passed');

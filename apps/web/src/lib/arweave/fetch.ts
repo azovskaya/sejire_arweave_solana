@@ -52,7 +52,7 @@ export const listRecoverableVaultVersions = listVaultVersions;
  */
 export async function listVaultVersions(
   vaultId: string,
-  opts?: { limit?: number }
+  opts?: { limit?: number; signal?: AbortSignal }
 ): Promise<VaultVersionMeta[]> {
   const limit = Math.min(Math.max(opts?.limit ?? 50, 1), 100);
   const query = `
@@ -80,7 +80,7 @@ export async function listVaultVersions(
   const data = await graphqlQuery<{ transactions?: { edges: GqlEdge[] } }>(query, {
     vaultId,
     limit,
-  });
+  }, opts?.signal);
   if (!Array.isArray(data.transactions?.edges)) throw new GatewayUnavailableError();
   return mapVaultVersionEdges(data.transactions.edges);
 }

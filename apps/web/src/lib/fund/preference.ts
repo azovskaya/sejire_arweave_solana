@@ -9,3 +9,7 @@ export function rememberFundedPromo(vaultId: string, code: string) {
 export function getFundedPromo(vaultId?: string | null): string | null {
   return vaultId ? acceptedCodes.get(vaultId) ?? null : null;
 }
+
+export function forgetFundedPromo(vaultId: string) {
+  acceptedCodes.delete(vaultId);
+}

@@ -6,6 +6,8 @@ import { loadDraftTree } from '../lib/draftStorage';
 import { useI18n } from '../lib/i18n/I18nProvider';
 import { landingMessages } from '../lib/i18n/landing';
 import { LanguageSwitch } from './LanguageSwitch';
+import { clearVaultSession, getSessionMnemonic, getVaultSession } from '../lib/vaultSession/session';
+import { forgetFundedPromo } from '../lib/fund/preference';
 
 type Props = {
   onStartNew: (title: string) => void;
@@ -16,12 +18,20 @@ type Props = {
 
 export function Welcome({ onStartNew, onContinueDraft, onRestoreSeed, onCashier }: Props) {
   const [supportOpen, setSupportOpen] = useState(false);
+  const [openVaultId, setOpenVaultId] = useState(() => getSessionMnemonic() ? getVaultSession()?.vaultId ?? null : null);
+  const [archiveClosed, setArchiveClosed] = useState(false);
   const hasDraft = Boolean(loadDraftTree());
   const { t, locale } = useI18n();
   const copy = landingMessages[locale];
   function startFresh() {
     if (hasDraft && !window.confirm(t.welcome.replaceDraftConfirm)) return;
     onStartNew(t.defaultTreeTitle);
+  }
+  function closeArchive() {
+    if (openVaultId) forgetFundedPromo(openVaultId);
+    clearVaultSession();
+    setOpenVaultId(null);
+    setArchiveClosed(true);
   }
   if (supportOpen && import.meta.env.VITE_NATIVE_AR_ENABLED === "1") return <main className="landing"><NativeCheckoutPanel onBack={() => setSupportOpen(false)} /></main>;
   if (supportOpen) return <main className="landing"><CheckoutPublishPanel onBack={() => setSupportOpen(false)} /></main>;
@@ -42,6 +52,11 @@ export function Welcome({ onStartNew, onContinueDraft, onRestoreSeed, onCashier 
         {hasDraft && <button type="button" className="welcome-link-quiet" onClick={startFresh}>{t.welcome.newTree}</button>}
       </div>
       <p className="sub">{copy.free}</p>
+      {openVaultId && <div>
+        <p className="sub" role="status">{copy.openArchive}</p>
+        <button type="button" className="welcome-link-quiet" onClick={closeArchive}>{copy.closeArchive}</button>
+      </div>}
+      {archiveClosed && <p className="sub" role="status">{copy.archiveClosed}</p>}
     </section>
     <ol className="landing-steps">
       {copy.steps.map(([number, title, detail]) => <li key={number}>

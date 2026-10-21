@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { EnvelopeV1 } from '../lib/crypto/encrypt';
 import { serializeEnvelope } from '../lib/crypto/envelope';
-import { FundApiError, journalKey, preserveFunded, readFundOrder, validatePromo, type FundOrderResult, type FundOrderView } from '../lib/fund/client';
+import { assertFundOrderParent, FundApiError, journalKey, preserveFunded, readFundOrder, validatePromo, type FundOrderResult, type FundOrderView } from '../lib/fund/client';
 import { fundError, fundStatus, rejectedBeforeReservation, terminalFundStatus } from '../lib/fund/status';
 import { clearFundAttempt, findFundAttempt, saveFundAttempt } from '../lib/fund/journal';
 import { rememberFundedPromo } from '../lib/fund/preference';
@@ -11,7 +11,8 @@ const POLL_MS = 6000;
 const validOrderId = /^[a-f0-9]{32}$/;
 const steps = ['Запрос принят', 'Подтверждение Arweave', 'Архив проверен'];
 
-async function assertCompletedArchive(order: FundOrderView, envelope: EnvelopeV1) {
+async function assertCompletedArchive(order: FundOrderView, envelope: EnvelopeV1, parentTxId: string | null) {
+  assertFundOrderParent(order, parentTxId);
   const archive = serializeEnvelope(envelope);
   if (order?.status !== 'COMPLETED' || !order.arweaveTxId || !/^[A-Za-z0-9_-]{43}$/.test(order.arweaveTxId) ||
       order.vaultId !== envelope.vault_id || order.archiveDigest !== await envelopeDigest(archive) ||
@@ -49,6 +50,7 @@ export function PromoFundedFlow({ envelope, parentTxId, treeId, autoSaveCode, au
   const finishing = useRef(false);
   const completionAttempt = useRef('');
   const autoStarted = useRef('');
+  const savedParent = useRef<{ orderId: string; parentTxId: string | null } | null>(null);
   // Exact ciphertext keeps a parent render from resetting an active check.
   const archive = serializeEnvelope(envelope);
   const order = result?.order ?? null;
@@ -61,6 +63,7 @@ export function PromoFundedFlow({ envelope, parentTxId, treeId, autoSaveCode, au
     setResult(null); setOrderId(''); setKey(''); setError('');
     setCheckedAt(null); setStartedAt(null); setInitializing(true); setSubmitting(false); setRejected(null);
     setCompleting(false); setCompletionError(false); completionAttempt.current = '';
+    savedParent.current = null;
     const exactEnvelope = JSON.parse(archive) as EnvelopeV1;
     void (async () => {
       const [keyResult, pendingResult] = await Promise.allSettled([
@@ -85,6 +88,7 @@ export function PromoFundedFlow({ envelope, parentTxId, treeId, autoSaveCode, au
       }
       if (pending) {
         if (serializeEnvelope(pending.envelope) === archive) {
+          savedParent.current = { orderId: pending.orderId, parentTxId: pending.parentTxId };
           setKey(nextKey); setOrderId(pending.orderId); setStartedAt(pending.createdAt);
           return;
         }
@@ -93,7 +97,7 @@ export function PromoFundedFlow({ envelope, parentTxId, treeId, autoSaveCode, au
         // the same file. A different file can replace only a proven completion.
         const previous = await readFundOrder(pending.orderId);
         if (previous.order?.orderId !== pending.orderId || previous.order.status !== 'COMPLETED') throw Error('fund_attempt_in_progress');
-        await assertCompletedArchive(previous.order, pending.envelope);
+        await assertCompletedArchive(previous.order, pending.envelope, pending.parentTxId);
         if (!live) return;
         await clearFundAttempt(pending.orderId, pending.vaultId);
       }
@@ -112,7 +116,9 @@ export function PromoFundedFlow({ envelope, parentTxId, treeId, autoSaveCode, au
         } catch { /* An unreadable hint must still check the existing order. */ }
       }
       if (id && !savedRejection) {
-        await saveFundAttempt({ orderId: id, envelope: exactEnvelope, parentTxId, treeId });
+        const attempt = await saveFundAttempt({ orderId: id, envelope: exactEnvelope, parentTxId, treeId });
+        if (!live) return;
+        savedParent.current = { orderId: id, parentTxId: attempt.parentTxId };
       }
       if (!live) return;
       setKey(nextKey);
@@ -138,6 +144,9 @@ export function PromoFundedFlow({ envelope, parentTxId, treeId, autoSaveCode, au
         const next = await readFundOrder(orderId, controller.signal);
         if (!next.order || next.order.orderId !== orderId) throw Error('invalid_order_response');
         if (!live) return;
+        const binding = savedParent.current;
+        if (binding?.orderId !== orderId) throw Error('invalid_order_response');
+        assertFundOrderParent(next.order, binding.parentTxId);
         setResult(previous => previous?.order.status === 'COMPLETED' ? previous : next);
         // A completed request can report an unavailable provider. This marks
         // the attempt, not proof that Arweave confirmed the transaction.
@@ -182,13 +191,16 @@ export function PromoFundedFlow({ envelope, parentTxId, treeId, autoSaveCode, au
       rememberFundedPromo(envelope.vault_id, selectedCode);
       // Persist before the only order POST. A timeout must resume this request.
       const id = orderId || crypto.randomUUID().replace(/-/g, '');
-      await saveFundAttempt({ orderId: id, envelope, parentTxId, treeId });
+      const attempt = await saveFundAttempt({ orderId: id, envelope, parentTxId, treeId });
       try { sessionStorage.setItem(key, id); sessionStorage.removeItem(key + ':rejected'); }
       catch { /* The exact encrypted request is already durable. */ }
       attemptedId = id;
-      if (current.active) { setOrderId(id); setRejected(null); }
+      if (current.active) {
+        savedParent.current = { orderId: id, parentTxId: attempt.parentTxId };
+        setOrderId(id); setRejected(null);
+      }
       // Closing the dialog after journaling must not abandon the accepted click.
-      const next = await preserveFunded(envelope, selectedCode, id);
+      const next = await preserveFunded(attempt.envelope, selectedCode, id, attempt.parentTxId);
       if (!next.order || next.order.orderId !== id) throw Error('invalid_order_response');
       if (current.active) {
         setResult(next); setCheckedAt(Date.now());
@@ -241,6 +253,7 @@ export function PromoFundedFlow({ envelope, parentTxId, treeId, autoSaveCode, au
     }
     catch { setError(fundError(new Error('storage_unavailable'))); return; }
     setResult(null); setOrderId(''); setStartedAt(null); setCheckedAt(null);
+    savedParent.current = null;
     setCode(''); setError(''); setRejected(null);
   }
 
@@ -249,7 +262,9 @@ export function PromoFundedFlow({ envelope, parentTxId, treeId, autoSaveCode, au
     const current = context.current;
     finishing.current = true; setCompleting(true); setCompletionError(false); setError('');
     try {
-      await assertCompletedArchive(order, JSON.parse(archive) as EnvelopeV1);
+      const binding = savedParent.current;
+      if (binding?.orderId !== order.orderId) throw Error('invalid_order_response');
+      await assertCompletedArchive(order, JSON.parse(archive) as EnvelopeV1, binding.parentTxId);
       if (!current.active) return;
       // The editor callback writes/read-checks local history and HEAD before
       // clearing its journal. Standalone imports have no editor to finalize.

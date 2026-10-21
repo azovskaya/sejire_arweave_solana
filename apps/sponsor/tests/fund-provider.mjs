@@ -61,10 +61,14 @@ try {
     if(url.endsWith('/tx_anchor'))return responseAt(url,anchor);
     throw Error('unexpected SDK network request');
   };
-  const prepared=await provider.prepareTransaction(new Uint8Array([1,2,3]),[{name:'App-Name',value:'SEJIRE'}]);
+  const preparedTags=[{name:'App-Name',value:'SEJIRE'},{name:'Parent-Tx',value:'P'.repeat(43)}];
+  const prepared=await provider.prepareTransaction(new Uint8Array([1,2,3]),preparedTags);
   const raw=JSON.parse(prepared.raw);
   assert.deepEqual(preparationCalls,['https://arweave.net/info','https://arweave.net/tx_anchor']);
   assert.equal(raw.last_tx,anchor);assert.equal(raw.owner,'B'.repeat(342));assert.equal(prepared.reward,'3000000000');
+  assert.deepEqual(raw.tags.map(tag=>({name:Buffer.from(tag.name,'base64url').toString(),value:Buffer.from(tag.value,'base64url').toString()})),preparedTags,
+    'direct provider preserves the exact parent in serialized transaction tags');
+  assert.deepEqual(JSON.parse(JSON.stringify(client.transactions.fromRaw(raw).toJSON())).tags,raw.tags,'SDK roundtrip keeps the parent bytes for signing');
 
   const id='A'.repeat(43),reward='3000000000';
   const encoded=new TextEncoder().encode(JSON.stringify({schema:'sejire/envelope/v1',vault_id:'a'.repeat(32),cipher:'aes-gcm-256',kdf:'hkdf-sha256',iv:'AAAAAAAAAAAAAAAA',ciphertext:'A'.repeat(32),protocol:'sejire/v0.3'}));

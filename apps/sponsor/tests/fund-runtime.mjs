@@ -13,7 +13,9 @@ const origin = 'https://preview.example';
 const admin = 'synthetic-admin-token-32-characters';
 const archive = JSON.stringify({ schema: 'sejire/envelope/v1', vault_id: 'a'.repeat(32), cipher: 'aes-gcm-256',
   kdf: 'hkdf-sha256', iv: 'AAAAAAAAAAAAAAAA', ciphertext: 'A'.repeat(32), protocol: 'sejire/v0.3' });
-const order = (letter, code = 'TEST-PENSIONER-2') => ({ orderId: letter.repeat(32), preservationId: letter.repeat(32), code, archive });
+const parentTxId = 'P'.repeat(43);
+const order = (letter, code = 'TEST-PENSIONER-2') => ({ orderId: letter.repeat(32), preservationId: letter.repeat(32), code, archive,
+  ...(letter === 'a' ? { parentTxId } : {}) });
 const winston = 1_000_000_000_000n;
 
 if (!process.argv[2]) {
@@ -133,6 +135,7 @@ if (!process.argv[2]) {
         await control('mock', { estimate: '2800000000', price: '3000000000', actual: '3000000000' });
         const response = await call('/orders', order('a')); assert.equal(response.status, 200);
         assert.equal(response.body.order.status, 'COMPLETED');
+        assert.equal(response.body.order.parentTxId, parentTxId);
         assert.equal(response.body.order.estimatedRewardWinston, '2800000000');
         assert.equal(response.body.order.actualRewardWinston, '3000000000');
         const d = await dashboard(); assert.equal(d.successfulTrees, 1); assert.equal(d.actualSpentWinston, '3000000000');
@@ -147,6 +150,18 @@ if (!process.argv[2]) {
         const before = await control('stats'); const first = (await call('/orders', order('a'))).body.order;
         const second = (await call('/orders', order('a'))).body.order;
         assert.equal(first.arweaveTxId, second.arweaveTxId);
+        assert.equal((await control('stats')).submissions, before.submissions);
+        assert.equal((await dashboard()).actualSpentWinston, '3000000000');
+      });
+      await test('parent binding rejects changed or dropped links before another submission', async () => {
+        const before = await control('stats'), initial = (await call(`/orders/${'a'.repeat(32)}`)).body.order;
+        const { parentTxId: _parent, ...omitted } = order('a');
+        for (const payload of [{ ...order('a'), parentTxId: 'Q'.repeat(43) }, { ...order('a'), parentTxId: null }, omitted]) {
+          const rejected = await call('/orders', payload, undefined, '192.0.2.210');
+          assert.equal(rejected.status, 400); assert.equal(rejected.body.error, 'archive_changed');
+        }
+        const current = (await call(`/orders/${'a'.repeat(32)}`)).body.order;
+        assert.equal(current.arweaveTxId, initial.arweaveTxId); assert.equal(current.parentTxId, parentTxId);
         assert.equal((await control('stats')).submissions, before.submissions);
         assert.equal((await dashboard()).actualSpentWinston, '3000000000');
       });
@@ -234,6 +249,10 @@ if (!process.argv[2]) {
         assert.equal(d.actualSpentWinston, '12000000000'); assert.equal(d.successfulTrees, 4);
         assert.equal(d.reservedWinston, '3000000000'); assert.equal(d.pending, 1);
         assert.equal(d.history.length, 5); assert.equal(d.history.filter(x => x.status === 'COMPLETED').length, 4);
+        assert.equal(d.history.find(x => x.orderId === 'a'.repeat(32)).parentTxId, parentTxId);
+        const completed = (await call(`/orders/${'a'.repeat(32)}`)).body.order;
+        assert.equal(completed.parentTxId, parentTxId); assert.equal(completed.status, 'COMPLETED');
+        assert.equal((await control('stats')).submissions, 0, 'restart reads do not submit a persisted parent-bound order');
         assert.equal((await call('/validate', { code: 'TEST-PENSIONER-2' })).status, 200);
         assert.equal((await call('/validate', { code: 'TEST-PENSIONER' })).body.error, 'promo_invalid');
       });

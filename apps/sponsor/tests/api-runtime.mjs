@@ -2,10 +2,11 @@ import assert from 'node:assert/strict';
 import { mkdtemp, rm, writeFile, readFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { resolve, dirname } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { spawn } from 'node:child_process';
 import { buildWorker } from './build-worker.mjs';
-import { Miniflare } from 'miniflare';
+import { Miniflare, createFetchMock, fetch as mockFetch } from 'miniflare';
+import { directCheckoutBindings, installDirectCheckoutMocks, runDirectCheckoutPhase } from './api-direct-runtime.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
 function b58(size, fill) {
@@ -21,25 +22,41 @@ if (!process.argv[2]) {
   try {
     const bundle = resolve(temp, 'worker.mjs');
     await buildWorker(resolve(here, 'api-worker.ts'), bundle);
-    for (const phase of ['write', 'restart-read', 'disabled']) {
+    await buildWorker(resolve(here, '../src/checkout/rpcFixtures.ts'), resolve(temp, 'rpc-fixtures.mjs'));
+    for (const phase of ['write', 'restart-read', 'disabled', 'direct-write', 'direct-restart']) {
       await new Promise((done, reject) => {
         const child = spawn(process.execPath, [fileURLToPath(import.meta.url), phase, temp, bundle], { stdio: 'inherit' });
         child.on('error', reject); child.on('exit', code => code === 0 ? done() : reject(new Error(`API phase ${phase}: exit ${code}`)));
       });
     }
-    console.log('api.runtime: PASS; real HTTP handlers + on-disk DO SQLite, independent process restart, SYNTHETIC RPC, no payments/deployment');
+    console.log('api.runtime: PASS; real HTTP/default adapters + on-disk DO SQLite, independent process restarts, wire-mocked RPC/upload, no external connections/payments/deployment');
   } finally { await rm(temp, { recursive: true, force: true }); }
 } else {
   const [phase, persist, scriptPath] = process.argv.slice(2);
+  const direct = phase.startsWith('direct-');
+  const fetchMock = createFetchMock();
+  fetchMock.disableNetConnect();
+  const wire = direct ? installDirectCheckoutMocks(fetchMock,
+    await import(pathToFileURL(resolve(persist, 'rpc-fixtures.mjs')).href)) : null;
   const runtime = new Miniflare({ modules: true, scriptPath, modulesRoot: dirname(scriptPath), compatibilityDate: '2026-07-01', compatibilityFlags: ['nodejs_compat'],
-    durableObjects: { CHECKOUT_LEDGER: { className: 'CheckoutLedger', useSQLite: true } }, durableObjectsPersist: resolve(persist, 'db'),
+    // Preserve one mocked HTTP hop. Miniflare's default fetchMock bridge follows
+    // redirects in Node before workerd can enforce the application's manual mode.
+    outboundService: async request => mockFetch(request.url, {
+      method: request.method, headers: request.headers, signal: request.signal,
+      // MockAgent callbacks inspect the actual wire bytes synchronously.
+      ...(request.body ? { body: new Uint8Array(await request.arrayBuffer()) } : {}),
+      dispatcher: fetchMock, redirect: 'manual',
+    }),
+    durableObjects: { CHECKOUT_LEDGER: { className: 'CheckoutLedger', useSQLite: true } }, durableObjectsPersist: resolve(persist, direct ? 'direct-db' : 'db'),
     bindings: { CHECKOUT_API_ENABLED: phase === 'disabled' ? 'false' : 'true', CHECKOUT_ALLOWED_ORIGINS: origin,
-      CHECKOUT_SERVICE_RECIPIENT: b58(32, 2), CHECKOUT_FUND_RECIPIENT: b58(32, 3), CHECKOUT_POLICY_VERSION: 'a2-2-test-v1', MAX_ENVELOPE_BYTES: '524288' } });
+      CHECKOUT_SERVICE_RECIPIENT: b58(32, 2), CHECKOUT_FUND_RECIPIENT: b58(32, 3), CHECKOUT_POLICY_VERSION: 'a2-2-test-v1', MAX_ENVELOPE_BYTES: '524288',
+      ...(direct ? directCheckoutBindings : {}) } });
   let passed = 0;
   const test = async (name, fn) => { await fn(); passed++; console.log(`PASS API ${phase}: ${name}`); };
   const call = async (path, token, payload, extras = {}, method = payload === undefined ? 'GET' : 'POST') => {
     const response = await runtime.dispatchFetch(`https://api.example/api/checkout${path}`, { method,
-      headers: { Origin: origin, 'Content-Type': 'application/json', 'CF-Connecting-IP': '192.0.2.1', ...(token ? { Authorization: `Bearer ${token}` } : {}), ...extras },
+      headers: { Origin: origin, 'Content-Type': 'application/json', 'CF-Connecting-IP': '192.0.2.1', ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...(direct ? { 'X-Test-Production-Entry': 'true' } : {}), ...extras },
       ...(payload === undefined ? {} : { body: typeof payload === 'string' ? payload : JSON.stringify(payload) }) });
     const data = response.status === 204 ? null : await response.json();
     return { status: response.status, body: data, headers: response.headers };
@@ -223,7 +240,9 @@ if (!process.argv[2]) {
           for (const method of ['GET', 'POST', 'OPTIONS']) assert.equal((await call(path, null, method === 'POST' ? {} : undefined, { 'X-Test-Production-Entry': 'true' }, method)).status, 404);
         }
       });
+    } else if (direct) {
+      await runDirectCheckoutPhase({ phase, persist, wire, test, call, session, create, totals });
     } else throw new Error('unknown_phase');
     console.log(`api ${phase}: ${passed} scenarios PASS`);
-  } finally { await runtime.dispose(); }
+  } finally { await runtime.dispose(); await fetchMock.close(); }
 }

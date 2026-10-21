@@ -2,11 +2,12 @@
  * Public Arweave gateways. Kazakhstan and some office networks block a single
  * host; restore/publish must walk the list instead of dying on arweave.net.
  */
+import { timedFetch } from "../recovery/gateways";
 
 export const GRAPHQL_ENDPOINTS = [
   "https://arweave.net/graphql",
   "https://arweave-search.goldsky.com/graphql",
-  "https://ar-io.dev/graphql",
+  "https://turbo-gateway.com/graphql",
 ] as const;
 
 export const DATA_GATEWAYS = [
@@ -48,13 +49,7 @@ export async function fetchWithTimeout(
   init: RequestInit = {},
   ms = GATEWAY_TIMEOUT_MS
 ): Promise<Response> {
-  const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), ms);
-  try {
-    return await fetch(url, { ...init, signal: ctrl.signal });
-  } finally {
-    clearTimeout(timer);
-  }
+  return timedFetch(fetch, url, init, ms);
 }
 
 type GqlBody<T> = { data?: T; errors?: unknown };
@@ -65,19 +60,23 @@ type GqlBody<T> = { data?: T; errors?: unknown };
  */
 export async function graphqlQuery<T>(
   query: string,
-  variables: Record<string, unknown>
+  variables: Record<string, unknown>,
+  signal?: AbortSignal,
 ): Promise<T> {
   let lastStatus: number | null = null;
   for (const url of GRAPHQL_ENDPOINTS) {
+    if (signal?.aborted) break;
     try {
       const res = await fetchWithTimeout(url, {
         method: "POST",
         headers: { "Content-Type": "application/json", Accept: "application/json" },
         body: JSON.stringify({ query, variables }),
+        signal,
       });
       lastStatus = res.status;
       if (!res.ok) continue;
       const body = (await res.json()) as GqlBody<T>;
+      if (signal?.aborted) break;
       if (body.errors || body.data == null) continue;
       return body.data;
     } catch {

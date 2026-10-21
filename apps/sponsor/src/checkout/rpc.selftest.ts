@@ -32,6 +32,47 @@ await test('finalized legacy USDC uses account owners, not token account address
   assert.deepEqual(payment.credits.map(c => c.recipient), [addr(2), addr(3)]);
   assert.deepEqual(payment.credits.map(c => c.amount), ['3000000', '97000000']);
 });
+await test('actual reader requests the workerd-supported manual redirect mode', async () => {
+  const calls: { url: string; redirect: RequestInit['redirect'] }[] = [], responses = transport();
+  const tx = await new SolanaRpcReader({ network: 'devnet' }, async (url, init) => {
+    calls.push({ url: String(url), redirect: init?.redirect });
+    return responses(url, init);
+  }).read(sig(5));
+  assert(tx); assert.equal(calls.length, 3);
+  assert.ok(calls.every(call => call.url === 'https://api.devnet.solana.com' && call.redirect === 'manual'));
+});
+await test('canonical RPC response URL with trailing slash is accepted', async () => {
+  const responses = transport();
+  const tx = await new SolanaRpcReader({ network: 'devnet' }, async (url, init) => {
+    const response = await responses(url, init);
+    Object.defineProperty(response, 'url', { value: new Request(url, init).url });
+    return response;
+  }).read(sig(5));
+  assert(tx); assert.equal(tx.signature, sig(5));
+});
+for (const status of [301, 302, 303, 307, 308]) await test(`RPC HTTP ${status} cannot follow Location or credit a payment`, async () => {
+  const target = 'https://attacker.example/rpc', calls: { url: string; redirect: RequestInit['redirect'] }[] = [];
+  const redirected: typeof fetch = async (url, init) => {
+    calls.push({ url: String(url), redirect: init?.redirect });
+    const request = JSON.parse(init!.body as string);
+    return Response.json({ jsonrpc: '2.0', id: request.id, result: DEVNET_GENESIS }, { status, headers: { Location: target } });
+  };
+  const store = new MemoryAtomicOrderStore(); await store.create(order);
+  const result = await reconcilePayment(store, new SolanaRpcReader({ network: 'devnet' }, redirected), order.id, sig(5));
+  assert.equal(result.status, 'requires-reconciliation');
+  if (result.status === 'requires-reconciliation') assert.equal(result.reason, 'rpc-unavailable');
+  assert.equal((await store.get(order.id))?.payment, undefined);
+  assert.deepEqual(calls, [{ url: 'https://api.devnet.solana.com', redirect: 'manual' }]);
+  assert.equal(calls.some(call => call.url === target), false);
+});
+await test('an unexpected RPC response URL is rejected before accepting its valid body', async () => {
+  const redirected: typeof fetch = async (_url, init) => {
+    const response = Response.json({ jsonrpc: '2.0', id: JSON.parse(init!.body as string).id, result: DEVNET_GENESIS });
+    Object.defineProperty(response, 'url', { value: 'https://attacker.example/rpc' });
+    return response;
+  };
+  await assert.rejects(new SolanaRpcReader({ network: 'devnet' }, redirected).rpc('getGenesisHash'), (error: unknown) => error instanceof RpcEvidenceError && error.reason === 'rpc-unavailable');
+});
 await test('legacy SOL direct transfers', () => {
   const sol = fixtureOrder({ asset: 'SOL' });
   assert.equal(validatePayment(sol, decodeTransaction(fixtureTransaction(sol), sig(5), fixtureChain), fixtureChain).credits.length, 2);

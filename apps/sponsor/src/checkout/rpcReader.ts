@@ -16,7 +16,7 @@ export class SolanaRpcReader implements TrustedTransactionReader {
   private readonly timeoutMs: number;
   private nextId = 0;
   private readonly transport: typeof fetch;
-  constructor(config: ServerRpcConfig, transport: typeof fetch = fetch) {
+  constructor(config: ServerRpcConfig, transport: typeof fetch = (input, init) => fetch(input, init)) {
     this.transport = transport;
     if (config.network !== 'devnet' || Object.keys(config).some(k => k !== 'network' && k !== 'timeoutMs')) throw new Error('invalid_server_rpc_configuration');
     this.endpoint = SERVER_RPCS.devnet;
@@ -29,8 +29,13 @@ export class SolanaRpcReader implements TrustedTransactionReader {
     const id = ++this.nextId, controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), this.timeoutMs);
     try {
-      const response = await this.transport(this.endpoint, { method: 'POST', redirect: 'error', signal: controller.signal,
+      // Workerd supports manual/follow only; reject redirects before reading RPC evidence.
+      const response = await this.transport(this.endpoint, { method: 'POST', redirect: 'manual', signal: controller.signal,
         headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', id, method, params }) });
+      if ((response.url && response.url !== new URL(this.endpoint).href) || (response.status >= 300 && response.status < 400)) {
+        void response.body?.cancel().catch(() => {});
+        throw new RpcEvidenceError('rpc-unavailable', { httpStatus: response.status });
+      }
       if (response.status === 429) throw new RpcEvidenceError('rpc-rate-limited',{httpStatus:429,retryAfterMs:retryDelay(response.headers.get('Retry-After'))});
       if (response.status >= 500) throw new RpcEvidenceError('rpc-server-error',{httpStatus:response.status});
       if (!response.ok) throw new RpcEvidenceError('rpc-unavailable',{httpStatus:response.status});

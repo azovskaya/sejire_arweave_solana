@@ -10,11 +10,54 @@ function safeUrl(value:string):string|null {
     return url.origin;}
   catch{return null;}
 }
+// Metadata, index pages and peer lists are small JSON documents. Keep both their
+// headers and body within one deadline; a 200 response is not yet a completed read.
+export const MAX_GATEWAY_RESPONSE_BYTES=2*1024*1024;
 export async function timedFetch(fetcher:typeof fetch,url:string,init:RequestInit={},timeout=4500,signal?:AbortSignal):Promise<Response>{
-  const ctrl=new AbortController(); const timer=setTimeout(()=>ctrl.abort(),timeout);
-  const abort=()=>ctrl.abort();signal?.addEventListener('abort',abort,{once:true});
-  try{return await fetcher(url,{...init,signal:ctrl.signal,credentials:'omit',referrerPolicy:'no-referrer',redirect:'follow'});}
-  finally{clearTimeout(timer);signal?.removeEventListener('abort',abort);}
+  const signals=[...new Set([signal,init.signal].filter((value):value is AbortSignal=>value!=null))];
+  if(signals.some(value=>value.aborted))throw Error('gateway_read_aborted');
+  const ctrl=new AbortController();let reader:ReadableStreamDefaultReader<Uint8Array>|undefined;
+  let rejectAbort:(error:Error)=>void=()=>{};
+  const aborted=new Promise<never>((_resolve,reject)=>{rejectAbort=reject;});
+  const abort=()=>{
+    ctrl.abort();void reader?.cancel().catch(()=>{});
+    rejectAbort(Error('gateway_read_aborted'));
+  };
+  const timer=setTimeout(abort,timeout);
+  for(const parent of signals)parent.addEventListener('abort',abort,{once:true});
+  const read=async()=>{
+    const response=await fetcher(url,{...init,signal:ctrl.signal,credentials:'omit',referrerPolicy:'no-referrer',redirect:'follow'});
+    if(ctrl.signal.aborted){void response.body?.cancel().catch(()=>{});throw Error('gateway_read_aborted');}
+    const declared=response.headers.get('content-length');
+    if(declared!==null&&(!/^\d+$/.test(declared)||Number(declared)>MAX_GATEWAY_RESPONSE_BYTES)){
+      void response.body?.cancel().catch(()=>{});throw Error('gateway_response_too_large');
+    }
+    const chunks:Uint8Array[]=[];let size=0;
+    if(response.body){
+      reader=response.body.getReader();
+      try{
+        for(;;){
+          if(ctrl.signal.aborted)throw Error('gateway_read_aborted');
+          const next=await reader.read();
+          if(ctrl.signal.aborted)throw Error('gateway_read_aborted');
+          if(next.done)break;
+          size+=next.value.byteLength;
+          if(size>MAX_GATEWAY_RESPONSE_BYTES)throw Error('gateway_response_too_large');
+          chunks.push(next.value);
+        }
+      }catch(error){void reader.cancel().catch(()=>{});throw error;}
+      finally{reader.releaseLock();}
+    }
+    const bytes=new Uint8Array(size);let offset=0;
+    for(const chunk of chunks){bytes.set(chunk,offset);offset+=chunk.byteLength;}
+    const result=new Response(response.body===null?null:bytes,{status:response.status,statusText:response.statusText,headers:response.headers});
+    // Preserve response metadata while returning a body that no longer depends on
+    // the network. Consumers can safely call json() after this function resolves.
+    Object.defineProperties(result,{url:{value:response.url},redirected:{value:response.redirected},type:{value:response.type}});
+    return result;
+  };
+  try{return await Promise.race([read(),aborted]);}
+  finally{clearTimeout(timer);for(const parent of signals)parent.removeEventListener('abort',abort);}
 }
 export class WayfinderGatewayPool implements GatewayPool {
   private dynamic:string[]=[];
@@ -47,15 +90,19 @@ export class WayfinderGatewayPool implements GatewayPool {
 }
 
 export async function firstUsable<T>(targets:readonly GatewayTarget[],work:(target:GatewayTarget,signal:AbortSignal)=>Promise<T>,signal:AbortSignal):Promise<T>{
+  if(signal.aborted)throw Error('aborted');
   const controllers=new Set<AbortController>();let index=0;let active=0;let finished=false;
   return new Promise<T>((resolve,reject)=>{
-    const abort=()=>{for(const ctrl of controllers)ctrl.abort();reject(Error('aborted'));};
+    const abort=()=>{if(finished)return;finished=true;signal.removeEventListener('abort',abort);for(const ctrl of controllers)ctrl.abort();reject(Error('aborted'));};
     signal.addEventListener('abort',abort,{once:true});
     const launch=()=>{
       if(finished)return;
       while(active<3&&index<targets.length){
         const target=targets[index++];const ctrl=new AbortController();controllers.add(ctrl);active++;
-        void work(target,ctrl.signal).then(value=>{
+        void Promise.resolve().then(()=>{
+          if(finished||ctrl.signal.aborted)throw Error('aborted');
+          return work(target,ctrl.signal);
+        }).then(value=>{
           if(finished)return;finished=true;signal.removeEventListener('abort',abort);
           for(const other of controllers)if(other!==ctrl)other.abort();resolve(value);
         }).catch(()=>{}).finally(()=>{

@@ -25,7 +25,7 @@ const PAYMENT = 'https://payment.services.ar-io.dev';
  * Lifetime IP allowance is advisory; 402 remains a pending paid service, never a second bill.
  */
 export class TestnetPreservationService implements PreservationService {
-  constructor(private readonly env: PreservationEnv, private readonly transport: typeof fetch = fetch) {}
+  constructor(private readonly env: PreservationEnv, private readonly transport: typeof fetch = (input, init) => fetch(input, init)) {}
   private key(): string {
     if (this.env.CHECKOUT_UPLOAD_ENABLED !== 'true' || !this.env.CHECKOUT_UPLOAD_SIGNER) throw new Error('uploader_not_ready');
     const key = this.env.CHECKOUT_UPLOAD_SIGNER;
@@ -42,8 +42,10 @@ export class TestnetPreservationService implements PreservationService {
     const itemBytes = bytes + 4096;
     if (itemBytes > 105 * 1024) throw new Error('uploader_budget_not_ready');
     const address = bs58.encode(bs58.decode(key).subarray(32));
-    const free = await this.transport(`${PAYMENT}/v1/account/free?address=${encodeURIComponent(address)}`, { redirect: 'error', signal: AbortSignal.timeout(10000) });
-    if (!free.ok) throw new Error('uploader_not_ready');
+    const url = `${PAYMENT}/v1/account/free?address=${encodeURIComponent(address)}`;
+    // Workerd has no redirect:error mode. Manual responses must stay at the exact endpoint.
+    const free = await this.transport(url, { redirect: 'manual', signal: AbortSignal.timeout(10000) });
+    if (!free.ok || (free.url && free.url !== url)) { void free.body?.cancel().catch(() => {}); throw new Error('uploader_not_ready'); }
     const data = await free.json() as { bytesRemaining?: unknown };
     if (data.bytesRemaining !== null && (typeof data.bytesRemaining !== 'number' || data.bytesRemaining < itemBytes)) throw new Error('uploader_budget_not_ready');
   }
@@ -60,17 +62,19 @@ export class TestnetPreservationService implements PreservationService {
     return { id: item.id, rawBase64: item.getRaw().toString('base64'), envelope, maxWinc: '0' };
   }
   async upload(plan: UploadPlan): Promise<UploadAcceptance> {
-    const response = await this.transport(`${UPLOAD}/v1/tx`, { method: 'POST', headers: { 'Content-Type': 'application/octet-stream' },
-      body: Buffer.from(plan.rawBase64, 'base64'), redirect: 'error', signal: AbortSignal.timeout(20000) });
-    if (!response.ok) throw new Error('upload_requires_reconciliation');
+    const url = `${UPLOAD}/v1/tx`;
+    const response = await this.transport(url, { method: 'POST', headers: { 'Content-Type': 'application/octet-stream' },
+      body: Buffer.from(plan.rawBase64, 'base64'), redirect: 'manual', signal: AbortSignal.timeout(20000) });
+    if (!response.ok || (response.url && response.url !== url)) { void response.body?.cancel().catch(() => {}); throw new Error('upload_requires_reconciliation'); }
     const receipt = await response.json() as UploadAcceptance;
     if (receipt.id !== plan.id || receipt.winc !== '0') throw new Error('upload_requires_reconciliation');
     return receipt;
   }
   async retrieve(id: string, expectedDigest: string): Promise<boolean> {
     if (!/^[A-Za-z0-9_-]{43}$/.test(id)) throw new Error('invalid_upload_id');
-    const r = await this.transport(`https://ar-io.dev/raw/${id}`, { redirect: 'error', signal: AbortSignal.timeout(20000) });
-    if (!r.ok || !r.body) return false;
+    const url = `https://ar-io.dev/raw/${id}`;
+    const r = await this.transport(url, { redirect: 'manual', signal: AbortSignal.timeout(20000) });
+    if (!r.ok || !r.body || (r.url && r.url !== url)) { void r.body?.cancel().catch(() => {}); return false; }
     const chunks: Uint8Array[] = []; let size = 0; const reader = r.body.getReader();
     try { for (;;) { const c = await reader.read(); if (c.done) break; size += c.value.length; if (size > Number(this.env.MAX_ENVELOPE_BYTES)) { await reader.cancel(); throw new Error('retrieval_integrity_failed'); } chunks.push(c.value); } } finally { reader.releaseLock(); }
     const bytes = new Uint8Array(size); let offset = 0; for (const c of chunks) { bytes.set(c, offset); offset += c.length; }

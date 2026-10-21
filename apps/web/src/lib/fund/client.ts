@@ -1,7 +1,7 @@
 import type { EnvelopeV1 } from '../crypto/encrypt';
 import { serializeEnvelope } from '../crypto/envelope';
 import { envelopeDigest } from '../solana/policy';
-export type FundOrderView={preservationId:string;orderId:string;promoRevision:number;archiveSizeBytes:number;archiveDigest:string;vaultId:string;estimatedRewardWinston:string;reservedRewardWinston:string;actualRewardWinston:string|null;arweaveTxId:string|null;status:string;createdAt:number;uploadedAt:number|null;verifiedAt:number|null};
+export type FundOrderView={preservationId:string;orderId:string;promoRevision:number;archiveSizeBytes:number;archiveDigest:string;vaultId:string;parentTxId?:string|null;estimatedRewardWinston:string;reservedRewardWinston:string;actualRewardWinston:string|null;arweaveTxId:string|null;status:string;createdAt:number;uploadedAt:number|null;verifiedAt:number|null};
 export type FundVerification={stage:'awaiting_confirmation'|'checking_archive'|'verified'|'attention';transactionConfirmed:boolean;confirmations:number|null;reason:'network_pending'|'network_unavailable'|'archive_unavailable'|'archive_verification_failed'|'reward_mismatch'|'transaction_mismatch'|null;checkedAt:number};
 export type FundOrderResult={order:FundOrderView;verification?:FundVerification};
 export class FundApiError extends Error {
@@ -27,7 +27,16 @@ async function call<T>(path:string,method:'GET'|'POST'='GET',value?:unknown,admi
 export const validatePromo=(code:string)=>call<{accepted:boolean}>('/validate','POST',{code});
 export const publicFundBalance=()=>call<{treasuryAddress:string;walletBalanceWinston:string|null;lastBalanceCheck:number|null}>('/balance');
 export const readFundOrder=(id:string,signal?:AbortSignal)=>call<FundOrderResult>(`/orders/${id}`,'GET',undefined,undefined,signal);
-export async function preserveFunded(envelope:EnvelopeV1,code:string,orderId:string){const archive=serializeEnvelope(envelope);return call<FundOrderResult>('/orders','POST',{orderId,preservationId:orderId,code,archive});}
+/** Historical GET responses omit the binding; every new POST must echo it exactly. */
+export function assertFundOrderParent(order:Pick<FundOrderView,'parentTxId'>,parentTxId:string|null,required=false){
+  if(!Object.hasOwn(order,'parentTxId')){if(required)throw Error('invalid_order_response');return;}
+  if(order.parentTxId!==parentTxId)throw Error('invalid_order_response');
+}
+export async function preserveFunded(envelope:EnvelopeV1,code:string,orderId:string,parentTxId:string|null=null){
+  if(parentTxId!==null&&(typeof parentTxId!=='string'||!/^[A-Za-z0-9_-]{43}$/.test(parentTxId)))throw Error('invalid_saved_order');
+  const archive=serializeEnvelope(envelope),result=await call<FundOrderResult>('/orders','POST',{orderId,preservationId:orderId,code,archive,parentTxId});
+  if(!result.order)throw Error('invalid_order_response');assertFundOrderParent(result.order,parentTxId,true);return result;
+}
 export async function journalKey(envelope:EnvelopeV1){return `sejire-funded:${await envelopeDigest(serializeEnvelope(envelope))}`;}
 export const fundDashboard=(password:string)=>call<FundDashboard>('/admin/dashboard','GET',undefined,password);
 export const fundChangePromo=(password:string,code:string,confirm:string)=>call('/admin/promo','POST',{code,confirm},password);
