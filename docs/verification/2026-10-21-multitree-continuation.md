@@ -65,9 +65,38 @@ Independent review found and corrected the RPC trailing-slash issue, the old-cli
 
 - The production Fund ledger has not been read after the earlier runtime fix. Public Arweave confirmation and a successful Worker deployment do not establish internal COMPLETED, actual spend or released reservations. The known Cloudflare protection is not bypassed; no new save is requested to diagnose the old orders.
 - General mainnet SOL preservation is not yet connected. The modern UI's older V2 paid path pins one devnet payer and archive and requires the treasury's Wander wallet. The separate general checkout is devnet-only and uses a sandbox uploader. A flag change is not a production payment implementation.
-- A full paid path still needs its agreed mainnet payment policy, production archive executor, recovery tags/parent binding and modern-editor completion, followed by real-wallet acceptance with a reviewed amount. Tests with software signers or synthetic RPC evidence do not establish that acceptance.
+- A full paid path still needs its mainnet payment policy, production archive executor, recovery tags/parent binding and modern-editor completion, followed by real-wallet acceptance with a reviewed amount. The service price is already 30,000,000 lamports (0.03 SOL); the initial contribution is zero and the Solana fee is separate. Production SOL recipients and a separate paid AR allocation have not been designated. Tests with software signers or synthetic RPC evidence do not establish that acceptance. The concrete next implementation contract is recorded in [Paid SOL implementation plan](../PAID_SOL_IMPLEMENTATION_PLAN.md), explicitly marked not implemented or enabled.
 - ArNS migration remains deferred. The approved GitHub artifact, release provenance and resulting published content must be verified first. The old permaweb deploy script rebuilds a different configuration and must not be used to publish this accepted artifact.
 
 ## Publication evidence
 
-The exact accepted source, CI run, artifact digest, Worker version, Pages release and public byte checks are recorded here after the release completes. This section is not a claim of deployment or of production order completion.
+Published on **21 October 2026**. The accepted source and release evidence are:
+
+| Evidence | Accepted identity / result |
+| --- | --- |
+| Source commit | [`d6a8a00d4b85ef5e0e5c614c7c7a98319a9511f9`](https://github.com/azovskaya/sejire_arweave_solana/commit/d6a8a00d4b85ef5e0e5c614c7c7a98319a9511f9) |
+| Source tree | `72f155ca12cfe9421633bb6c0e1dc93cdb25cf4d`, identical to the tested local tree |
+| Full SEJIRE checks | [39582617992](https://github.com/azovskaya/sejire_arweave_solana/actions/runs/39582617992), success; includes all 25 promo browser tests, recovery, editor journeys, actual checkout/Fund workerd, native build and security checks |
+| Fund runtime workflow | [39582618188](https://github.com/azovskaya/sejire_arweave_solana/actions/runs/39582618188), success |
+| Worker deploy | [39582618205](https://github.com/azovskaya/sejire_arweave_solana/actions/runs/39582618205), success; actual `Deploy sejire-sponsor` step completed |
+| Worker version | `820d37f7-484c-4d83-9171-8ce8891ec792` |
+| Accepted native artifact | `native-admin-build`, ID `12337686315` |
+| ZIP SHA-256 | `70c7e9d49bbd3aff7e1c95ccecbf795979262e951397f57aa3a1a7dda1773089` |
+| Preview staging | [39582618027](https://github.com/azovskaya/sejire_arweave_solana/actions/runs/39582618027), success; gh-pages `7f4762076aa840da3e404f5077909dbb6461c65b` |
+| Root + native static parent | `9cd06ad45da7665b4d6f29a0a5627f9a2ae1d5a5`; tree `efe0ac48c01e5b3a0c54e3e9d9c74f13daf21710` |
+| Pages release | `ee8e96b66eab12b85e53aa443807b4cb2164b5a8`; tree `31be0d12dcfca74f2fdb9afad4eb7143b492330f` |
+| Actual Pages deploy | [39584311913](https://github.com/azovskaya/sejire_arweave_solana/actions/runs/39584311913), job `119169298154`, success, including the deploy step |
+| One-time release workflow | `publish-multitree-continuation.yml`, blob `e2be9ef4ff1e4e7e22c0ff1d9d18484b8339713d`; independently reviewed pins, syntax, environment and both head guards |
+
+The CI ZIP was downloaded and its digest verified independently. All **33 build files plus provenance** in staged `/native-admin/` matched their expected Git blob IDs and sizes. The root overlay copied those exact files, preserved every unrelated blob and retained the existing admin verifier. The one-time release workflow publishes that static parent without rebuilding and refuses a stale gh-pages head before upload and deployment.
+
+At **10:25:08 UTC / 15:25:08 Almaty**, ten ordinary public GETs returned HTTP 200 and matched the accepted HTML, main JavaScript, CSS, provenance and admin verifier, at both the [root editor](https://azovskaya.github.io/sejire_arweave_solana/) and [`/native-admin/`](https://azovskaya.github.io/sejire_arweave_solana/native-admin/). [Public byte-check evidence](2026-10-21-multitree-pages-public.json).
+
+| Public file at each editor path | Git blob / bytes |
+| --- | --- |
+| `index.html` | `6d75b750eab67ba1b364a9cff61528e18b2822a0` / 1,103 |
+| `assets/index-Bki41Hv1.js` | `5d284e6abf46c55d252b58e7b160c1e08a3dfe69` / 923,902 |
+| `assets/index-D_DSbhqU.css` | `50162636ac2bf3d5cf03f4de7f65f8f6ed51e2d7` / 39,610 |
+| `admin-lock.json` | `9abb055bad188dfe754e07e1bcff15344824e322` / 235; unchanged |
+
+No new production order, SOL payment, production Arweave signature or submission was created during this work. ArNS was not changed. Successful checks, deployment and public file verification do not establish production Fund ledger completion or mainnet SOL acceptance. Existing non-blocking dependency audit findings remain subject to the project's release review; this update changes no dependency manifest or lockfile.

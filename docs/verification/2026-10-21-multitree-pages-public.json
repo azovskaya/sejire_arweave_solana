@@ -1,0 +1,105 @@
+{
+  "checkedAt": "2026-10-21T10:25:08.702903+00:00",
+  "source": "d6a8a00d4b85ef5e0e5c614c7c7a98319a9511f9",
+  "allMatch": true,
+  "results": [
+    {
+      "url": "https://azovskaya.github.io/sejire_arweave_solana/",
+      "matchesAcceptedBuild": true,
+      "status": 200,
+      "contentType": "text/html; charset=utf-8",
+      "bytes": 1103,
+      "gitBlob": "6d75b750eab67ba1b364a9cff61528e18b2822a0",
+      "relativeAssets": true
+    },
+    {
+      "url": "https://azovskaya.github.io/sejire_arweave_solana/build-provenance.json",
+      "matchesAcceptedBuild": true,
+      "status": 200,
+      "contentType": "application/json; charset=utf-8",
+      "bytes": 302,
+      "gitBlob": "b211cfc6fa3b448db9629f5ae2143eff6f528d3e",
+      "provenance": {
+        "artifact": "native-admin-build",
+        "run": 39582617992,
+        "artifactId": 12337686315,
+        "sourceCommit": "d6a8a00d4b85ef5e0e5c614c7c7a98319a9511f9",
+        "zipSha256": "70c7e9d49bbd3aff7e1c95ccecbf795979262e951397f57aa3a1a7dda1773089",
+        "publishedByCommit": "d6a8a00d4b85ef5e0e5c614c7c7a98319a9511f9"
+      }
+    },
+    {
+      "url": "https://azovskaya.github.io/sejire_arweave_solana/admin-lock.json",
+      "matchesAcceptedBuild": true,
+      "status": 200,
+      "contentType": "application/json; charset=utf-8",
+      "bytes": 235,
+      "gitBlob": "9abb055bad188dfe754e07e1bcff15344824e322"
+    },
+    {
+      "url": "https://azovskaya.github.io/sejire_arweave_solana/assets/index-Bki41Hv1.js",
+      "matchesAcceptedBuild": true,
+      "status": 200,
+      "contentType": "application/javascript; charset=utf-8",
+      "bytes": 923902,
+      "gitBlob": "5d284e6abf46c55d252b58e7b160c1e08a3dfe69"
+    },
+    {
+      "url": "https://azovskaya.github.io/sejire_arweave_solana/assets/index-D_DSbhqU.css",
+      "matchesAcceptedBuild": true,
+      "status": 200,
+      "contentType": "text/css; charset=utf-8",
+      "bytes": 39610,
+      "gitBlob": "50162636ac2bf3d5cf03f4de7f65f8f6ed51e2d7"
+    },
+    {
+      "url": "https://azovskaya.github.io/sejire_arweave_solana/native-admin/",
+      "matchesAcceptedBuild": true,
+      "status": 200,
+      "contentType": "text/html; charset=utf-8",
+      "bytes": 1103,
+      "gitBlob": "6d75b750eab67ba1b364a9cff61528e18b2822a0",
+      "relativeAssets": true
+    },
+    {
+      "url": "https://azovskaya.github.io/sejire_arweave_solana/native-admin/build-provenance.json",
+      "matchesAcceptedBuild": true,
+      "status": 200,
+      "contentType": "application/json; charset=utf-8",
+      "bytes": 302,
+      "gitBlob": "b211cfc6fa3b448db9629f5ae2143eff6f528d3e",
+      "provenance": {
+        "artifact": "native-admin-build",
+        "run": 39582617992,
+        "artifactId": 12337686315,
+        "sourceCommit": "d6a8a00d4b85ef5e0e5c614c7c7a98319a9511f9",
+        "zipSha256": "70c7e9d49bbd3aff7e1c95ccecbf795979262e951397f57aa3a1a7dda1773089",
+        "publishedByCommit": "d6a8a00d4b85ef5e0e5c614c7c7a98319a9511f9"
+      }
+    },
+    {
+      "url": "https://azovskaya.github.io/sejire_arweave_solana/native-admin/admin-lock.json",
+      "matchesAcceptedBuild": true,
+      "status": 200,
+      "contentType": "application/json; charset=utf-8",
+      "bytes": 235,
+      "gitBlob": "9abb055bad188dfe754e07e1bcff15344824e322"
+    },
+    {
+      "url": "https://azovskaya.github.io/sejire_arweave_solana/native-admin/assets/index-Bki41Hv1.js",
+      "matchesAcceptedBuild": true,
+      "status": 200,
+      "contentType": "application/javascript; charset=utf-8",
+      "bytes": 923902,
+      "gitBlob": "5d284e6abf46c55d252b58e7b160c1e08a3dfe69"
+    },
+    {
+      "url": "https://azovskaya.github.io/sejire_arweave_solana/native-admin/assets/index-D_DSbhqU.css",
+      "matchesAcceptedBuild": true,
+      "status": 200,
+      "contentType": "text/css; charset=utf-8",
+      "bytes": 39610,
+      "gitBlob": "50162636ac2bf3d5cf03f4de7f65f8f6ed51e2d7"
+    }
+  ]
+}
