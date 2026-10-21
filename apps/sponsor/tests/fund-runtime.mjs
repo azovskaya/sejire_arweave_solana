@@ -4,8 +4,9 @@ import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { Miniflare } from 'miniflare';
+import { Miniflare, createFetchMock } from 'miniflare';
 import { buildWorker } from './build-worker.mjs';
+import { publicTreasuryOwner } from './fund-public-owner.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const origin = 'https://preview.example';
@@ -20,7 +21,7 @@ if (!process.argv[2]) {
   try {
     const bundle = resolve(temp, 'fund-worker.mjs');
     await buildWorker(resolve(here, 'fund-worker.ts'), bundle);
-    for (const phase of ['disabled', 'write', 'restart-read']) {
+    for (const phase of ['disabled', 'write', 'restart-read', 'direct-read']) {
       await new Promise((done, reject) => {
         const child = spawn(process.execPath, [fileURLToPath(import.meta.url), phase, temp, bundle], { stdio: 'inherit' });
         child.on('error', reject);
@@ -31,7 +32,23 @@ if (!process.argv[2]) {
   } finally { await rm(temp, { recursive: true, force: true }); }
 } else {
   const [phase, persist, scriptPath] = process.argv.slice(2);
+  const fetchMock = createFetchMock();
+  fetchMock.disableNetConnect();
+  if (phase === 'direct-read') {
+    const id = 'A'.repeat(43);
+    for (const host of ['https://arweave.net', 'https://g8way.io']) {
+      const pool = fetchMock.get(host), primary = host === 'https://arweave.net';
+      pool.intercept({ path: `/tx/${id}/status`, method: 'GET' })
+        .reply(primary ? 202 : 200, primary ? '' : JSON.stringify({ number_of_confirmations: 7 }));
+      pool.intercept({ path: `/tx/${id}`, method: 'GET' })
+        .reply(primary ? 200 : 503, primary ? JSON.stringify({ id, owner: publicTreasuryOwner, reward: '3000000000' }) : 'unavailable');
+      pool.intercept({ path: `/tx/${id}/data`, method: 'GET' })
+        .reply(200, primary ? Buffer.from(archive).toString('base64url') : '<html>Unavailable</html>');
+      for (const path of [`/raw/${id}`, `/${id}`]) pool.intercept({ path, method: 'GET' }).reply(404, 'missing');
+    }
+  }
   const runtime = new Miniflare({ modules: true, scriptPath, modulesRoot: dirname(scriptPath),
+    fetchMock,
     compatibilityDate: '2026-07-01', compatibilityFlags: ['nodejs_compat'],
     durableObjects: { CHECKOUT_LEDGER: { className: 'CheckoutLedger', useSQLite: true } },
     durableObjectsPersist: resolve(persist, 'db'),
@@ -53,7 +70,7 @@ if (!process.argv[2]) {
       method: payload === undefined ? 'GET' : 'POST', headers: { 'X-Synthetic-Test': 'synthetic-workerd-only', 'Content-Type': 'application/json' },
       ...(payload === undefined ? {} : { body: JSON.stringify(payload) }),
     });
-    assert.equal(response.status, 200); return response.json();
+    assert.equal(response.status, 200, response.status === 200 ? undefined : (await response.text()).slice(0, 6000)); return response.json();
   };
   const dashboard = async () => { const result = await call('/admin/dashboard', undefined, admin); assert.equal(result.status, 200); return result.body; };
   const promo = code => call('/admin/promo', { code, confirm: code }, admin);
@@ -79,6 +96,16 @@ if (!process.argv[2]) {
         await control('mock', { signerAddress: 'wrong-public-address' });
         assert.equal((await call('/admin/readiness', undefined, admin)).body.error, 'treasury_address_mismatch');
         assert.equal((await dashboard()).fundStatus, 'PROVIDER ERROR');
+      });
+    } else if (phase === 'direct-read') {
+      await test('direct provider races gateway evidence and verifies node data inside workerd', async () => {
+        const checked = await control('direct-provider');
+        assert.deepEqual(checked.transaction, { state: 'confirmed', confirmed: true, reward: '3000000000', confirmations: 7 });
+        assert.equal(checked.result.confirmed, true);
+        assert.equal(checked.result.reward, '3000000000');
+        assert.equal(checked.result.verification.stage, 'verified');
+        assert.equal(checked.result.verification.transactionConfirmed, true);
+        assert.equal((await control('stats')).submissions, 0);
       });
     } else if (phase === 'write') {
       await test('every management route rejects missing and wrong server credential', async () => {

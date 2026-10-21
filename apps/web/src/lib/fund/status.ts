@@ -29,6 +29,11 @@ export function fundStatus(order: FundOrderView | null, verification?: FundVerif
   };
   if (order?.status === 'NEEDS_RECONCILIATION' || verification?.stage === 'attention') {
     const reason = verification?.reason;
+    if (reason === 'network_unavailable') return {
+      title: 'Не удалось проверить сохранение',
+      description: 'Не удалось получить данные Arweave для проверки. Продолжаем автоматически проверять эту же попытку. Повторно сохранять не нужно.',
+      tone: 'attention',
+    };
     const description = reason === 'archive_verification_failed'
       ? 'Проверка архива пока не пройдена. Продолжаем проверять уже созданную транзакцию.'
       : reason === 'reward_mismatch' || reason === 'transaction_mismatch'

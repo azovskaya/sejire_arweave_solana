@@ -139,13 +139,15 @@ export function PromoFundedFlow({ envelope, parentTxId, treeId, autoSaveCode, au
         if (!next.order || next.order.orderId !== orderId) throw Error('invalid_order_response');
         if (!live) return;
         setResult(previous => previous?.order.status === 'COMPLETED' ? previous : next);
-        setCheckedAt(next.verification?.checkedAt ?? Date.now());
+        // A completed request can report an unavailable provider. This marks
+        // the attempt, not proof that Arweave confirmed the transaction.
+        setCheckedAt(Date.now());
         setStartedAt(next.order.createdAt);
         setError('');
         failures = 0;
         finished = terminalFundStatus(next.order.status);
       } catch (e) {
-        if (live) { failures++; setError(fundError(e)); }
+        if (live) { failures++; setError(fundError(e)); setCheckedAt(Date.now()); }
       } finally {
         if (live) {
           reading.current = false;
@@ -189,7 +191,7 @@ export function PromoFundedFlow({ envelope, parentTxId, treeId, autoSaveCode, au
       const next = await preserveFunded(envelope, selectedCode, id);
       if (!next.order || next.order.orderId !== id) throw Error('invalid_order_response');
       if (current.active) {
-        setResult(next); setCheckedAt(next.verification?.checkedAt ?? Date.now());
+        setResult(next); setCheckedAt(Date.now());
         setStartedAt(next.order.createdAt); setCode('');
       }
     } catch (e) {
@@ -281,7 +283,9 @@ export function PromoFundedFlow({ envelope, parentTxId, treeId, autoSaveCode, au
   const completed = order?.status === 'COMPLETED';
   const confirmed = completed || Boolean(result?.verification?.transactionConfirmed);
   const doneSteps = completed ? 3 : confirmed ? 2 : order ? 1 : 0;
-  const delayed = !terminal && startedAt !== null && now - startedAt >= 60000;
+  const delayed = !terminal && !submitting && !error && presentation.tone === 'pending' &&
+    (confirmed || order?.status === 'SUBMITTED' || order?.status === 'VERIFYING') &&
+    startedAt !== null && now - startedAt >= 60000;
 
   return <section className="funded-flow" aria-label="Сохранение по промокоду">
     <h2>Сохранение за счёт фонда</h2>
@@ -310,7 +314,9 @@ export function PromoFundedFlow({ envelope, parentTxId, treeId, autoSaveCode, au
           <span aria-hidden="true">{index < doneSteps ? '✓' : index + 1}</span>{label}
         </li>)}
       </ol>
-      {delayed && <p className="funded-delay">Подтверждение занимает время. Продолжаем проверку автоматически. Повторно сохранять не нужно.</p>}
+      {delayed && <p className="funded-delay">{confirmed
+        ? 'Проверка архива занимает время. Продолжаем автоматически проверять его доступность и целостность. Повторно сохранять не нужно.'
+        : 'Подтверждение занимает время. Продолжаем проверку автоматически. Повторно сохранять не нужно.'}</p>}
       {!terminal && <p className="funded-reassurance">Проверяем ту же попытку. Новая транзакция и повторное списание не запускаются.</p>}
       <div className="funded-actions">
         {!terminal && <button type="button" className="btn ghost" disabled={checking || submitting}
@@ -319,15 +325,15 @@ export function PromoFundedFlow({ envelope, parentTxId, treeId, autoSaveCode, au
           onClick={() => void finish()}>{completionError ? 'Повторить завершение' : 'Готово'}</button>}
         {completed && completing && <p role="status">Записываем результат в историю…</p>}
         {terminal && !completed && !order?.arweaveTxId && <button type="button" className="btn ghost" onClick={() => void retryStopped()}>Попробовать снова</button>}
-        {order?.arweaveTxId && <a href={'https://arweave.net/' + order.arweaveTxId} target="_blank" rel="noreferrer">Arweave TX ↗</a>}
       </div>
-      {checkedAt !== null && <p className="funded-check-time">Статус проверен: {new Date(checkedAt).toLocaleTimeString('ru-RU')}</p>}
+      {checkedAt !== null && <p className="funded-check-time">Последняя попытка проверки: {new Date(checkedAt).toLocaleString('ru-RU')}</p>}
       <details className="funded-details">
         <summary>Данные сохранения</summary>
         <dl><dt>Номер запроса</dt><dd><code>{orderId}</code></dd>
           {order && <><dt>Размер архива</dt><dd>{order.archiveSizeBytes.toLocaleString('ru-RU')} байт</dd></>}
           {order?.arweaveTxId && <><dt>Транзакция Arweave</dt><dd><code>{order.arweaveTxId}</code></dd></>}
         </dl>
+        {order?.arweaveTxId && <p><a href={'https://arweave.net/tx/' + order.arweaveTxId} target="_blank" rel="noreferrer">Данные транзакции Arweave ↗</a></p>}
       </details>
     </>}
     {error && <p className="funded-error" role="alert">{error}</p>}

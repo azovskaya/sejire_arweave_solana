@@ -15,7 +15,7 @@ export type FundCheckResult = {confirmed:boolean;reward:string|null;verification
 // One verification pass, including all fallback requests and response bodies,
 // must leave room for the ledger response inside the browser's 30 second wait.
 export const FUND_CHECK_TIMEOUT_MS = 22_000;
-const CHECK_REQUEST_TIMEOUT_MS = 4_000;
+const CHECK_REQUEST_TIMEOUT_MS = 8_000;
 export interface FundedArweaveProvider {
   getSignerAddress():Promise<string>;
   getBalance():Promise<string>;
@@ -85,10 +85,21 @@ export async function publicAnchor():Promise<string>{
   throw Error('anchor_unavailable');
 }
 async function digest(bytes:Uint8Array){return Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',bytes)),x=>x.toString(16).padStart(2,'0')).join('');}
-function checkSignal(deadline:number){
+async function checkedRead<T>(deadline:number,parent:AbortSignal,read:(signal:AbortSignal)=>Promise<T>):Promise<T>{
   const remaining=deadline-Date.now();
-  if(remaining<=0)throw Error('transaction_unavailable');
-  return AbortSignal.timeout(Math.min(CHECK_REQUEST_TIMEOUT_MS,remaining));
+  if(remaining<=0||parent.aborted)throw Error('transaction_unavailable');
+  const controller=new AbortController();let rejectAborted:(error:Error)=>void=()=>{};
+  const aborted=new Promise<never>((_,reject)=>{rejectAborted=reject;});
+  const abort=()=>{controller.abort();rejectAborted(Error('transaction_unavailable'));};
+  parent.addEventListener('abort',abort,{once:true});
+  const timer=setTimeout(abort,Math.min(CHECK_REQUEST_TIMEOUT_MS,remaining));
+  try{return await Promise.race([read(controller.signal),aborted]);}
+  finally{clearTimeout(timer);parent.removeEventListener('abort',abort);controller.abort();}
+}
+async function firstAvailable<T>(attempts:Promise<T|null>[]):Promise<T|null>{
+  return Promise.any(attempts.map(async attempt=>{
+    const value=await attempt;if(value===null)throw Error('candidate_unavailable');return value;
+  })).catch(()=>null);
 }
 async function discard(response:Response){try{await response.body?.cancel();}catch{ /* response already closed */ }}
 async function boundedBytes(response:Response,max:number){
@@ -119,8 +130,8 @@ function trustedArchiveUrl(url:URL,host:string,id:string){
     (url.hostname===base.hostname||url.hostname===isolated)&&
     (url.pathname===`/raw/${id}`||url.pathname===`/${id}`);
 }
-async function archiveResponse(host:string,path:string,id:string,deadline:number){
-  const signal=checkSignal(deadline);let url=new URL(path,host);
+async function archiveResponse(host:string,path:string,id:string,signal:AbortSignal){
+  let url=new URL(path,host);
   const visited=new Set<string>();
   for(let redirects=0;redirects<=2;redirects++){
     if(!trustedArchiveUrl(url,host,id)||visited.has(url.href))throw Error('gateway_redirected');
@@ -135,9 +146,11 @@ async function archiveResponse(host:string,path:string,id:string,deadline:number
   }
   throw Error('gateway_redirected');
 }
-async function encodedArchiveBytes(host:string,id:string,max:number,expected:FundArchiveExpected|undefined,deadline:number):Promise<Uint8Array|null>{
+async function encodedArchiveBytes(host:string,id:string,max:number,expected:FundArchiveExpected|undefined,signal:AbortSignal):Promise<Uint8Array|null>{
   const url=`${host}/tx/${id}/data`;
-  const response=await fetch(url,{method:'GET',redirect:'error',signal:checkSignal(deadline)});
+  // Workerd supports manual/follow only. Node API redirects are rejected by
+  // the exact response URL and HTTP 200 checks below, without following Location.
+  const response=await fetch(url,{method:'GET',redirect:'manual',signal});
   if(response.url&&response.url!==url){await discard(response);throw Error('gateway_redirected');}
   if(response.status!==200||!response.body){await discard(response);return null;}
   const maxBytes=Math.min(max,expected?.bytes??max);
@@ -153,32 +166,37 @@ async function encodedArchiveBytes(host:string,id:string,max:number,expected:Fun
   }catch{throw Error('archive_integrity_failed');}
 }
 async function boundedRaw(id:string,max:number,expected:FundArchiveExpected|undefined,deadline:number):Promise<Uint8Array|null>{
-  let mismatch=false;
-  // Keep /raw as the preferred exact-byte path. Canonical data URLs are fallback
-  // candidates and receive the very same size, digest and envelope checks.
-  for(const path of [`/raw/${id}`,`/${id}`])for(const host of gateways){
-    if(Date.now()>=deadline)break;
+  let mismatch=false;const pass=new AbortController();
+  const candidate=async(host:string,path:string|null):Promise<Uint8Array|null>=>{
+    if(Date.now()>=deadline||pass.signal.aborted)return null;
     try{
-      const response=await archiveResponse(host,path,id,deadline);
-      if(response.status===202||!response.ok||!response.body){await discard(response);continue;}
-      const bytes=await boundedBytes(response,Math.min(max,expected?.bytes??max));
-      if(await archiveMatches(bytes,expected))return bytes;
-      mismatch=true;
-    }catch(error){if(error instanceof Error&&error.message==='retrieved_archive_too_large')mismatch=true;}
-  }
-  // Some gateways expose the correct immutable bytes only through the node API.
-  // Reuse the same deadline and require the same archive checks after decoding.
-  for(const host of gateways){
-    if(Date.now()>=deadline)break;
-    try{
-      const bytes=await encodedArchiveBytes(host,id,max,expected,deadline);
-      if(!bytes)continue;
-      if(await archiveMatches(bytes,expected))return bytes;
-      mismatch=true;
+      return await checkedRead(deadline,pass.signal,async signal=>{
+        let bytes:Uint8Array|null;
+        if(path===null)bytes=await encodedArchiveBytes(host,id,max,expected,signal);
+        else{
+          const response=await archiveResponse(host,path,id,signal);
+          if(response.status===202||!response.ok||!response.body){await discard(response);return null;}
+          bytes=await boundedBytes(response,Math.min(max,expected?.bytes??max));
+        }
+        if(!bytes)return null;
+        if(await archiveMatches(bytes,expected))return bytes;
+        mismatch=true;return null;
+      });
     }catch(error){if(error instanceof Error&&['retrieved_archive_too_large','archive_integrity_failed'].includes(error.message))mismatch=true;}
-  }
-  if(mismatch)throw Error('archive_integrity_failed');
-  return null;
+    return null;
+  };
+  // At most four reads run together. Each host keeps raw -> canonical fallback,
+  // while both node-data reads start immediately instead of waiting behind them.
+  const rawThenCanonical=async(host:string)=>{
+    for(const path of [`/raw/${id}`,`/${id}`]){const bytes=await candidate(host,path);if(bytes)return bytes;}
+    return null;
+  };
+  try{
+    const bytes=await firstAvailable([...gateways.map(rawThenCanonical),...gateways.map(host=>candidate(host,null))]);
+    if(bytes)return bytes;
+    if(mismatch)throw Error('archive_integrity_failed');
+    return null;
+  }finally{pass.abort();}
 }
 function observation(transaction:FundNetworkTx,stage:FundVerification['stage'],reason:FundVerification['reason']):FundVerification{
   return {stage,transactionConfirmed:transaction.confirmed,confirmations:transaction.confirmations,reason,checkedAt:Date.now()};
@@ -244,32 +262,70 @@ export class DirectArweaveFundProvider implements FundedArweaveProvider {
     const r=await ar.transactions.post(tx);if(r.status!==200&&r.status!==202&&r.status!==208)throw Error('submit_uncertain');}
   async getTransaction(id:string,deadline=Date.now()+FUND_CHECK_TIMEOUT_MS):Promise<FundNetworkTx>{
     if(!txId.test(id))throw Error('invalid_tx_id');
-    let missing=0,mismatch=false;
-    for(const host of gateways){
-      if(Date.now()>=deadline)break;
+    type Status={kind:'confirmed'|'pending'|'accepted'|'missing'|'unavailable';confirmations:number|null};
+    type Metadata={kind:'valid';reward:string}|{kind:'mismatch'|'unavailable'};
+    const pass=new AbortController();
+    const readStatus=async(host:string):Promise<Status>=>{
       try{
-        const statusUrl=`${host}/tx/${id}/status`;
-        const response=await fetch(statusUrl,{redirect:'error',signal:checkSignal(deadline)});
-        if(response.url&&response.url!==statusUrl){await discard(response);throw Error('transaction_unavailable');}
-        if(response.status===404){missing++;await discard(response);continue;}
-        if(response.status===202){await discard(response);return {state:'pending',confirmed:false,reward:null,confirmations:0};}
-        if(response.status!==200){await discard(response);continue;}
-        const status=JSON.parse(await boundedText(response,16384)) as {number_of_confirmations?:unknown}|null;
-        const confirmations=status?.number_of_confirmations;
-        if(typeof confirmations!=='number'||!Number.isSafeInteger(confirmations)||confirmations<0)continue;
-        const metadataUrl=`${host}/tx/${id}`;
-        const metadata=await fetch(metadataUrl,{redirect:'error',signal:checkSignal(deadline)});
-        if(metadata.url&&metadata.url!==metadataUrl){await discard(metadata);throw Error('transaction_unavailable');}
-        const tx=JSON.parse(await boundedText(metadata,65536)) as {id?:unknown;owner?:unknown;reward?:unknown}|null;
-        if(!tx||tx.id!==id||typeof tx.owner!=='string'||typeof tx.reward!=='string')throw Error('transaction_mismatch');
-        try{amount(tx.reward);if(await addressFromModulus(tx.owner)!==TREASURY_ADDRESS)throw Error('transaction_mismatch');}
-        catch{throw Error('transaction_mismatch');}
-        return {state:confirmations>=1?'confirmed':'pending',confirmed:confirmations>=1,reward:tx.reward,confirmations};
-      }catch(error){if(error instanceof Error&&error.message==='transaction_mismatch')mismatch=true;}
-    }
-    // One missing index and one broken gateway do not establish absence.
-    if(missing===gateways.length)return {state:'not_found',confirmed:false,reward:null,confirmations:null};
-    throw Error(mismatch?'transaction_mismatch':'transaction_unavailable');
+        return await checkedRead(deadline,pass.signal,async signal=>{
+          const url=`${host}/tx/${id}/status`,response=await fetch(url,{redirect:'manual',signal});
+          if(response.url&&response.url!==url){await discard(response);throw Error('transaction_unavailable');}
+          if(response.status===404){await discard(response);return {kind:'missing',confirmations:null};}
+          if(response.status===202){await discard(response);return {kind:'accepted',confirmations:0};}
+          if(response.status!==200){await discard(response);return {kind:'unavailable',confirmations:null};}
+          const status=JSON.parse(await boundedText(response,16384)) as {number_of_confirmations?:unknown}|null;
+          const confirmations=status?.number_of_confirmations;
+          if(typeof confirmations!=='number'||!Number.isSafeInteger(confirmations)||confirmations<0)return {kind:'unavailable',confirmations:null};
+          return {kind:confirmations>=1?'confirmed':'pending',confirmations};
+        });
+      }catch{return {kind:'unavailable',confirmations:null};}
+    };
+    const readMetadata=async(host:string):Promise<Metadata>=>{
+      try{
+        return await checkedRead(deadline,pass.signal,async signal=>{
+          const url=`${host}/tx/${id}`,response=await fetch(url,{redirect:'manual',signal});
+          if(response.url&&response.url!==url){await discard(response);throw Error('transaction_unavailable');}
+          if(response.status!==200){await discard(response);return {kind:'unavailable'};}
+          const tx=JSON.parse(await boundedText(response,65536)) as {id?:unknown;owner?:unknown;reward?:unknown}|null;
+          if(!tx||tx.id!==id||typeof tx.owner!=='string'||typeof tx.reward!=='string')throw Error('transaction_mismatch');
+          try{amount(tx.reward);if(await addressFromModulus(tx.owner)!==TREASURY_ADDRESS)throw Error('transaction_mismatch');}
+          catch{throw Error('transaction_mismatch');}
+          return {kind:'valid',reward:tx.reward};
+        });
+      }catch(error){return {kind:error instanceof Error&&error.message==='transaction_mismatch'?'mismatch':'unavailable'};}
+    };
+    try{
+      // These four reads share the absolute check deadline. A pending/stale index
+      // cannot beat a confirmed result, and metadata need not use the same host.
+      const statuses=gateways.map(readStatus),metadata=gateways.map(readMetadata);
+      const firstConfirmed=firstAvailable(statuses.map(async result=>{const status=await result;return status.kind==='confirmed'?status:null;}));
+      const firstMetadata=firstAvailable(metadata.map(async result=>{const tx=await result;return tx.kind==='valid'?tx:null;}));
+      const confirmed=await firstConfirmed;
+      if(confirmed){
+        const tx=await firstMetadata;
+        if(tx)return {state:'confirmed',confirmed:true,reward:tx.reward,confirmations:confirmed.confirmations};
+        throw Error((await Promise.all(metadata)).some(x=>x.kind==='mismatch')?'transaction_mismatch':'transaction_unavailable');
+      }
+      const observed=await Promise.all(statuses);
+      if(observed.some(x=>x.kind==='accepted'))return {state:'pending',confirmed:false,reward:null,confirmations:0};
+      if(observed.some(x=>x.kind==='pending')){
+        // A 200/zero-confirmation response has always required valid metadata;
+        // only an explicit HTTP 202 may report pending without that validation.
+        const tx=await firstMetadata;
+        if(tx)return {state:'pending',confirmed:false,reward:tx.reward,confirmations:0};
+        throw Error((await Promise.all(metadata)).some(x=>x.kind==='mismatch')?'transaction_mismatch':'transaction_unavailable');
+      }
+      if(observed.every(x=>x.kind==='missing')){
+        const tx=await firstMetadata;
+        // Valid immutable metadata contradicts index absence: never replay a
+        // persisted transaction solely because both status indexes are stale.
+        if(tx)return {state:'pending',confirmed:false,reward:tx.reward,confirmations:null};
+        if((await Promise.all(metadata)).some(x=>x.kind==='mismatch'))throw Error('transaction_mismatch');
+        return {state:'not_found',confirmed:false,reward:null,confirmations:null};
+      }
+      // One missing index and one broken gateway do not establish absence.
+      throw Error('transaction_unavailable');
+    }finally{pass.abort();}
   }
   getRawData(id:string,expected?:FundArchiveExpected,deadline=Date.now()+FUND_CHECK_TIMEOUT_MS){
     if(!txId.test(id))throw Error('invalid_tx_id');

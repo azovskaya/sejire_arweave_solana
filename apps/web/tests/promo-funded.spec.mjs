@@ -277,6 +277,15 @@ async function checkNow(page){
  await promo(page).getByRole('button',{name:'Проверить статус',exact:true}).click();
 }
 
+async function openTransactionDetails(page){
+ const details=promo(page).locator('details');
+ await details.getByText('Данные сохранения',{exact:true}).click();
+ const link=details.getByRole('link',{name:'Данные транзакции Arweave ↗',exact:true});
+ await expect(link).toBeVisible();
+ await expect(link).toHaveAttribute('href',`https://arweave.net/tx/${tx}`);
+ return link;
+}
+
 test('Admin changes one promo and cumulative limit; user preserves encrypted archive without Solana',async({page},testInfo)=>{
  await mockAdminLock(page);
  let code='',revision=0,enabled=false,limit=initial,spent=0n;
@@ -338,16 +347,23 @@ test('Pending transaction explains confirmation and archive verification before 
  await page.clock.install();
  await openPromo(page);await savePromo(page);
  await expect(promo(page).getByRole('status')).toContainText('Ждём подтверждения Arweave');
- await expect(promo(page).getByRole('link',{name:/Arweave/})).toHaveAttribute('href',`https://arweave.net/${tx}`);
+ await expect(promo(page).locator('details a')).toBeHidden();
  await expect(promo(page).getByRole('button',{name:'Сохранить бесплатно',exact:true})).toHaveCount(0);
  await page.setViewportSize({width:390,height:844});
  await expect.poll(()=>page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
  await page.screenshot({path:testInfo.outputPath('promo-confirmation-mobile.png'),fullPage:true});
+ await openTransactionDetails(page);
+ await promo(page).getByText('Данные сохранения',{exact:true}).click();
+
+ api.order={...api.order,createdAt:Date.now()-120_000};await checkNow(page);
+ await expect(promo(page).locator('.funded-delay')).toContainText('Подтверждение занимает время');
 
  api.order={...api.order,status:'VERIFYING'};api.verification=verification('checking_archive',true);
  await checkNow(page);
  await expect(promo(page).getByRole('status')).toContainText('Проверяем сохранённый архив');
  await expect(promo(page).getByRole('status')).not.toContainText('Семейная история сохранена');
+ await expect(promo(page).locator('.funded-delay')).toContainText('Проверка архива занимает время');
+ await expect(promo(page)).not.toContainText('Подтверждение занимает время');
 
  api.complete();await checkNow(page);
  await expect(promo(page).getByRole('status')).toContainText('Семейная история сохранена');
@@ -484,7 +500,7 @@ test('Editor completion is automatic and local storage failures only retry local
   await expect(promo(page).getByRole('button',{name:'Готово',exact:true})).toHaveCount(0);
   await expect.poll(()=>dialog.locator('.modal').evaluate(el=>el.scrollWidth<=el.clientWidth)).toBe(true);
   await retry.scrollIntoViewIfNeeded();await expect(retry).toBeInViewport({ratio:0.99});await retry.click({trial:true});
-  const link=promo(page).getByRole('link',{name:/Arweave/});
+  const link=await openTransactionDetails(page);
   await link.scrollIntoViewIfNeeded();await expect(link).toBeInViewport({ratio:0.99});await link.click({trial:true});
   await page.screenshot({path:testInfo.outputPath('promo-editor-local-retry-mobile.png'),fullPage:true});
   readsAfterConfirmation=api.reads.length;
@@ -662,23 +678,92 @@ for(const status of ['FAILED','RELEASED']){
 
 test('An uncertain submission explains the check and preserves its existing transaction',async({page})=>{
  const api=await mockPreservation(page,{status:'NEEDS_RECONCILIATION'});
+ await page.clock.install();
  await openPromo(page);await savePromo(page);
  await expect(promo(page).getByRole('status')).toContainText('Проверяем состояние сохранения');
- await expect(promo(page).getByRole('link',{name:/Arweave/})).toHaveAttribute('href',`https://arweave.net/${tx}`);
+ await openTransactionDetails(page);
+ api.order={...api.order,createdAt:Date.now()-120_000};await checkNow(page);
+ await expect(promo(page).locator('.funded-delay')).toHaveCount(0);
  await expect(promo(page).getByRole('button',{name:'Сохранить бесплатно',exact:true})).toHaveCount(0);
  const id=api.order.orderId;api.complete();await checkNow(page);
  await expect(promo(page).getByRole('status')).toContainText('Семейная история сохранена');
  expect(api.reads.length).toBeGreaterThan(0);expect(new Set(api.reads)).toEqual(new Set([id]));expect(api.posts).toHaveLength(1);
 });
 
+test('An unavailable provider reports a failed check and recovers the same existing attempt without a new save',async({page},testInfo)=>{
+ await mockReadOnlyDiscoveryAndRejectWallets(page);
+ const api=await mockPreservation(page),id='d'.repeat(32),createdAt=Date.parse('2026-10-20T09:00:00Z');
+ api.order={...orderFrom({orderId:id,preservationId:id,archive},'NEEDS_RECONCILIATION'),createdAt};
+ api.verification={...verification('attention'),reason:'network_unavailable'};
+ const attempt={version:1,orderId:id,envelope:JSON.parse(archive),archiveDigest:api.order.archiveDigest,
+  vaultId:api.order.vaultId,parentTxId:null,treeId:null,createdAt};
+ await page.addInitScript(attempt=>localStorage.setItem(`sejire.fundAttempt.v1.${attempt.orderId}`,JSON.stringify(attempt)),attempt);
+ const writes=[];
+ page.on('request',request=>{
+  const path=new URL(request.url()).pathname;
+  if(path.startsWith('/api/')&&request.method()!=='GET')writes.push(`${request.method()} ${path}`);
+ });
+ await page.clock.install({time:new Date('2026-10-21T09:00:00Z')});
+ await page.setViewportSize({width:390,height:844});await openPromo(page);
+ await expect(promo(page).getByRole('heading',{name:'Не удалось проверить сохранение',exact:true})).toBeVisible();
+ await expect(promo(page).getByRole('status')).toContainText('автоматически проверять эту же попытку');
+ await expect(promo(page).locator('.funded-delay')).toHaveCount(0);
+ await expect(promo(page).locator('.funded-check-time')).toContainText('Последняя попытка проверки: 21.10.2026');
+ await expect(promo(page).locator('.funded-check-time')).toContainText(/\d{2}:\d{2}:\d{2}/);
+ await expect(promo(page).getByRole('button',{name:'Сохранить бесплатно',exact:true})).toHaveCount(0);
+ await expect(promo(page).locator('details a')).toBeHidden();
+ await expect(promo(page).locator('a[href="https://arweave.net/'+tx+'"]')).toHaveCount(0);
+ await expect.poll(()=>page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
+ await page.screenshot({path:testInfo.outputPath('promo-provider-unavailable-mobile.png'),fullPage:true});
+ await openTransactionDetails(page);
+ await expect(promo(page).getByRole('link',{name:/Открыть дерево/})).toHaveCount(0);
+ await expect.poll(()=>page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
+
+ // Each transition comes only from the automatic GET for the existing ID.
+ api.order={...api.order,status:'VERIFYING'};
+ api.verification={...verification('checking_archive',true),reason:'archive_unavailable'};
+ await page.clock.runFor(6_001);
+ await expect(promo(page).getByRole('status')).toContainText('Проверяем сохранённый архив');
+ await expect(promo(page).locator('.funded-delay')).toContainText('Проверка архива занимает время');
+ const confirmationStep=promo(page).getByRole('listitem').filter({hasText:'Подтверждение Arweave'});
+ await expect(confirmationStep).toHaveClass(/is-done/);
+
+ api.order={...api.order,status:'NEEDS_RECONCILIATION'};
+ api.verification={...verification('attention'),reason:'network_unavailable'};
+ await page.clock.runFor(6_001);
+ await expect(promo(page).getByRole('status')).toContainText('Не удалось проверить сохранение');
+ await expect(promo(page).locator('.funded-delay')).toHaveCount(0);
+ await expect(confirmationStep).not.toHaveClass(/is-done/);
+
+ api.order={...api.order,status:'VERIFYING'};
+ api.verification={...verification('awaiting_confirmation'),reason:'network_pending'};
+ await page.clock.runFor(6_001);
+ await expect(promo(page).getByRole('status')).toContainText('Ждём подтверждения Arweave');
+ await expect(promo(page).locator('.funded-delay')).toContainText('Подтверждение занимает время');
+ await expect(confirmationStep).not.toHaveClass(/is-done/);
+ api.complete();await page.clock.runFor(6_001);
+ await expect(promo(page).getByRole('status')).toContainText('Семейная история сохранена');
+ await expect(promo(page).locator('.funded-delay')).toHaveCount(0);
+ const reads=api.reads.length;await page.clock.runFor(20_000);
+ expect(api.reads).toHaveLength(reads);expect(new Set(api.reads)).toEqual(new Set([id]));expect(api.maxInFlight).toBe(1);
+ expect(api.posts).toHaveLength(0);expect(api.validations).toBe(0);expect(writes).toEqual([]);
+ expect(await activeFundAttempts(page)).toEqual([attempt]);
+ await expectNoPaymentSideEffects(page);
+});
+
 test('A failed status request is visible and a later automatic check recovers',async({page})=>{
  const api=await mockPreservation(page);
- await page.clock.install();
+ await page.clock.install({time:new Date('2026-10-21T09:00:00Z')});
  await openPromo(page);await savePromo(page);
  await expect(promo(page).getByRole('status')).toContainText('Ждём подтверждения Arweave');
+ api.order={...api.order,createdAt:Date.parse('2026-10-20T09:00:00Z')};await checkNow(page);
+ await expect(promo(page).locator('.funded-delay')).toContainText('Подтверждение занимает время');
+ await page.clock.setSystemTime(new Date('2026-10-22T09:00:00Z'));
  api.readError=503;await checkNow(page);
  await expect(promo(page).getByRole('alert')).toContainText('Не удалось обновить статус');
  await expect(promo(page).getByRole('alert')).toContainText('автоматически');
+ await expect(promo(page).locator('.funded-delay')).toHaveCount(0);
+ await expect(promo(page).locator('.funded-check-time')).toContainText('Последняя попытка проверки: 22.10.2026');
  await expect(promo(page).getByRole('button',{name:'Сохранить бесплатно',exact:true})).toHaveCount(0);
  api.readError=0;api.complete();await page.clock.runFor(15_001);
  await expect(promo(page).getByRole('status')).toContainText('Семейная история сохранена');

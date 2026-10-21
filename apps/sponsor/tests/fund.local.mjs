@@ -5,7 +5,8 @@ import { tmpdir } from 'node:os';
 import { resolve } from 'node:path';
 import { FundLedger } from '../src/fund/ledger.ts';
 import { fundApi } from '../src/fund/api.ts';
-import { MockFundedArweaveProvider } from '../src/fund/provider.ts';
+import { DirectArweaveFundProvider, MockFundedArweaveProvider } from '../src/fund/provider.ts';
+import { publicTreasuryOwner } from './fund-public-owner.mjs';
 import { validateMetadata } from '../../web/src/lib/recovery/retrieve.ts';
 const temp=await mkdtemp(resolve(tmpdir(),'sejire-fund-sqlite-'));
 const admin='synthetic-admin-token-32-characters',origin='https://preview.example';
@@ -189,5 +190,66 @@ try{
   assert.equal((await call('/orders/'+'e'.repeat(32))).body.order.status,'COMPLETED');
   assert.equal(mock.submissions,submitted);assert.equal(mock.signings,signed);
  });
- console.log('fund.local: PASS; real SQLite, mock provider, zero network calls or AR transactions');
+ await test('existing order completes through direct-provider GET despite stale and split gateway evidence, with exactly-once spend',async()=>{
+  const before=ledger.summary(),orderId='fedcba9876543210'.repeat(2);
+  const initial=await call('/orders',{...make('f','TEST-PENSIONER-2'),orderId,preservationId:orderId},{fault:'network',ip:'192.0.2.106'});
+  assert.equal(initial.body.order.status,'NEEDS_RECONCILIATION');
+  const id=initial.body.order.arweaveTxId,submitted=mock.submissions,signed=mock.signings;
+  assert.equal(ledger.summary().actualSpentWinston,before.actualSpentWinston);
+  assert.equal(ledger.summary().reservedWinston,(BigInt(before.reservedWinston)+3000000000n).toString());
+  const provider=new DirectArweaveFundProvider(JSON.stringify({kty:'RSA',n:publicTreasuryOwner,d:'synthetic-only-not-a-key'}));
+  let writes=0;
+  for(const method of ['prepareTransaction','sign','submit'])provider[method]=async()=>{writes++;throw Error('read_only_test');};
+  const originalFetch=globalThis.fetch,requests=[];let inconsistentReward=true;
+  const responseAt=(url,body,init)=>{const response=new Response(body,init);Object.defineProperty(response,'url',{value:url});return response;};
+  globalThis.fetch=async(url,options)=>{
+   const parsed=new URL(url);requests.push(parsed.href);
+   assert.equal(options.method??'GET','GET');
+   assert.ok(['https://arweave.net','https://g8way.io'].includes(parsed.origin));
+   if(parsed.pathname===`/tx/${id}/status`)return parsed.origin==='https://arweave.net'
+    ?responseAt(url,'',{status:202})
+    :responseAt(url,JSON.stringify({number_of_confirmations:4}));
+   if(parsed.pathname===`/tx/${id}`)return parsed.origin==='https://arweave.net'
+    ?responseAt(url,JSON.stringify({id,owner:publicTreasuryOwner,reward:inconsistentReward?'1':'3000000000'}))
+    :responseAt(url,'unavailable',{status:503});
+   if(parsed.pathname===`/tx/${id}/data`)return parsed.origin==='https://arweave.net'
+    ?responseAt(url,Buffer.from(archive).toString('base64url'))
+    :responseAt(url,'<html>Site unavailable</html>');
+   if(parsed.pathname===`/raw/${id}`||parsed.pathname===`/${id}`)return responseAt(url,new ReadableStream({
+    start(controller){
+     const cancel=()=>controller.error(Error('synthetic slow gateway'));
+     if(options.signal.aborted)cancel();else options.signal.addEventListener('abort',cancel,{once:true});
+    },
+   }));
+   throw Error('unexpected gateway request');
+  };
+  const read=()=>fundApi(new Request('https://api.example/api/fund/orders/'+orderId,{
+   headers:{Origin:origin,'CF-Connecting-IP':'192.0.2.107'},
+  }),env,provider);
+  try{
+   const mismatch=await (await read()).json();
+   assert.equal(mismatch.order.status,'NEEDS_RECONCILIATION');assert.equal(mismatch.verification.reason,'reward_mismatch');
+   assert.equal(mismatch.order.arweaveTxId,id);assert.equal(mismatch.order.actualRewardWinston,null);
+   assert.equal(ledger.summary().actualSpentWinston,before.actualSpentWinston);
+   assert.equal(ledger.summary().reservedWinston,(BigInt(before.reservedWinston)+3000000000n).toString());
+   assert.equal(writes,0);assert.equal(mock.submissions,submitted);assert.equal(mock.signings,signed);
+   inconsistentReward=false;
+   const response=await read(),completed=await response.json();
+   assert.equal(response.status,200);assert.equal(completed.order.status,'COMPLETED');
+   assert.equal(completed.order.orderId,orderId);assert.equal(completed.order.arweaveTxId,id);
+   assert.equal(completed.verification.stage,'verified');assert.equal(completed.verification.transactionConfirmed,true);
+   assert.ok(requests.includes(`https://arweave.net/tx/${id}/data`));
+   const requestCount=requests.length;
+   for(let i=0;i<2;i++)assert.equal((await (await read()).json()).order.status,'COMPLETED');
+   assert.equal(requests.length,requestCount,'terminal reads do not re-query gateways');
+   assert.equal(writes,0);assert.equal(mock.submissions,submitted);assert.equal(mock.signings,signed);
+   const after=ledger.summary();
+   assert.equal(after.history.length,before.history.length+1);assert.equal(after.successfulTrees,before.successfulTrees+1);
+   assert.equal(after.actualSpentWinston,(BigInt(before.actualSpentWinston)+3000000000n).toString());
+   assert.equal(after.reservedWinston,before.reservedWinston);assert.equal(after.pending,before.pending);
+   assert.equal(storage.sql.exec('SELECT COUNT(*) AS n FROM fund_events WHERE order_id=? AND status=?',orderId,'COMPLETED').toArray()[0].n,1);
+   for(const privateField of ['signedTransaction','preparedTransaction','ciphertext','code_hash'])assert.equal(JSON.stringify(completed).includes(privateField),false);
+  }finally{globalThis.fetch=originalFetch;}
+ });
+ console.log('fund.local: PASS; real SQLite, mocked gateway/provider responses, zero network calls or AR transactions');
 }finally{storage.close();await rm(temp,{recursive:true,force:true});}
