@@ -125,5 +125,49 @@ does not increase. A later GET of the same order with correct metadata and the
 verified archive completes it once. Repeated GETs make no new gateway request,
 signature, submission or ledger charge. Production ledger code is unchanged.
 
-Publication evidence will be appended after the accepted CI artifact, actual
-Worker deploy, actual Pages deploy, and public site bytes have been verified.
+## Published release — 21 October, 08:13 UTC / 13:13 Almaty
+
+- Accepted source: [`5d1b00aa8604fe153c586d014b35ee296b4eec2e`](https://github.com/azovskaya/sejire_arweave_solana/commit/5d1b00aa8604fe153c586d014b35ee296b4eec2e).
+  Its tree `dba5fe78acb74e418797d0df9db38d6b07132cd6` exactly matches the tested
+  local commit `6b01cb686b07112785b616eeb1386cd88d052139`, preserved on
+  `local/fund-verification-20261021`.
+- [Full SEJIRE checks 39565762804](https://github.com/azovskaya/sejire_arweave_solana/actions/runs/39565762804): success for that exact source, including recovery, promo,
+  workerd, editor journeys, dependency boundaries and security scans.
+- Accepted `native-admin-build` artifact: `12330196376`; ZIP SHA-256
+  `050ddb6212237e7854264fdca7a76a69530778c8a7b8a054178dbe42315e8dc7`.
+- [Worker runtime 39565762671](https://github.com/azovskaya/sejire_arweave_solana/actions/runs/39565762671): success.
+- [Worker deploy 39565762774](https://github.com/azovskaya/sejire_arweave_solana/actions/runs/39565762774): success, including the actually executed Wrangler deploy step;
+  Version `023f05cd-bc50-47d3-b536-6c6351273069`.
+- [Preview staging 39565762642](https://github.com/azovskaya/sejire_arweave_solana/actions/runs/39565762642): success, producing `gh-pages` commit
+  `12309d49a48f3122084c046b7ada96f5def7a973`. Staging alone is not a Pages deploy.
+- The 34 accepted native files were copied byte-for-byte to the root, preserving
+  all unrelated existing files. Static parent:
+  `07db2c0eee24e3d77e07ce576c34345357990cee`, tree
+  `8debd67dc81281b79ba546b8a89c76ecb9414ebe`.
+- Release commit: `6d211b6d24ed27dac2e252f98c87f4cd6ee7fbd8`; its sole change to
+  the static parent adds `.github/workflows/publish-fund-verification.yml`.
+  Reviewed workflow blob: `52e9d8bc303f469d7c3483ec89ed22d437a549df`.
+- [Actual Pages deploy 39567468791](https://github.com/azovskaya/sejire_arweave_solana/actions/runs/39567468791): success, including exact parent/tree, source CI and artifact
+  checks, both current-head guards, and the actual deploy-pages step. The existing
+  `github-pages` environment protection remains in effect.
+
+At 08:13:06 UTC, all ten ordinary public GETs for the root and `/native-admin/`
+returned HTTP 200 and exactly matched the accepted HTML, entry JavaScript, CSS,
+six-field build provenance and portable admin verifier. Both HTML documents use
+relative asset paths. The verifier blob remains
+`9abb055bad188dfe754e07e1bcff15344824e322`.
+The [public comparison report](2026-10-21-fund-pages-public.json) records each
+response size, Git blob hash and provenance; expected values were obtained from
+the accepted artifact/staged Git tree, not from the live responses themselves.
+
+All Git ref changes were non-force updates with an expected parent. No production
+Fund order was created, signed, submitted, decrypted or reconciled by the agent;
+no Worker/Admin request or protection bypass was attempted. Mainnet Solana
+remains disabled. The current user order's internal COMPLETED status, Fund Actual
+confirmed spend, reservations and history remain unobserved from this environment.
+
+The user-facing next action is only to refresh the already open SEJIRE tab so the
+new interface resumes the existing durable attempt. Do not ask for another save,
+Admin/terminal diagnostics, recovery words, ADMIN_TOKEN, or clearing storage.
+This release workflow is pinned to the accepted snapshot above; do not rerun it
+for a future source/artifact. A future release requires its own reviewed pins.

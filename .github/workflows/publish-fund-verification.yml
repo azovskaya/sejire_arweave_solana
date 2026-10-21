@@ -1,0 +1,127 @@
+name: Publish accepted fund verification
+
+# Release the accepted source 5d1b00aa8604fe153c586d014b35ee296b4eec2e.
+# Fill 5d1b00aa8604fe153c586d014b35ee296b4eec2e, 39565762804, 12330196376, 050ddb6212237e7854264fdca7a76a69530778c8a7b8a054178dbe42315e8dc7,
+# 07db2c0eee24e3d77e07ce576c34345357990cee and 8debd67dc81281b79ba546b8a89c76ecb9414ebe from independently verified evidence.
+# STATIC_PARENT is the accepted root + native static overlay, before adding this workflow.
+# Its checked native artifact is copied byte-for-byte to both editor paths.
+# Release the pinned static parent without rebuilding, writing refs, or
+# contacting the Fund API. The github-pages environment keeps its protections.
+on:
+  push:
+    branches: [gh-pages]
+    paths: ['.github/workflows/publish-fund-verification.yml']
+
+permissions:
+  contents: read
+  actions: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: gh-pages-deploy
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 2
+
+      - name: Verify the accepted static snapshot and successful source checks
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          APPROVED_PAGES: 07db2c0eee24e3d77e07ce576c34345357990cee
+          APPROVED_TREE: 8debd67dc81281b79ba546b8a89c76ecb9414ebe
+        run: |
+          set -euo pipefail
+          [[ "$APPROVED_PAGES" =~ ^[a-f0-9]{40}$ ]]
+          [[ "$APPROVED_TREE" =~ ^[a-f0-9]{40}$ ]]
+          test "$GITHUB_REF" = 'refs/heads/gh-pages'
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git rev-parse HEAD^)" = "$APPROVED_PAGES"
+          test "$(git rev-parse "$APPROVED_PAGES^{tree}")" = "$APPROVED_TREE"
+          test "$(git diff --name-status "$APPROVED_PAGES" HEAD)" = $'A\t.github/workflows/publish-fund-verification.yml'
+          node --input-type=module <<'NODE'
+          import { readFileSync } from 'node:fs';
+          const source = '5d1b00aa8604fe153c586d014b35ee296b4eec2e';
+          const accepted = {
+            sourceCommit: source,
+            publishedByCommit: source,
+            artifact: 'native-admin-build',
+            run: Number('39565762804'),
+            artifactId: Number('12330196376'),
+            zipSha256: '050ddb6212237e7854264fdca7a76a69530778c8a7b8a054178dbe42315e8dc7',
+          };
+          if (!/^[a-f0-9]{40}$/.test(source) ||
+              !Number.isSafeInteger(accepted.run) || accepted.run <= 0 ||
+              !Number.isSafeInteger(accepted.artifactId) || accepted.artifactId <= 0 ||
+              !/^[a-f0-9]{64}$/.test(accepted.zipSha256)) {
+            throw new Error('Accepted release placeholders must be replaced with verified pins');
+          }
+          for (const path of ['build-provenance.json', 'native-admin/build-provenance.json']) {
+            const p = JSON.parse(readFileSync(path, 'utf8'));
+            if (!p || typeof p !== 'object' || Array.isArray(p) ||
+                Object.entries(accepted).some(([key, value]) => p[key] !== value)) {
+              throw new Error(`Staged build provenance differs from the accepted release: ${path}`);
+            }
+          }
+          async function api(path) {
+            const r = await fetch(`https://api.github.com/repos/${process.env.GITHUB_REPOSITORY}/${path}`, {
+              headers: { Authorization: `Bearer ${process.env.GH_TOKEN}`, Accept: 'application/vnd.github+json' },
+              signal: AbortSignal.timeout(20000),
+            });
+            if (!r.ok) throw new Error(`GitHub verification HTTP ${r.status}`);
+            return r.json();
+          }
+          const run = await api(`actions/runs/${accepted.run}`);
+          if (run.head_sha !== source || run.name !== 'SEJIRE checks' ||
+              run.status !== 'completed' || run.conclusion !== 'success') {
+            throw new Error('Accepted source checks are not successful');
+          }
+          const { artifacts } = await api(`actions/runs/${accepted.run}/artifacts`);
+          const matches = artifacts.filter(a => a.name === accepted.artifact && !a.expired);
+          if (matches.length !== 1 || matches[0].id !== accepted.artifactId ||
+              matches[0].workflow_run.head_sha !== source ||
+              matches[0].digest !== `sha256:${accepted.zipSha256}`) {
+            throw new Error('Accepted artifact identity differs');
+          }
+          const head = await api('git/ref/heads/gh-pages');
+          if (head.object.sha !== process.env.GITHUB_SHA) throw new Error('Pages branch advanced; refuse stale release');
+          console.log('Accepted static tree, both build provenances, successful source checks and artifact digest verified.');
+          NODE
+          mkdir .pages-public
+          git archive "$APPROVED_PAGES" | tar -x -C .pages-public
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          name: github-pages-${{ github.run_id }}-${{ github.run_attempt }}
+          path: .pages-public
+
+      - name: Refuse a stale Pages release immediately before deployment
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          const r = await fetch(`https://api.github.com/repos/${process.env.GITHUB_REPOSITORY}/git/ref/heads/gh-pages`, {
+            headers: { Authorization: `Bearer ${process.env.GH_TOKEN}`, Accept: 'application/vnd.github+json' },
+            signal: AbortSignal.timeout(20000),
+          });
+          if (!r.ok) throw new Error(`GitHub head verification HTTP ${r.status}`);
+          const head = await r.json();
+          if (head.object.sha !== process.env.GITHUB_SHA) throw new Error('Pages branch advanced after upload; refuse stale release');
+          console.log('Pages source head still matches this release commit.');
+          NODE
+
+      - name: Deploy the verified static site
+        id: deployment
+        uses: actions/deploy-pages@v4
+        with:
+          artifact_name: github-pages-${{ github.run_id }}-${{ github.run_attempt }}
