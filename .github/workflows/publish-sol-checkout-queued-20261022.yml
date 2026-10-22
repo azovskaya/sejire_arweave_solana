@@ -1,0 +1,512 @@
+name: Publish queued accepted SOL checkout and help
+
+# One-time release from the already allowed gh-pages environment branch.
+# The source SHA is fixed. CI/artifact pins are resolved once, only after
+# the latest exact-source push CI and actual Worker deployment both succeed.
+# Re-read gh-pages immediately before adding this file: its parent/tree pins
+# must match the actual latest static snapshot. No rebuild or payment occurs.
+on:
+  push:
+    branches: [gh-pages]
+    paths: ['.github/workflows/publish-sol-checkout-queued-20261022.yml']
+
+permissions:
+  contents: write
+  actions: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: gh-pages-deploy
+  cancel-in-progress: false
+
+env:
+  RELEASE_WORKFLOW: .github/workflows/publish-sol-checkout-queued-20261022.yml
+  APPROVED_PAGES: 9a3d2bbc9d9ab3d0b7f5f5e533d945c6ebd756c7
+  APPROVED_TREE: 91405bb1347befe37a615f90281935b1e3a61fe7
+  SOURCE_SHA: 'd0dcb1320ba330233592cdf805fc8c85a00d6971'
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          path: release
+          fetch-depth: 2
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Verify the approved release parent and prepare strict release checks
+        working-directory: release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REPOSITORY" = 'azovskaya/sejire_arweave_solana'
+          test "$GITHUB_REF" = 'refs/heads/gh-pages'
+          [[ "$APPROVED_PAGES" =~ ^[a-f0-9]{40}$ ]]
+          [[ "$APPROVED_TREE" =~ ^[a-f0-9]{40}$ ]]
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git show -s --format=%P HEAD)" = "$APPROVED_PAGES"
+          test "$(git rev-parse "$APPROVED_PAGES^{tree}")" = "$APPROVED_TREE"
+          test "$(git diff --name-status "$APPROVED_PAGES" HEAD)" = "$(printf 'A\t%s' "$RELEASE_WORKFLOW")"
+          cat > "$RUNNER_TEMP/sejire-check-release.mjs" <<'NODE'
+          const e = process.env;
+          const runId = Number(e.CHECKED_RUN), artifactId = Number(e.APPROVED_ARTIFACT_ID);
+          const workerId = Number(e.WORKER_RUN_ID), ciAttempt = Number(e.CHECKED_RUN_ATTEMPT), workerAttempt = Number(e.WORKER_RUN_ATTEMPT);
+          if (e.GITHUB_REPOSITORY !== 'azovskaya/sejire_arweave_solana' ||
+              !/^[a-f0-9]{40}$/.test(e.SOURCE_SHA || '') ||
+              !/^[a-f0-9]{64}$/.test(e.APPROVED_ZIP_SHA256 || '') ||
+              !Number.isSafeInteger(runId) || runId < 1 ||
+              !Number.isSafeInteger(artifactId) || artifactId < 1 ||
+              ![workerId, ciAttempt, workerAttempt].every(v => Number.isSafeInteger(v) && v > 0)) {
+            throw new Error('Missing or invalid exact-source CI and Worker release evidence');
+          }
+          async function api(path) {
+            const r = await fetch(`https://api.github.com/repos/${e.GITHUB_REPOSITORY}/${path}`, {
+              headers: { Authorization: `Bearer ${e.GH_TOKEN}`, Accept: 'application/vnd.github+json' },
+              redirect: 'error', signal: AbortSignal.timeout(20000),
+            });
+            if (!r.ok) throw new Error(`Release verification HTTP ${r.status}`);
+            return r.json();
+          }
+          const run = await api(`actions/runs/${runId}`);
+          if (run.head_sha !== e.SOURCE_SHA || run.head_branch !== 'feat/promo-funded-preservation' ||
+              run.name !== 'SEJIRE checks' || run.path !== '.github/workflows/checks.yml' ||
+              run.event !== 'push' || run.run_attempt !== ciAttempt || run.status !== 'completed' || run.conclusion !== 'success') {
+            throw new Error('Pinned source CI is not the completed successful checks run');
+          }
+          const result = await api(`actions/runs/${runId}/artifacts?per_page=100`);
+          if (result.total_count > 100) throw new Error('Unexpected artifact pagination');
+          const matches = result.artifacts.filter(a => a.name === 'native-admin-build' && !a.expired);
+          if (matches.length !== 1 || matches[0].id !== artifactId ||
+              matches[0].workflow_run?.id !== runId ||
+              matches[0].workflow_run?.head_sha !== e.SOURCE_SHA ||
+              matches[0].digest !== `sha256:${e.APPROVED_ZIP_SHA256}`) {
+            throw new Error('Pinned artifact identity or digest changed');
+          }
+          const worker = await api(`actions/runs/${workerId}`);
+          if (worker.head_sha !== e.SOURCE_SHA || worker.head_branch !== 'feat/promo-funded-preservation' ||
+              worker.name !== 'Deploy promo fund Worker' || worker.path !== '.github/workflows/deploy-promo-fund-worker.yml' ||
+              worker.event !== 'push' || worker.run_attempt !== workerAttempt ||
+              worker.status !== 'completed' || worker.conclusion !== 'success') {
+            throw new Error('Pinned Worker run or attempt is no longer the successful accepted deployment');
+          }
+          const currentRuns = await api(`actions/runs?head_sha=${e.SOURCE_SHA}&event=push&per_page=100`);
+          if (currentRuns.total_count > 100) throw new Error('Unexpected workflow pagination');
+          function latest(name, path) {
+            return currentRuns.workflow_runs.filter(r => r.head_sha === e.SOURCE_SHA &&
+              r.head_branch === 'feat/promo-funded-preservation' && r.event === 'push' &&
+              r.name === name && r.path === path).sort((a, b) => b.id - a.id)[0];
+          }
+          const latestCi = latest('SEJIRE checks', '.github/workflows/checks.yml');
+          const latestWorker = latest('Deploy promo fund Worker', '.github/workflows/deploy-promo-fund-worker.yml');
+          if (latestCi?.id !== runId || latestCi?.run_attempt !== ciAttempt ||
+              latestWorker?.id !== workerId || latestWorker?.run_attempt !== workerAttempt ||
+              latestCi?.status !== 'completed' || latestCi?.conclusion !== 'success' ||
+              latestWorker?.status !== 'completed' || latestWorker?.conclusion !== 'success') {
+            throw new Error('A later run or attempt replaced the accepted source checks or Worker deployment');
+          }
+          const jobResult = await api(`actions/runs/${workerId}/attempts/${workerAttempt}/jobs?per_page=100`);
+          if (jobResult.total_count > 100) throw new Error('Unexpected Worker job pagination');
+          const jobs = jobResult.jobs.filter(j => j.name === 'deploy');
+          const steps = jobs.length === 1 ? (jobs[0].steps || []).filter(s => s.name === 'Deploy sejire-sponsor') : [];
+          if (jobs.length !== 1 || jobs[0].status !== 'completed' || jobs[0].conclusion !== 'success' ||
+              steps.length !== 1 || steps[0].status !== 'completed' || steps[0].conclusion !== 'success') {
+            throw new Error('Accepted Worker deploy step did not actually succeed');
+          }
+          const source = await api('git/ref/heads/feat/promo-funded-preservation');
+          const pages = await api('git/ref/heads/gh-pages');
+          if (source.object.sha !== e.SOURCE_SHA) throw new Error('Source branch advanced; refuse stale release');
+          const expectedPages = e.PAGES_CONTENT_SHA || e.GITHUB_SHA;
+          if (pages.object.sha !== expectedPages) throw new Error('Pages branch advanced; refuse stale release');
+          console.log(`Verified source ${e.SOURCE_SHA}, CI ${runId}, artifact ${artifactId}, Pages ${expectedPages}.`);
+          NODE
+
+      - name: Wait up to 15 minutes for exact-source CI and an actual successful Worker deployment
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import { appendFileSync, writeFileSync } from 'node:fs';
+          import { setTimeout as delay } from 'node:timers/promises';
+
+          const e = process.env;
+          if (e.GITHUB_REPOSITORY !== 'azovskaya/sejire_arweave_solana' ||
+              e.GITHUB_REF !== 'refs/heads/gh-pages' ||
+              !/^[a-f0-9]{40}$/.test(e.SOURCE_SHA || '') ||
+              !/^[a-f0-9]{40}$/.test(e.GITHUB_SHA || '')) {
+            throw new Error('An explicit immutable source and gh-pages release event are required');
+          }
+          const deadline = Date.now() + 15 * 60 * 1000;
+          async function api(path) {
+            const remaining = deadline - Date.now();
+            if (remaining <= 0) throw new Error('Timed out after 15 minutes waiting for accepted CI and Worker deployment');
+            const r = await fetch(`https://api.github.com/repos/${e.GITHUB_REPOSITORY}/${path}`, {
+              headers: { Authorization: `Bearer ${e.GH_TOKEN}`, Accept: 'application/vnd.github+json' },
+              redirect: 'error', signal: AbortSignal.timeout(Math.min(20000, remaining)),
+            });
+            if (!r.ok) throw new Error(`Queued release verification HTTP ${r.status}`);
+            return r.json();
+          }
+          async function assertHeads() {
+            const [source, pages] = await Promise.all([
+              api('git/ref/heads/feat/promo-funded-preservation'), api('git/ref/heads/gh-pages'),
+            ]);
+            if (source.object.sha !== e.SOURCE_SHA) throw new Error('Source branch advanced; refuse queued stale release');
+            if (pages.object.sha !== e.GITHUB_SHA) throw new Error('Pages branch advanced; refuse queued stale release');
+          }
+          function latest(runs, name, path) {
+            return runs.filter(r => r.head_sha === e.SOURCE_SHA && r.head_branch === 'feat/promo-funded-preservation' &&
+              r.event === 'push' && r.name === name && r.path === path).sort((a, b) => b.id - a.id)[0];
+          }
+          function accepted(run, label) {
+            if (!run || run.status !== 'completed') return false;
+            if (run.conclusion !== 'success') {
+              throw new Error(`${label} latest push run ${run.id}, attempt ${run.run_attempt}, completed ${run.conclusion}; refuse release`);
+            }
+            return true;
+          }
+          function positive(value) { return Number.isSafeInteger(value) && value > 0; }
+          let previousStatus;
+          while (true) {
+            await assertHeads();
+            const list = await api(`actions/runs?head_sha=${e.SOURCE_SHA}&event=push&per_page=100`);
+            if (list.total_count > 100 || !Array.isArray(list.workflow_runs)) throw new Error('Unexpected workflow pagination');
+            const ci = latest(list.workflow_runs, 'SEJIRE checks', '.github/workflows/checks.yml');
+            const worker = latest(list.workflow_runs, 'Deploy promo fund Worker', '.github/workflows/deploy-promo-fund-worker.yml');
+            const ciReady = accepted(ci, 'CI');
+            const workerReady = accepted(worker, 'Worker');
+            const status = `CI ${ci ? `${ci.id}/${ci.run_attempt} ${ci.status}` : 'not yet registered'}; Worker ${worker ? `${worker.id}/${worker.run_attempt} ${worker.status}` : 'not yet registered'}`;
+            if (status !== previousStatus) { console.log(status); previousStatus = status; }
+            if (ciReady && workerReady) {
+              if (![ci.id, ci.run_attempt, worker.id, worker.run_attempt].every(positive)) {
+                throw new Error('Invalid accepted run identity');
+              }
+              const [artifactResult, jobResult] = await Promise.all([
+                api(`actions/runs/${ci.id}/artifacts?per_page=100`),
+                api(`actions/runs/${worker.id}/attempts/${worker.run_attempt}/jobs?per_page=100`),
+              ]);
+              if (artifactResult.total_count > 100 || jobResult.total_count > 100 ||
+                  !Array.isArray(artifactResult.artifacts) || !Array.isArray(jobResult.jobs)) {
+                throw new Error('Unexpected accepted evidence pagination');
+              }
+              const artifacts = artifactResult.artifacts.filter(a => a.name === 'native-admin-build' && !a.expired);
+              if (artifacts.length !== 1 || !positive(artifacts[0].id) ||
+                  artifacts[0].workflow_run?.id !== ci.id || artifacts[0].workflow_run?.head_sha !== e.SOURCE_SHA ||
+                  !/^sha256:[a-f0-9]{64}$/.test(artifacts[0].digest || '')) {
+                throw new Error('Expected one exact-source native build with an authenticated digest');
+              }
+              const jobs = jobResult.jobs.filter(j => j.name === 'deploy');
+              const deploySteps = jobs.length === 1 ? (jobs[0].steps || []).filter(s => s.name === 'Deploy sejire-sponsor') : [];
+              if (jobs.length !== 1 || jobs[0].status !== 'completed' || jobs[0].conclusion !== 'success' ||
+                  deploySteps.length !== 1 || deploySteps[0].status !== 'completed' || deploySteps[0].conclusion !== 'success') {
+                throw new Error('Worker deploy step did not actually succeed; skipped deployment is not acceptance');
+              }
+              await assertHeads();
+              const pins = {
+                CHECKED_RUN: ci.id, CHECKED_RUN_ATTEMPT: ci.run_attempt,
+                APPROVED_ARTIFACT_ID: artifacts[0].id, APPROVED_ZIP_SHA256: artifacts[0].digest.slice(7),
+                WORKER_RUN_ID: worker.id, WORKER_RUN_ATTEMPT: worker.run_attempt,
+              };
+              appendFileSync(e.GITHUB_ENV, Object.entries(pins).map(([key, value]) => `${key}=${value}`).join('\n') + '\n');
+              writeFileSync(`${e.RUNNER_TEMP}/sejire-pages-accepted-ci.json`, JSON.stringify({
+                schema: 'sejire/pages-queued-release-acceptance/v1', acceptedAt: new Date().toISOString(),
+                sourceCommit: e.SOURCE_SHA, releaseEventCommit: e.GITHUB_SHA,
+                approvedPagesParent: e.APPROVED_PAGES, approvedPagesTree: e.APPROVED_TREE,
+                ...pins, workerDeployJobId: jobs[0].id,
+                workerDeployStep: { name: deploySteps[0].name, conclusion: deploySteps[0].conclusion },
+              }, null, 2) + '\n');
+              console.log(`Accepted exact-source CI ${ci.id}/${ci.run_attempt}, native build ${artifacts[0].id}, actual Worker deploy ${worker.id}/${worker.run_attempt}.`);
+              break;
+            }
+            const remaining = deadline - Date.now();
+            if (remaining <= 0) throw new Error('Timed out after 15 minutes waiting for accepted CI and Worker deployment');
+            await delay(Math.min(20000, remaining));
+          }
+          NODE
+
+      - name: Recheck the frozen CI, artifact, Worker attempt and both branch heads
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node "$RUNNER_TEMP/sejire-check-release.mjs"
+
+      - name: Check out only the pinned accepted source for its artifact publisher
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.SOURCE_SHA }}
+          path: source
+          fetch-depth: 1
+
+      - name: Recover the exact checked artifact and overlay the root
+        working-directory: source
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PUBLISH_ROOT: '1'
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+          cmp apps/web/public/admin-lock.json ../release/admin-lock.json
+          node scripts/pages-native-artifact.mjs
+          test "$(git -C .pages-site rev-parse HEAD)" = "$GITHUB_SHA"
+
+      - name: Mirror the verified build to native-admin and prove the full static file map
+        working-directory: source
+        run: |
+          set -euo pipefail
+          python3 <<'PY'
+          import hashlib, json, os, pathlib, shutil, subprocess, zipfile
+          e = os.environ
+          site = pathlib.Path('.pages-site')
+          native = site / 'native-admin'
+          archive = pathlib.Path('.pages-download/native.zip').read_bytes()
+          if hashlib.sha256(archive).hexdigest() != e['APPROVED_ZIP_SHA256']:
+              raise RuntimeError('Downloaded ZIP differs from the pinned artifact')
+          expected_provenance = {
+              'artifact': 'native-admin-build', 'run': int(e['CHECKED_RUN']),
+              'artifactId': int(e['APPROVED_ARTIFACT_ID']), 'sourceCommit': e['SOURCE_SHA'],
+              'zipSha256': e['APPROVED_ZIP_SHA256'], 'publishedByCommit': e['GITHUB_SHA'],
+          }
+          provenance_bytes = (site / 'build-provenance.json').read_bytes()
+          if json.loads(provenance_bytes) != expected_provenance:
+              raise RuntimeError('Publisher selected a different artifact or provenance')
+          def git(*args, data=None):
+              return subprocess.check_output(['git', '-C', str(site), *args], input=data)
+          def blob(data):
+              return git('hash-object', '--stdin', data=data).decode().strip()
+          expected = {}
+          for row in git('ls-tree', '-r', '-z', e['GITHUB_SHA']).split(b'\0'):
+              if not row: continue
+              meta, path = row.split(b'\t', 1)
+              mode, kind, oid = meta.decode().split(' ')
+              if kind != 'blob' or mode not in ('100644', '100755'):
+                  raise RuntimeError('Static snapshot contains unsupported links or Git objects')
+              name = path.decode('utf-8')
+              if not name.startswith('native-admin/'):
+                  expected[name] = (mode, oid)
+          if native.is_symlink(): raise RuntimeError('Unexpected native-admin symlink')
+          if native.exists(): shutil.rmtree(native)
+          native.mkdir()
+          allowed = {'index.html', '404.html', 'admin-lock.json', 'favicon.ico', 'favicon.svg'}
+          with zipfile.ZipFile('.pages-download/native.zip') as z:
+              seen = set()
+              if sum(i.file_size for i in z.infolist()) > 30000000:
+                  raise RuntimeError('Oversized artifact')
+              for item in z.infolist():
+                  p = pathlib.PurePosixPath(item.filename)
+                  if p.is_absolute() or '..' in p.parts or '\\' in item.filename or ((item.external_attr >> 16) & 0o170000) == 0o120000:
+                      raise RuntimeError('Unsafe artifact path')
+                  if item.is_dir(): continue
+                  name = str(p)
+                  if name != item.filename or name in seen or not (name in allowed or (len(p.parts) > 1 and p.parts[0] == 'assets')):
+                      raise RuntimeError('Unexpected or duplicate artifact path')
+                  seen.add(name)
+                  data = z.read(item)
+                  root_file = site.joinpath(*p.parts)
+                  if root_file.read_bytes() != data:
+                      raise RuntimeError('Root differs from checked ZIP: ' + name)
+                  root_file.chmod(0o644)
+                  native_file = native.joinpath(*p.parts)
+                  native_file.parent.mkdir(parents=True, exist_ok=True)
+                  native_file.write_bytes(data)
+                  native_file.chmod(0o644)
+                  expected[name] = ('100644', blob(data))
+                  expected['native-admin/' + name] = ('100644', blob(data))
+              if not {'index.html', 'admin-lock.json'}.issubset(seen):
+                  raise RuntimeError('Required build files missing')
+          lock_bytes = pathlib.Path('apps/web/public/admin-lock.json').read_bytes()
+          lock = json.loads(lock_bytes)
+          if lock.get('schema') != 'sejire/admin-lock/v1' or lock.get('configured') is not True:
+              raise RuntimeError('Owner admin verifier is not configured')
+          for root in (site, native):
+              if (root / 'admin-lock.json').read_bytes() != lock_bytes:
+                  raise RuntimeError('Admin verifier changed')
+              if './assets/' not in (root / 'index.html').read_text():
+                  raise RuntimeError('Expected relocatable build')
+              (root / 'build-provenance.json').write_bytes(provenance_bytes)
+              (root / 'build-provenance.json').chmod(0o644)
+          expected['build-provenance.json'] = ('100644', blob(provenance_bytes))
+          expected['native-admin/build-provenance.json'] = ('100644', blob(provenance_bytes))
+          subprocess.run(['git', '-C', str(site), 'add', '--all'], check=True)
+          actual = {}
+          for row in git('ls-files', '--stage', '-z').split(b'\0'):
+              if not row: continue
+              meta, path = row.split(b'\t', 1)
+              mode, oid, stage = meta.decode().split(' ')
+              if stage != '0': raise RuntimeError('Unmerged static index')
+              actual[path.decode('utf-8')] = (mode, oid)
+          if actual != expected:
+              raise RuntimeError('Full static file map differs from approved snapshot plus exact build overlay')
+          print('Exact root/native build bytes and provenance verified; every unrelated static file preserved.')
+          PY
+
+      - name: Save the static result with an ordinary fast-forward push
+        id: content
+        working-directory: source/.pages-site
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          node "$RUNNER_TEMP/sejire-check-release.mjs"
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          git config user.name 'SEJIRE Pages'
+          git config user.email 'sejire-pages@users.noreply.github.com'
+          if ! git diff --cached --quiet; then
+            git commit -m "Publish checked SOL checkout ${SOURCE_SHA} (CI ${CHECKED_RUN})"
+          fi
+          content_sha="$(git rev-parse HEAD)"
+          tree_sha="$(git rev-parse HEAD^{tree})"
+          git push origin HEAD:refs/heads/gh-pages
+          echo "PAGES_CONTENT_SHA=$content_sha" >> "$GITHUB_ENV"
+          echo "content_sha=$content_sha" >> "$GITHUB_OUTPUT"
+          echo "tree_sha=$tree_sha" >> "$GITHUB_OUTPUT"
+          mkdir "$RUNNER_TEMP/sejire-pages-public"
+          git archive "$content_sha" | tar -x -C "$RUNNER_TEMP/sejire-pages-public"
+          printf 'Release event %s; content %s; tree %s; source %s; CI %s; artifact %s; ZIP %s\n' \
+            "$GITHUB_SHA" "$content_sha" "$tree_sha" "$SOURCE_SHA" "$CHECKED_RUN" \
+            "$APPROVED_ARTIFACT_ID" "$APPROVED_ZIP_SHA256" | tee "$RUNNER_TEMP/sejire-pages-release-evidence.txt"
+          printf 'CI attempt %s; accepted Worker run %s; Worker attempt %s\n' \
+            "$CHECKED_RUN_ATTEMPT" "$WORKER_RUN_ID" "$WORKER_RUN_ATTEMPT" | tee -a "$RUNNER_TEMP/sejire-pages-release-evidence.txt"
+
+      - name: Verify both branch heads before uploading the static release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node "$RUNNER_TEMP/sejire-check-release.mjs"
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          name: github-pages-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/sejire-pages-public
+
+      - name: Refuse a stale source or static release immediately before deployment
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node "$RUNNER_TEMP/sejire-check-release.mjs"
+
+      - name: Deploy the exact verified static site
+        id: deployment
+        uses: actions/deploy-pages@v4
+        with:
+          artifact_name: github-pages-${{ github.run_id }}-${{ github.run_attempt }}
+
+      - name: Verify the actual public root and native-admin static files
+        working-directory: source
+        run: |
+          set -euo pipefail
+          python3 <<'PY'
+          import hashlib, json, os, pathlib, zipfile
+          from html.parser import HTMLParser
+          e = os.environ
+          archive = pathlib.Path('.pages-download/native.zip').read_bytes()
+          if hashlib.sha256(archive).hexdigest() != e['APPROVED_ZIP_SHA256']:
+              raise RuntimeError('Public verification ZIP differs from the accepted artifact')
+          expected_provenance = {
+              'artifact': 'native-admin-build', 'run': int(e['CHECKED_RUN']),
+              'artifactId': int(e['APPROVED_ARTIFACT_ID']), 'sourceCommit': e['SOURCE_SHA'],
+              'zipSha256': e['APPROVED_ZIP_SHA256'], 'publishedByCommit': e['GITHUB_SHA'],
+          }
+          provenance = pathlib.Path('.pages-site/build-provenance.json').read_bytes()
+          if json.loads(provenance) != expected_provenance:
+              raise RuntimeError('Public verification provenance differs from the accepted release')
+          class Scripts(HTMLParser):
+              def __init__(self):
+                  super().__init__()
+                  self.entries = set()
+              def handle_starttag(self, tag, attrs):
+                  if tag != 'script': return
+                  src = dict(attrs).get('src')
+                  if not src: return
+                  if not src.startswith('./assets/') or not src.endswith('.js'):
+                      raise RuntimeError('Unexpected external or non-JavaScript entry in the accepted HTML')
+                  name = src[2:]
+                  p = pathlib.PurePosixPath(name)
+                  if '..' in p.parts or str(p) != name or '\\' in name or '?' in name or '#' in name:
+                      raise RuntimeError('Unsafe public JavaScript entry path')
+                  self.entries.add(name)
+          with zipfile.ZipFile('.pages-download/native.zip') as z:
+              parser = Scripts()
+              parser.feed(z.read('index.html').decode('utf-8'))
+              if not parser.entries: raise RuntimeError('No accepted JavaScript entry was found')
+              payloads = {name: z.read(name) for name in ['index.html', 'admin-lock.json', *sorted(parser.entries)]}
+          payloads['build-provenance.json'] = provenance
+          files = [{'path': name, 'bytes': len(data), 'sha256': hashlib.sha256(data).hexdigest()}
+                   for name, data in payloads.items()]
+          pathlib.Path(e['RUNNER_TEMP'], 'sejire-public-static-expected.json').write_text(json.dumps(files))
+          PY
+          node --input-type=module <<'NODE'
+          import { createHash } from 'node:crypto';
+          import { readFileSync, writeFileSync } from 'node:fs';
+          import { setTimeout as delay } from 'node:timers/promises';
+          const e = process.env;
+          const base = 'https://azovskaya.github.io/sejire_arweave_solana/';
+          const files = JSON.parse(readFileSync(`${e.RUNNER_TEMP}/sejire-public-static-expected.json`, 'utf8'));
+          const targets = ['', 'native-admin/'].flatMap(prefix => files.map(file => ({
+            ...file, url: new URL(prefix + (file.path === 'index.html' ? '' : file.path), base).href,
+          })));
+          const deadline = Date.now() + 3 * 60 * 1000;
+          let attempt = 0;
+          async function check(target) {
+            try {
+              const remaining = deadline - Date.now();
+              if (remaining <= 0) throw new Error('CDN propagation deadline reached');
+              const r = await fetch(target.url, {
+                method: 'GET', redirect: 'error', credentials: 'omit', cache: 'no-store',
+                headers: { 'Cache-Control': 'no-cache' },
+                signal: AbortSignal.timeout(Math.min(15000, remaining)),
+              });
+              if (r.status !== 200) throw new Error(`HTTP ${r.status}`);
+              const body = Buffer.from(await r.arrayBuffer());
+              const actualSha256 = createHash('sha256').update(body).digest('hex');
+              if (body.length !== target.bytes || actualSha256 !== target.sha256) {
+                throw new Error('Public bytes differ from the accepted ZIP or provenance');
+              }
+              return { url: target.url, ok: true, status: r.status, bytes: body.length, sha256: actualSha256 };
+            } catch (error) {
+              return { url: target.url, ok: false, expectedBytes: target.bytes,
+                expectedSha256: target.sha256, error: String(error?.message || error) };
+            }
+          }
+          while (true) {
+            attempt += 1;
+            const checks = await Promise.all(targets.map(check));
+            const success = checks.every(result => result.ok);
+            const exhausted = Date.now() >= deadline;
+            const evidence = {
+              schema: 'sejire/public-static-smoke/v1',
+              status: success ? 'success' : exhausted ? 'failed' : 'waiting-for-propagation',
+              checkedAt: new Date().toISOString(), attempt, baseUrl: base,
+              sourceCommit: e.SOURCE_SHA, releaseEventCommit: e.GITHUB_SHA,
+              pagesContentCommit: e.PAGES_CONTENT_SHA, checkedRun: Number(e.CHECKED_RUN),
+              workerRun: Number(e.WORKER_RUN_ID), artifactId: Number(e.APPROVED_ARTIFACT_ID),
+              zipSha256: e.APPROVED_ZIP_SHA256, checks,
+            };
+            writeFileSync(`${e.RUNNER_TEMP}/sejire-public-static-smoke.json`, JSON.stringify(evidence, null, 2) + '\n');
+            if (success) {
+              console.log(`Public root and native-admin match the accepted build: ${checks.length} static GETs verified.`);
+              break;
+            }
+            console.log(`Waiting for Pages CDN propagation (attempt ${attempt}): ${checks.filter(c => !c.ok).map(c => `${c.url}: ${c.error}`).join('; ')}`);
+            if (exhausted) throw new Error('Public static files did not match the accepted release within 3 minutes');
+            await delay(Math.min(10000, deadline - Date.now()));
+          }
+          NODE
+
+      - name: Preserve release event and content identities
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pages-release-evidence-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/sejire-pages-release-evidence.txt
+            ${{ runner.temp }}/sejire-pages-accepted-ci.json
+            ${{ runner.temp }}/sejire-public-static-smoke.json
+          if-no-files-found: ignore
