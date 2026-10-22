@@ -39,13 +39,16 @@ export const DEVNET_ONLY_RECIPIENTS = Object.freeze([
 ]);
 export type PaidArchiveBinding = Readonly<ArchiveBinding & { vaultId: string; parentTxId: string | null }>;
 export type PaidStorageTarget = Readonly<{ kind: 'arweave-direct'; network: 'arweave.N.1'; treasuryAddress: string }>;
-export type PaidOrder = Readonly<Omit<LegacyOrder, 'schema' | 'kind' | 'archive'> & {
-  schema: 'sejire/order/v2'; kind: 'preservation'; policyHash: string;
-  archive: PaidArchiveBinding; storage: PaidStorageTarget;
-}>;
+type PaidOrderBase = Readonly<Omit<LegacyOrder, 'schema' | 'kind' | 'archive'> & {schema:'sejire/order/v2';policyHash:string}>;
+export type PaidPreservationOrder = PaidOrderBase & Readonly<{kind:'preservation';archive:PaidArchiveBinding;storage:PaidStorageTarget}>;
+export type PaidContributionOrder = PaidOrderBase & Readonly<{kind:'contribution';archive?:never;storage?:never}>;
+export type PaidOrder = PaidPreservationOrder | PaidContributionOrder;
 export type Order = LegacyOrder | PaidOrder;
 export type OrderInput = Omit<LegacyOrder, 'schema' | 'asset' | 'total' | 'networkFee'> & { asset: 'SOL' | 'USDC' };
-export type PaidOrderInput = Omit<PaidOrder, 'schema' | 'asset' | 'total' | 'networkFee'> & { asset: 'SOL' };
+type PaidOrderInputBase = Omit<LegacyOrder, 'schema' | 'asset' | 'total' | 'networkFee' | 'archive' | 'kind'> & {asset:'SOL';policyHash:string};
+export type PaidPreservationOrderInput = PaidOrderInputBase & {kind:'preservation';archive:PaidArchiveBinding;storage:PaidStorageTarget};
+export type PaidContributionOrderInput = PaidOrderInputBase & {kind:'contribution';archive?:never;storage?:never};
+export type PaidOrderInput = PaidPreservationOrderInput | PaidContributionOrderInput;
 /** Trusted order creation only, not a price supplied by a browser. No default archive size policy. */
 export function createOrder(input: OrderInput): LegacyOrder {
   const asset = assetFor(input.network, input.asset);
@@ -89,15 +92,22 @@ export function validatePaidStorage(value: unknown): PaidStorageTarget {
   return Object.freeze({ kind: value.kind, network: value.network, treasuryAddress: value.treasuryAddress });
 }
 /** V2 is deliberately a new schema: old executors must reject it rather than select Turbo. */
+export function createPaidOrder(input: PaidPreservationOrderInput):PaidPreservationOrder;
+export function createPaidOrder(input: PaidContributionOrderInput):PaidContributionOrder;
+export function createPaidOrder(input: PaidOrderInput): PaidOrder;
 export function createPaidOrder(input: PaidOrderInput): PaidOrder {
-  if (input.kind !== 'preservation' || input.asset !== 'SOL' || input.servicePayment.amount !== PAID_SERVICE_LAMPORTS ||
+  if (input.asset !== 'SOL' || (input.kind === 'preservation' ? input.servicePayment.amount !== PAID_SERVICE_LAMPORTS :
+      input.kind !== 'contribution' || input.servicePayment.amount !== '0') ||
       typeof input.policyHash !== 'string' || !/^[a-f0-9]{64}$/.test(input.policyHash)) throw new Error('invalid_paid_order');
+  if (input.kind === 'contribution' && (input.archive !== undefined || input.storage !== undefined)) throw new Error('invalid_contribution_order');
   if (input.network === 'mainnet-beta' && [input.servicePayment.recipient, input.fundContribution.recipient].some(address => DEVNET_ONLY_RECIPIENTS.includes(address))) throw new Error('devnet_wallet_cannot_be_mainnet_treasury');
-  const archive = validatePaidArchive(input.archive), storage = validatePaidStorage(input.storage);
+  const archive = input.kind === 'preservation' ? validatePaidArchive(input.archive) : undefined;
+  const storage = input.kind === 'preservation' ? validatePaidStorage(input.storage) : undefined;
   const legacy = createOrder(input);
   if ([input.payer, input.servicePayment.recipient, input.fundContribution.recipient, SYSTEM_PROGRAM].includes(input.reference) ||
       [input.payer, input.servicePayment.recipient, input.fundContribution.recipient].includes(SYSTEM_PROGRAM)) throw new Error('recipient_roles_overlap');
-  return Object.freeze({ ...legacy, schema: 'sejire/order/v2', kind: 'preservation', policyHash: input.policyHash, archive, storage });
+  return Object.freeze({ ...legacy, schema: 'sejire/order/v2', policyHash: input.policyHash,
+    ...(archive && storage ? { archive, storage } : {}) }) as PaidOrder;
 }
 /** Validate deserialized orders again; do not accept a forged asset/total/metadata. */
 export function assertOrder(order: Order): void {

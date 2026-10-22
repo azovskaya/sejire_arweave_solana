@@ -8,6 +8,7 @@ import { landingMessages } from '../lib/i18n/landing';
 import { LanguageSwitch } from './LanguageSwitch';
 import { clearVaultSession, getSessionMnemonic, getVaultSession } from '../lib/vaultSession/session';
 import { forgetFundedPromo } from '../lib/fund/preference';
+import { PaidSolanaFlow } from './PaidSolanaFlow';
 
 type Props = {
   onStartNew: (title: string) => void;
@@ -23,6 +24,7 @@ export function Welcome({ onStartNew, onContinueDraft, onRestoreSeed, onCashier 
   const hasDraft = Boolean(loadDraftTree());
   const { t, locale } = useI18n();
   const copy = landingMessages[locale];
+  const contributionCheckout = import.meta.env.VITE_PRESERVATION_V2_ENABLED === '1';
   function startFresh() {
     if (hasDraft && !window.confirm(t.welcome.replaceDraftConfirm)) return;
     onStartNew(t.defaultTreeTitle);
@@ -33,6 +35,7 @@ export function Welcome({ onStartNew, onContinueDraft, onRestoreSeed, onCashier 
     setOpenVaultId(null);
     setArchiveClosed(true);
   }
+  if (supportOpen && contributionCheckout) return <main className="landing"><PaidSolanaFlow input={{ mode: 'contribution' }} onBack={() => setSupportOpen(false)} /></main>;
   if (supportOpen && import.meta.env.VITE_NATIVE_AR_ENABLED === "1") return <main className="landing"><NativeCheckoutPanel onBack={() => setSupportOpen(false)} /></main>;
   if (supportOpen) return <main className="landing"><CheckoutPublishPanel onBack={() => setSupportOpen(false)} /></main>;
   return <main className="landing">
@@ -65,7 +68,9 @@ export function Welcome({ onStartNew, onContinueDraft, onRestoreSeed, onCashier 
       </li>)}
     </ol>
     <footer className="landing-footer">
-      {import.meta.env.VITE_CHECKOUT_ENABLED === "1" && <button type="button" className="btn ghost" onClick={() => setSupportOpen(true)}>{checkoutMessages[locale].support}</button>}
+      {contributionCheckout
+        ? <button type="button" className="welcome-link-quiet" onClick={() => setSupportOpen(true)}>Помочь другим сохранить их истории</button>
+        : import.meta.env.VITE_CHECKOUT_ENABLED === "1" && <button type="button" className="btn ghost" onClick={() => setSupportOpen(true)}>{checkoutMessages[locale].support}</button>}
       <p>{copy.heritage}</p><p className="sub">{copy.privacy}</p>
       {import.meta.env.VITE_QA_TOOLS === '1' && <button type="button" className="welcome-link-quiet" onClick={onCashier}>{t.welcome.cashier}</button>}
     </footer>

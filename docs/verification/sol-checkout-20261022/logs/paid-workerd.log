@@ -1,0 +1,21 @@
+PASS paid API workerd: default off exposes no payment offer or session and makes no outbound request
+PASS paid API workerd: actual readiness pins SOL mainnet, separate AR network, configured roles and 0.03 SOL
+PASS paid API workerd: cancel before any admission works while paused with known or expired owner and never creates a hold
+PASS paid API workerd: pre-admission tombstone survives a lost reply and fresh paused isolate without a paid order
+PASS paid API workerd: every late create with a cancelled key is rejected before readiness or AR reservation
+PASS paid API workerd: malformed modern input and oversized bodies fail before payment or storage admission
+PASS paid API workerd: v2 admission persists exact ciphertext/parent/policy and one idempotent order
+PASS paid API workerd: ownership/origin/auth guard every resume and mutation before network evidence
+PASS paid API workerd: preparation is durable and reused; invalid signature or different saved message cannot reserve
+PASS paid API workerd: cancel-by-key returns an admitted preparation unchanged and foreign same-key cancellation is isolated
+PASS paid API workerd: admission/execution pause still recovers unknown wallet result from old reference without signing AR
+PASS paid API workerd: alarm fulfils paid obligation after restart/session expiry; lost AR acknowledgement preserves one TX
+PASS paid API workerd: valid public Ed25519 signature reserves exact preparation once and rejects replacement
+PASS paid API workerd: accepted header with interrupted chunk resumes exact signed TX and completes without a second SOL payment
+PASS paid API workerd: fresh secretless paused isolate retains completed receipt and GET never broadcasts
+PASS paid API workerd: help-only policy never invokes storage with both gates enabled and an Arweave outage
+PASS paid API workerd: standalone readiness has its own explicit gate and works without AR settings, signer or preservation admission
+PASS paid API workerd: standalone admission saves only immutable SOL terms; idempotent reuse adds no AR hold, payload or upload job
+PASS paid API workerd: standalone reserve verifies exact signature; nonfinalized payment remains unresolved with no credit or AR side effect
+PASS paid API workerd: disabled standalone admission still reconciles the original finalized payment after restart exactly once
+paid-api.runtime: PASS (20 scenarios); actual API/DO/SQLite/global fetch/alarm, fresh workerd isolates, unmatched outbound denied, no real payments or deployment

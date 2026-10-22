@@ -1,0 +1,46 @@
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> sejire-web@0.3.0 test:v2-recovery-browser
+> playwright test --config playwright.v2-recovery.config.ts --reporter=list,json --output=/tmp/sejire-review-recovery-browser-artifacts
+
+[WebServer] npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+[WebServer] (node:20328) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 29 tests using 1 worker
+
+(node:20362) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:20362) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   1 tests/preservation-v2-recovery.spec.mjs:150:3 › Funded archive without Protocol-Version opens the full network tree in a clean browser (2.7s)
+  ✓   2 tests/preservation-v2-recovery.spec.mjs:150:3 › Funded archive without Protocol-Version opens the full network tree with a local copy present (1.4s)
+  ✓   3 tests/preservation-v2-recovery.spec.mjs:165:1 › Same-gateway base64url data repairs wrong same-length raw and restores every encrypted tree (1.4s)
+  ✓   4 tests/preservation-v2-recovery.spec.mjs:175:3 › Invalid base64url fallback (invalid-character) cannot turn wrong same-length raw into a restored vault (1.5s)
+  ✓   5 tests/preservation-v2-recovery.spec.mjs:175:3 › Invalid base64url fallback (noncanonical-bits) cannot turn wrong same-length raw into a restored vault (1.4s)
+  ✓   6 tests/preservation-v2-recovery.spec.mjs:193:1 › One local fallback is described as a browser copy and opens the complete tree (1.6s)
+  ✓   7 tests/preservation-v2-recovery.spec.mjs:214:1 › Verified network forks remain a real version choice and honor the selected branch (1.5s)
+  ✓   8 tests/preservation-v2-recovery.spec.mjs:242:3 › A primary Vault-Id GraphQL and raw gateway (1.1s)
+  ✓   9 tests/preservation-v2-recovery.spec.mjs:242:3 › B first GraphQL times out second works (1.1s)
+  ✓  10 tests/preservation-v2-recovery.spec.mjs:242:3 › C dynamic AR.IO gateway indexes when static GraphQL unavailable (1.2s)
+  ✓  11 tests/preservation-v2-recovery.spec.mjs:242:3 › D all GraphQL unavailable, legacy locator finds TX (1.2s)
+  ✓  12 tests/preservation-v2-recovery.spec.mjs:242:3 › E empty GraphQL and legacy locator finds TX (1.2s)
+  ✓  13 tests/preservation-v2-recovery.spec.mjs:242:3 › F first metadata gateway down (1.2s)
+  ✓  14 tests/preservation-v2-recovery.spec.mjs:242:3 › G two raw gateways fail and third succeeds (1.3s)
+  ✓  15 tests/preservation-v2-recovery.spec.mjs:242:3 › H rendered URL HTML ignored, raw succeeds (1.2s)
+  ✓  16 tests/preservation-v2-recovery.spec.mjs:242:3 › T clean browser words only (1.4s)
+  ✓  17 tests/preservation-v2-recovery.spec.mjs:254:1 › UI clean browser opens family tree from legacy locator without GraphQL (1.6s)
+  ✓  18 tests/preservation-v2-recovery.spec.mjs:273:3 › I forged Vault-Id tag cannot decrypt (1.4s)
+  ✓  19 tests/preservation-v2-recovery.spec.mjs:273:3 › J changed raw bytes rejected (1.3s)
+  ✓  20 tests/preservation-v2-recovery.spec.mjs:273:3 › K correct hash but different envelope vault ID (1.3s)
+  ✓  21 tests/preservation-v2-recovery.spec.mjs:273:3 › L invalid decrypted vault rejected (1.5s)
+  ✓  22 tests/preservation-v2-recovery.spec.mjs:273:3 › M wrong words never open (1.4s)
+  ✓  23 tests/preservation-v2-recovery.spec.mjs:273:3 › N all discovery providers unavailable (1.3s)
+  ✓  24 tests/preservation-v2-recovery.spec.mjs:273:3 › O responding discovery has no candidates (1.1s)
+  ✓  25 tests/preservation-v2-recovery.spec.mjs:273:3 › P candidate but all raw gateways unavailable (1.1s)
+  ✓  26 tests/preservation-v2-recovery.spec.mjs:302:1 › Q sequential versions resolve v3 HEAD (1.1s)
+  ✓  27 tests/preservation-v2-recovery.spec.mjs:308:1 › R decryptable forks preserved with explicit MULTIPLE_VERIFIED_HEADS (1.2s)
+  ✓  28 tests/preservation-v2-recovery.spec.mjs:315:1 › S same TX from many providers dedupes once (1.2s)
+  ✓  29 tests/preservation-v2-recovery.spec.mjs:322:1 › U recovery makes no wallet or payment or upload calls (1.2s)
+
+  29 passed (41.1s)

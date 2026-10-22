@@ -7,6 +7,9 @@ import { SolanaRpcReader, DEVNET_GENESIS } from './rpcReader';
 import { RpcEvidenceError } from './rpcErrors';
 import { reconcilePayment } from './reconciliation';
 import { parseVerificationRequest, verifyRequest } from './verifyRequest';
+import { RpcPaymentPreparer } from './paymentPreparation';
+import { createPaidOrderFromPolicy, validateContributionPolicy, SOLANA_GENESIS, SOLANA_RPCS } from '../../../../packages/checkout/paid';
+import type { PaidOrder } from '../../../../packages/checkout/order';
 import { fixtureOrder, fixtureTransaction, fixtureStatus, fixtureChain, instructionData, encode58, addr, sig, type FixtureTransaction } from './rpcFixtures';
 let checks = 0;
 async function test(name: string, run: () => unknown | Promise<unknown>) { await run(); checks++; console.log(`PASS RPC ${name}`); }
@@ -186,5 +189,60 @@ await test('bounded RPC response and missing result reject without credit', asyn
   await assert.rejects(new SolanaRpcReader({ network: 'devnet' }, large).read(sig(5)), (e: unknown) => e instanceof RpcEvidenceError && e.reason === 'rpc-response-too-large');
   const missing = (async (_u: unknown, init: RequestInit) => Response.json({ jsonrpc: '2.0', id: JSON.parse(init.body as string).id })) as typeof fetch;
   await assert.rejects(new SolanaRpcReader({ network: 'devnet' }, missing).read(sig(5)), /rpc-malformed/);
+});
+function readerWithRawBalance(order: Pick<PaidOrder, 'network' | 'payer'>, balanceToken: string): SolanaRpcReader {
+  return new SolanaRpcReader({ network: order.network }, async (url, init) => {
+    assert.equal(String(url), SOLANA_RPCS[order.network]);
+    const request = JSON.parse(init!.body as string);
+    let result: unknown;
+    if (request.method === 'getGenesisHash') result = SOLANA_GENESIS[order.network];
+    else if (request.method === 'getAccountInfo') result = { value: null };
+    else if (request.method === 'getLatestBlockhash') result = { value: { blockhash: addr(8), lastValidBlockHeight: 1000 } };
+    else if (request.method === 'getFeeForMessage') result = { value: 5000 };
+    else {
+      assert.equal(request.method, 'getBalance');
+      assert.deepEqual(request.params, [order.payer, { commitment: 'finalized' }]);
+      // A raw JSON token is essential: Response.json(Number(...)) would already
+      // lose the precise lamports before exercising the actual RPC reader.
+      return new Response(`{"jsonrpc":"2.0","id":${request.id},"result":{"context":{"slot":100},"value":${balanceToken}}}`);
+    }
+    return Response.json({ jsonrpc: '2.0', id: request.id, result });
+  });
+}
+async function contributionForBalance(amount: string) {
+  const policy = validateContributionPolicy({ schema: 'sejire/contribution-policy/v1', version: 'rpc-u64-test', network: 'devnet',
+    genesisHash: SOLANA_GENESIS.devnet, serviceLamports: '0', serviceRecipient: addr(2), fundRecipient: addr(3) });
+  const now = Date.now();
+  return createPaidOrderFromPolicy(policy, { kind: 'contribution', id: 'f'.repeat(32), payer: addr(1), reference: addr(4),
+    createdAt: now - 1000, expiresAt: now + 100000, contribution: amount });
+}
+await test('raw RPC u64 balances stay exact while ordinary context numbers remain numbers', async () => {
+  const paid = await contributionForBalance('1');
+  const result = await readerWithRawBalance(paid, '18446744073709551615').rpc('getBalance', [paid.payer, { commitment: 'finalized' }]);
+  assert.deepEqual(result, { context: { slot: 100 }, value: '18446744073709551615' });
+});
+await test('preparation compares a large balance and network fee without rounding a single lamport', async () => {
+  const paid = await contributionForBalance('9007199254740993');
+  const exact = await new RpcPaymentPreparer(readerWithRawBalance(paid, '9007199254745993')).preparePaid(paid);
+  assert.equal(exact.feeLamports, '5000');
+  await assert.rejects(new RpcPaymentPreparer(readerWithRawBalance(paid, '9007199254745992')).preparePaid(paid), /payment_balance_not_ready/);
+  const maximal = await contributionForBalance((U64_MAX - 5000n).toString());
+  await new RpcPaymentPreparer(readerWithRawBalance(maximal, U64_MAX.toString())).preparePaid(maximal);
+  const impossible = await contributionForBalance(U64_MAX.toString());
+  await assert.rejects(new RpcPaymentPreparer(readerWithRawBalance(impossible, U64_MAX.toString())).preparePaid(impossible), /payment_balance_not_ready/);
+});
+await test('balance preparation rejects invalid monetary tokens before any wallet action', async () => {
+  const paid = await contributionForBalance('30000000');
+  for (const token of ['30005000.0', '30005e3', '-0', '-1', '18446744073709551616', '"030005000"', 'true', 'null']) {
+    await assert.rejects(new RpcPaymentPreparer(readerWithRawBalance(paid, token)).preparePaid(paid), /payment_balance_not_ready/);
+  }
+  await new RpcPaymentPreparer(readerWithRawBalance(paid, '30005000')).preparePaid(paid);
+  await assert.rejects(new RpcPaymentPreparer(readerWithRawBalance(paid, '30004999')).preparePaid(paid), /payment_balance_not_ready/);
+});
+await test('legacy SOL preparation also preserves exact large balances', async () => {
+  const legacy = fixtureOrder({ asset: 'SOL', kind: 'contribution', archive: undefined,
+    servicePayment: { amount: '0', recipient: addr(2) }, fundContribution: { amount: '9007199254740993', recipient: addr(3) } });
+  await new RpcPaymentPreparer(readerWithRawBalance(legacy, '9007199254745993')).prepare(legacy);
+  await assert.rejects(new RpcPaymentPreparer(readerWithRawBalance(legacy, '9007199254745992')).prepare(legacy), /payment_balance_not_ready/);
 });
 console.log(`rpc.selftest: ${checks} scenarios PASS; synthetic encoding=json RPC fixtures, zero external requests/signatures/transfers`);

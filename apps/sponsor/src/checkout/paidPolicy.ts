@@ -1,4 +1,4 @@
-import { validatePaidPolicy, SOLANA_GENESIS, PAID_SERVICE_LAMPORTS, type PaidPolicy } from '../../../../packages/checkout/paid';
+import { validatePaidPolicy, validateContributionPolicy, SOLANA_GENESIS, PAID_SERVICE_LAMPORTS, type PaidPolicy, type ContributionPolicy } from '../../../../packages/checkout/paid';
 import { validatePaidArchive, type PaidArchiveBinding } from '../../../../packages/checkout/order';
 import { parseEnvelope, serializeEnvelope } from '../../../web/src/lib/crypto/envelope';
 import { envelopeDigest } from '../../../web/src/lib/solana/policy';
@@ -6,6 +6,7 @@ import { winston } from './treasuryGuard';
 
 export type PaidEnv = {
   CHECKOUT_PAID_ENABLED?: string;
+  CHECKOUT_CONTRIBUTION_ENABLED?: string;
   CHECKOUT_PAID_EXECUTION_ENABLED?: string;
   CHECKOUT_PAID_NETWORK?: string;
   CHECKOUT_PAID_POLICY_VERSION?: string;
@@ -33,6 +34,17 @@ export function configuredPaidPolicy(env: PaidEnv): {policy: PaidPolicy; budgetL
     if (winston(budgetLimit) < winston(policy.storage.maxRewardWinston) || winston(budgetLimit) <= 0n) throw Error('paid_not_configured');
     return {policy,budgetLimit};
   } catch { throw Error('paid_not_configured'); }
+}
+/** Standalone admission needs the public SOL roles only. No AR signer, budget,
+ * upload readiness or placeholder storage settings are borrowed for this path. */
+export function configuredContributionPolicy(env: PaidEnv): ContributionPolicy {
+  const network = env.CHECKOUT_PAID_NETWORK;
+  if (network !== 'devnet' && network !== 'mainnet-beta') throw Error('contribution_not_configured');
+  try {
+    return validateContributionPolicy({ schema:'sejire/contribution-policy/v1', version:env.CHECKOUT_PAID_POLICY_VERSION,
+      network, genesisHash:SOLANA_GENESIS[network], serviceLamports:'0',
+      serviceRecipient:env.CHECKOUT_SERVICE_RECIPIENT, fundRecipient:env.CHECKOUT_FUND_RECIPIENT });
+  } catch { throw Error('contribution_not_configured'); }
 }
 export async function checkedPaidArchive(serialized: string, binding: PaidArchiveBinding, maxBytes: number): Promise<void> {
   const archive = validatePaidArchive(binding);

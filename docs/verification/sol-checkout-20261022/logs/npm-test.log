@@ -1,0 +1,593 @@
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> sejire@0.3.0 test
+> npm run test:admin-terminal && npm test --prefix apps/web && npm test --prefix apps/sponsor
+
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> sejire@0.3.0 test:admin-terminal
+> node --test scripts/admin-hidden-input.test.mjs
+
+✔ typed ASCII password preserves ordinary punctuation (2.043024ms)
+✔ bracketed paste strips both wrappers, even when events split them (0.277958ms)
+✔ regression: old parser hashes bracketed paste wrappers as password characters (0.256416ms)
+✔ typed Unicode survives split UTF-8 and NFC/NFD derive identical verifier (0.696919ms)
+✔ backspace removes one Unicode code point (0.308384ms)
+✔ Ctrl+C cancels and never completes or accepts later bytes (0.142044ms)
+✔ CSI, OSC, DCS and bracketed paste controls never enter password (0.167001ms)
+ℹ tests 7
+ℹ suites 0
+ℹ pass 7
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 74.66183
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> sejire-web@0.3.0 test
+> npm run test:engine && npm run test:crypto && npm run test:kinship && npm run test:pedigree && npm run test:lineage && npm run test:thirteen && npm run test:dates && npm run test:json && npm run test:zhuz && npm run test:sponsor && npm run test:loadVault && npm run test:mirror && npm run test:lastScreen && npm run test:fetch && npm run test:gateways && npm run test:storage && npm run test:archive && npm run test:protocol && npm run test:i18n && npm run test:opsDesk && npm run test:solana && npm run test:native && npm run test:v2 && npm run test:recovery && npm run test:fund-client && npm run test:paid-client
+
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> sejire-web@0.3.0 test:engine
+> tsx src/lib/treeEngine.selftest.ts
+
+treeEngine.selftest: OK
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> sejire-web@0.3.0 test:crypto
+> tsx src/lib/crypto/crypto.selftest.ts && tsx src/lib/crypto/backup.selftest.ts
+
+crypto.selftest: OK { vaultId: '06379bb2' }
+backup.selftest: OK (portable recovery, relationships, history, validation, tampering, full-vault cache)
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> sejire-web@0.3.0 test:kinship
+> tsx src/lib/kinship.selftest.ts
+
+kinship.selftest: OK
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> sejire-web@0.3.0 test:pedigree
+> tsx src/lib/pedigree.selftest.ts
+
+pedigree.selftest: OK {
+  items: 7,
+  edges: 6,
+  soloH: 364,
+  sixAdds: 0,
+  sevenFromSelf: 64,
+  lineH: 364
+}
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> sejire-web@0.3.0 test:lineage
+> tsx src/lib/pdf/lineage.selftest.ts
+
+lineage.selftest: OK { male: 3, gens: 3, slots: 7, deep: 13, six: 'a3', seven: 'a2' }
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> sejire-web@0.3.0 test:thirteen
+> tsx src/lib/pdf/thirteenLineage.fixture.selftest.ts
+
+thirteenLineage.fixture.selftest: OK { people: 8191, maleLine: 13, charts: 273, poster: 'A2 7 gens' }
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> sejire-web@0.3.0 test:dates
+> tsx src/lib/dates.selftest.ts
+
+dates.selftest: OK
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> sejire-web@0.3.0 test:json
+> tsx src/lib/treeJson.selftest.ts
+
+treeJson.selftest: OK
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> sejire-web@0.3.0 test:zhuz
+> tsx src/lib/zhuzRu.selftest.ts
+
+zhuzRu.selftest: OK
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> sejire-web@0.3.0 test:sponsor
+> tsx src/lib/sponsor/client.selftest.ts
+
+sponsor.client.selftest: 2 asserts ok
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> sejire-web@0.3.0 test:loadVault
+> tsx src/lib/arweave/loadVault.selftest.ts
+
+loadVault.selftest: OK
+loadVault verified retrieval, local parent and sequential multi-tree selftests: OK
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> sejire-web@0.3.0 test:mirror
+> tsx src/lib/siteMirror.selftest.ts
+
+siteMirror.selftest: OK
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> sejire-web@0.3.0 test:lastScreen
+> tsx src/lib/lastScreen.selftest.ts
+
+lastScreen/pdfRoot/pedigreeFit.selftest: OK
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> sejire-web@0.3.0 test:fetch
+> tsx src/lib/arweave/fetch.selftest.ts
+
+fetch.selftest: OK { versions: 3 }
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> sejire-web@0.3.0 test:gateways
+> tsx src/lib/arweave/gateways.selftest.ts
+
+gateways.selftest: OK { graphql: 3, data: 3 }
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> sejire-web@0.3.0 test:storage
+> tsx src/lib/storageQuota.selftest.ts
+
+storageQuota.selftest: OK
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> sejire-web@0.3.0 test:archive
+> tsx src/lib/vaultSession/localArchive.selftest.ts
+
+localArchive.selftest: OK { count: 2 }
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> sejire-web@0.3.0 test:protocol
+> tsx src/lib/ao/protocol.selftest.ts
+
+protocol.selftest: OK
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> sejire-web@0.3.0 test:i18n
+> tsx src/lib/i18n/i18n.selftest.ts
+
+i18n.selftest: OK
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> sejire-web@0.3.0 test:opsDesk
+> tsx src/lib/opsDesk/store.selftest.ts && tsx src/lib/opsDesk/networkOverview.selftest.ts
+
+opsDesk.selftest: OK
+networkOverview.selftest: reference, valid/invalid finalized payments, RPC unavailable, legacy fingerprint OK
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> sejire-web@0.3.0 test:solana
+> tsx src/lib/solana/policy.selftest.ts && tsx src/lib/solana/wallet.selftest.ts && tsx src/lib/solana/upload.selftest.ts && tsx src/lib/solana/receipt.selftest.ts && tsx src/lib/solana/boundaries.selftest.ts
+
+solana.policy.selftest: OK — encryption, money caps, quote binding, tags and network isolation
+solana.wallet.selftest: OK — both adapter contracts, real SDK signatures, isolation, changed account and unavailable wallet
+OK free upload signs only once; durable receipt survives a new journal instance
+OK 402 cannot trigger an unauthorized payment
+OK authorized top-up signs exactly one verified transfer
+OK dropped response replays exact data-item bytes, without another signature
+OK lost payment response reconciles the stored transfer; never double-pays
+OK a credited but still insufficient payment is not sent again
+OK SDK transaction to an unexpected recipient is rejected before wallet prompt
+OK rejected message signature cannot upload or pay
+OK account change while message prompt is open stops submission
+OK abort while signature prompt is open stops submission
+OK expired or mismatched quote requests no signature
+OK storage failure prevents upload and payment
+OK payment journal failure prevents the transaction prompt
+OK rejected payment may be retried because no signed transaction escaped
+OK changed transaction returned by wallet is rejected before broadcast
+OK abort during payment signature cannot broadcast
+OK unresolved payment blocks funding a different snapshot
+OK persistence failure after acceptance still returns the successful receipt
+OK receipt must identify exactly the signed item
+OK concurrent attempts are excluded and the lock is released
+solana.upload.selftest: 20 scenarios passed; real SDK signatures, mocked service responses
+solana.receipt.selftest: OK — recovery, exact-byte hash, network isolation, hostile receipts, unavailable/oversized data
+{
+  "result": "PASS",
+  "checkedAt": "2026-10-22T16:15:45.277Z",
+  "checks": {
+    "moneyRoundtripAndIntegerRoundingCases": 10000,
+    "quoteBoundaryAndInvalidDecimalCases": 16,
+    "unicodeEncryptionUniqueIvRoundtrips": 32,
+    "authenticatedTamperingAndWrongKeyCases": 13,
+    "httpFailureAndAbortCases": 12,
+    "untrustedReceiptUrlIsolationCases": 4,
+    "invalidReceiptAndNetworkCases": 14,
+    "parallelDurableJournalRowsAndNetworkIsolation": 50,
+    "lockReleaseAfterFailure": 1
+  },
+  "externalRequests": 0,
+  "solTransfers": 0,
+  "note": "Additional local diagnostics. IndexedDB is simulated; not a real-browser cross-tab or extension test."
+}
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> sejire-web@0.3.0 test:native
+> tsx src/lib/native/native.selftest.ts
+
+PASS native read-only network errors never imply an unknown payment
+PASS native three distinct wallet roles and signed genesis
+PASS native fake signature rejected
+PASS native untrusted initial visitor rejected
+PASS native secret/unknown configuration field rejected
+PASS native configuration recovery from portable bytes
+PASS native address rotation preserves previous terms
+PASS native fork not last JSON wins
+PASS native rollback rejected
+PASS native old authority must sign new configuration
+PASS native new key explicit acceptance
+PASS native exact split 30000000
+PASS native exact split 100000000
+PASS native exact split 1000000000
+PASS native donation only no archive or service fee
+PASS native below price rejected
+PASS native large lamports integer precision
+PASS native technical u64 bound not commercial cap
+PASS native one archive authorization exact payer digest bytes and integer ceiling
+PASS native pilot policy binds manager devnet treasury reserve and budget
+PASS native disabled and expired executor stop before RPC or order signature
+PASS native ciphertext or config publication cannot use single archive permission
+PASS native write-ahead failure stops before wallet signature
+PASS native real SDK format-2 preparation with synthetic RSA signer
+PASS native insufficient operational budget rejects
+PASS native wrong signer rejects
+PASS native damaged ciphertext rejects
+PASS native mainnet broadcast is off by default
+PASS native signed bytes saved before first send
+PASS native resume in clean runtime state uses same ID without old private key
+PASS native repeat upload no second transaction
+PASS native tampered signed transaction rejected
+PASS native native status is independent of accepted flag
+PASS native alternate gateway verifies exact bytes and hash
+PASS native corrupted retrieval rejected
+PASS native two trees relationships and history offline restore unchanged
+PASS native no Turbo or cloud endpoints in direct upload path
+PASS native custom endpoint supported by real SDK
+PASS 38 native admin / Arweave tests; LOCAL fixtures, no live transaction or permanent settlement
+PASS native stale tab v3 adopts persistent v4 and cannot roll back
+PASS native trusted fork rejected without changing persistent history
+PASS native exact missing job configuration recovered only from signed historical extension
+PASS native every payment-signing marker forbids orphan replacement
+PASS native stale authorization preserves a recoverable signed mirror before overwriting cache
+PASS 43 native tests including monotonic configuration / orphan guards; LOCAL fixtures only
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> sejire-web@0.3.0 test:v2
+> tsx src/lib/preserveV2/v2.selftest.ts && tsx src/lib/preserveV2/machine.selftest.ts
+
+PASS V2 stable deterministic save ID
+PASS V2 one prepared service transfer and one reference
+PASS V2 finalized economic payment accepts ComputeBudget
+PASS V2 changed recipient rejected
+PASS V2 changed amount rejected
+PASS V2 additional value transfer rejected
+PASS V2 changed payer rejected
+PASS V2 missing reference rejected
+PASS V2 missing payer signature rejected
+PASS V2 unknown instruction rejected
+PASS V2 unsafe compute budget rejected
+PASS V2 inner value effects rejected
+PASS V2 failed finalized transaction rejected
+PASS V2 wrong Solana network rejected
+PASS V2 lost wallet response discovered by reference
+PASS V2 recovery uses the three approved public devnet RPC URLs
+PASS V2 RPC timeout never proves absence
+PASS V2 two valid readers recover payment while one reader fails
+PASS V2 two valid readers prove expiry and absence while one reader fails
+PASS V2 a hanging third reader cannot block two valid readers
+PASS V2 one remaining valid reader cannot authorize retry
+PASS V2 successful transaction on third valid reader blocks retry
+PASS V2 expired blockhash with complete empty history allows same-reference preparation
+PASS V2 failed finalized transaction with expired blockhash permits same-reference retry
+PASS V2 failed history mismatch cannot authorize another payment
+PASS V2 live blockhash blocks a second payment
+PASS V2 pruned history blocks a second payment
+PASS V2 conflicting reference signatures block a second payment
+PASS V2 only explicit wallet rejection enables safe retry
+PASS V2 Wander signing metadata is accepted without weakening SEJIRE tag binding
+PASS V2 Arweave exact quote and balance accepted
+PASS V2 Arweave quote above cap rejected
+PASS V2 wrong Wander address rejected before signing
+PASS V2 wrong archive size rejected before signing
+PASS V2 insufficient AR balance rejected
+PASS V2 retrieved wrong SHA is never complete
+PASS V2 synthetic retrieved envelope with exact SHA and vault ID verifies
+PASS V2 atomic session transition persists after reload
+PASS V2 immutable reference and archive cannot be replaced
+PASS V2 completed session cannot return to payment
+PASS V2 one session lock name serializes actions
+V2 unit assertions: 41
+PASS V2 machine A happy path uses one payment, one signing, upload, retrieval verification
+PASS V2 machine B double click serializes to one Phantom invocation
+PASS V2 machine C explicit Phantom rejection retains same session/reference for retry
+PASS V2 machine G account switch after broadcast still accepts correct finalized payment
+PASS V2 machine H lost wallet response discovered after reload by reference
+PASS V2 machine Phantom timeout stays pending and reference finds the sent payment
+PASS V2 machine I RPC timeout keeps pending payment and prevents another Phantom call
+PASS V2 machine J expired absent payment retries same session and reference
+PASS V2 machine J finalized failed payment retries same session and reference after expiry
+PASS V2 machine K uncertain previous payment remains pending
+PASS V2 machine L reload READY does not open wallets
+PASS V2 machine L reload SOLANA_PREPARED preserves same reference
+PASS V2 machine L reload AR_READY with lost signature response permits safe retry
+PASS V2 machine L reload SOLANA_PAID and AR_READY preserves the next action
+PASS V2 machine L reload AR_SIGNED resumes same signed ID without Wander
+PASS V2 machine L reload COMPLETE and BLOCKED cannot start a new payment
+PASS V2 machine M Wander rejection leaves no signed plan and permits retry
+PASS V2 machine Wander timeout without signed bytes resets flag and retries without duplicate upload
+PASS V2 machine quote movement before Wander signature permits safe re-quote
+PASS V2 machine lost Wander response before persistence permits same-session retry
+PASS V2 machine legacy false-negative BLOCKED Wander signature is revalidated and resumed without re-signing
+PASS V2 machine N signed transaction survives reload before upload
+PASS V2 machine O upload timeout resumes same signed transaction and progress
+PASS V2 machine P wrong archive blocks payment before Phantom
+PASS V2 machine P wrong archive blocks Wander before signing
+PASS V2 machine R wrong Wander address blocks signature
+PASS V2 machine S retrieval hash mismatch never reaches COMPLETE
+PASS V2 machine gateway redirect retrieves exact archive before COMPLETE and keeps the same Arweave ID
+PASS V2 machine raw gateway fallback verifies archive when rendered endpoint is unavailable
+PASS V2 machine T successful confirmed retrieval with exact SHA reaches COMPLETE
+V2 machine assertions: 30
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> sejire-web@0.3.0 test:recovery
+> tsx src/lib/recovery/recovery.selftest.ts
+
+Recovery provider, strict historical fund metadata, bounded native data/JSON reads, raw/hash/AES/vault checks and HEAD selftests passed
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> sejire-web@0.3.0 test:fund-client
+> tsx src/lib/fund/journal.selftest.ts
+
+fund journal.selftest: OK (exact ciphertext, parent response binding, conflicts, locking, legacy recovery/refusals, cleanup, storage failures, bounds)
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> sejire-web@0.3.0 test:paid-client
+> tsx src/lib/checkout/paidClient.selftest.ts
+
+paidClient.selftest: PASS (preserved legacy journal, serialized session bootstrap, independent help policy/receipt, u64 RPC precision, cross-tab single payment, lost create/reserve/wallet, cancellation, exact full-vault receipt, no help archive/head change, bounded body)
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> sejire-sponsor@0.2.0 test
+> tsx src/selftest.ts && npm run test:checkout && npm run test:rpc && npm run test:fund && npm run test:paid
+
+sponsor.selftest: 46 asserts ok
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> sejire-sponsor@0.2.0 test:checkout
+> tsx src/checkout/selftest.ts
+
+PASS arbitrary contributions include one million and above; no commercial cap
+PASS zero contribution does not request a fund transfer
+PASS service and contribution have exact distinct instruction allocations
+PASS SOL represented in lamports with its own program, not USDC units
+PASS decimal arithmetic and format roundtrip for 1000 varied amounts
+PASS technical u64 boundary, total overflow and precision fail closed
+PASS large contribution requests confirmation without rejecting it
+PASS preservation requires digest/size/service; no fixed 512 KiB policy
+PASS donation-only cannot charge service or require an archive; must be positive
+PASS quote/order immutability and distinct recipient roles
+PASS reject wrong network
+PASS reject wrong genesis
+PASS reject failed transaction
+PASS reject processed transaction
+PASS reject confirmed is not finalized
+PASS reject missing block time
+PASS reject late payment
+PASS reject predates order
+PASS reject wrong fee payer
+PASS reject missing payer signature
+PASS reject malformed signature
+PASS reject wrong recipient
+PASS reject wrong sender
+PASS reject counterfeit USDC mint
+PASS reject wrong token program
+PASS reject wrong decimals
+PASS reject wrong amount
+PASS reject wrong reference
+PASS reject duplicate instruction
+PASS reject extra transfer
+PASS forged order asset or total is rejected
+PASS atomic test store: 32 concurrent confirmations credit once
+PASS not found and RPC loss retain pending signature; replacement blocked
+PASS pending finality and wrong response signature never grant fulfillment
+PASS response lost AFTER atomic credit: retry does not credit again
+PASS duplicate order/reference and cross-order instruction replay are refused
+PASS detached reads cannot tamper with test store state
+PASS contribution-only is verified without storage fulfillment or archive
+PASS validated payment and credit allocations are frozen
+PASS SOL MVP preservation: 30000000 service + 0 fund
+PASS SOL MVP preservation: 30000000 service + 5000000 fund
+PASS SOL MVP contribution: 0 service + 5000000 fund
+PASS SOL rejects wrong servicePayment recipient
+PASS SOL rejects wrong servicePayment amount
+PASS SOL rejects wrong fundContribution recipient
+PASS SOL rejects wrong fundContribution amount
+PASS SOL rejects wrong payer
+PASS SOL rejects wrong signer
+PASS SOL rejects wrong network
+PASS SOL rejects failed transaction
+PASS SOL rejects not finalized
+PASS SOL rejects extra unexpected transfer
+PASS SOL large contributions remain exact without product cap
+checkout.selftest: 53 scenarios PASS; synthetic normalized RPC evidence, single-isolate memory store only; zero external requests/signatures/transfers
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> sejire-sponsor@0.2.0 test:rpc
+> tsx src/checkout/rpc.selftest.ts
+
+PASS RPC finalized legacy USDC uses account owners, not token account addresses
+PASS RPC actual reader requests the workerd-supported manual redirect mode
+PASS RPC canonical RPC response URL with trailing slash is accepted
+PASS RPC RPC HTTP 301 cannot follow Location or credit a payment
+PASS RPC RPC HTTP 302 cannot follow Location or credit a payment
+PASS RPC RPC HTTP 303 cannot follow Location or credit a payment
+PASS RPC RPC HTTP 307 cannot follow Location or credit a payment
+PASS RPC RPC HTTP 308 cannot follow Location or credit a payment
+PASS RPC an unexpected RPC response URL is rejected before accepting its valid body
+PASS RPC legacy SOL direct transfers
+PASS RPC v0 resolves writable/readonly loaded addresses in correct order
+PASS RPC v0 supports writable token accounts loaded from lookup table
+PASS RPC optional compute unit limit/price before transfers
+PASS RPC u64 instruction amount never passes through floating point
+PASS RPC reject signature mismatch
+PASS RPC reject failed execution
+PASS RPC reject unsupported version
+PASS RPC reject missing meta
+PASS RPC reject missing block time
+PASS RPC reject counterfeit mint
+PASS RPC reject wrong token program
+PASS RPC reject changed token owner
+PASS RPC reject recipient token account mistaken for owner
+PASS RPC reject wrong recipient
+PASS RPC reject wrong amount
+PASS RPC reject wrong reference
+PASS RPC reject wrong payer
+PASS RPC reject non-signer authority
+PASS RPC reject missing signer
+PASS RPC reject readonly fee payer
+PASS RPC reject arbitrary CPI
+PASS RPC reject ATA instruction
+PASS RPC reject unknown program
+PASS RPC reject unchecked token transfer
+PASS RPC reject unsafe JSON fee
+PASS RPC reject missing token owner
+PASS RPC reject out-of-range account index
+PASS RPC reject writable reference
+PASS RPC reject extra transfer
+PASS RPC wrong genesis remains unresolved
+PASS RPC HTTP 429 remains unresolved
+PASS RPC HTTP 503 remains unresolved
+PASS RPC malformed JSON remains unresolved
+PASS RPC RPC response id mismatch remains unresolved
+PASS RPC RPC unsupported version error remains unresolved
+PASS RPC confirmed status remains unresolved
+PASS RPC processed status remains unresolved
+PASS RPC failed status remains unresolved
+PASS RPC missing status context remains unresolved
+PASS RPC status/transaction slot mismatch remains unresolved
+PASS RPC RPC 500 remains unresolved
+PASS RPC null transaction remains unresolved
+PASS RPC null signature status remains unresolved
+PASS RPC timeout remains unresolved
+PASS RPC late server response uses original inclusion time; retry credits only once
+PASS RPC client cannot provide paid/evidence/finalized/recipient/amount/RPC
+PASS RPC bounded RPC response and missing result reject without credit
+PASS RPC raw RPC u64 balances stay exact while ordinary context numbers remain numbers
+PASS RPC preparation compares a large balance and network fee without rounding a single lamport
+PASS RPC balance preparation rejects invalid monetary tokens before any wallet action
+PASS RPC legacy SOL preparation also preserves exact large balances
+rpc.selftest: 61 scenarios PASS; synthetic encoding=json RPC fixtures, zero external requests/signatures/transfers
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> sejire-sponsor@0.2.0 test:fund
+> node --loader ../../scripts/offline-ts-loader.mjs tests/fund-provider.mjs && node --experimental-sqlite --loader ../../scripts/offline-ts-loader.mjs tests/fund.local.mjs
+
+(node:19397) ExperimentalWarning: `--experimental-loader` may be removed in the future; instead use `register()`:
+--import 'data:text/javascript,import { register } from "node:module"; import { pathToFileURL } from "node:url"; register("../../scripts/offline-ts-loader.mjs", pathToFileURL("./"));'
+(Use `node --trace-warnings ...` to show where the warning was created)
+arweave-web-init: PASS
+fund-provider: PASS; pending/confirmed distinction, bounded raw/canonical/node-data verification, strict base64url, trusted archive redirects, rejected node API redirects and shared check deadline; zero posts
+(node:19447) ExperimentalWarning: `--experimental-loader` may be removed in the future; instead use `register()`:
+--import 'data:text/javascript,import { register } from "node:module"; import { pathToFileURL } from "node:url"; register("../../scripts/offline-ts-loader.mjs", pathToFileURL("./"));'
+(Use `node --trace-warnings ...` to show where the warning was created)
+PASS fund: initial limit 13 AR; disabled; server admin auth
+PASS fund: public balance needs no admin credential but cannot change settings
+PASS fund: every admin operation rejects missing and invalid credentials server-side
+PASS fund: promo normalization, change, old invalid, disable and enable
+PASS fund: success uses confirmed transaction reward and words-recoverable metadata, with no plaintext promo
+PASS fund: duplicate POST and polling preserve same tx and accounting
+PASS fund: 13 to 26 limit is cumulative and lower than spent rejected
+PASS fund: lost response retains signed ID and reservation; reconcile once
+PASS fund: wallet lower than budget stops reservation
+PASS fund: recovery words and plaintext tree fields cannot enter Fund API
+PASS fund: parallel reservations cannot exceed cap and count active reserves
+PASS fund: rate limit and persistence after restart
+PASS fund: verification failure holds reservation, retry completes once; provider errors fail closed
+PASS fund: reconcile resubmits stored signed transaction after upload was not accepted
+PASS fund: audit records contain revision and limits, never promo plaintext
+PASS fund: prepare failure returns safe code before reservation
+PASS fund: GET never signs, reserves or resubmits a missing signed transaction; explicit POST recovers the same order
+PASS fund: confirmed network with unavailable archive remains reserved, then the same order completes exactly once
+PASS fund: public attention reasons remain safe and cannot release or complete an unverified archive
+PASS fund: existing order completes through direct-provider GET despite stale and split gateway evidence, with exactly-once spend
+PASS fund: new parent is signed, immutable on replay and ledger reserve, and survives GET completion and restart
+PASS fund: invalid parents are rejected before reservation or signing; explicit null and omitted genesis replay identically
+PASS fund: old-client omitted POST remains unbound across new-client GET resume with an existing local parent
+PASS fund: additive schema preserves historical prepared/signed bytes and GET settles the original parent-less order
+fund.local: PASS; real SQLite, mocked gateway/provider responses, zero network calls or AR transactions
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> sejire-sponsor@0.2.0 test:paid
+> tsx src/checkout/paid.selftest.ts && tsx src/checkout/directPreservation.selftest.ts && node --experimental-sqlite --loader ../../scripts/offline-ts-loader.mjs tests/paid.local.mjs
+
+PASS paid primitives: v1 output and rollback boundary stay distinct from immutable v2
+PASS paid primitives: policy hash is canonical; roles, genesis and limits are not caller defaults
+PASS paid primitives: standalone policy requires only explicit SOL terms; preservation still requires complete AR policy
+PASS paid primitives: standalone contribution has one independently decoded fund transfer, no storage, and exact u64 amounts
+PASS paid primitives: standalone contribution rejects zero/service/archive/storage and cannot change preservation terms
+PASS paid primitives: v2 rejects omitted parent, invalid archive/storage, test recipients and extra order fields
+PASS paid primitives: independent SDK roundtrip: one signer, exact transfers/reference, no extra program
+PASS paid primitives: preparation binds policy/order/payer/reference/blockhash/bytes/id and window
+PASS paid primitives: reserve can verify the payer signature against exact saved bytes without broadcasting
+PASS paid primitives: modern validator requires the persisted preparation and exact chain message
+PASS paid primitives: late verification of timely inclusion credits once; current expiry cannot revoke payment
+PASS paid primitives: v2 accepts creation-second inclusion at RPC precision, including reference recovery, and rejects an earlier second
+PASS paid primitives: devnet preparePaid uses pinned genesis/RPC and fee for exact message
+PASS paid primitives: mainnet-beta preparePaid uses pinned genesis/RPC and fee for exact message
+PASS paid primitives: legacy mainnet preparation remains unavailable; modern bad readiness cannot reach wallet
+PASS paid primitives: unknown wallet outcome recovers exact old reference/preparation without sending
+PASS paid primitives: reference mention with different blockhash cannot substitute another preparation
+PASS paid primitives: null, timeout/unavailable, wrong genesis and malformed lookup stay uncertain
+PASS paid primitives: two exact matching signatures are ambiguous; a full lookup page is not an empty proof
+PASS paid primitives: expired overall lookup budget stops before another HTTP request
+PASS paid primitives: v2 receipt separates payment/storage networks and exact parent/payment evidence
+paid.selftest: 21 synthetic scenarios PASS; ephemeral software-signature fixture only; no network, live keys, submission or activation
+PASS direct-preservation: invalid storage policy is rejected before any transport or signing
+PASS direct-preservation: readiness and unsigned exact preparation work while execution is disabled
+PASS direct-preservation: no signer, wrong signer, network, low balance or excess reward cannot offer ready
+PASS direct-preservation: changed archive, missing parent binding and noncanonical serialization fail before network
+PASS direct-preservation: all prepared transaction fields are bound before signing, including Merkle data root
+PASS direct-preservation: real software RSA signature uses stored quote and exact recovery metadata without network
+PASS direct-preservation: lost submit response replays identical signed bytes after fresh provider construction
+PASS direct-preservation: altered signed data or parent never reaches POST, even with a valid signature over old root
+PASS direct-preservation: read-only reconciliation survives restart without signer and verifies node-data fallback
+PASS direct-preservation: on-chain spend stays proved when the archive is missing or fails integrity
+PASS direct-preservation: wrong owner, reward, ID, Parent or duplicate signed metadata cannot prove spend/completion
+PASS direct-preservation: valid same-ID metadata wins another host mismatch; object-key order is immaterial
+PASS direct-preservation: pending, absent and partially unavailable indexes never become a false completion
+PASS direct-preservation: redirects cannot escape the pinned transport or produce readiness, acceptance or proof
+PASS direct-preservation: bounded full response bodies and an explicit abort cannot outlive the deadline
+PASS direct-preservation: arbitrary larger ciphertext uses immutable signed header and all deterministic Merkle chunks
+directPreservation.selftest: PASS (16 scenarios); software-only unfunded RSA, mocked mainnet wire, no external connections or funds
+(node:19551) ExperimentalWarning: `--experimental-loader` may be removed in the future; instead use `register()`:
+--import 'data:text/javascript,import { register } from "node:module"; import { pathToFileURL } from "node:url"; register("../../scripts/offline-ts-loader.mjs", pathToFileURL("./"));'
+(Use `node --trace-warnings ...` to show where the warning was created)
+PASS paid SQLite: standalone contribution creates no archive/AR hold/job and credits its single purpose once after restart
+PASS paid SQLite: standalone payment and terminal state commit atomically; storage-bearing inputs are rejected
+PASS paid SQLite: unknown standalone signature/reference never completes or expires; same preparation recovers while gates are off
+PASS paid SQLite: creation binds exact ciphertext and parent; all order/hold/job rows roll back together
+PASS paid SQLite: cancel before admission wins the race, survives a lost reply/restart and rejects every late create
+PASS paid SQLite: admission committed before its response wins cancellation-by-key and returns the unchanged original order
+PASS paid SQLite: pre-admission cancellation is owner/key scoped, admits known expired owners and rejects legacy/unknown sessions
+PASS paid SQLite: SOL credit and durable storage job commit atomically; injected job failure rolls back credit
+PASS paid SQLite: explicit cancellation wins an in-flight reserve CAS and exact preparation remains mandatory
+PASS paid SQLite: durably reserved signature wins cancellation; null-preparation cancellation cannot erase a newer preparation
+PASS paid SQLite: only an untouched offer expires; unknown wallet/prepared payment retains its hold across time and restart
+PASS paid SQLite: shared physical balance includes paid and promo holds in both admission directions
+PASS paid SQLite: paid budget has its own cap and does not consume promo allowance
+PASS paid SQLite: revision rejects an in-flight stale balance; persisted ceiling rejects later stale high snapshots
+PASS paid SQLite: promo confirmed debits constrain paid admissions; an unobserved debit survives restart conservatively
+PASS paid SQLite: lost header/chunk acknowledgement retries exactly one signed TX across restart, then becomes read-only
+PASS paid SQLite: confirmed spend is counted once while unavailable archive never completes; later outage cannot undo proof
+PASS paid SQLite: wrong TX/reward or archive-without-chain proof cannot spend or complete
+PASS paid SQLite: expired original bearer can read its exact v2 result while service continuation remains token-free
+PASS paid SQLite: expired v2 capability cannot create, renew, reach v1 or reach another owner/key
+PASS paid SQLite: known reserved signature reconciles without another payment; paused executor retains obligation
+PASS paid SQLite: lease excludes simultaneous runners; a persisted signed job resumes without new preparation or signature
+Paid SQLite integration: 22 scenarios passed; external requests: 0.

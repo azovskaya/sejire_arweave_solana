@@ -1,6 +1,6 @@
 import { assertOrder, assertBase58, type PaidOrder } from '../../../../packages/checkout/order';
 import { validatePaidOrderPolicy, validatePaymentPreparation, validatePaidReceipt, verifyPreparedPaymentSignature,
-  type PaidPolicy, type DurablePaymentPreparation, type PaidReceipt } from '../../../../packages/checkout/paid';
+  type PaidPolicy, type CheckoutPolicy, type DurablePaymentPreparation, type PaidReceipt } from '../../../../packages/checkout/paid';
 import { canonical } from '../../../../packages/protocol/wire';
 import type { StoredOrder, CommitResult } from './store';
 import type { ValidatedPayment } from './paymentValidator';
@@ -14,7 +14,7 @@ import { checkedPaidArchive } from './paidPolicy';
 type PaidRow = {order_id:string;policy_json:string;preparation_json:string|null;status:string;lease:string|null;lease_until:number;
   next_at:number;attempts:number;proof_json:string|null;receipt_json:string|null;paid:number;released:number;last_error:string|null;submission_ack:number};
 export type PaidStoredOrder = StoredOrder & {order:PaidOrder};
-export type PaidWork = {record:PaidStoredOrder;policy:PaidPolicy;input:DirectInput;prepared:PreparedDirectPlan;
+export type PaidWork = {record:PaidStoredOrder;policy:CheckoutPolicy;input:DirectInput|null;prepared:PreparedDirectPlan|null;
   signed:SignedDirectPlan|null;preparation:DurablePaymentPreparation|null;status:string;submitAcknowledged:boolean};
 const json = <T>(value:string|null):T|null => value===null?null:JSON.parse(value) as T;
 /** v2 is additive: no legacy orders, ANS-104 plans or signed bytes are rewritten. */
@@ -57,10 +57,10 @@ export class PaidLedger {
   snapshot(id:string) {
     const row=this.row(id),record=this.record(id),signed=json<SignedDirectPlan>(this.payload(id,'signed'));
     const proof=json<DirectCheck>(row.proof_json),receipt=json<PaidReceipt>(row.receipt_json);
-    return {record,policy:JSON.parse(row.policy_json) as PaidPolicy,preparation:json<DurablePaymentPreparation>(row.preparation_json),
+    return {record,policy:JSON.parse(row.policy_json) as CheckoutPolicy,preparation:json<DurablePaymentPreparation>(row.preparation_json),
       verification:record.payment?{status:'verified'}:row.preparation_json&&!row.released?{status:'requires-reconciliation',reason:row.last_error??'not-found'}:null,
       expired:row.released===1,cancelled:row.status==='cancelled',
-      execution:row.paid?{kind:'arweave-direct' as const,txId:signed?.id??null,status:row.status,
+      execution:row.paid&&record.order.kind==='preservation'?{kind:'arweave-direct' as const,txId:signed?.id??null,status:row.status,
         verification:proof?.rewardWinston&&signed&&proof.rewardWinston===signed.rewardWinston?{transactionConfirmed:proof.onchainConfirmed,archiveVerified:proof.archiveVerified,
           owner:record.order.storage.treasuryAddress,rewardWinston:proof.rewardWinston,archive:record.order.archive}:null,
         ...(row.last_error?{reason:row.last_error}:{}),
@@ -89,24 +89,31 @@ export class PaidLedger {
     await this.storage.sync();return result;
   }
   hasOrders():boolean{return this.sql.exec('SELECT order_id FROM paid_orders LIMIT 1').toArray().length>0;}
-  async create(input:{hash:string;key:string;intent:string;order:PaidOrder;policy:PaidPolicy;serialized:string;
-    prepared:PreparedDirectPlan;budgetLimit:string;balance:string;balanceRevision:number},now:number){
+  async create(input:{hash:string;key:string;intent:string;order:PaidOrder;policy:CheckoutPolicy;serialized?:string;
+    prepared?:PreparedDirectPlan;budgetLimit?:string;balance?:string;balanceRevision?:number},now:number){
     this.api.authenticate(input.hash,now);
     await validatePaidOrderPolicy(input.order,input.policy);
-    await checkedPaidArchive(input.serialized,input.order.archive,input.policy.storage.maxBytes);
+    const storage=input.policy.schema==='sejire/checkout-policy/v1'?input.policy.storage:undefined;
+    if(input.order.kind==='preservation'){
+      if(!input.serialized||!input.prepared||!storage)throw Error('paid_payload_missing');
+      await checkedPaidArchive(input.serialized,input.order.archive,storage.maxBytes);
+    }else if([input.serialized,input.prepared,input.budgetLimit,input.balance,input.balanceRevision].some(value=>value!==undefined)){
+      throw Error('invalid_contribution_order');
+    }
     // No await between this duplicate check and createLinked's transaction.
     const prior=this.sql.exec<{order_id:string;intent:string}>('SELECT order_id,intent FROM api_orders WHERE owner=? AND idem_key=?',input.hash,input.key).toArray()[0];
     if(prior){if(prior.intent!==input.intent)throw Error('idempotency_conflict');return {reused:true,...this.snapshot(prior.order_id)};}
     const p=input.prepared,o=input.order;
-    if(o.expiresAt<=now||p.orderId!==o.id||canonical(p.archive)!==canonical(o.archive)||p.network!==o.storage.network||
-      p.treasuryAddress!==o.storage.treasuryAddress||winston(p.rewardWinston)<=0n||winston(p.rewardWinston)>winston(input.policy.storage.maxRewardWinston))throw Error('prepared_archive_mismatch');
+    if(o.expiresAt<=now)throw Error('order_expired');
+    if(o.kind==='preservation'&&(!p||p.orderId!==o.id||canonical(p.archive)!==canonical(o.archive)||p.network!==o.storage.network||
+      p.treasuryAddress!==o.storage.treasuryAddress||winston(p.rewardWinston)<=0n||!storage||winston(p.rewardWinston)>winston(storage.maxRewardWinston)))throw Error('prepared_archive_mismatch');
     await this.orders.createLinked(o,()=>{
       this.api.assertRequestActive(input.hash,input.key);
-      this.treasury.reservePaid({orderId:o.id,budgetId:input.policy.storage.budgetId,treasury:o.storage.treasuryAddress,promoTreasury:TREASURY_ADDRESS,
-        reward:input.policy.storage.maxRewardWinston,budgetLimit:input.budgetLimit,balance:input.balance,balanceRevision:input.balanceRevision});
+      if(o.kind==='preservation')this.treasury.reservePaid({orderId:o.id,budgetId:storage!.budgetId,treasury:o.storage.treasuryAddress,promoTreasury:TREASURY_ADDRESS,
+        reward:storage!.maxRewardWinston,budgetLimit:input.budgetLimit!,balance:input.balance!,balanceRevision:input.balanceRevision!});
       this.sql.exec('INSERT INTO api_orders(order_id,owner,idem_key,intent) VALUES(?,?,?,?)',o.id,input.hash,input.key,input.intent);
       this.sql.exec('INSERT INTO paid_orders(order_id,policy_json,status,next_at) VALUES(?,?,?,?)',o.id,JSON.stringify(input.policy),'offered',o.expiresAt);
-      this.putPayload(o.id,'archive',input.serialized);this.putPayload(o.id,'prepared',JSON.stringify(p));
+      if(o.kind==='preservation'){this.putPayload(o.id,'archive',input.serialized!);this.putPayload(o.id,'prepared',JSON.stringify(p));}
     });
     await this.arm();return {reused:false,...this.snapshot(o.id)};
   }
@@ -148,7 +155,7 @@ export class PaidLedger {
       if(record.pendingSignature||record.payment||row.paid||this.payload(id,'signed'))throw Error('previous_payment_unresolved');
       // The client calls this only before opening the wallet or after an explicit
       // rejection. It never broadcasts until a durable signature reserve succeeds.
-      this.treasury.releaseUnpaid(id);
+      if(record.order.kind==='preservation')this.treasury.releaseUnpaid(id);
       this.sql.exec('UPDATE paid_orders SET released=1,status=?,lease=NULL,lease_until=0,last_error=NULL WHERE order_id=?','cancelled',id);
     });
     await this.storage.sync();await this.arm();return this.snapshot(id);
@@ -157,14 +164,15 @@ export class PaidLedger {
     const row=this.row(id);if(row.released||!row.preparation_json||payment.orderId!==id)throw Error('payment_not_prepared');
     const result=await this.orders.commitPaymentLinked(payment,()=>{
       const current=this.row(id);if(current.released||!current.preparation_json)throw Error('payment_not_prepared');
-      this.sql.exec('UPDATE paid_orders SET paid=1,status=?,next_at=?,last_error=NULL WHERE order_id=?','queued',now,id);
+      this.sql.exec('UPDATE paid_orders SET paid=1,status=?,next_at=?,last_error=NULL WHERE order_id=?',this.record(id).order.kind==='contribution'?'completed':'queued',now,id);
     });
     await this.arm();return result;
   }
   work(id:string):PaidWork{
     const row=this.row(id),record=this.record(id),serialized=this.payload(id,'archive'),prepared=this.payload(id,'prepared');
-    if(serialized===null||prepared===null)throw Error('paid_payload_missing');
-    return {record,policy:JSON.parse(row.policy_json),input:{orderId:id,serialized,archive:record.order.archive},prepared:JSON.parse(prepared),
+    if(record.order.kind==='preservation'&&(serialized===null||prepared===null))throw Error('paid_payload_missing');
+    return {record,policy:JSON.parse(row.policy_json),input:record.order.kind==='preservation'?{orderId:id,serialized:serialized!,archive:record.order.archive}:null,
+      prepared:prepared?JSON.parse(prepared):null,
       signed:json<SignedDirectPlan>(this.payload(id,'signed')),preparation:json<DurablePaymentPreparation>(row.preparation_json),status:row.status,submitAcknowledged:row.submission_ack===1};
   }
   async claim(id:string,lease:string,now:number):Promise<PaidWork|null>{
@@ -172,7 +180,7 @@ export class PaidLedger {
       const row=this.row(id),record=this.record(id);
       if(row.released||row.status==='completed'||row.lease_until>now)return false;
       if(!row.preparation_json&&!row.paid){
-        if(record.order.expiresAt<=now){this.treasury.releaseUnpaid(id);this.sql.exec('UPDATE paid_orders SET released=1,status=? WHERE order_id=?','expired',id);}
+        if(record.order.expiresAt<=now){if(record.order.kind==='preservation')this.treasury.releaseUnpaid(id);this.sql.exec('UPDATE paid_orders SET released=1,status=? WHERE order_id=?','expired',id);}
         return false;
       }
       this.sql.exec('UPDATE paid_orders SET lease=?,lease_until=? WHERE order_id=?',lease,now+120000,id);return true;
@@ -184,6 +192,7 @@ export class PaidLedger {
   async refreshPrepared(id:string,lease:string,candidate:PreparedDirectPlan):Promise<void>{
     this.storage.transactionSync(()=>{
       const row=this.leased(id,lease),record=this.record(id),policy=JSON.parse(row.policy_json) as PaidPolicy;
+      if(record.order.kind!=='preservation')throw Error('preservation_not_applicable');
       if(!record.payment||this.payload(id,'signed'))throw Error('signed_tx_must_reconcile');
       if(candidate.orderId!==id||candidate.network!==record.order.storage.network||candidate.treasuryAddress!==record.order.storage.treasuryAddress||
         canonical(candidate.archive)!==canonical(record.order.archive)||winston(candidate.rewardWinston)<=0n||winston(candidate.rewardWinston)>winston(policy.storage.maxRewardWinston))throw Error('prepared_archive_mismatch');
@@ -193,6 +202,7 @@ export class PaidLedger {
   async signed(id:string,lease:string,candidate:SignedDirectPlan):Promise<SignedDirectPlan>{
     const result=this.storage.transactionSync(()=>{
       this.leased(id,lease);const record=this.record(id),existing=this.payload(id,'signed');
+      if(record.order.kind!=='preservation')throw Error('preservation_not_applicable');
       if(existing)return JSON.parse(existing) as SignedDirectPlan;
       const prepared=json<PreparedDirectPlan>(this.payload(id,'prepared'));
       if(!record.payment||!prepared||candidate.orderId!==id||candidate.rewardWinston!==prepared.rewardWinston||
@@ -208,6 +218,7 @@ export class PaidLedger {
   async proof(id:string,lease:string,proof:DirectCheck,now:number):Promise<void>{
     this.storage.transactionSync(()=>{
       const row=this.leased(id,lease),record=this.record(id),signed=json<SignedDirectPlan>(this.payload(id,'signed'));
+      if(record.order.kind!=='preservation')throw Error('preservation_not_applicable');
       if(!record.payment||!signed||proof.txId!==signed.id||proof.archiveVerified&&!proof.onchainConfirmed||
         proof.onchainConfirmed&&proof.rewardWinston!==signed.rewardWinston)throw Error('storage_proof_mismatch');
       const old=json<DirectCheck>(row.proof_json);

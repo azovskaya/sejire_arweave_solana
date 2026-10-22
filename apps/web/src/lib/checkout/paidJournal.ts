@@ -1,6 +1,7 @@
 import { canonical } from '../../../../../packages/protocol/wire';
-import { assertOrder } from '../../../../../packages/checkout/order';
-import { paidPolicyHash, validatePaidPolicy } from '../../../../../packages/checkout/paid';
+import { assertBase58, assertOrder } from '../../../../../packages/checkout/order';
+import { paidPolicyHash, validateCheckoutPolicy, validatePaidOrderPolicy, validatePaymentPreparation } from '../../../../../packages/checkout/paid';
+import { assertUnits, parseAmount, totalUnits } from '../../../../../packages/checkout/amounts';
 import { parseEnvelope, serializeEnvelope } from '../crypto/envelope';
 import { envelopeDigest } from '../solana/policy';
 import type { PaidOperation } from './paidTypes';
@@ -11,12 +12,15 @@ const HASH = /^[a-f0-9]{64}$/;
 const TX = /^[A-Za-z0-9_-]{43}$/;
 const TREE = /^[A-Za-z0-9_.:-]{1,128}$/;
 const MAX_BYTES = 10 * 1024 * 1024;
+const PRESERVATION_DATABASE = 'sejire-checkout-journal';
+const CONTRIBUTION_DATABASE = 'sejire-contribution-journal';
 
-// Use the existing database and stores. Old v1 records and their tokens survive
-// upgrades, and old clients can still open database version 1 after rollback.
-function openDatabase(): Promise<IDBDatabase> {
+// Preservation keeps its existing version/stores and exact records. A new kind
+// must not enter the old global store: rollback clients validate every v2 row
+// as a preservation. Standalone help therefore has a separate database.
+function openDatabase(name = PRESERVATION_DATABASE): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
-    const request = indexedDB.open('sejire-checkout-journal', 1);
+    const request = indexedDB.open(name, 1);
     request.onupgradeneeded = () => {
       request.result.createObjectStore('operations', { keyPath: 'id' });
       request.result.createObjectStore('session', { keyPath: 'id' });
@@ -26,8 +30,8 @@ function openDatabase(): Promise<IDBDatabase> {
   });
 }
 
-async function read<T>(store: string, id?: string): Promise<T> {
-  const database = await openDatabase();
+async function read<T>(store: string, id?: string, name = PRESERVATION_DATABASE): Promise<T> {
+  const database = await openDatabase(name);
   try {
     return await new Promise<T>((resolve, reject) => {
       const tx = database.transaction(store);
@@ -44,30 +48,49 @@ export async function validatePaidOperation(value: unknown): Promise<PaidOperati
     if (!op || op.version !== 2 || !ID.test(op.id) || !HASH.test(op.token) ||
         !Number.isSafeInteger(op.revision) || op.revision < 0 || !Number.isSafeInteger(op.createdAt) || op.createdAt <= 0 ||
         (op.treeId !== null && (typeof op.treeId !== 'string' || !TREE.test(op.treeId))) ||
-        typeof op.serialized !== 'string' || op.serialized.length > MAX_BYTES ||
-        !op.archive || !HASH.test(op.archive.digest) || !ID.test(op.archive.vaultId) ||
-        (op.archive.parentTxId !== null && !TX.test(op.archive.parentTxId)) ||
+        (op.serialized !== null && (typeof op.serialized !== 'string' || op.serialized.length > MAX_BYTES)) ||
         typeof op.createAttempted !== 'boolean' || typeof op.signingStarted !== 'boolean' ||
-        !['pending', 'done', 'released'].includes(op.localCompletion) || op.intent?.kind !== 'preservation' ||
+        !['pending', 'done', 'released'].includes(op.localCompletion) || (op.intent?.kind!=='preservation'&&op.intent?.kind!=='contribution') ||
         !/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(op.intent.payer) || typeof op.intent.contribution !== 'string') throw Error();
-    const envelope = parseEnvelope(JSON.parse(op.serialized));
-    if (serializeEnvelope(envelope) !== op.serialized || envelope.vault_id !== op.archive.vaultId ||
-        new TextEncoder().encode(op.serialized).byteLength !== op.archive.bytes ||
-        await envelopeDigest(op.serialized) !== op.archive.digest) throw Error();
-    validatePaidPolicy(op.policy);
+    assertBase58(op.intent.payer, 32);
+    const contribution = parseAmount(op.intent.contribution, 9);
+    if(op.intent.kind==='preservation'){
+      if(!op.serialized||!op.archive||!HASH.test(op.archive.digest)||!ID.test(op.archive.vaultId)||
+        (op.archive.parentTxId!==null&&!TX.test(op.archive.parentTxId)))throw Error();
+      const envelope = parseEnvelope(JSON.parse(op.serialized));
+      if (serializeEnvelope(envelope) !== op.serialized || envelope.vault_id !== op.archive.vaultId ||
+          new TextEncoder().encode(op.serialized).byteLength !== op.archive.bytes ||
+          await envelopeDigest(op.serialized) !== op.archive.digest) throw Error();
+    }else if(op.serialized!==null||op.archive!==null||op.treeId!==null||contribution==='0')throw Error();
+    validateCheckoutPolicy(op.policy);
+    if (op.intent.kind === 'preservation' && op.policy.schema !== 'sejire/checkout-policy/v1') throw Error();
+    totalUnits(op.intent.kind === 'preservation' ? op.policy.serviceLamports : '0', contribution);
     if (await paidPolicyHash(op.policy) !== op.policyHash) throw Error();
     if (op.order) {
       assertOrder(op.order);
       if (op.order.schema !== 'sejire/order/v2' || op.order.policyHash !== op.policyHash ||
-          op.order.payer !== op.intent.payer || canonical(op.order.archive) !== canonical(op.archive)) throw Error();
+          op.order.payer !== op.intent.payer || op.order.kind!==op.intent.kind || op.order.fundContribution.amount !== contribution ||
+          canonical(op.order.archive ?? null) !== canonical(op.archive)) throw Error();
+      await validatePaidOrderPolicy(op.order, op.policy);
     }
-    if (op.snapshot && (!op.order || canonical(op.snapshot.record.order) !== canonical(op.order))) throw Error();
-    if (op.signature && !/^[1-9A-HJ-NP-Za-km-z]{64,88}$/.test(op.signature)) throw Error();
+    if (op.snapshot && (!op.order || canonical(op.snapshot.record.order) !== canonical(op.order) ||
+        canonical(op.snapshot.policy) !== canonical(op.policy) || (op.intent.kind === 'contribution' &&
+        (op.snapshot.execution !== null || op.snapshot.record.states.preservation !== 'not-applicable')))) throw Error();
+    if (op.preparation) {
+      if (!op.order) throw Error();
+      await validatePaymentPreparation(op.order, op.preparation);
+    }
+    if (op.signature) { assertBase58(op.signature, 64); if (!op.signingStarted) throw Error(); }
     if (op.signedTransaction && (!op.signature || !op.signingStarted || op.signedTransaction.length > 4096)) throw Error();
     if (op.cancellationRequested !== undefined && typeof op.cancellationRequested !== 'boolean') throw Error();
     if (op.creationCancelled !== undefined && typeof op.creationCancelled !== 'boolean') throw Error();
     if (op.creationCancelled && (op.order || op.preparation || op.signature || op.signingStarted || op.snapshot)) throw Error();
-    if (op.localCompletion === 'done' && op.snapshot?.execution?.status !== 'completed') throw Error();
+    if (op.localCompletion === 'done') {
+      const record = op.snapshot?.record;
+      if (!record?.payment || record.states.payment !== 'verified' || record.payment.signature !== op.signature ||
+          (op.intent.kind === 'preservation' ? op.snapshot?.execution?.status !== 'completed' : record.states.contribution !== 'received')) throw Error();
+      assertBase58(record.payment.signature, 64); assertUnits(record.payment.feeLamports);
+    }
     if (op.localCompletion === 'released' && ((!op.creationCancelled && !op.snapshot?.expired) || op.signingStarted || op.signature ||
         op.snapshot?.record.pendingSignature || op.snapshot?.record.payment || op.snapshot?.execution)) throw Error();
     return structuredClone(op);
@@ -76,15 +99,28 @@ export async function validatePaidOperation(value: unknown): Promise<PaidOperati
 
 export async function readPaidOperation(id: string): Promise<PaidOperation | null> {
   if (!ID.test(id)) throw Error('invalid_paid_attempt');
-  const value = await read<unknown>('operations', id);
+  const [preservation, contribution] = await Promise.all([
+    read<unknown>('operations', id), read<unknown>('operations', id, CONTRIBUTION_DATABASE),
+  ]);
+  if (preservation !== undefined && contribution !== undefined) throw Error('paid_attempt_changed');
+  const value = preservation !== undefined ? preservation : contribution;
   if (value === undefined) return null;
-  return validatePaidOperation(value);
+  const op = await validatePaidOperation(value);
+  if (contribution !== undefined && op.intent.kind !== 'contribution') throw Error('invalid_paid_attempt');
+  return op;
 }
 
 /** Revision CAS also rejects a stale async callback if a second tab progressed. */
 export async function writePaidOperation(op: PaidOperation): Promise<PaidOperation> {
   const checked = await validatePaidOperation(op);
-  const database = await openDatabase();
+  const [legacy, standalone] = await Promise.all([
+    read<unknown>('operations', op.id), read<unknown>('operations', op.id, CONTRIBUTION_DATABASE),
+  ]);
+  if ((legacy !== undefined && standalone !== undefined) || (standalone !== undefined && checked.intent.kind !== 'contribution')) throw Error('paid_attempt_changed');
+  // Keep an already existing operation in its original store. This also lets
+  // an early contribution journal recover without moving or rewriting its key.
+  const name = checked.intent.kind === 'contribution' && legacy === undefined ? CONTRIBUTION_DATABASE : PRESERVATION_DATABASE;
+  const database = await openDatabase(name);
   const next = { ...checked, revision: checked.revision + 1 };
   try {
     await new Promise<void>((resolve, reject) => {
@@ -126,7 +162,7 @@ export async function findPaidAttempt(lookup: AttemptLookup): Promise<PaidOperat
   for (const item of all) {
     if (item && typeof item === 'object' && 'version' in item && item.version === 2) {
       const op = await validatePaidOperation(item);
-      if (op.localCompletion === 'pending') paid.push(op);
+      if (op.localCompletion === 'pending' && op.intent.kind==='preservation') paid.push(op);
     } else {
       // An unresolved v1 preservation must not be silently replaced with a v2
       // payment. Its original UI/journal retains its separate execution path.
@@ -135,14 +171,41 @@ export async function findPaidAttempt(lookup: AttemptLookup): Promise<PaidOperat
           old.snapshot?.record?.states?.preservation !== 'completed') throw Error('legacy_checkout_pending');
     }
   }
-  const matches = paid.filter(op => (lookup.vaultId && op.archive.vaultId === lookup.vaultId) || (lookup.treeId && op.treeId === lookup.treeId));
-  if (matches.length > 1 || (lookup.vaultId && matches.some(op => op.archive.vaultId !== lookup.vaultId)) ||
+  const matches = paid.filter(op => (lookup.vaultId && op.archive?.vaultId === lookup.vaultId) || (lookup.treeId && op.treeId === lookup.treeId));
+  if (matches.length > 1 || (lookup.vaultId && matches.some(op => op.archive?.vaultId !== lookup.vaultId)) ||
       (!lookup.vaultId && !lookup.treeId && paid.length) ||
       (!lookup.vaultId && !matches.length && paid.some(op => op.treeId === null))) throw Error('preservation_attempt_in_progress');
   return matches[0] ?? null;
 }
 
+export async function findContributionAttempt():Promise<PaidOperation|null>{
+  const [legacy, standalone] = await Promise.all([
+    read<unknown[]>('operations'), read<unknown[]>('operations', undefined, CONTRIBUTION_DATABASE),
+  ]);
+  if(legacy.length>1000||standalone.length>1000)throw Error('checkout_journal_unavailable');
+  const pending:PaidOperation[]=[];
+  // Early help records may already exist in the old database. Preserve their
+  // recovery, but do not parse or hash unrelated encrypted vaults to help others.
+  const isContribution = (item: unknown) => !!item && typeof item === 'object' &&
+    'intent' in item && !!item.intent && typeof item.intent === 'object' && 'kind' in item.intent && item.intent.kind === 'contribution';
+  if (standalone.some(item => !isContribution(item))) throw Error('invalid_paid_attempt');
+  for(const item of [...legacy.filter(isContribution), ...standalone]){
+    const op=await validatePaidOperation(item);
+    if(op.localCompletion==='pending')pending.push(op);
+  }
+  if(pending.length>1)throw Error('previous_payment_unresolved');
+  return pending[0]??null;
+}
+
 type Session = { id: 'session'; token: string; expiresAt: number };
+/** Serialize the entire cache read, session creation and durable readback across
+ * tabs. A lock around only the write would still allow two minted sessions to
+ * overwrite each other before readback. Existing operations keep their token. */
+export async function withPaidAccessLock<T>(action: () => Promise<T>): Promise<T> {
+  const locks = typeof navigator === 'undefined' ? undefined : navigator.locks;
+  if (!locks) throw Error('storage_unavailable');
+  return locks.request('sejire.paid-access.v1', { mode: 'exclusive' }, action);
+}
 export const readPaidAccess = () => read<Session | undefined>('session', 'session');
 export async function writePaidAccess(token: string, expiresAt: number): Promise<void> {
   if (!HASH.test(token) || !Number.isSafeInteger(expiresAt) || expiresAt <= Date.now()) throw Error('invalid_checkout_session');

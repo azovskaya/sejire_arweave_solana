@@ -51,12 +51,13 @@ export function PreservationV2({envelope,treeName,treeId,parentTxId,resumeFunded
   const [saveMethod,setSaveMethod] = useState<'choose'|'promo'|'solana'>(resumeCheckoutOperationId ? 'solana' : resumeFunded || quickFundedCode ? 'promo' : initialMethod);
   const [pendingAttempt, setPendingAttempt] = useState<PreservationAttempt | null>(null);
   const [checkingMethod, setCheckingMethod] = useState(false);
+  const [donationOnly,setDonationOnly]=useState(false);
   const activeEnvelope = pendingAttempt?.method === 'promo' ? pendingAttempt.attempt.envelope : envelope || promoEnvelope;
   const paidId = pendingAttempt?.method === 'paid' ? pendingAttempt.attempt.id : resumeCheckoutOperationId;
   const actualMethod = paidId ? 'solana' : pendingAttempt?.method === 'promo' ? 'promo' : saveMethod;
   // The fixed pilot is retained only for its explicit standalone entrypoint.
   // An editor archive always uses the general policy-bound checkout below.
-  const paidFlowActive = !activeEnvelope && !paidId;
+  const paidFlowActive = !activeEnvelope && !paidId && !donationOnly;
   const running = useRef(false);
   useEffect(() => {
     if (!paidFlowActive) return;
@@ -155,12 +156,15 @@ export function PreservationV2({envelope,treeName,treeId,parentTxId,resumeFunded
     finally { setCheckingMethod(false); }
   }
 
+  if(donationOnly)return <PaidSolanaFlow input={{mode:'contribution'}} onBack={()=>setDonationOnly(false)} onBusy={onBusy}/>;
+
   if(activeEnvelope&&actualMethod==='choose')return <section className="native-checkout" aria-label="Сохранить семейную историю">
     <h1>Сохранить семейную историю</h1>
     <h2>{treeName || 'Мой род'}</h2>
     <div className="actions" style={{flexDirection:'column',alignItems:'stretch',gap:'12px'}}>
       <button className="btn" type="button" disabled={checkingMethod} onClick={()=>void chooseMethod('promo')}>{t.publish.saveWithPromo}</button>
       <button className="btn ghost" type="button" disabled={checkingMethod} onClick={()=>void chooseMethod('solana')}>{t.publish.saveWithSolana}</button>
+      <button className="btn ghost" type="button" disabled={checkingMethod} onClick={()=>setDonationOnly(true)}>Помочь другим сохранить их истории</button>
     </div>
     {error && <p role="alert">{error}</p>}
     {onBack&&<button className="btn ghost" type="button" onClick={onBack}>Назад</button>}
@@ -186,6 +190,7 @@ export function PreservationV2({envelope,treeName,treeId,parentTxId,resumeFunded
   return <section className="native-checkout" aria-label="Сохранить семейную историю">
     <h1>Сохранить семейную историю</h1>
     <h2>{treeName || 'Мой род'}</h2>
+    <button className="btn ghost" type="button" disabled={busy} onClick={()=>setDonationOnly(true)}>Помочь другим сохранить их истории</button>
     <p>Данные сохраняются в зашифрованном архиве. Ваши 12 слов SEJIRE остаются у вас.</p>
     <h3>Обычное сохранение через Solana</h3>
     <p><strong>Оплата: 0.03 SOL</strong><br/>Solana Devnet · комиссия сети отдельно</p>

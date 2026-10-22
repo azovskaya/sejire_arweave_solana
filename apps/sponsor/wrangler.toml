@@ -11,6 +11,8 @@ FUND_API_ENABLED = "true"
 # admission pause does not erase existing paid orders or their stored TX bytes.
 CHECKOUT_PAID_ENABLED = "false"
 CHECKOUT_PAID_EXECUTION_ENABLED = "false"
+# Standalone help has its own admission gate and no storage budget requirement.
+CHECKOUT_CONTRIBUTION_ENABLED = "false"
 CHECKOUT_ALLOWED_ORIGINS = "https://azovskaya.github.io,https://sejire.ar.io"
 PUBLISH_PRICE_MINOR = "1500"
 PUBLISH_CURRENCY = "KZT"

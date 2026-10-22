@@ -1,0 +1,35 @@
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> sejire-web@0.3.0 test:paid-browser
+> playwright test --config playwright.paid.config.ts --reporter=list,json --output=/tmp/sejire-review-paid-accepted-artifacts
+
+[WebServer] npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+[WebServer] (node:17840) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 18 tests using 1 worker
+
+(node:17980) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:17980) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   1 tests/paid-solana.spec.mjs:221:1 › disabled public policy leaves promo and encrypted backup available without any wallet or order (3.2s)
+  ✓   2 tests/paid-solana.spec.mjs:230:1 › modern editor pays once, checks archive proof, retries only local completion and restores both trees from receipt and words (5.9s)
+  ✓   3 tests/paid-solana.spec.mjs:270:1 › lost create response reload uses the original GET-by-key and exact ciphertext with no reseal or second POST (2.6s)
+  ✓   4 tests/paid-solana.spec.mjs:282:1 › request dropped before admission retries explicitly with the same key, token and ciphertext after reload (2.7s)
+  ✓   5 tests/paid-solana.spec.mjs:295:1 › lost pre-admission cancellation response resumes the same tombstone and never creates an order (2.6s)
+  ✓   6 tests/paid-solana.spec.mjs:308:1 › unknown wallet result reload reconciles the same reference without another signature, payment or order (2.8s)
+  ✓   7 tests/paid-solana.spec.mjs:322:1 › lost reserve response never broadcasts early and resumes only identical stored signed bytes (3.3s)
+  ✓   8 tests/paid-solana.spec.mjs:332:1 › explicit 4001 cancellation, including a lost response, needs acknowledgement before any next save (2.9s)
+  ✓   9 tests/paid-solana.spec.mjs:345:1 › two tabs and switching to promo adopt one durable paid attempt without new orders or ciphertext (3.4s)
+  ✓  10 tests/paid-solana.spec.mjs:365:1 › wrong network or changed order is stopped before wallet signature (1.9s)
+  ✓  11 tests/paid-solana.spec.mjs:373:1 › navigation while wallet is open journals the returned signature without late reserve or broadcast (2.1s)
+  ✓  12 tests/paid-solana.spec.mjs:402:1 › help starts hidden at zero, both wallet connections create nothing, and a fresh save resets its draft contribution (1.8s)
+  ✓  13 tests/paid-solana.spec.mjs:420:1 › collapsed help retains the visible amount; switching intent preserves the archive and amount until explicitly removed (1.6s)
+  ✓  14 tests/paid-solana.spec.mjs:443:1 › preservation plus a precise optional contribution uses one signature and exactly two transfers (1.8s)
+  ✓  15 tests/paid-solana.spec.mjs:458:1 › invalid decimal and excessive precision cannot create an intent; insufficient balance never invokes the wallet (1.8s)
+  ✓  16 tests/paid-solana.spec.mjs:473:1 › the quiet welcome link opens standalone Solflare help without a tree or AR policy, with a receipt and an explicit new zero-default contribution (2.3s)
+  ✓  17 tests/paid-solana.spec.mjs:502:1 › an uncertain standalone payment resumes the original intent after reload even when new contributions are disabled (2.1s)
+  ✓  18 tests/paid-solana.spec.mjs:517:1 › an unfinished standalone contribution never opens over the editor or its pending promo preservation (2.2s)
+
+  18 passed (50.0s)

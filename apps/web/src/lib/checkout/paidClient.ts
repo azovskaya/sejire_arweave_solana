@@ -3,17 +3,18 @@ import bs58 from 'bs58';
 import { Message, Transaction } from '@solana/web3.js';
 import type { SolanaWalletAdapter } from '@ardrive/turbo-sdk/web';
 import { canonical } from '../../../../../packages/protocol/wire';
-import { parseAmount, totalUnits } from '../../../../../packages/checkout/amounts';
+import { assertUnits, parseAmount, totalUnits } from '../../../../../packages/checkout/amounts';
+import { parseRpcJson, rpcU64 } from '../../../../../packages/checkout/rpcJson';
 import { assertBase58, assertOrder } from '../../../../../packages/checkout/order';
 import {
-  paidPolicyHash, validatePaidPolicy, validatePaidOrderPolicy, validatePaymentPreparation,
+  paidPolicyHash, validatePaidPolicy, validateContributionPolicy, validatePaidOrderPolicy, validatePaymentPreparation,
   validatePaidReceipt, SOLANA_RPCS, SOLANA_GENESIS, type DurablePaymentPreparation,
 } from '../../../../../packages/checkout/paid';
 import { parseEnvelope, serializeEnvelope } from '../crypto/envelope';
 import { envelopeDigest } from '../solana/policy';
-import { readPaidAccess, writePaidAccess, readPaidOperation, writePaidOperation } from './paidJournal';
+import { readPaidAccess, writePaidAccess, withPaidAccessLock, readPaidOperation, writePaidOperation, findContributionAttempt } from './paidJournal';
 import { announcePreservationChange, reservePaidAttempt, withPaidOperationLock } from './vaultGuard';
-import type { PaidCompletion, PaidCreationCancellation, PaidInput, PaidOperation, PaidPolicyResponse, PaidSnapshot } from './paidTypes';
+import type { ContributionReceipt, PaidCompletion, PaidCreationCancellation, PaidInput, PaidOperation, PaidPolicyResponse, PaidSnapshot } from './paidTypes';
 
 export class PaidApiError extends Error {
   readonly status: number;
@@ -27,7 +28,7 @@ function endpoint(): string {
   return url.origin + '/api/checkout';
 }
 
-async function jsonRequest(url: string, init: RequestInit, signal?: AbortSignal): Promise<{ status: number; value: unknown }> {
+async function jsonRequest(url: string, init: RequestInit, signal?: AbortSignal, decode: (source: string) => unknown = JSON.parse): Promise<{ status: number; value: unknown }> {
   const ctrl = new AbortController();
   let reader: ReadableStreamDefaultReader<Uint8Array> | undefined;
   let body: ReadableStream<Uint8Array> | null = null;
@@ -48,7 +49,7 @@ async function jsonRequest(url: string, init: RequestInit, signal?: AbortSignal)
     for (;;) { const next = await reader.read(); if (ctrl.signal.aborted) throw Error('checkout_request_timed_out'); if (next.done) break; size += next.value.length; if (size > cap) throw Error('checkout_response_too_large'); chunks.push(next.value); }
     const bytes = new Uint8Array(size); let offset = 0;
     for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.length; }
-    return { status: response.status, value: JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(bytes)) };
+    return { status: response.status, value: decode(new TextDecoder('utf-8', { fatal: true }).decode(bytes)) };
   };
   try { return await Promise.race([read(), aborted]); }
   finally { ctrl.abort(); void (reader ? reader.cancel() : (body as ReadableStream<Uint8Array> | null)?.cancel())?.catch(() => {}); clearTimeout(timer); signal?.removeEventListener('abort', cancel); }
@@ -65,23 +66,32 @@ async function api<T>(path: string, token?: string, payload?: unknown, key?: str
   return response.value as T;
 }
 
-export async function readPaidPolicy(signal?: AbortSignal): Promise<PaidPolicyResponse> {
-  const value = await api<PaidPolicyResponse>('/policy', undefined, undefined, undefined, signal);
-  if (!value || typeof value.ready !== 'boolean') throw Error('invalid_paid_policy');
+export async function readPaidPolicy(signal?: AbortSignal, kind: 'preservation' | 'contribution' = 'preservation'): Promise<PaidPolicyResponse> {
+  const value = await api<PaidPolicyResponse>(kind === 'contribution' ? '/policy/contribution' : '/policy', undefined, undefined, undefined, signal);
+  if (!value || typeof value.ready !== 'boolean' ||
+      (value.contributionReady !== undefined && typeof value.contributionReady !== 'boolean')) throw Error('invalid_paid_policy');
   if (value.policy !== undefined) {
     validatePaidPolicy(value.policy);
     if (await paidPolicyHash(value.policy) !== value.policyHash) throw Error('paid_policy_mismatch');
   }
-  if (value.ready && !value.policy) throw Error('invalid_paid_policy');
+  if (value.contributionPolicy !== undefined) {
+    validateContributionPolicy(value.contributionPolicy);
+    if (await paidPolicyHash(value.contributionPolicy) !== value.contributionPolicyHash) throw Error('paid_policy_mismatch');
+  }
+  if ((value.ready && !value.policy) || (value.contributionReady && !value.contributionPolicy) ||
+      (value.policyHash !== undefined && value.policy === undefined) ||
+      (value.contributionPolicyHash !== undefined && value.contributionPolicy === undefined)) throw Error('invalid_paid_policy');
   return value;
 }
 
 async function access(): Promise<string> {
-  const previous = await readPaidAccess();
-  if (previous && previous.expiresAt > Date.now() + 60000 && /^[a-f0-9]{64}$/.test(previous.token)) return previous.token;
-  const value = await api<{ accessToken: string; expiresAt: number }>('/session', undefined, {});
-  await writePaidAccess(value.accessToken, value.expiresAt);
-  return value.accessToken;
+  return withPaidAccessLock(async () => {
+    const previous = await readPaidAccess();
+    if (previous && previous.expiresAt > Date.now() + 60000 && /^[a-f0-9]{64}$/.test(previous.token)) return previous.token;
+    const value = await api<{ accessToken: string; expiresAt: number }>('/session', undefined, {});
+    await writePaidAccess(value.accessToken, value.expiresAt);
+    return value.accessToken;
+  });
 }
 
 export async function validatePaidSnapshot(op: PaidOperation, value: unknown): Promise<PaidSnapshot> {
@@ -90,19 +100,24 @@ export async function validatePaidSnapshot(op: PaidOperation, value: unknown): P
   const order = snapshot.record.order;
   assertOrder(order);
   if (order.schema !== 'sejire/order/v2' || order.asset.symbol !== 'SOL' || order.payer !== op.intent.payer ||
-      order.fundContribution.amount !== parseAmount(op.intent.contribution, 9) || canonical(order.archive) !== canonical(op.archive) ||
+      order.kind!==op.intent.kind || order.fundContribution.amount !== parseAmount(op.intent.contribution, 9) || canonical(order.archive??null) !== canonical(op.archive) ||
       order.policyHash !== op.policyHash || canonical(snapshot.policy) !== canonical(op.policy) ||
       (op.order && canonical(op.order) !== canonical(order))) throw Error('checkout_order_mismatch');
   await validatePaidOrderPolicy(order, op.policy);
   const states = snapshot.record.states;
   if (!['awaiting-payment', 'requires-reconciliation', 'verified'].includes(states.payment) ||
       !['not-requested', 'awaiting-payment', 'requires-reconciliation', 'received'].includes(states.contribution) ||
-      !['awaiting-payment', 'ready', 'running', 'requires-reconciliation', 'completed'].includes(states.preservation)) throw Error('checkout_state_mismatch');
+      !['awaiting-payment', 'ready', 'running', 'requires-reconciliation', 'completed', 'not-applicable'].includes(states.preservation) ||
+      (order.kind === 'contribution' ? states.preservation !== 'not-applicable' : states.preservation === 'not-applicable')) throw Error('checkout_state_mismatch');
+  const expectedContribution = order.fundContribution.amount === '0' ? 'not-requested' :
+    states.payment === 'verified' ? 'received' : states.payment;
+  if (states.contribution !== expectedContribution) throw Error('checkout_state_mismatch');
   const signature = snapshot.record.payment?.signature ?? snapshot.record.pendingSignature;
-  if (signature) { assertBase58(signature, 64); if (op.signature && signature !== op.signature) throw Error('checkout_signature_mismatch'); }
+  if (signature !== undefined) { assertBase58(signature, 64); if (op.signature && signature !== op.signature) throw Error('checkout_signature_mismatch'); }
   if (snapshot.record.payment) {
-    if (states.payment !== 'verified' || !/^\d+$/.test(snapshot.record.payment.feeLamports) ||
+    if (states.payment !== 'verified' || typeof snapshot.record.payment.feeLamports !== 'string' ||
         (snapshot.record.pendingSignature && snapshot.record.pendingSignature !== snapshot.record.payment.signature)) throw Error('checkout_payment_mismatch');
+    assertUnits(snapshot.record.payment.feeLamports);
   } else if (states.payment === 'verified') throw Error('checkout_payment_mismatch');
   if (snapshot.preparation) {
     await validatePaymentPreparation(order, snapshot.preparation);
@@ -114,7 +129,9 @@ export async function validatePaidSnapshot(op: PaidOperation, value: unknown): P
   if (snapshot.expired && (snapshot.record.payment || snapshot.record.pendingSignature || snapshot.execution ||
       op.signature || op.signingStarted || (!snapshot.cancelled && (snapshot.preparation || op.preparation)))) throw Error('checkout_release_mismatch');
   const execution = snapshot.execution;
+  if(order.kind==='contribution'&&execution!==null)throw Error('checkout_execution_mismatch');
   if (execution) {
+    if(order.kind!=='preservation'||op.policy.schema!=='sejire/checkout-policy/v1')throw Error('checkout_execution_mismatch');
     if (execution.kind !== 'arweave-direct' || !['queued', 'signed', 'submitted', 'confirming', 'completed', 'requires-reconciliation'].includes(execution.status) ||
         (execution.txId !== null && !/^[A-Za-z0-9_-]{43}$/.test(execution.txId))) throw Error('checkout_execution_mismatch');
     if (execution.reason !== undefined && !/^[a-z0-9_-]{1,100}$/.test(execution.reason)) throw Error('checkout_execution_mismatch');
@@ -162,17 +179,23 @@ async function refresh(op: PaidOperation, signal?: AbortSignal): Promise<PaidOpe
 
 /** A first explicit create reserves the exact request before POST /orders.
  * Later creation retries require a separate user action and the same stored key. */
-export async function beginPaidOperation(input: Extract<PaidInput, { mode: 'create' }>, payer: string, contribution: string, offered: PaidPolicyResponse): Promise<PaidOperation> {
-  if (!offered.ready || !offered.policy || !offered.policyHash) throw Error('paid_unavailable');
-  const policy = validatePaidPolicy(offered.policy);
-  if (await paidPolicyHash(policy) !== offered.policyHash) throw Error('paid_policy_mismatch');
-  assertBase58(payer, 32); totalUnits(policy.serviceLamports, parseAmount(contribution, 9));
-  const serialized = serializeEnvelope(input.envelope), bytes = new TextEncoder().encode(serialized).byteLength;
-  if (bytes > policy.storage.maxBytes) throw Error('envelope_too_large');
+export async function beginPaidOperation(input: Extract<PaidInput, { mode: 'create'|'contribution' }>, payer: string, contribution: string, offered: PaidPolicyResponse): Promise<PaidOperation> {
+  const contributionOnly = input.mode === 'contribution';
+  const offeredPolicy = contributionOnly ? offered.contributionPolicy : offered.policy;
+  const policyHash = contributionOnly ? offered.contributionPolicyHash : offered.policyHash;
+  if (!(contributionOnly ? offered.contributionReady : offered.ready) || !offeredPolicy || !policyHash) throw Error('paid_unavailable');
+  const policy = contributionOnly ? validateContributionPolicy(offeredPolicy) : validatePaidPolicy(offeredPolicy);
+  if (await paidPolicyHash(policy) !== policyHash) throw Error('paid_policy_mismatch');
+  assertBase58(payer, 32); const lamports=parseAmount(contribution,9);
+  totalUnits(input.mode==='contribution'?'0':policy.serviceLamports,lamports);
+  if(input.mode==='contribution'&&lamports==='0')throw Error('invalid_contribution_order');
+  const serialized=input.mode==='create'?serializeEnvelope(input.envelope):null;
+  const bytes=serialized?new TextEncoder().encode(serialized).byteLength:0;
+  if (input.mode === 'create' && (policy.schema !== 'sejire/checkout-policy/v1' || bytes > policy.storage.maxBytes)) throw Error('envelope_too_large');
   const candidate: PaidOperation = { version: 2, id: crypto.randomUUID().replace(/-/g, ''), revision: 0,
-    token: await access(), createdAt: Date.now(), treeId: input.treeId, serialized,
-    archive: { digest: await envelopeDigest(serialized), bytes, vaultId: input.envelope.vault_id, parentTxId: input.parentTxId },
-    policy, policyHash: offered.policyHash, intent: { kind: 'preservation', payer, contribution },
+    token: await access(), createdAt: Date.now(), treeId: input.mode==='create'?input.treeId:null, serialized,
+    archive: input.mode==='create'?{ digest: await envelopeDigest(serialized!), bytes, vaultId: input.envelope.vault_id, parentTxId: input.parentTxId }:null,
+    policy, policyHash, intent: { kind: input.mode==='create'?'preservation':'contribution', payer, contribution },
     createAttempted: false, signingStarted: false, localCompletion: 'pending' };
   const reserved = await reservePaidAttempt(candidate);
   return withPaidOperationLock(reserved.id, async () => {
@@ -180,7 +203,8 @@ export async function beginPaidOperation(input: Extract<PaidInput, { mode: 'crea
     // A second tab adopts the original attempt without posting or signing.
     if (reserved.id !== candidate.id || op.createAttempted) return refresh(op);
     op = await writePaidOperation({ ...op, createAttempted: true });
-    const snapshot = await api<PaidSnapshot>('/orders', op.token, { ...op.intent, policyHash: op.policyHash, archive: op.archive, serialized: op.serialized }, op.id);
+    const snapshot = await api<PaidSnapshot>('/orders', op.token, { ...op.intent, policyHash: op.policyHash,
+      ...(op.archive?{archive:op.archive,serialized:op.serialized}:{}) }, op.id);
     return accept(op, snapshot);
   });
 }
@@ -203,7 +227,8 @@ export async function retryPaidCreation(id: string, isActive: ActiveContext = al
     requireActive(isActive);
     if (!op.createAttempted) op = await writePaidOperation({ ...op, createAttempted: true });
     requireActive(isActive);
-    return accept(op, await api<PaidSnapshot>('/orders', op.token, { ...op.intent, policyHash: op.policyHash, archive: op.archive, serialized: op.serialized }, op.id));
+    return accept(op, await api<PaidSnapshot>('/orders', op.token, { ...op.intent, policyHash: op.policyHash,
+      ...(op.archive?{archive:op.archive,serialized:op.serialized}:{}) }, op.id));
   });
 }
 
@@ -235,9 +260,9 @@ export async function preparePaidOperation(id: string, wallet: SolanaWalletAdapt
 
 async function rpc(op: PaidOperation, method: string, params: unknown[] = []): Promise<unknown> {
   const id = crypto.randomUUID();
-  const response = await jsonRequest(SOLANA_RPCS[op.policy.network], { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', id, method, params }) });
-  const value = response.value as { id?: string; error?: unknown; result?: unknown };
-  if (response.status !== 200 || value?.id !== id || value.error || !Object.hasOwn(value, 'result')) throw Error('solana_unavailable');
+  const response = await jsonRequest(SOLANA_RPCS[op.policy.network], { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', id, method, params }) }, undefined, parseRpcJson);
+  const value = response.value as { jsonrpc?: string; id?: string; error?: unknown; result?: unknown };
+  if (response.status !== 200 || value?.jsonrpc !== '2.0' || value.id !== id || value.error || !Object.hasOwn(value, 'result')) throw Error('solana_unavailable');
   return value.result;
 }
 
@@ -286,7 +311,9 @@ export async function payPaidOperation(id: string, preparationId: string, wallet
     await checkPaymentNetwork(op);
     requireActive(isActive);
     const fee = await rpc(op, 'getFeeForMessage', [preparation.messageBase64, { commitment: 'finalized' }]) as { value?: unknown };
-    if (!Number.isSafeInteger(fee?.value) || String(fee.value) !== preparation.feeLamports || BigInt(preparation.feeLamports) > 100000n) throw Error('network_fee_changed');
+    if (rpcU64(fee?.value) !== preparation.feeLamports || BigInt(preparation.feeLamports) > 100000n) throw Error('network_fee_changed');
+    const balance=await rpc(op,'getBalance',[op.order.payer,{commitment:'finalized'}]) as {value?:unknown};
+    if(BigInt(rpcU64(balance?.value))<BigInt(op.order.total)+BigInt(preparation.feeLamports))throw Error('insufficient_wallet_balance');
     requireActive(isActive);
     op = await writePaidOperation({ ...op, signingStarted: true });
     if (!isActive()) {
@@ -361,12 +388,32 @@ export async function resolveReleasedPaidOperation(id: string): Promise<void> {
 }
 
 export async function paidCompletion(op: PaidOperation): Promise<PaidCompletion | null> {
+  if(op.intent.kind==='contribution')return null;
   if (!op.snapshot || op.snapshot.record.states.preservation !== 'completed') return null;
   const snapshot = await validatePaidSnapshot(op, op.snapshot), execution = snapshot.execution;
-  if (!execution?.receipt || !execution.txId || !snapshot.record.payment) throw Error('checkout_completion_mismatch');
-  return { operationId: op.id, order: snapshot.record.order, serialized: op.serialized,
-    envelope: parseEnvelope(JSON.parse(op.serialized)), treeId: op.treeId, txId: execution.txId,
+  if (snapshot.record.order.kind!=='preservation'||!execution?.receipt || !execution.txId || !snapshot.record.payment) throw Error('checkout_completion_mismatch');
+  return { operationId: op.id, order: snapshot.record.order, serialized: op.serialized!,
+    envelope: parseEnvelope(JSON.parse(op.serialized!)), treeId: op.treeId, txId: execution.txId,
     paymentSignature: snapshot.record.payment.signature, receipt: execution.receipt };
+}
+
+export {findContributionAttempt};
+export async function contributionReceipt(op: PaidOperation): Promise<ContributionReceipt> {
+  if (op.intent.kind !== 'contribution' || !op.snapshot) throw Error('checkout_completion_mismatch');
+  const snapshot = await validatePaidSnapshot(op, op.snapshot);
+  const { order, payment, states } = snapshot.record;
+  if (order.kind !== 'contribution' || !payment || states.payment !== 'verified' || states.contribution !== 'received') throw Error('checkout_completion_mismatch');
+  return { schema: 'sejire/contribution-receipt/v1', status: 'verified', orderId: order.id, network: order.network,
+    policyHash: order.policyHash, paymentSignature: payment.signature, payer: order.payer, fundRecipient: order.fundContribution.recipient,
+    contributionLamports: order.fundContribution.amount, serviceLamports: '0', feeLamports: payment.feeLamports };
+}
+export async function completeContributionLocally(id:string):Promise<void>{
+  await withPaidOperationLock(id,async()=>{
+    const op=await requireOperation(id);
+    await contributionReceipt(op);
+    if(op.localCompletion!=='done')await writePaidOperation({...op,localCompletion:'done'});
+    announcePreservationChange();
+  });
 }
 
 /** Invoke only after exact local archive and session writes have been read back. */

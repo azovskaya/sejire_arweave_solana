@@ -54,7 +54,7 @@ fetchMock.get('https://api.mainnet-beta.solana.com').intercept({ path: '/', meth
       .map(payment => ({ signature: payment.signature, slot: payment.raw.slot, err: null, blockTime: payment.raw.blockTime, confirmationStatus: 'finalized' }));
   } else if (request.method === 'getSignatureStatuses') {
     const payment = wire.payments.get(request.params[0][0]);
-    result = { context: { slot: 200 }, value: [payment ? { slot: payment.raw.slot, confirmations: null, err: null, confirmationStatus: 'finalized' } : null] };
+    result = { context: { slot: 200 }, value: [payment ? { slot: payment.raw.slot, confirmations: null, err: null, confirmationStatus: payment.confirmationStatus ?? 'finalized' } : null] };
   } else if (request.method === 'getTransaction') result = wire.payments.get(request.params[0])?.raw ?? null;
   else throw Error(`Unexpected synthetic RPC method: ${request.method}`);
   return { statusCode: 200, data: JSON.stringify({ jsonrpc: '2.0', id: request.id, result }) };
@@ -64,7 +64,8 @@ for (const host of ['https://arweave.net', 'https://g8way.io']) {
   const pool = fetchMock.get(host);
   for (const [path, value] of [['/info', JSON.stringify({ network: 'arweave.N.1' })],
     ['/tx_anchor', Buffer.alloc(48, 7).toString('base64url')], [`/wallet/${treasury}/balance`, '68000000000000']]) {
-    pool.intercept({ path, method: 'GET' }).reply(() => { observe(host + path, 'GET'); return { statusCode: 200, data: value }; }).persist();
+    pool.intercept({ path, method: 'GET' }).reply(() => { observe(host + path, 'GET');
+      return wire.storageUnavailable ? { statusCode: 503, data: 'synthetic storage outage' } : { statusCode: 200, data: value }; }).persist();
   }
   pool.intercept({ path: /^\/price\/\d+$/, method: 'GET' }).reply(options => { observe(host + options.path, 'GET'); return { statusCode: 200, data: reward }; }).persist();
   pool.intercept({ path: /^\/tx\/[A-Za-z0-9_-]{43}\/status$/, method: 'GET' }).reply(options => {
@@ -111,17 +112,20 @@ fetchMock.get('https://arweave.net').intercept({ path: '/chunk', method: 'POST' 
 let runtime, stub, passed = 0;
 const test = async (name, run) => { await run(); passed++; console.log(`PASS paid API workerd: ${name}`); };
 const scriptPath = resolve(temp, 'worker.mjs');
-const start = async (enabled, execute, secret = true) => {
+const start = async (enabled, execute, secret = true, options = {}) => {
   await runtime?.dispose();
   runtime = new Miniflare({ modules: true, scriptPath, modulesRoot: temp, compatibilityDate: '2026-07-01', compatibilityFlags: ['nodejs_compat'],
-    durableObjects: { CHECKOUT_LEDGER: { className: 'CheckoutLedger', useSQLite: true } }, durableObjectsPersist: resolve(temp, 'db'),
+    durableObjects: { CHECKOUT_LEDGER: { className: 'CheckoutLedger', useSQLite: true } }, durableObjectsPersist: resolve(temp, options.db ?? 'db'),
     outboundService: async request => mockedFetch(request.url, { method: request.method, headers: request.headers, signal: request.signal,
       ...(request.body ? { body: new Uint8Array(await request.arrayBuffer()) } : {}), dispatcher: fetchMock, redirect: 'manual' }),
     bindings: { CHECKOUT_API_ENABLED: 'false', CHECKOUT_PAID_ENABLED: String(enabled), CHECKOUT_PAID_EXECUTION_ENABLED: String(execute),
       CHECKOUT_ALLOWED_ORIGINS: origin, CHECKOUT_PAID_NETWORK: 'mainnet-beta', CHECKOUT_PAID_POLICY_VERSION: 'synthetic-paid-api-v1',
-      CHECKOUT_SERVICE_RECIPIENT: addr(2), CHECKOUT_FUND_RECIPIENT: addr(3), CHECKOUT_PAID_TREASURY_ADDRESS: treasury,
-      CHECKOUT_PAID_AR_BUDGET_ID: 'synthetic-paid', CHECKOUT_PAID_AR_BUDGET_WINSTON: '400000000000',
-      CHECKOUT_PAID_MAX_REWARD_WINSTON: hold, MAX_ENVELOPE_BYTES: '524288', ...(secret ? { ARWEAVE_TREASURY_JWK: JSON.stringify(arKey) } : {}) } });
+      CHECKOUT_SERVICE_RECIPIENT: addr(2), CHECKOUT_FUND_RECIPIENT: addr(3),
+      ...(options.storage === false ? {} : {CHECKOUT_PAID_TREASURY_ADDRESS: treasury,
+        CHECKOUT_PAID_AR_BUDGET_ID: 'synthetic-paid', CHECKOUT_PAID_AR_BUDGET_WINSTON: '400000000000',
+        CHECKOUT_PAID_MAX_REWARD_WINSTON: hold, MAX_ENVELOPE_BYTES: '524288'}),
+      ...(options.contribution === undefined ? {} : {CHECKOUT_CONTRIBUTION_ENABLED: String(options.contribution)}),
+      ...(secret ? { ARWEAVE_TREASURY_JWK: JSON.stringify(arKey) } : {}), ...options.bindings } });
   await runtime.ready;
   const namespace = await runtime.getDurableObjectNamespace('CHECKOUT_LEDGER');
   stub = namespace.get(namespace.idFromName('sejire-checkout-ledger-v1'));
@@ -165,7 +169,9 @@ try {
   await buildWorker(resolve(here, 'paid-api-worker.ts'), scriptPath);
   await start(false, false, false);
   await test('default off exposes no payment offer or session and makes no outbound request', async () => {
-    assert.deepEqual(await call('/policy'), { status: 200, body: { ready: false, reason: 'paid_disabled' } });
+    assert.deepEqual(await call('/policy'), { status: 200, body: { ready: false, reason: 'paid_disabled',
+      contributionReady: false, contributionReason: 'contribution_disabled' } });
+    assert.deepEqual(await call('/policy/contribution'), {status:200,body:{ready:false,contributionReady:false,contributionReason:'contribution_disabled'}});
     assert.equal((await call('/session', null, {})).status, 404); assert.equal((await call('/orders', null, {})).status, 404);
     assert.equal(wire.calls.length, 0);
   });
@@ -182,10 +188,15 @@ try {
     const result = await call('/policy'); assert.equal(result.status, 200); assert.equal(result.body.ready, true); publicPolicy = result.body;
     assert.equal(publicPolicy.policy.serviceLamports, '30000000'); assert.equal(publicPolicy.policy.network, 'mainnet-beta');
     assert.equal(publicPolicy.policy.storage.network, 'arweave.N.1');
+    assert.equal(publicPolicy.contributionReady,false);assert.equal(publicPolicy.contributionPolicy,undefined);
     a = (await call('/session', null, {})).body.accessToken; b = (await call('/session', null, {})).body.accessToken;
     assert.match(a, /^[a-f0-9]{64}$/); assert.notEqual(a, b);
     expiredUnadmitted = (await call('/session', null, {})).body.accessToken;
     await internal({ action: '__testExpireSession', hash: sha(expiredUnadmitted) });
+    const before=wire.calls.length;
+    assert.deepEqual(await call('/orders',a,{kind:'contribution',payer,contribution:'0.005',policyHash:publicPolicy.policyHash},
+      {'Idempotency-Key':'default_off_help_01'}),{status:503,body:{error:'contribution_not_ready'}});
+    assert.equal(wire.calls.length,before);
   });
   await start(false, false, false);
   await test('cancel before any admission works while paused with known or expired owner and never creates a hold', async () => {
@@ -337,6 +348,73 @@ try {
     assert.equal(result.body.execution.receipt.paymentSignature, result.body.record.payment.signature);
     assert.equal(wire.calls.length, before); assert.equal((await inspect(second.id)).credits.length, 1);
     for (const path of ['/commit', '/paidRun', '/__testInspectPaid', '/__testPaidCounts']) assert.equal((await call(path, b, {})).status, 404);
+  });
+  const contributionOptions={db:'contributions',contribution:true,storage:false};
+  wire.storageUnavailable=true;
+  await start(true,true,true,{...contributionOptions,storage:true});
+  await test('help-only policy never invokes storage with both gates enabled and an Arweave outage',async()=>{
+    const before=wire.calls.length,result=await call('/policy/contribution');
+    assert.equal(result.status,200);assert.equal(result.body.contributionReady,true);assert.equal(result.body.policy,undefined);
+    assert.equal(result.body.contributionPolicy.serviceLamports,'0');assert.equal(wire.calls.length,before);
+  });
+  await start(false,false,false,contributionOptions);
+  let helpPolicy,helper,helpOrder,helpPreparation,helpPayment;
+  const helpCreate=(payload={},key='standalone_help_key_01')=>call('/orders',helper,{kind:'contribution',payer,contribution:'0.005',
+    policyHash:helpPolicy.contributionPolicyHash,...payload},{'Idempotency-Key':key});
+  const onlySolSince=index=>assert(wire.calls.slice(index).every(row=>row.url==='https://api.mainnet-beta.solana.com/'));
+  await test('standalone readiness has its own explicit gate and works without AR settings, signer or preservation admission',async()=>{
+    const before=wire.calls.length,result=await call('/policy/contribution');assert.equal(result.status,200);helpPolicy=result.body;
+    assert.equal(helpPolicy.ready,false);assert.equal(helpPolicy.contributionReady,true);assert.equal(helpPolicy.policy,undefined);
+    assert.equal(helpPolicy.contributionPolicy.schema,'sejire/contribution-policy/v1');
+    assert.equal(helpPolicy.contributionPolicy.serviceLamports,'0');assert(!('storage' in helpPolicy.contributionPolicy));
+    assert.match(helpPolicy.contributionPolicyHash,/^[a-f0-9]{64}$/);assert.equal(wire.calls.length,before);
+    const issued=await call('/session',null,{});assert.equal(issued.status,201);helper=issued.body.accessToken;
+    for(const payload of [{contribution:'0'},{archive:tiny.archive},{serialized:tiny.serialized},{servicePayment:{amount:'1'}},{contribution:'18446744073.709551616'}])
+      assert.equal((await helpCreate(payload,'invalid_help_body_01')).status,400);
+    assert.equal((await helpCreate({policyHash:publicPolicy.policyHash},'wrong_help_policy_01')).status,409);
+    assert.equal((await call('/orders',helper,{kind:'preservation',payer,contribution:'0',policyHash:publicPolicy.policyHash,...tiny},
+      {'Idempotency-Key':'preservation_stays_off_01'})).status,503);
+    assert.equal(wire.calls.length,before);await noAdmitted(0);
+  });
+  await test('standalone admission saves only immutable SOL terms; idempotent reuse adds no AR hold, payload or upload job',async()=>{
+    const before=wire.calls.length,made=await helpCreate();assert.equal(made.status,201);helpOrder=made.body.record.order;
+    assert.equal(helpOrder.servicePayment.amount,'0');assert.equal(helpOrder.fundContribution.amount,'5000000');
+    assert(!('archive' in helpOrder));assert(!('storage' in helpOrder));assert.equal(made.body.execution,null);
+    assert.equal(made.body.record.states.preservation,'not-applicable');onlySolSince(before);
+    const calls=wire.calls.length,reused=await helpCreate();assert.equal(reused.status,200);
+    assert.deepEqual(reused.body.record.order,helpOrder);assert.equal(wire.calls.length,calls);
+    const state=await inspect(helpOrder.id);assert.equal(state.hold,undefined);assert.deepEqual(state.payloadKinds,[]);
+    assert.deepEqual(state.legacyExecution,[]);assert.deepEqual(state.credits,[]);
+    const prepared=await call(`/orders/${helpOrder.id}/prepare`,helper,{});assert.equal(prepared.status,200);helpPreparation=prepared.body;
+    helpPayment=signPayment(helpOrder,helpPreparation);helpPayment.confirmationStatus='confirmed';
+    wire.payments.set(helpPayment.signature,helpPayment);onlySolSince(before);
+  });
+  await test('standalone reserve verifies exact signature; nonfinalized payment remains unresolved with no credit or AR side effect',async()=>{
+    const before=wire.calls.length;
+    assert.equal((await call(`/orders/${helpOrder.id}/reserve`,helper,{signature:b58(Buffer.alloc(64,5)),preparationId:helpPreparation.preparationId})).status,400);
+    assert.equal((await call(`/orders/${helpOrder.id}/reserve`,helper,{signature:helpPayment.signature,preparationId:helpPreparation.preparationId})).status,202);
+    assert.equal((await call(`/orders/${helpOrder.id}/verify`,helper,{signature:helpPayment.signature})).status,202);
+    const state=await waitFor(helpOrder.id,value=>Boolean(value.paid.last_error)&&value.paid.lease_until===0,'standalone waits for finality');
+    assert.equal(state.row.payment_json,null);assert.deepEqual(state.credits,[]);assert.equal(state.hold,undefined);
+    assert.deepEqual(state.payloadKinds,[]);assert.deepEqual(state.legacyExecution,[]);onlySolSince(before);
+  });
+  helpPayment.confirmationStatus='finalized';
+  await start(false,false,false,{...contributionOptions,contribution:false});
+  await test('disabled standalone admission still reconciles the original finalized payment after restart exactly once',async()=>{
+    const before=wire.calls.length;
+    assert.equal((await call('/policy')).body.contributionReady,false);assert.equal((await call('/session',null,{})).status,404);
+    const saved=await call(`/orders/${helpOrder.id}`,helper);assert.equal(saved.status,200);assert.deepEqual(saved.body.preparation,helpPreparation);
+    await call(`/orders/${helpOrder.id}/reconcile`,helper,{});
+    const done=await waitFor(helpOrder.id,value=>value.paid.status==='completed','standalone finalized credit');
+    assert.deepEqual(done.credits.map(row=>[row.purpose,row.amount,row.signature]),[['fundContribution','5000000',helpPayment.signature]]);
+    const read=(await call(`/orders/${helpOrder.id}`,helper)).body;
+    assert.deepEqual(read.record.states,{payment:'verified',preservation:'not-applicable',contribution:'received'});
+    assert.equal(read.execution,null);assert.equal(done.hold,undefined);assert.deepEqual(done.payloadKinds,[]);assert.deepEqual(done.legacyExecution,[]);
+    onlySolSince(before);
+    const calls=wire.calls.length;
+    for(let repeat=0;repeat<2;repeat++)assert.equal((await call(`/orders/${helpOrder.id}/reconcile`,helper,{})).status,200);
+    assert.equal((await inspect(helpOrder.id)).credits.length,1);assert.equal(wire.calls.length,calls);
+    assert.equal((await call('/orders/by-key/standalone_help_key_01',helper)).body.record.order.id,helpOrder.id);
   });
   assert(wire.calls.every(call => ['https://arweave.net', 'https://g8way.io', 'https://api.mainnet-beta.solana.com'].includes(new URL(call.url).origin)));
   console.log(`paid-api.runtime: PASS (${passed} scenarios); actual API/DO/SQLite/global fetch/alarm, fresh workerd isolates, unmatched outbound denied, no real payments or deployment`);

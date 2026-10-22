@@ -4,6 +4,7 @@ import { validatePreparedPayment, type ChainPolicy } from './paymentValidator';
 import type { TrustedTransactionReader, ReferencePaymentResult } from './reconciliation';
 import { decodeTransaction, object } from './rpcDecoder';
 import { RpcEvidenceError } from './rpcErrors';
+import { parseRpcJson } from '../../../../packages/checkout/rpcJson';
 
 export const DEVNET_GENESIS = SOLANA_GENESIS.devnet;
 export const MAINNET_GENESIS = SOLANA_GENESIS['mainnet-beta'];
@@ -56,7 +57,7 @@ export class SolanaRpcReader implements TrustedTransactionReader {
       const bytes = new Uint8Array(size); let offset = 0;
       for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.length; }
       let parsed: unknown;
-      try { parsed = JSON.parse(new TextDecoder('utf-8', { fatal: true, ignoreBOM: false }).decode(bytes)); }
+      try { parsed = parseRpcJson(new TextDecoder('utf-8', { fatal: true, ignoreBOM: false }).decode(bytes)); }
       catch { throw new RpcEvidenceError('rpc-malformed'); }
       const payload = object(parsed);
       if (payload.jsonrpc !== '2.0' || payload.id !== id) throw new RpcEvidenceError('rpc-malformed');

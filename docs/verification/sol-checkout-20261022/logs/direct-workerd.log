@@ -1,0 +1,8 @@
+PASS direct workerd: default global fetch gets bounded mainnet readiness and unsigned preparation
+PASS direct workerd: actual RSA workerd signature has no network side effects and execution pause rejects signing
+PASS direct workerd: lost acknowledgement leaves immutable signed bytes for exact retry; acceptance is not completion
+PASS direct workerd: confirmed metadata plus exact node-data produces complete proof
+PASS direct workerd: confirmed spend survives unavailable/corrupted archive; neither case reports archive verified
+PASS direct workerd: wrong reward and redirected status cannot prove an AR debit
+PASS direct workerd: fresh workerd isolate without secret rechecks the same persisted plan with GET only
+direct-preservation.runtime: PASS (7 scenarios); actual default-fetch workerd, in-memory unfunded RSA, fresh isolate, network disabled

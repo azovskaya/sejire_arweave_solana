@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import { resolve } from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 import { createPaidOrderFromPolicy, createPaymentPreparation, paymentMessageBytes, SOLANA_GENESIS,
-  validatePaidPolicy, verifyPreparedPaymentSignature } from '../../../packages/checkout/paid.ts';
+  validatePaidPolicy, validateContributionPolicy, verifyPreparedPaymentSignature } from '../../../packages/checkout/paid.ts';
 import { createOrder } from '../../../packages/checkout/order.ts';
 import { SqliteAtomicOrderStore } from '../src/checkout/sqliteStore.ts';
 import { ApiLedger } from '../src/checkout/apiLedger.ts';
@@ -89,13 +89,17 @@ async function fixture(options = {}) {
   const serialized = JSON.stringify(envelope);
   const archive = { digest: sha(serialized), bytes: Buffer.byteLength(serialized), vaultId: envelope.vault_id,
     parentTxId: options.parentTxId === undefined ? 'P'.repeat(43) : options.parentTxId };
-  const policy = validatePaidPolicy({ schema: 'sejire/checkout-policy/v1', version: 'synthetic-ledger-v1',
+  const storagePolicy = validatePaidPolicy({ schema: 'sejire/checkout-policy/v1', version: 'synthetic-ledger-v1',
     network: 'mainnet-beta', genesisHash: SOLANA_GENESIS['mainnet-beta'], serviceLamports: '30000000',
     serviceRecipient: addr(2), fundRecipient: addr(3), storage: { kind: 'arweave-direct', network: 'arweave.N.1',
       treasuryAddress: TREASURY_ADDRESS, budgetId: options.budgetId ?? 'synthetic-paid-budget',
       maxBytes: 524288, maxRewardWinston: options.cap ?? '30' } });
+  const isContribution = options.kind === 'contribution';
+  const policy = isContribution ? validateContributionPolicy({ schema: 'sejire/contribution-policy/v1', version: storagePolicy.version,
+    network: storagePolicy.network, genesisHash: storagePolicy.genesisHash, serviceLamports: '0',
+    serviceRecipient: storagePolicy.serviceRecipient, fundRecipient: storagePolicy.fundRecipient }) : storagePolicy;
   const order = await createPaidOrderFromPolicy(policy, { id, payer, reference: encode58(createHash('sha256').update(id).digest()),
-    createdAt, expiresAt: createdAt + 180000, archive, contribution: options.contribution ?? '0' });
+    createdAt, expiresAt: createdAt + 180000, ...(isContribution ? {kind:'contribution'} : {archive}), contribution: options.contribution ?? '0' });
   const preparation = await createPaymentPreparation(order, { blockhash: addr(8), lastValidBlockHeight: 1000,
     feeLamports: '5000', createdAt: createdAt + 100 });
   const signature = encode58(sign(null, paymentMessageBytes(preparation.messageBase64), pair.privateKey));
@@ -109,7 +113,7 @@ async function fixture(options = {}) {
         amount: order[purpose].amount, asset: order.asset, references: [order.reference] })) };
   const payment = await validatePreparedPayment(order, evidence, chain, preparation);
   const input = { orderId: id, serialized, archive };
-  const prepared = preparedFor(input, policy, options.reward ?? '20', 'initial-anchor');
+  const prepared = isContribution ? null : preparedFor(input, policy, options.reward ?? '20', 'initial-anchor');
   return { order, policy, preparation, signature, chain, evidence, payment, serialized, input, prepared,
     key: `synthetic-${id}`, intent: sha(JSON.stringify({ archive, policy, payer })) };
 }
@@ -128,8 +132,8 @@ function signedFor(prepared) {
 
 async function offer(c, f, options = {}) {
   return c.paid.create({ hash: owner, key: f.key, intent: f.intent, order: f.order, policy: f.policy,
-    serialized: f.serialized, prepared: f.prepared, budgetLimit: options.budgetLimit ?? '1000',
-    balance: options.balance ?? '100', balanceRevision: options.revision ?? c.paid.treasury.revision(TREASURY_ADDRESS) },
+    ...(f.order.kind === 'preservation' ? {serialized: f.serialized, prepared: f.prepared, budgetLimit: options.budgetLimit ?? '1000',
+      balance: options.balance ?? '100', balanceRevision: options.revision ?? c.paid.treasury.revision(TREASURY_ADDRESS)} : {}) },
   options.now ?? f.order.createdAt + 200);
 }
 
@@ -187,6 +191,60 @@ async function run(c, f, mock, env = executionEnv) { await runPaidOrder(c.paid, 
 async function test(name, callback) { await callback(); checks++; console.log(`PASS paid SQLite: ${name}`); }
 
 try {
+  await test('standalone contribution creates no archive/AR hold/job and credits its single purpose once after restart', async () => {
+    let c=await context();const f=await fixture({kind:'contribution',contribution:'9007199254740993'});
+    const offerResult=await offer(c,f);assert.equal(offerResult.record.order.servicePayment.amount,'0');
+    assert(!('archive' in offerResult.record.order));assert(!('storage' in offerResult.record.order));
+    for(const table of ['paid_payloads','paid_holds','api_execution','credits'])assert.equal(c.count(table),0,table);
+    assert.equal(c.paid.work(f.order.id).input,null);assert.equal(c.paid.work(f.order.id).prepared,null);
+    assert.equal((await offer(c,f)).reused,true);assert.equal(c.count('orders'),1);
+    await prepare(c,f);await reserve(c,f);const mock=mockRunner(c,f);
+    await run(c,f,mock,{});
+    const done=c.paid.snapshot(f.order.id);
+    assert.deepEqual(done.record.states,{payment:'verified',preservation:'not-applicable',contribution:'received'});
+    assert.equal(done.execution,null);assert.equal(done.record.payment.signature,f.signature);
+    assert.deepEqual(c.rows('SELECT purpose,amount FROM credits'),[{purpose:'fundContribution',amount:'9007199254740993'}]);
+    assert.equal(c.count('used_transactions'),1);assert.equal(c.paid.due(Date.now()+86400000).length,0);
+    assert.equal(c.rows('SELECT at FROM test_alarm').length,0);
+    assert.deepEqual([mock.calls.prepare,mock.calls.sign,mock.calls.submit.length,mock.calls.reconcile],[0,0,0,0]);
+    c=reopen(c);const again=mockRunner(c,f);await run(c,f,again,{});
+    assert.deepEqual(c.paid.snapshot(f.order.id),done);assert.equal(c.count('credits'),1);
+    for(const table of ['paid_payloads','paid_holds','api_execution'])assert.equal(c.count(table),0,table);
+    assert.deepEqual(c.paid.treasury.paidTotals(),{reservedWinston:'0',actualSpentWinston:'0'});
+  });
+  await test('standalone payment and terminal state commit atomically; storage-bearing inputs are rejected', async () => {
+    const c=await context(),f=await fixture({kind:'contribution',contribution:'5000000'});
+    const input={hash:owner,key:f.key,intent:f.intent,order:f.order,policy:f.policy};
+    for(const extra of [{serialized:f.serialized},{prepared:{}},{budgetLimit:'1'},{balance:'1'},{balanceRevision:0}])
+      await assert.rejects(c.paid.create({...input,...extra},Date.now()),/invalid_contribution_order/);
+    assert.equal(c.count('orders'),0);await offer(c,f);await prepare(c,f);await reserve(c,f);
+    c.storage.failSql=sql=>sql.startsWith('UPDATE paid_orders SET paid=1');
+    await assert.rejects(c.paid.commit(f.order.id,f.payment,Date.now()),/synthetic_sql_fault/);
+    assert.equal(c.count('credits'),0);assert.equal(c.count('used_transactions'),0);assert.equal(c.paid.snapshot(f.order.id).record.payment,undefined);
+    c.storage.failSql=null;
+    assert.equal((await c.paid.commit(f.order.id,f.payment,Date.now())).status,'credited');
+    assert.equal((await c.paid.commit(f.order.id,f.payment,Date.now())).status,'already-credited');
+    assert.equal(c.count('credits'),1);assert.equal(c.count('paid_holds'),0);assert.equal(c.count('paid_payloads'),0);
+    assert.equal(c.paid.snapshot(f.order.id).record.states.preservation,'not-applicable');
+  });
+  await test('unknown standalone signature/reference never completes or expires; same preparation recovers while gates are off', async () => {
+    let c=await context();const f=await fixture({kind:'contribution',contribution:'7'});
+    await offer(c,f);await prepare(c,f);
+    const missing=mockRunner(c,f,{lookup:'missing'});await run(c,f,missing,{});
+    assert.equal(c.count('credits'),0);assert.equal(c.paid.snapshot(f.order.id).record.states.payment,'awaiting-payment');
+    await c.paid.claim(f.order.id,'expired-but-unknown',f.order.expiresAt+86400000);
+    assert.equal(c.paid.snapshot(f.order.id).expired,false);
+    await c.paid.releaseLease(f.order.id,'expired-but-unknown',null,Date.now());
+    c=reopen(c);await reserve(c,f);
+    const invalid=mockRunner(c,{...f,evidence:{...f.evidence,commitment:'confirmed'}});
+    await run(c,f,invalid,{});assert.equal(c.count('credits'),0);
+    const recovered=mockRunner(c,f);await run(c,f,recovered,{});
+    assert.equal(c.paid.snapshot(f.order.id).record.payment.signature,f.signature);
+    assert.equal(c.paid.snapshot(f.order.id).record.states.contribution,'received');assert.equal(c.count('credits'),1);
+    await assert.rejects(c.paid.cancel(owner,f.order.id,f.preparation.preparationId,Date.now()),/previous_payment_unresolved/);
+    for(const table of ['paid_payloads','paid_holds','api_execution'])assert.equal(c.count(table),0,table);
+    assert.equal(recovered.calls.sign,0);assert.equal(recovered.calls.submit.length,0);
+  });
   await test('creation binds exact ciphertext and parent; all order/hold/job rows roll back together', async () => {
     let c = await context(); const f = await fixture();
     c.storage.failSql = sql => sql.startsWith('INSERT INTO paid_payloads');

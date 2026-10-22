@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 import { generateKeyPairSync, sign } from 'node:crypto';
-import { assertOrder, createOrder, createPaidOrder, SYSTEM_PROGRAM, type PaidOrder, type Network } from '../../../../packages/checkout/order';
+import { assertOrder, createOrder, createPaidOrder, SYSTEM_PROGRAM, type PaidOrder, type PaidPreservationOrder, type Network } from '../../../../packages/checkout/order';
 import {
-  SOLANA_GENESIS, SOLANA_RPCS, validatePaidPolicy, paidPolicyHash, createPaidOrderFromPolicy, validatePaidOrderPolicy,
+  SOLANA_GENESIS, SOLANA_RPCS, validatePaidPolicy, validateContributionPolicy, paidPolicyHash, createPaidOrderFromPolicy, validatePaidOrderPolicy,
   buildPaidPaymentMessage, createPaymentPreparation, validatePaymentPreparation, validatePaidReceipt,
   paymentMessageBytes, verifyPreparedPaymentSignature, type PaidPolicy, type DurablePaymentPreparation,
 } from '../../../../packages/checkout/paid';
@@ -13,6 +13,7 @@ import { SolanaRpcReader } from './rpcReader';
 import { decodeTransaction } from './rpcDecoder';
 import { MemoryAtomicOrderStore } from './store';
 import { addr, sig, encode58 } from './rpcFixtures';
+import { configuredContributionPolicy, configuredPaidPolicy } from './paidPolicy';
 
 // Independent installed Solana SDK parses our wire template; it never connects or signs.
 type SdkMessage = { header: { numRequiredSignatures: number; numReadonlySignedAccounts: number; numReadonlyUnsignedAccounts: number };
@@ -29,7 +30,7 @@ function policy(network: Network = 'mainnet-beta'): PaidPolicy {
     serviceLamports: '30000000', serviceRecipient: addr(2), fundRecipient: addr(3),
     storage: { kind: 'arweave-direct', network: 'arweave.N.1', treasuryAddress: 'A'.repeat(43), budgetId: 'synthetic-paid-budget', maxBytes: 10 * 1024 * 1024, maxRewardWinston: '4000000000' } });
 }
-async function orderFor(network: Network = 'mainnet-beta', contribution = '0', current = false): Promise<PaidOrder> {
+async function orderFor(network: Network = 'mainnet-beta', contribution = '0', current = false): Promise<PaidPreservationOrder> {
   const time = current ? Date.now() - 1000 : 1000000;
   return createPaidOrderFromPolicy(policy(network), { id: 'a'.repeat(32), payer: addr(1), reference: addr(4), createdAt: time, expiresAt: time + 100000,
     archive: { digest: 'b'.repeat(64), bytes: 39305, vaultId: 'c'.repeat(32), parentTxId: 'P'.repeat(43) }, contribution });
@@ -87,6 +88,55 @@ await test('policy hash is canonical; roles, genesis and limits are not caller d
     { serviceRecipient: 'ETWcxNPF3Qcwvo4NHYw6JhMiKnGwrvH1U9YEAQ3rZSWd' }]) assert.throws(() => validatePaidPolicy({ ...original, ...patch }));
   await assert.rejects(validatePaidOrderPolicy(order, { ...original, version: 'rotated-policy' }));
   assert.throws(() => validatePaidPolicy({ ...original, storage: { ...original.storage, maxRewardWinston: '0' } }));
+});
+await test('standalone policy requires only explicit SOL terms; preservation still requires complete AR policy', async () => {
+  const publicSol={CHECKOUT_PAID_NETWORK:'mainnet-beta',CHECKOUT_PAID_POLICY_VERSION:'synthetic-help-v1',
+    CHECKOUT_SERVICE_RECIPIENT:addr(2),CHECKOUT_FUND_RECIPIENT:addr(3)};
+  const help=configuredContributionPolicy(publicSol);
+  assert.equal(help.schema,'sejire/contribution-policy/v1');assert.equal(help.serviceLamports,'0');assert(!('storage' in help));
+  assert.throws(()=>configuredPaidPolicy(publicSol),/paid_not_configured/);
+  assert.throws(()=>validatePaidPolicy(help));
+  for(const patch of [{storage:policy().storage},{serviceLamports:'30000000'},{genesisHash:SOLANA_GENESIS.devnet},
+    {fundRecipient:help.serviceRecipient},{fundRecipient:'ETWcxNPF3Qcwvo4NHYw6JhMiKnGwrvH1U9YEAQ3rZSWd'}])
+    assert.throws(()=>validateContributionPolicy({...help,...patch}));
+  await assert.rejects(createPaidOrderFromPolicy(help,{id:'c'.repeat(32),payer:addr(1),reference:addr(4),
+    createdAt:1000000,expiresAt:1100000,kind:'preservation',archive:order.archive}),/paid_policy_mismatch/);
+});
+await test('standalone contribution has one independently decoded fund transfer, no storage, and exact u64 amounts', async () => {
+  const help=validateContributionPolicy({schema:'sejire/contribution-policy/v1',version:'synthetic-help-v1',network:'mainnet-beta',
+    genesisHash:SOLANA_GENESIS['mainnet-beta'],serviceLamports:'0',serviceRecipient:addr(2),fundRecipient:addr(3)});
+  for(const amount of ['1','9007199254740993','18446744073709551615']){
+    const contribution=await createPaidOrderFromPolicy(help,{id:'c'.repeat(32),payer:addr(1),reference:addr(4),
+      createdAt:1000000,expiresAt:1100000,kind:'contribution',contribution:amount});
+    assertOrder(contribution);await validatePaidOrderPolicy(contribution,help);
+    assert.equal(contribution.servicePayment.amount,'0');assert.equal(contribution.total,amount);
+    assert(!('archive' in contribution));assert(!('storage' in contribution));
+    const prepared=await preparation(contribution),message=sdk.Message.from(paymentMessageBytes(prepared.messageBase64));
+    assert.equal(message.instructions.length,1);assert.equal(message.accountKeys[1].toBase58(),help.fundRecipient);
+    const evidence=decodeTransaction(rawTransaction(prepared),sig(5),chain);
+    const payment=await validatePreparedPayment(contribution,evidence,chain,prepared);
+    assert.deepEqual(payment.credits.map(({purpose,amount,recipient})=>({purpose,amount,recipient})),
+      [{purpose:'fundContribution',amount,recipient:help.fundRecipient}]);
+    for(const patch of [{commitment:'confirmed'},{error:{InstructionError:[0,'failed']}},{feeLamports:'5001'},
+      {recentBlockhash:addr(9)},{messageBase64:prep.messageBase64},{transfers:[]}])
+      await assert.rejects(validatePreparedPayment(contribution,{...evidence,...patch} as never,chain,prepared));
+  }
+});
+await test('standalone contribution rejects zero/service/archive/storage and cannot change preservation terms', async () => {
+  const help=validateContributionPolicy({schema:'sejire/contribution-policy/v1',version:'synthetic-help-v1',network:'mainnet-beta',
+    genesisHash:SOLANA_GENESIS['mainnet-beta'],serviceLamports:'0',serviceRecipient:addr(2),fundRecipient:addr(3)});
+  const input={id:'c'.repeat(32),payer:addr(1),reference:addr(4),createdAt:1000000,expiresAt:1100000,kind:'contribution' as const,contribution:'5'};
+  const contribution=await createPaidOrderFromPolicy(help,input);
+  for(const amount of ['0','-1','1.0','18446744073709551616'])await assert.rejects(createPaidOrderFromPolicy(help,{...input,contribution:amount}));
+  for(const patch of [{archive:order.archive},{storage:order.storage},{servicePayment:{...contribution.servicePayment,amount:'1'}}]){
+    assert.throws(()=>createPaidOrder({...contribution,...patch,asset:'SOL'} as never));
+    assert.throws(()=>assertOrder({...contribution,...patch} as never));
+  }
+  await assert.rejects(validatePaidOrderPolicy(order,help),/paid_policy_mismatch/);
+  await assert.rejects(validatePaidOrderPolicy(contribution,{...help,fundRecipient:addr(9)}),/paid_policy_mismatch/);
+  // Imported pre-activation attempts with the full old policy keep their exact hash.
+  const legacyTerms=await createPaidOrderFromPolicy(policy(),input);await validatePaidOrderPolicy(legacyTerms,policy());
+  assert.equal(legacyTerms.policyHash,await paidPolicyHash(policy()));
 });
 await test('v2 rejects omitted parent, invalid archive/storage, test recipients and extra order fields', () => {
   for (const patch of [{ archive: { ...order.archive, parentTxId: undefined } }, { archive: { ...order.archive, parentTxId: 'wrong' } },
@@ -171,9 +221,13 @@ for (const network of ['devnet', 'mainnet-beta'] as const) await test(`${network
 await test('legacy mainnet preparation remains unavailable; modern bad readiness cannot reach wallet', async () => {
   const fresh = await orderFor('mainnet-beta', '0', true), dummy = await preparation(fresh);
   await assert.rejects(new RpcPaymentPreparer(readerFor(fresh, dummy)).prepare(createOrder({ ...fresh, asset: 'SOL' })), /network_not_ready/);
-  for (const options of [{ genesis: SOLANA_GENESIS.devnet }, { fee: null }, { fee: 100001 }, { balance: 30004999 }, { balance: Number.MAX_SAFE_INTEGER + 1 }]) {
+  for (const options of [{ genesis: SOLANA_GENESIS.devnet }, { fee: null }, { fee: 100001 }, { balance: 30004999 },
+    { balance: -1 }, { balance: 0.5 }, { balance: 2 ** 64 }]) {
     await assert.rejects(new RpcPaymentPreparer(readerFor(fresh, dummy, options)).preparePaid(fresh));
   }
+  // This exactly representable integer is valid on the wire; the RPC parser
+  // retains its decimal token instead of trusting an unsafe JavaScript number.
+  await new RpcPaymentPreparer(readerFor(fresh, dummy, { balance: Number.MAX_SAFE_INTEGER + 1 })).preparePaid(fresh);
   await assert.rejects(new RpcPaymentPreparer(readerFor(order, prep)).preparePaid(order), /expired/);
 });
 await test('unknown wallet outcome recovers exact old reference/preparation without sending', async () => {

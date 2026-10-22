@@ -1,8 +1,17 @@
-import type { PaidOrder, PaidArchiveBinding } from '../../../../../packages/checkout/order';
-import type { PaidPolicy, DurablePaymentPreparation, PaidReceipt } from '../../../../../packages/checkout/paid';
+import type { PaidOrder, PaidPreservationOrder, PaidArchiveBinding } from '../../../../../packages/checkout/order';
+import type { CheckoutPolicy, ContributionPolicy, PaidPolicy, DurablePaymentPreparation, PaidReceipt } from '../../../../../packages/checkout/paid';
 import type { EnvelopeV1 } from '../crypto/encrypt';
 
-export type PaidPolicyResponse = { ready: boolean; reason?: string; policy?: PaidPolicy; policyHash?: string };
+export type PaidPolicyResponse = {
+  ready: boolean;
+  reason?: string;
+  policy?: PaidPolicy;
+  policyHash?: string;
+  contributionReady?: boolean;
+  contributionReason?: string;
+  contributionPolicy?: ContributionPolicy;
+  contributionPolicyHash?: string;
+};
 export type PaidCreationCancellation = { schema: 'sejire/paid-request-cancellation/v1'; status: 'cancelled'; key: string };
 export type PaidSnapshot = {
   record: {
@@ -11,7 +20,7 @@ export type PaidSnapshot = {
     payment?: { signature: string; feeLamports: string };
     states: { payment: string; contribution: string; preservation: string };
   };
-  policy: PaidPolicy;
+  policy: CheckoutPolicy;
   verification?: { status: string; reason?: string } | null;
   preparation?: DurablePaymentPreparation | null;
   expired?: boolean;
@@ -40,11 +49,11 @@ export type PaidOperation = {
   token: string;
   createdAt: number;
   treeId: string | null;
-  serialized: string;
-  archive: PaidArchiveBinding;
-  policy: PaidPolicy;
+  serialized: string | null;
+  archive: PaidArchiveBinding | null;
+  policy: CheckoutPolicy;
   policyHash: string;
-  intent: { kind: 'preservation'; payer: string; contribution: string };
+  intent: { kind: 'preservation' | 'contribution'; payer: string; contribution: string };
   createAttempted: boolean;
   order?: PaidOrder;
   snapshot?: PaidSnapshot;
@@ -59,15 +68,31 @@ export type PaidOperation = {
 
 export type PaidInput =
   | { mode: 'create'; envelope: EnvelopeV1; treeId: string | null; parentTxId: string | null }
+  | { mode: 'contribution' }
   | { mode: 'resume'; operationId: string };
 
 export type PaidCompletion = {
   operationId: string;
-  order: PaidOrder;
+  order: PaidPreservationOrder;
   serialized: string;
   envelope: EnvelopeV1;
   treeId: string | null;
   txId: string;
   paymentSignature: string;
   receipt: PaidReceipt;
+};
+
+/** Standalone SOL acknowledgement. It contains no vault/archive information. */
+export type ContributionReceipt = {
+  schema: 'sejire/contribution-receipt/v1';
+  status: 'verified';
+  orderId: string;
+  network: CheckoutPolicy['network'];
+  policyHash: string;
+  paymentSignature: string;
+  payer: string;
+  fundRecipient: string;
+  contributionLamports: string;
+  serviceLamports: '0';
+  feeLamports: string;
 };

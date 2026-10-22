@@ -1,0 +1,1 @@
+fund security scan: PASS (16 frontend source and built JS files; no private RSA JWK/PEM, fund secret names or recovery payload fields)

@@ -2,8 +2,15 @@ import { assertBase58, assertOrder, SYSTEM_PROGRAM, type Order, type PaidOrder }
 import { SolanaRpcReader, DEVNET_GENESIS } from './rpcReader';
 import { object } from './rpcDecoder';
 import { buildPaidPaymentMessage, createPaymentPreparation, SOLANA_GENESIS, type DurablePaymentPreparation } from '../../../../packages/checkout/paid';
+import { rpcU64 } from '../../../../packages/checkout/rpcJson';
 export type PaymentPreparation = { source: string; serviceDestination?: string; fundDestination?: string; blockhash: string; lastValidBlockHeight: number; feeLamports: string };
 export interface PaymentPreparer { prepare(order: Order): Promise<PaymentPreparation> }
+function requireBalance(value: unknown, total: string, fee: bigint): void {
+  let available: bigint;
+  try { available = BigInt(rpcU64(value)); }
+  catch { throw new Error('payment_balance_not_ready'); }
+  if (available < BigInt(total) + fee) throw new Error('payment_balance_not_ready');
+}
 /** Native SOL, one payer signer, exact System transfers; no ATA or CPI. */
 export class RpcPaymentPreparer implements PaymentPreparer {
   constructor(private readonly reader = new SolanaRpcReader({ network: 'devnet' })) {}
@@ -18,7 +25,7 @@ export class RpcPaymentPreparer implements PaymentPreparer {
     assertBase58(value.blockhash as string, 32);
     if (!Number.isSafeInteger(value.lastValidBlockHeight)) throw new Error('invalid_block_height');
     const balance = object(await this.reader.rpc('getBalance', [order.payer, { commitment: 'finalized' }]));
-    if (!Number.isSafeInteger(balance.value) || (balance.value as number) < 0 || BigInt(balance.value as number) < BigInt(order.total) + 5000n) throw new Error('payment_balance_not_ready');
+    requireBalance(balance.value, order.total, 5000n);
     return { source: order.payer, serviceDestination: order.servicePayment.recipient, fundDestination: order.fundContribution.recipient, blockhash: value.blockhash as string, lastValidBlockHeight: value.lastValidBlockHeight as number, feeLamports: '5000' };
   }
   /** The caller must durably store this exact preparation before returning it to a wallet.
@@ -44,7 +51,7 @@ export class RpcPaymentPreparer implements PaymentPreparer {
     const fee = object(await this.reader.rpc('getFeeForMessage', [messageBase64, { commitment: 'finalized' }], deadline));
     if (typeof fee.value !== 'number' || !Number.isSafeInteger(fee.value) || fee.value <= 0 || fee.value > 100000) throw new Error('network_fee_not_ready');
     const balance = object(await this.reader.rpc('getBalance', [order.payer, { commitment: 'finalized' }], deadline));
-    if (typeof balance.value !== 'number' || !Number.isSafeInteger(balance.value) || balance.value < 0 || BigInt(balance.value) < BigInt(order.total) + BigInt(fee.value)) throw new Error('payment_balance_not_ready');
+    requireBalance(balance.value, order.total, BigInt(fee.value));
     return createPaymentPreparation(order, { blockhash: value.blockhash as string, lastValidBlockHeight: value.lastValidBlockHeight, feeLamports: String(fee.value), createdAt: Date.now() });
   }
 }

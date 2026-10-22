@@ -1,5 +1,5 @@
 import { assertBase58, createOrder, validatePaidArchive, type Order } from '../../../../packages/checkout/order';
-import { paidPolicyHash, createPaidOrderFromPolicy, type PaidPolicy, type DurablePaymentPreparation } from '../../../../packages/checkout/paid';
+import { paidPolicyHash, createPaidOrderFromPolicy, type PaidPolicy, type ContributionPolicy, type DurablePaymentPreparation } from '../../../../packages/checkout/paid';
 import { parseAmount } from '../../../../packages/checkout/amounts';
 import { DurableOrderStore } from './durableStore';
 import type { AtomicOrderStore, StoredOrder, CommitResult } from './store';
@@ -9,7 +9,7 @@ import { SolanaRpcReader } from './rpcReader';
 import { RpcPaymentPreparer, type PaymentPreparer } from './paymentPreparation';
 import { TestnetPreservationService, checkedArchive, type PreservationEnv, type PreservationService, type UploadPlan, type UploadAcceptance } from './preservation';
 import { envelopeDigest } from '../../../web/src/lib/solana/policy';
-import { configuredPaidPolicy, checkedPaidArchive, type PaidEnv } from './paidPolicy';
+import { configuredPaidPolicy, configuredContributionPolicy, checkedPaidArchive, type PaidEnv } from './paidPolicy';
 import { paidProvider } from './paidRunner';
 import type { PaidLedger } from './paidLedger';
 
@@ -110,10 +110,12 @@ export async function checkoutApi(request: Request, env: CheckoutApiEnv,
     return new Response(status === 204 ? null : JSON.stringify(payload), { status, headers });
   };
   try {
-    const legacyEnabled=env.CHECKOUT_API_ENABLED==='true',paidEnabled=env.CHECKOUT_PAID_ENABLED==='true';
-    const policyRoute=url.pathname===PREFIX+'/policy';
+    const legacyEnabled=env.CHECKOUT_API_ENABLED==='true',paidEnabled=env.CHECKOUT_PAID_ENABLED==='true',
+      contributionEnabled=env.CHECKOUT_CONTRIBUTION_ENABLED==='true';
+    const contributionPolicyRoute=url.pathname===PREFIX+'/policy/contribution';
+    const policyRoute=url.pathname===PREFIX+'/policy'||contributionPolicyRoute;
     const resumeRoute=/^\/api\/checkout\/orders\/(?:[a-f0-9]{32}(?:\/(?:verify|reconcile|reserve|prepare|execute|cancel))?|by-key\/[A-Za-z0-9_-]{16,128}(?:\/cancel)?)$/.test(url.pathname);
-    if(!legacyEnabled&&!paidEnabled&&!policyRoute&&!resumeRoute)return reply(404,{error:'not_found'});
+    if(!legacyEnabled&&!paidEnabled&&!contributionEnabled&&!policyRoute&&!resumeRoute)return reply(404,{error:'not_found'});
     if (!env.CHECKOUT_LEDGER || !env.CHECKOUT_ALLOWED_ORIGINS) throw new HttpError(503, 'checkout_not_configured');
     const origins = env.CHECKOUT_ALLOWED_ORIGINS.split(',');
     if (origins.some(o => { try { return new URL(o).origin !== o || (!o.startsWith('https://') && !o.startsWith('http://localhost:') && !o.startsWith('http://127.0.0.1:')); } catch { return true; } })) throw new HttpError(503, 'checkout_not_configured');
@@ -130,7 +132,7 @@ export async function checkoutApi(request: Request, env: CheckoutApiEnv,
     // A never-activated disabled installation keeps all old routes closed.
     // Exact owned keys can be cancelled/read even before the first order exists.
     // Their bearer checks below do not enable admission or expose other owners.
-    if(!legacyEnabled&&!paidEnabled&&resumeRoute&&!byKey&&!await ledger.call<boolean>({action:'paidHasOrders'}))return reply(404,{error:'not_found'});
+    if(!legacyEnabled&&!paidEnabled&&!contributionEnabled&&resumeRoute&&!byKey&&!await ledger.call<boolean>({action:'paidHasOrders'}))return reply(404,{error:'not_found'});
     const method = policyRoute||byKey&&!byKey[2]||match&&!match[2] ? 'GET' : 'POST';
     if (request.method === 'OPTIONS') return reply(204, null);
     if (request.method !== method) return reply(405, { error: 'method_not_allowed' });
@@ -139,11 +141,22 @@ export async function checkoutApi(request: Request, env: CheckoutApiEnv,
     const ip = await digest(request.headers.get('CF-Connecting-IP') ?? 'missing-ingress-ip');
     await ledger.call({ action: 'apiRate', buckets: ['all', `ingress:${ip}`], limit: 600 });
     if(policyRoute){
-      if(!paidEnabled)return reply(200,{ready:false,reason:'paid_disabled'});
+      let contribution:{contributionReady:boolean;contributionReason?:string;contributionPolicy?:ContributionPolicy;contributionPolicyHash?:string}=
+        {contributionReady:false,contributionReason:'contribution_disabled'};
+      if(contributionEnabled){
+        try{
+          const contributionPolicy=configuredContributionPolicy(env);
+          contribution={contributionReady:true,contributionPolicy,contributionPolicyHash:await paidPolicyHash(contributionPolicy)};
+        }catch{contribution={contributionReady:false,contributionReason:'contribution_not_configured'};}
+      }
+      // Help-only offers must not wait for preservation readiness, even when
+      // both admissions are enabled and every Arweave gateway is unavailable.
+      if(contributionPolicyRoute)return reply(200,{ready:false,...contribution});
+      if(!paidEnabled)return reply(200,{ready:false,reason:'paid_disabled',...contribution});
       let policy:PaidPolicy,budgetLimit:string;
-      try{({policy,budgetLimit}=configuredPaidPolicy(env));}catch{return reply(200,{ready:false,reason:'paid_not_configured'});}
+      try{({policy,budgetLimit}=configuredPaidPolicy(env));}catch{return reply(200,{ready:false,reason:'paid_not_configured',...contribution});}
       const hash=await paidPolicyHash(policy);
-      if(env.CHECKOUT_PAID_EXECUTION_ENABLED!=='true'||!env.ARWEAVE_TREASURY_JWK)return reply(200,{ready:false,reason:'executor_paused',policy,policyHash:hash});
+      if(env.CHECKOUT_PAID_EXECUTION_ENABLED!=='true'||!env.ARWEAVE_TREASURY_JWK)return reply(200,{ready:false,reason:'executor_paused',policy,policyHash:hash,...contribution});
       await ledger.call({action:'apiRate',buckets:[`paid-policy:${ip}`],limit:30});
       try{
         const ready=await paidProvider(env,policy).ready(Math.min(6144,policy.storage.maxBytes));
@@ -152,8 +165,8 @@ export async function checkoutApi(request: Request, env: CheckoutApiEnv,
         const effective=await ledger.call<string>({action:'treasuryEffectiveBalance',address:policy.storage.treasuryAddress,balance:ready.balanceWinston});
         const sufficient=BigInt(effective)>=BigInt(held)+BigInt(policy.storage.maxRewardWinston)&&
           BigInt(budgetLimit)>=BigInt(totals.reservedWinston)+BigInt(totals.actualSpentWinston)+BigInt(policy.storage.maxRewardWinston);
-        return reply(200,{ready:sufficient,...(!sufficient?{reason:'paid_budget_unavailable'}:{}),policy,policyHash:hash});
-      }catch{return reply(200,{ready:false,reason:'storage_not_ready',policy,policyHash:hash});}
+        return reply(200,{ready:sufficient,...(!sufficient?{reason:'paid_budget_unavailable'}:{}),policy,policyHash:hash,...contribution});
+      }catch{return reply(200,{ready:false,reason:'storage_not_ready',policy,policyHash:hash,...contribution});}
     }
     if (sessionRoute) {
       await ledger.call({ action: 'apiRate', buckets: ['sessions:all'], limit: 100 });
@@ -184,27 +197,41 @@ export async function checkoutApi(request: Request, env: CheckoutApiEnv,
       const raw=await body(request,paidEnabled?max*2+BODY_BYTES:BODY_BYTES,n=>{requestBytes=n;});
       const modern=raw&&typeof raw==='object'&&Object.hasOwn(raw,'policyHash');
       if(modern){
-        const input=fields(raw,['kind','payer','contribution','policyHash','archive','serialized']);
-        if(input.kind!=='preservation'||typeof input.payer!=='string'||typeof input.contribution!=='string'||typeof input.policyHash!=='string'||
-          !/^[a-f0-9]{64}$/.test(input.policyHash)||typeof input.serialized!=='string')return bad();
-        assertBase58(input.payer,32);const archive=validatePaidArchive(input.archive),contribution=parseAmount(input.contribution,9);
-        await checkedPaidArchive(input.serialized,archive,max);
-        const normalized=JSON.stringify({schema:'sejire/order/v2',kind:'preservation',payer:input.payer,contribution,policyHash:input.policyHash,archive});
+        const input=fields(raw,['kind','payer','contribution','policyHash','archive','serialized'],['kind','payer','contribution','policyHash']);
+        if((input.kind!=='preservation'&&input.kind!=='contribution')||typeof input.payer!=='string'||typeof input.contribution!=='string'||typeof input.policyHash!=='string'||
+          !/^[a-f0-9]{64}$/.test(input.policyHash))return bad();
+        assertBase58(input.payer,32);const contribution=parseAmount(input.contribution,9);
+        if(input.kind==='contribution'&&(!BigInt(contribution)||input.archive!==undefined||input.serialized!==undefined))return bad('invalid_contribution_order');
+        if(input.kind==='preservation'&&typeof input.serialized!=='string')return bad();
+        const archive=input.kind==='preservation'?validatePaidArchive(input.archive):undefined;
+        if(archive)await checkedPaidArchive(input.serialized as string,archive,max);
+        const normalized=JSON.stringify({schema:'sejire/order/v2',kind:input.kind,payer:input.payer,contribution,policyHash:input.policyHash,...(archive?{archive}:{})});
         const existing=await ledger.call<{record:StoredOrder}|null>({action:'apiExisting',hash,key,intent:normalized});
         if(existing)return reply(200,{reused:true,...await ledger.call<object>({action:'paidGet',hash,id:existing.record.order.id})});
+        if(input.kind==='contribution'){
+          if(!contributionEnabled)throw new HttpError(503,'contribution_not_ready');
+          const policy=configuredContributionPolicy(env);
+          if(await paidPolicyHash(policy)!==input.policyHash)throw new HttpError(409,'paid_policy_changed');
+          const now=Date.now(),order=await createPaidOrderFromPolicy(policy,{id:randomHex(16),payer:input.payer,reference:reference(),
+            createdAt:now,expiresAt:now+15*60000,kind:'contribution',contribution});
+          await new RpcPaymentPreparer(new SolanaRpcReader({network:order.network})).preparePaid(order);
+          const result=await ledger.call<{reused:boolean}>({action:'paidCreate',input:{hash,key,intent:normalized,order,policy}});
+          return reply(result.reused?200:201,result);
+        }
         if(!paidEnabled||env.CHECKOUT_PAID_EXECUTION_ENABLED!=='true'||!env.ARWEAVE_TREASURY_JWK)throw new HttpError(503,'paid_not_ready');
         const {policy,budgetLimit}=configuredPaidPolicy(env);
         if(await paidPolicyHash(policy)!==input.policyHash)throw new HttpError(409,'paid_policy_changed');
-        const now=Date.now(),order=await createPaidOrderFromPolicy(policy,{id:randomHex(16),payer:input.payer,reference:reference(),createdAt:now,expiresAt:now+15*60000,archive,contribution});
+        const now=Date.now(),order=await createPaidOrderFromPolicy(policy,{id:randomHex(16),payer:input.payer,reference:reference(),createdAt:now,expiresAt:now+15*60000,
+          kind:'preservation',archive:archive!,contribution});
         const provider=paidProvider(env,policy);
         const balanceRevision=await ledger.call<number>({action:'treasuryRevision',address:policy.storage.treasuryAddress});
-        const ready=await provider.ready(archive.bytes);
-        const prepared=await provider.prepare({orderId:order.id,serialized:input.serialized,archive});
+        const ready=await provider.ready(archive!.bytes);
+        const prepared=await provider.prepare({orderId:order.id,serialized:input.serialized as string,archive:archive!});
         // Account/network/balance readiness precedes the offer. This temporary
         // message is not returned to the browser; /prepare saves its own message.
         await new RpcPaymentPreparer(new SolanaRpcReader({network:order.network})).preparePaid(order);
         const result=await ledger.call<{reused:boolean}>({action:'paidCreate',input:{hash,key,intent:normalized,order,policy,
-          serialized:input.serialized,prepared,budgetLimit,balance:ready.balanceWinston,balanceRevision}});
+          serialized:input.serialized as string,prepared,budgetLimit,balance:ready.balanceWinston,balanceRevision}});
         return reply(result.reused?200:201,result);
       }
       if(!legacyEnabled)return reply(404,{error:'not_found'});
@@ -255,7 +282,7 @@ export async function checkoutApi(request: Request, env: CheckoutApiEnv,
       }else fields(await body(request),[]);
       if(match![2]==='execute'&&!paid.record.payment)throw new HttpError(409,'preservation_not_paid');
       const result=await ledger.call<Snapshot>({action:'paidRun',hash,id});
-      return reply(result.execution?.status==='completed'?200:202,result);
+      return reply(result.record.order.kind==='contribution'&&result.record.states.payment==='verified'||result.execution?.status==='completed'?200:202,result);
     }
     if(!legacyEnabled)return reply(404,{error:'not_found'});
     if (method === 'GET') return reply(200, snapshot);
@@ -324,7 +351,7 @@ export async function checkoutApi(request: Request, env: CheckoutApiEnv,
     if (code === 'order_not_found') return reply(404, { error: code });
     if (code === 'rate_limited') return reply(429, { error: code });
     if (['idempotency_conflict', 'previous_payment_unresolved', 'order_already_paid', 'preservation_not_paid','order_expired','payment_not_prepared','payment_not_reserved','paid_hold_not_releasable','paid_request_cancelled','preparation_changed','paid_policy_changed'].includes(code)) return reply(409, { error: code });
-    if(['paid_not_configured','paid_not_ready','paid_budget_exhausted','balance_observation_stale','wallet_low','payment_balance_not_ready','recipient_not_ready','payment_network_not_ready'].includes(code))return reply(503,{error:code});
+    if(['paid_not_configured','paid_not_ready','contribution_not_configured','contribution_not_ready','paid_budget_exhausted','balance_observation_stale','wallet_low','payment_balance_not_ready','recipient_not_ready','payment_network_not_ready'].includes(code))return reply(503,{error:code});
     if (['invalid_base58', 'invalid_amount', 'excess_precision', 'technical_amount_overflow', 'invalid_contribution_order', 'recipient_roles_overlap', 'invalid_order_id_or_policy', 'archive_mismatch', 'invalid_envelope', 'envelope_too_large','invalid_paid_archive','archive_not_canonical','invalid_payment_signature','invalid_payment_preparation','invalid_idempotency_key'].includes(code)) return reply(400, { error: code });
     // Transport/commit failure can mean commit succeeded. No unpaid claim, no fresh-payment instruction.
     return reply(503, { error: 'checkout_requires_reconciliation' });

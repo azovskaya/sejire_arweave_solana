@@ -1,4 +1,4 @@
-import type { PaidPolicy } from '../../../../packages/checkout/paid';
+import type { PaidPolicy, CheckoutPolicy } from '../../../../packages/checkout/paid';
 import type { TrustedTransactionReader } from './reconciliation';
 import { validatePreparedPayment } from './paymentValidator';
 import { SolanaRpcReader } from './rpcReader';
@@ -12,7 +12,7 @@ export function paidProvider(env:PaidEnv,policy:PaidPolicy):DirectArweavePreserv
       maxArchiveBytes:policy.storage.maxBytes,maxRewardWinston:policy.storage.maxRewardWinston}});
 }
 export type PaidRunnerDependencies={
-  reader?:(policy:PaidPolicy)=>TrustedTransactionReader;
+  reader?:(policy:CheckoutPolicy)=>TrustedTransactionReader;
   provider?:(policy:PaidPolicy)=>Pick<DirectArweavePreservation,'prepare'|'sign'|'submit'|'reconcile'>;
 };
 /** Service-owned continuation. Never depends on the browser bearer token/session.
@@ -40,6 +40,9 @@ export async function runPaidOrder(ledger:PaidLedger,env:PaidEnv,id:string,deps:
       }
       work=ledger.work(id);
     }
+    if(work.record.order.kind==='contribution')return;
+    if(work.policy.schema!=='sejire/checkout-policy/v1'){reason='paid_policy_mismatch';return;}
+    if(!work.input||!work.prepared){reason='paid_payload_missing';return;}
     const provider=deps.provider?.(work.policy)??paidProvider(env,work.policy),options={deadline};
     let signed=work.signed,newSignature=false;
     if(!signed){

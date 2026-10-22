@@ -1,5 +1,5 @@
 import { clearFundAttempt, findFundAttempt, saveFundAttempt, type FundAttempt } from '../fund/journal';
-import { findPaidAttempt, writePaidOperation, type AttemptLookup } from './paidJournal';
+import { findPaidAttempt, findContributionAttempt, writePaidOperation, type AttemptLookup } from './paidJournal';
 import type { PaidOperation } from './paidTypes';
 
 export type PreservationAttempt = { method: 'promo'; attempt: FundAttempt } | { method: 'paid'; attempt: PaidOperation };
@@ -63,7 +63,11 @@ export async function clearGuardedFundAttempt(orderId: string, vaultId: string):
 /** Only the local reservation is locked; no HTTP request or wallet UI runs here. */
 export async function reservePaidAttempt(candidate: PaidOperation): Promise<PaidOperation> {
   return lock(LOCK, true, async () => {
-    const pending = await find({ vaultId: candidate.archive.vaultId, treeId: candidate.treeId });
+    if(candidate.intent.kind==='contribution'){
+      const previous=await findContributionAttempt();if(previous)return previous;
+      const saved=await writePaidOperation(candidate);announcePreservationChange();return saved;
+    }
+    const pending = await find({ vaultId: candidate.archive!.vaultId, treeId: candidate.treeId });
     if (pending?.method === 'promo') throw Error('preservation_attempt_in_progress');
     if (pending?.method === 'paid') return pending.attempt;
     const saved = await writePaidOperation(candidate);

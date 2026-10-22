@@ -5,8 +5,9 @@ export default defineConfig({
   use: { baseURL: 'http://127.0.0.1:5185', headless: true, locale: 'ru-RU',
     channel: process.env.SEJIRE_BROWSER_CHANNEL || 'chrome', serviceWorkers: 'block',
     launchOptions: { executablePath: process.env.SEJIRE_BROWSER_EXECUTABLE } },
-  webServer: { command: 'npm run dev -- --host 127.0.0.1 --port 5185 --strictPort', url: 'http://127.0.0.1:5185', reuseExistingServer: false,
-    env: { VITE_NATIVE_AR_ENABLED: '1', VITE_PRESERVATION_V2_ENABLED: '1', VITE_NATIVE_AR_PILOT: '1', VITE_NATIVE_AR_BROADCAST: '0',
+  webServer: { command: 'npm run dev -- --config vite.checkout-test.config.ts --host 127.0.0.1 --port 5185 --strictPort', url: 'http://127.0.0.1:5185', reuseExistingServer: false,
+    env: { SEJIRE_CHECKOUT_TEST_CACHE_DIR: process.env.SEJIRE_PAID_TEST_CACHE_DIR || 'node_modules/.vite-paid-tests',
+      VITE_NATIVE_AR_ENABLED: '1', VITE_PRESERVATION_V2_ENABLED: '1', VITE_NATIVE_AR_PILOT: '1', VITE_NATIVE_AR_BROADCAST: '0',
       VITE_NATIVE_SOL_MAINNET: '0', VITE_QA_TOOLS: '0', VITE_PUBLISH_MODE: 'solana', VITE_SOLANA_NETWORK: 'devnet',
       VITE_FUND_API_URL: 'http://127.0.0.1:5185', VITE_CHECKOUT_API_URL: 'http://127.0.0.1:5185' } },
 });

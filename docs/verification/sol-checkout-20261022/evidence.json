@@ -1,0 +1,652 @@
+{
+  "schema": "sejire/sol-checkout-review/v1",
+  "date_utc": "2026-10-22",
+  "branch": "review/sol-checkout-20261022",
+  "base_commit": "ca097818cd9fff14a1358d523597a156b3bfbeb8",
+  "declared_mac_commit": "328efd894c800373649ff032aac3d2ed5aacf81b",
+  "import_commit": "3f38bce75497bdf599feaf4865301170eb219b58",
+  "verified_code_commit": "17a009b9aaa9d82dfcd0223ac5e62f66fa149a72",
+  "verified_code_tree": "055340514dd37deeea2fe1639255f894e7e7150e",
+  "source_package_sha256": "05060ed7d4f82a1f5f4299751a2c38eb11814a47467fb09603f3eb724f4bd14e",
+  "source_patch_sha256": "d76bb17d86a622465fa9571d2b45293e0e7a8b4edfb0b6fe1093e0a733462896",
+  "environment": {
+    "os": "Linux",
+    "node": "24.19.0",
+    "npm": "11.9.0",
+    "playwright": "1.58.2",
+    "browser": "Google Chrome for Testing 145.0.7632.6 headless"
+  },
+  "browser_suites": {
+    "paid": {
+      "stats": {
+        "startTime": "2026-10-22T16:15:31.178Z",
+        "duration": 50015.221000000005,
+        "expected": 18,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      },
+      "cases": [
+        {
+          "name": "disabled public policy leaves promo and encrypted backup available without any wallet or order",
+          "status": "passed",
+          "duration_ms": 3246,
+          "attempts": 1
+        },
+        {
+          "name": "modern editor pays once, checks archive proof, retries only local completion and restores both trees from receipt and words",
+          "status": "passed",
+          "duration_ms": 5870,
+          "attempts": 1
+        },
+        {
+          "name": "lost create response reload uses the original GET-by-key and exact ciphertext with no reseal or second POST",
+          "status": "passed",
+          "duration_ms": 2576,
+          "attempts": 1
+        },
+        {
+          "name": "request dropped before admission retries explicitly with the same key, token and ciphertext after reload",
+          "status": "passed",
+          "duration_ms": 2683,
+          "attempts": 1
+        },
+        {
+          "name": "lost pre-admission cancellation response resumes the same tombstone and never creates an order",
+          "status": "passed",
+          "duration_ms": 2620,
+          "attempts": 1
+        },
+        {
+          "name": "unknown wallet result reload reconciles the same reference without another signature, payment or order",
+          "status": "passed",
+          "duration_ms": 2832,
+          "attempts": 1
+        },
+        {
+          "name": "lost reserve response never broadcasts early and resumes only identical stored signed bytes",
+          "status": "passed",
+          "duration_ms": 3255,
+          "attempts": 1
+        },
+        {
+          "name": "explicit 4001 cancellation, including a lost response, needs acknowledgement before any next save",
+          "status": "passed",
+          "duration_ms": 2887,
+          "attempts": 1
+        },
+        {
+          "name": "two tabs and switching to promo adopt one durable paid attempt without new orders or ciphertext",
+          "status": "passed",
+          "duration_ms": 3380,
+          "attempts": 1
+        },
+        {
+          "name": "wrong network or changed order is stopped before wallet signature",
+          "status": "passed",
+          "duration_ms": 1926,
+          "attempts": 1
+        },
+        {
+          "name": "navigation while wallet is open journals the returned signature without late reserve or broadcast",
+          "status": "passed",
+          "duration_ms": 2114,
+          "attempts": 1
+        },
+        {
+          "name": "help starts hidden at zero, both wallet connections create nothing, and a fresh save resets its draft contribution",
+          "status": "passed",
+          "duration_ms": 1804,
+          "attempts": 1
+        },
+        {
+          "name": "collapsed help retains the visible amount; switching intent preserves the archive and amount until explicitly removed",
+          "status": "passed",
+          "duration_ms": 1618,
+          "attempts": 1
+        },
+        {
+          "name": "preservation plus a precise optional contribution uses one signature and exactly two transfers",
+          "status": "passed",
+          "duration_ms": 1765,
+          "attempts": 1
+        },
+        {
+          "name": "invalid decimal and excessive precision cannot create an intent; insufficient balance never invokes the wallet",
+          "status": "passed",
+          "duration_ms": 1766,
+          "attempts": 1
+        },
+        {
+          "name": "the quiet welcome link opens standalone Solflare help without a tree or AR policy, with a receipt and an explicit new zero-default contribution",
+          "status": "passed",
+          "duration_ms": 2339,
+          "attempts": 1
+        },
+        {
+          "name": "an uncertain standalone payment resumes the original intent after reload even when new contributions are disabled",
+          "status": "passed",
+          "duration_ms": 2149,
+          "attempts": 1
+        },
+        {
+          "name": "an unfinished standalone contribution never opens over the editor or its pending promo preservation",
+          "status": "passed",
+          "duration_ms": 2173,
+          "attempts": 1
+        }
+      ]
+    },
+    "promo": {
+      "stats": {
+        "startTime": "2026-10-22T16:15:35.331Z",
+        "duration": 57791.867,
+        "expected": 25,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      },
+      "cases": [
+        {
+          "name": "Admin changes one promo and cumulative limit; user preserves encrypted archive without Solana",
+          "status": "passed",
+          "duration_ms": 7722,
+          "attempts": 1
+        },
+        {
+          "name": "Pending transaction explains confirmation and archive verification before showing success",
+          "status": "passed",
+          "duration_ms": 1640,
+          "attempts": 1
+        },
+        {
+          "name": "A genuinely new tree confirms its words and saves directly by promo with only two network choices",
+          "status": "passed",
+          "duration_ms": 4602,
+          "attempts": 1
+        },
+        {
+          "name": "Existing vault offers direct native choices despite legacy settings and Solana stays unavailable without payment",
+          "status": "passed",
+          "duration_ms": 2025,
+          "attempts": 1
+        },
+        {
+          "name": "Existing words continue to the same two methods and promo preserves every tree in that vault",
+          "status": "passed",
+          "duration_ms": 1687,
+          "attempts": 1
+        },
+        {
+          "name": "Editor completion is automatic and local storage failures only retry local completion on mobile",
+          "status": "passed",
+          "duration_ms": 2527,
+          "attempts": 1
+        },
+        {
+          "name": "Closing and reopening the actual editor resumes the exact pending archive without a successor",
+          "status": "passed",
+          "duration_ms": 2102,
+          "attempts": 1
+        },
+        {
+          "name": "Reloading the editor without session words or metadata recovers the pending attempt by tree",
+          "status": "passed",
+          "duration_ms": 2123,
+          "attempts": 1
+        },
+        {
+          "name": "A confirmed editor save finishes automatically and the next edited version needs one explicit free-save click",
+          "status": "passed",
+          "duration_ms": 2325,
+          "attempts": 1
+        },
+        {
+          "name": "Completing an older funded attempt preserves a newer editor head",
+          "status": "passed",
+          "duration_ms": 1576,
+          "attempts": 1
+        },
+        {
+          "name": "A completed response with a changed parent cannot finalize the editor or discard its pending archive",
+          "status": "passed",
+          "duration_ms": 1546,
+          "attempts": 1
+        },
+        {
+          "name": "Three new trees stay in one unlocked archive, preserve a parent chain and restore by words in a clean browser",
+          "status": "passed",
+          "duration_ms": 7223,
+          "attempts": 1
+        },
+        {
+          "name": "Closing the archive explicitly clears only the unlocked session and promo choice",
+          "status": "passed",
+          "duration_ms": 1787,
+          "attempts": 1
+        },
+        {
+          "name": "FAILED is an explicit unfinished result, not an endless saving indicator",
+          "status": "passed",
+          "duration_ms": 1122,
+          "attempts": 1
+        },
+        {
+          "name": "RELEASED is an explicit unfinished result, not an endless saving indicator",
+          "status": "passed",
+          "duration_ms": 1099,
+          "attempts": 1
+        },
+        {
+          "name": "An uncertain submission explains the check and preserves its existing transaction",
+          "status": "passed",
+          "duration_ms": 1192,
+          "attempts": 1
+        },
+        {
+          "name": "An unavailable provider reports a failed check and recovers the same existing attempt without a new save",
+          "status": "passed",
+          "duration_ms": 1104,
+          "attempts": 1
+        },
+        {
+          "name": "A failed status request is visible and a later automatic check recovers",
+          "status": "passed",
+          "duration_ms": 1177,
+          "attempts": 1
+        },
+        {
+          "name": "A lost POST response and reopening the same archive only read the original order",
+          "status": "passed",
+          "duration_ms": 1924,
+          "attempts": 1
+        },
+        {
+          "name": "A temporarily missing order after response loss never enables a replacement save",
+          "status": "passed",
+          "duration_ms": 1634,
+          "attempts": 1
+        },
+        {
+          "name": "The old sessionStorage order resumes after upgrading without asking to save again",
+          "status": "passed",
+          "duration_ms": 844,
+          "attempts": 1
+        },
+        {
+          "name": "fund_exhausted before reservation offers an explicit retry of the same request",
+          "status": "passed",
+          "duration_ms": 1695,
+          "attempts": 1
+        },
+        {
+          "name": "fund_prepare_failed before reservation offers an explicit retry of the same request",
+          "status": "passed",
+          "duration_ms": 1744,
+          "attempts": 1
+        },
+        {
+          "name": "Preflight network failure keeps the form and does not promise nonexistent automatic tracking",
+          "status": "passed",
+          "duration_ms": 934,
+          "attempts": 1
+        },
+        {
+          "name": "Polling waits for a slow request to finish and cannot overlap a manual check",
+          "status": "passed",
+          "duration_ms": 1179,
+          "attempts": 1
+        }
+      ]
+    },
+    "recovery": {
+      "stats": {
+        "startTime": "2026-10-22T16:17:02.096Z",
+        "duration": 41083.844000000005,
+        "expected": 29,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      },
+      "cases": [
+        {
+          "name": "Funded archive without Protocol-Version opens the full network tree in a clean browser",
+          "status": "passed",
+          "duration_ms": 2745,
+          "attempts": 1
+        },
+        {
+          "name": "Funded archive without Protocol-Version opens the full network tree with a local copy present",
+          "status": "passed",
+          "duration_ms": 1423,
+          "attempts": 1
+        },
+        {
+          "name": "Same-gateway base64url data repairs wrong same-length raw and restores every encrypted tree",
+          "status": "passed",
+          "duration_ms": 1383,
+          "attempts": 1
+        },
+        {
+          "name": "Invalid base64url fallback (invalid-character) cannot turn wrong same-length raw into a restored vault",
+          "status": "passed",
+          "duration_ms": 1452,
+          "attempts": 1
+        },
+        {
+          "name": "Invalid base64url fallback (noncanonical-bits) cannot turn wrong same-length raw into a restored vault",
+          "status": "passed",
+          "duration_ms": 1388,
+          "attempts": 1
+        },
+        {
+          "name": "One local fallback is described as a browser copy and opens the complete tree",
+          "status": "passed",
+          "duration_ms": 1602,
+          "attempts": 1
+        },
+        {
+          "name": "Verified network forks remain a real version choice and honor the selected branch",
+          "status": "passed",
+          "duration_ms": 1526,
+          "attempts": 1
+        },
+        {
+          "name": "A primary Vault-Id GraphQL and raw gateway",
+          "status": "passed",
+          "duration_ms": 1121,
+          "attempts": 1
+        },
+        {
+          "name": "B first GraphQL times out second works",
+          "status": "passed",
+          "duration_ms": 1111,
+          "attempts": 1
+        },
+        {
+          "name": "C dynamic AR.IO gateway indexes when static GraphQL unavailable",
+          "status": "passed",
+          "duration_ms": 1156,
+          "attempts": 1
+        },
+        {
+          "name": "D all GraphQL unavailable, legacy locator finds TX",
+          "status": "passed",
+          "duration_ms": 1169,
+          "attempts": 1
+        },
+        {
+          "name": "E empty GraphQL and legacy locator finds TX",
+          "status": "passed",
+          "duration_ms": 1188,
+          "attempts": 1
+        },
+        {
+          "name": "F first metadata gateway down",
+          "status": "passed",
+          "duration_ms": 1184,
+          "attempts": 1
+        },
+        {
+          "name": "G two raw gateways fail and third succeeds",
+          "status": "passed",
+          "duration_ms": 1252,
+          "attempts": 1
+        },
+        {
+          "name": "H rendered URL HTML ignored, raw succeeds",
+          "status": "passed",
+          "duration_ms": 1167,
+          "attempts": 1
+        },
+        {
+          "name": "T clean browser words only",
+          "status": "passed",
+          "duration_ms": 1355,
+          "attempts": 1
+        },
+        {
+          "name": "UI clean browser opens family tree from legacy locator without GraphQL",
+          "status": "passed",
+          "duration_ms": 1645,
+          "attempts": 1
+        },
+        {
+          "name": "I forged Vault-Id tag cannot decrypt",
+          "status": "passed",
+          "duration_ms": 1400,
+          "attempts": 1
+        },
+        {
+          "name": "J changed raw bytes rejected",
+          "status": "passed",
+          "duration_ms": 1332,
+          "attempts": 1
+        },
+        {
+          "name": "K correct hash but different envelope vault ID",
+          "status": "passed",
+          "duration_ms": 1257,
+          "attempts": 1
+        },
+        {
+          "name": "L invalid decrypted vault rejected",
+          "status": "passed",
+          "duration_ms": 1484,
+          "attempts": 1
+        },
+        {
+          "name": "M wrong words never open",
+          "status": "passed",
+          "duration_ms": 1408,
+          "attempts": 1
+        },
+        {
+          "name": "N all discovery providers unavailable",
+          "status": "passed",
+          "duration_ms": 1300,
+          "attempts": 1
+        },
+        {
+          "name": "O responding discovery has no candidates",
+          "status": "passed",
+          "duration_ms": 1145,
+          "attempts": 1
+        },
+        {
+          "name": "P candidate but all raw gateways unavailable",
+          "status": "passed",
+          "duration_ms": 1140,
+          "attempts": 1
+        },
+        {
+          "name": "Q sequential versions resolve v3 HEAD",
+          "status": "passed",
+          "duration_ms": 1092,
+          "attempts": 1
+        },
+        {
+          "name": "R decryptable forks preserved with explicit MULTIPLE_VERIFIED_HEADS",
+          "status": "passed",
+          "duration_ms": 1162,
+          "attempts": 1
+        },
+        {
+          "name": "S same TX from many providers dedupes once",
+          "status": "passed",
+          "duration_ms": 1188,
+          "attempts": 1
+        },
+        {
+          "name": "U recovery makes no wallet or payment or upload calls",
+          "status": "passed",
+          "duration_ms": 1238,
+          "attempts": 1
+        }
+      ]
+    }
+  },
+  "browser_passed": 72,
+  "lint_warnings": 16,
+  "unit_scenarios_in_npm_test": {
+    "rpc": 61,
+    "paid_primitives": 21,
+    "direct_preservation": 16,
+    "paid_sqlite": 22
+  },
+  "runtime_scenarios": {
+    "paid_api_workerd": 20,
+    "direct_preservation_workerd": 7
+  },
+  "real_wallet_extension_acceptance": false,
+  "real_payments": 0,
+  "real_archive_submissions": 0,
+  "push_or_deploy": false,
+  "logs": {
+    "npm-test": {
+      "file": "logs/npm-test.log",
+      "sha256": "f3f9bde7626a3d461a4030a72d289e0bf8327d602aea1935093b895f6d34e89e",
+      "exit_code": 0,
+      "original_log_sha256": "f3f9bde7626a3d461a4030a72d289e0bf8327d602aea1935093b895f6d34e89e",
+      "formatting": "ANSI removed; trailing whitespace trimmed; test content retained"
+    },
+    "sponsor-typecheck": {
+      "file": "logs/sponsor-typecheck.log",
+      "sha256": "ea8d8c964473e59b55edc74476a96123a62a6c3e12ababff7da62c6472fe51c6",
+      "exit_code": 0,
+      "original_log_sha256": "8e3953971c771a84e323072e3459522028ab4184a270e588426d152c8b1ed551",
+      "formatting": "ANSI removed; trailing whitespace trimmed; test content retained"
+    },
+    "native-build": {
+      "file": "logs/native-build.log",
+      "sha256": "3c9b4b482f0e265bc99656fc6cd1172899e20b7f8d79b4a8b9f8854293fef4b4",
+      "exit_code": 0,
+      "original_log_sha256": "574afcd7e02bc570cdaf90b81ea347674257fa0b6c687cc8bce0b9f0e9362ad2",
+      "formatting": "ANSI removed; trailing whitespace trimmed; test content retained"
+    },
+    "lint": {
+      "file": "logs/lint.log",
+      "sha256": "ee6b0f67a76b7253dc7e9c489a3a34988f85066f04b885683cac7c4cbd85ed36",
+      "exit_code": 0,
+      "original_log_sha256": "ee6b0f67a76b7253dc7e9c489a3a34988f85066f04b885683cac7c4cbd85ed36",
+      "formatting": "ANSI removed; trailing whitespace trimmed; test content retained"
+    },
+    "security-scan": {
+      "file": "logs/security-scan.log",
+      "sha256": "3485cbff963b8fb753f062cdeb6b113e2b1f99a8e85fd23491de7ceea0bb5c1d",
+      "exit_code": 0,
+      "original_log_sha256": "3485cbff963b8fb753f062cdeb6b113e2b1f99a8e85fd23491de7ceea0bb5c1d",
+      "formatting": "ANSI removed; trailing whitespace trimmed; test content retained"
+    },
+    "paid-workerd": {
+      "file": "logs/paid-workerd.log",
+      "sha256": "6f77046f97cb2262db12f39b3261e744be3ee15eb1fa3d1f631ebbf2beb45f19",
+      "exit_code": 0,
+      "original_log_sha256": "6f77046f97cb2262db12f39b3261e744be3ee15eb1fa3d1f631ebbf2beb45f19",
+      "formatting": "ANSI removed; trailing whitespace trimmed; test content retained"
+    },
+    "direct-workerd": {
+      "file": "logs/direct-workerd.log",
+      "sha256": "f6782a204f9ba83825ef83c1de4ed6e04107fdae600a92475abd969e79aaf8bd",
+      "exit_code": 0,
+      "original_log_sha256": "f6782a204f9ba83825ef83c1de4ed6e04107fdae600a92475abd969e79aaf8bd",
+      "formatting": "ANSI removed; trailing whitespace trimmed; test content retained"
+    },
+    "paid-browser": {
+      "file": "logs/paid-browser.log",
+      "sha256": "533f72fbfadcece60b048e7e7f1628215cf0515110f3a45cd28e2561820e0da1",
+      "exit_code": 0,
+      "original_log_sha256": "bb04e32978505d741b77c1fc31113147836f558a512834d8865c2b5b8e776194",
+      "formatting": "ANSI removed; trailing whitespace trimmed; test content retained"
+    },
+    "promo-browser": {
+      "file": "logs/promo-browser.log",
+      "sha256": "8792cb157c73700baa2754fcd12cbf05e9a41ccf0f59dfc34c1cfca48419b9b6",
+      "exit_code": 0,
+      "original_log_sha256": "4cbb35c3e92161da96ee8ee104306a202664faf709389f9d4962752fd87414f4",
+      "formatting": "ANSI removed; trailing whitespace trimmed; test content retained"
+    },
+    "recovery-browser": {
+      "file": "logs/recovery-browser.log",
+      "sha256": "fc0977c5435972a47993a136790dabd8074b0a991e71bbb2bea489dda4012111",
+      "exit_code": 0,
+      "original_log_sha256": "3001e9d54133772d10828bc987014f3f5b925157004bab7853fedfa50af12f68",
+      "formatting": "ANSI removed; trailing whitespace trimmed; test content retained"
+    }
+  },
+  "changed_source_sha256": {
+    "apps/sponsor/src/checkout/api.ts": "6165a461d919daa1c75001657b7aae5a982fcbdd2b031f5ae4a82802308d9177",
+    "apps/sponsor/src/checkout/paid.selftest.ts": "e7c87abdd826ac5a2932a9e8e9ac467ed120f781439c9a9d20984256bb8cee00",
+    "apps/sponsor/src/checkout/paidLedger.ts": "9edc92d6a7eb0e182badaed58182dfccfbf9212d9cc7cb3cfbd01d63f09cba35",
+    "apps/sponsor/src/checkout/paidPolicy.ts": "dccad6125b61fb4b5855872b3251208967d72a4c3ebddc9e3ff149e455a43260",
+    "apps/sponsor/src/checkout/paidRunner.ts": "5de6461783462c75926c2234911b61bc2d2d7647412c2999b8d2e8be928839cc",
+    "apps/sponsor/src/checkout/paymentPreparation.ts": "846a027c09adbd3cee6c539606839822f472fa56bab6e180c9c8b56d907829b2",
+    "apps/sponsor/src/checkout/rpc.selftest.ts": "30a439cf4fdde84cc0e6a4519faf77cae77a4c13a77c5990a36f81c37df9eefb",
+    "apps/sponsor/src/checkout/rpcReader.ts": "2146056f3386581f59dba1f85bad0248bbdd814be049e99d9b011394469719f8",
+    "apps/sponsor/tests/paid-api-runtime.mjs": "404dfdc1ae96e9bf8fe961c17ec45680ab3ac9ccb13d5b642e02e7dacee47d65",
+    "apps/sponsor/tests/paid-api-worker.ts": "bf32ff0fc873bae1ab8917b23b0975a1b698b3ec08b4113ca1c4a39506fd66f8",
+    "apps/sponsor/tests/paid.local.mjs": "5328796a65420ec2eb5a13dd1ebf7eef8a42113b613113994c38bd1675c3c482",
+    "apps/sponsor/wrangler.toml": "90d2fce4eadccae6fb750444f33db050f34eed49e87b27499f8ff05ed9e207d9",
+    "apps/web/playwright.paid.config.ts": "e42868ad929e9530fa94377e6879f01aa2f316f97d26fd2bcb1e737ae993edab",
+    "apps/web/playwright.v2-recovery.config.ts": "553665ef10f6a5d7ede9c5ca84e57ec08337255f250660c4931e821eba46554a",
+    "apps/web/src/components/PaidSolanaFlow.tsx": "85501fb0e943ac51833963dbd8b280fa61f9a82e00a28ffd72204de13796dd5a",
+    "apps/web/src/components/PreservationV2.tsx": "d519fe720eec4e8973c9c4f0779e5904d96c9caec43f26171cfc279e5ea6b5b5",
+    "apps/web/src/components/PublishSeedModal.tsx": "8092da6e6675af0efeb69ea58a3a1274a48fb35d8456f5be147fb6f5ef396a87",
+    "apps/web/src/components/Welcome.tsx": "c30a4428e356d6c7456549f8e2b799e7e8318715a569bdc65472b529d315ae51",
+    "apps/web/src/lib/checkout/paidClient.selftest.ts": "45b3c0872cabc4cbada75a0cf987ed7a275e91526cec91e01131464cbe922fc7",
+    "apps/web/src/lib/checkout/paidClient.ts": "03181080a77e2b5638721528fa33e24911a0c204331c0a5340b1ac2ebd9642fa",
+    "apps/web/src/lib/checkout/paidJournal.ts": "d324186b377c287c671cd1e1687f6196e33d9d33bdcc0108972e531153f88217",
+    "apps/web/src/lib/checkout/paidTypes.ts": "8e0fd35c50e21c2fd7dd7bf95c4f1baab65c797f7ec3b61077d2323bce915e13",
+    "apps/web/src/lib/checkout/vaultGuard.ts": "fb9c2165407f9ff739f2413136eafeb7db16a272e0fd4cb545e24b663a85abd6",
+    "apps/web/tests/paid-fixture.ts": "27b727c48c408656a34d674fac9bce1224e1a026ab6b10b3f37c401e8816caf2",
+    "apps/web/tests/paid-solana.spec.mjs": "4efb70cab3f2703278afa1860aee32c790b69d368d13d546f67d47beb1339a7d",
+    "packages/checkout/order.ts": "9afeb1b018745d66d58c1119b18b8ab1c66123425a8a525af1b2a4b40251565a",
+    "packages/checkout/paid.ts": "8fb472a31d00d292da89df5c06e2b30941fa4a511b5755630fb965356402874b",
+    "packages/checkout/rpcJson.ts": "1ec11289392269849ebccf8ea419e9b7a50b2443c909aad23f8346cf49a8cf68"
+  },
+  "native_build_sha256": {
+    "404.html": "e5849429c2afc49efc8cb6abd41d14476dac713402990cfb489a788cfd0c99c9",
+    "admin-lock.json": "54d5c11d80b5c702f066ea05973a68fa239889e71b0cb0dba94a2a57035f2886",
+    "assets/NotoSans-Bold-axMicgqH.ttf": "c976e4b1b99edc88775377fcc21692ca4bfa46b6d6ca6522bfda505b28ff9d6a",
+    "assets/NotoSans-Regular-Dpf_lrdO.ttf": "b85c38ecea8a7cfb39c24e395a4007474fa5a4fc864f6ee33309eb4948d232d5",
+    "assets/bs58-BpdPodED.js": "dc2f35482e8185f40a662ef54ebb609ebfdd9ae8d858e3b982ceae24b5de6155",
+    "assets/cache-B3QL1hUm.js": "12549815df55e242f7555d4da15148329918aff2527d9d8f985e7738ccae655d",
+    "assets/classicTreePdf-DUPqxcvA.js": "b8c83e7480fcf0b2425fef5580c1853533d4592dc37d069bf1ea3868bad97a8d",
+    "assets/html2canvas-CshxQvNN.js": "525e8103b4458d2ffe827927bab32b72dd64e5fb52c468bbde4d67c9b6a82bdc",
+    "assets/index-D_DSbhqU.css": "970805c5899ce4d80ad8ac9dbc8e036352908741f6bfed5501675cd2d3f3bad1",
+    "assets/index-jmzvUZlQ.js": "734e763dfcb845d1d08dd73ab2f9fef5237a451dd48c356e0461123c3534e1dd",
+    "assets/index.es-RHOi5UNR.js": "baf1045048397dcf5035f2ccba057c46b6e363b64147e9240750040c23e3041e",
+    "assets/order-aUImZ1HR.js": "75c91a5713aefd349c494130a02c1c1fc017adbe94e25bc77cb4707ab23f634e",
+    "assets/pdf-vendor-DQu28BpJ.js": "f454b80213ec09292274f35d9580021f2ecb1c53d06d57344539d439c816c29a",
+    "assets/poster-61SNOB0v.js": "31df3bf0e5688f9cbbfd3f5f2d7a717e56610ec1a3ca6212f977f1aca5fcadde",
+    "assets/purify.es-C-v12ISi.js": "f77d9aa6a225b52bae89b8148ab3473b4bdf1d456c81b8a892fef9cba334c1db",
+    "assets/rolldown-runtime-CNC7AqOf.js": "d4a36920c7bab6ec97d0bdc5d1233622f28fe010198ca32bcdd80c8cb6b64aae",
+    "assets/shezhirePdf-rzfyyEIO.js": "cd9ff5502a16d19df12d744a62f930c7282ab4149228b262f9f3c58f9fd826ad",
+    "assets/wallet-Dtw52RX8.js": "dd12075a12138ee4a96ede5ebf4d334a9a54304e0b38986640dcedbe6349806f",
+    "assets/work-sans-latin-400-normal-DE1_0GuN.woff": "facad8d73150d94fa019a8535f4e7dfc18424e31f4510e78f415778a25b753c0",
+    "assets/work-sans-latin-400-normal-jUejSri3.woff2": "418b06936717d2e9b6c7a1fb61acb7e2f40030be4b230452f96505230e7b6b41",
+    "assets/work-sans-latin-700-normal-CEeo_t6l.woff2": "c1e51267967030c3d8893931aa3b2e087b9caf44332cf7c384f4f4c22da0dadc",
+    "assets/work-sans-latin-700-normal-mDs79oer.woff": "74d2b77da25670bf239c8f53d3ff76247fcf744dfabccf90d611d8bc0b6d962d",
+    "assets/work-sans-latin-ext-400-normal-j7TZlk-s.woff": "f6a1556cade62e1d995df243b82c1dfa3c16dd37e23308916c12accaf17ea06a",
+    "assets/work-sans-latin-ext-400-normal-zfQnhXzv.woff2": "7b2538119da8724c4678021a93a1b1959c0d9c99444e3c6871381ec89fba5949",
+    "assets/work-sans-latin-ext-700-normal-BP8nCPzd.woff": "f4bdf60df3cf569e3f57126e83dedab7e529665a065599e77a1855b00c2de68e",
+    "assets/work-sans-latin-ext-700-normal-Bc0iTajH.woff2": "b7c35cff11db7f3ad72fe2176036f4c9c084656fbc3615acb87767b5fdc0b00c",
+    "assets/work-sans-vietnamese-400-normal-BxGuknnG.woff2": "dd780ff7f679354e436b1e5b52c89e4843500e7ec36bb237e5c1d73fc89ef149",
+    "assets/work-sans-vietnamese-400-normal-DFZk_KN_.woff": "f4b34f20778063e19036c016e01db2098c0e4a8efb06056d0a1e6e7fd41e7a3c",
+    "assets/work-sans-vietnamese-700-normal-BYAoORCv.woff": "f318057308e7d5c25572232713674f8b773116bf1bf4662432909df254947439",
+    "assets/work-sans-vietnamese-700-normal-CqjC4WOy.woff2": "4e9c8f3d4c7f0a450e6b6a44267703df393b072cb11f02f3dd141e95c18effda",
+    "favicon.ico": "e2392a49b4c011153e7d79eae34a145adbb521c006976e95818594fffaeb4db3",
+    "favicon.svg": "e2392a49b4c011153e7d79eae34a145adbb521c006976e95818594fffaeb4db3",
+    "index.html": "e5849429c2afc49efc8cb6abd41d14476dac713402990cfb489a788cfd0c99c9"
+  },
+  "screenshots": {
+    "contribution-complete-mobile.png": {
+      "sha256": "0d79e8bc044479f0137abc74809d5b60b7d202640acbb0e3f7fb431551f4f9bc",
+      "synthetic": true
+    },
+    "paid-waiting-mobile.png": {
+      "sha256": "3c246f56bfcca92ac2fd0ae6b58f6708cdd643db7012b989b7618192c7612d01",
+      "synthetic": true
+    }
+  }
+}

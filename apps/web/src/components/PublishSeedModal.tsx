@@ -392,6 +392,7 @@ export function PublishSeedModal({
   function restorePreservationAttempt(found: PreservationAttempt, phrase: string) {
     if (found.method === 'promo') { restoreFundedAttempt(found.attempt, phrase); return; }
     const attempt = found.attempt;
+    if(attempt.intent.kind!=='preservation'||!attempt.serialized||!attempt.archive)throw Error('invalid_paid_attempt');
     resumedAttempt.current = null;
     resumedPaid.current = attempt;
     fundedStartSession.current = getVaultSession();

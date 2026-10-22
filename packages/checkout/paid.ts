@@ -1,7 +1,7 @@
 import {
   assertBase58, assertOrder, createPaidOrder, DEVNET_ONLY_RECIPIENTS, MAX_PAID_ARCHIVE_BYTES,
   PAID_SERVICE_LAMPORTS, SYSTEM_PROGRAM, validatePaidArchive, validatePaidStorage,
-  type Network, type PaidArchiveBinding, type PaidOrder, type PaidStorageTarget,
+  type Network, type PaidArchiveBinding, type PaidOrder, type PaidPreservationOrder, type PaidContributionOrder, type PaidOrderInput, type PaidStorageTarget,
 } from './order';
 import { assertUnits } from './amounts';
 import { canonical } from '../protocol/wire';
@@ -23,6 +23,13 @@ export type PaidPolicy = Readonly<{
   serviceLamports: typeof PAID_SERVICE_LAMPORTS; serviceRecipient: string; fundRecipient: string;
   storage: Readonly<PaidStorageTarget & { budgetId: string; maxBytes: number; maxRewardWinston: string }>;
 }>;
+/** A standalone SOL contribution has no storage offer or AR allocation. Keep the
+ * preservation policy's exact schema and hash unchanged for existing orders. */
+export type ContributionPolicy = Readonly<{
+  schema: 'sejire/contribution-policy/v1'; version: string; network: Network; genesisHash: string;
+  serviceLamports: '0'; serviceRecipient: string; fundRecipient: string;
+}>;
+export type CheckoutPolicy = PaidPolicy | ContributionPolicy;
 function exact(value: unknown, keys: readonly string[], code: string): asserts value is Record<string, unknown> {
   if (!value || typeof value !== 'object' || Array.isArray(value) ||
       Object.keys(value).sort().join(',') !== [...keys].sort().join(',')) throw new Error(code);
@@ -48,33 +55,56 @@ export function validatePaidPolicy(value: unknown): PaidPolicy {
     serviceLamports: value.serviceLamports, serviceRecipient: value.serviceRecipient, fundRecipient: value.fundRecipient,
     storage: Object.freeze({ ...target, budgetId: storage.budgetId, maxBytes: storage.maxBytes, maxRewardWinston: storage.maxRewardWinston }) });
 }
+export function validateContributionPolicy(value: unknown): ContributionPolicy {
+  exact(value, ['schema', 'version', 'network', 'genesisHash', 'serviceLamports', 'serviceRecipient', 'fundRecipient'], 'invalid_contribution_policy');
+  if (value.schema !== 'sejire/contribution-policy/v1' || typeof value.version !== 'string' || !/^[a-zA-Z0-9._-]{1,64}$/.test(value.version) ||
+      (value.network !== 'devnet' && value.network !== 'mainnet-beta') || value.genesisHash !== SOLANA_GENESIS[value.network] ||
+      value.serviceLamports !== '0' || typeof value.serviceRecipient !== 'string' || typeof value.fundRecipient !== 'string') throw new Error('invalid_contribution_policy');
+  assertBase58(value.serviceRecipient, 32); assertBase58(value.fundRecipient, 32);
+  if (value.serviceRecipient === value.fundRecipient || [value.serviceRecipient, value.fundRecipient].includes(SYSTEM_PROGRAM)) throw new Error('recipient_roles_overlap');
+  if (value.network === 'mainnet-beta' && [value.serviceRecipient, value.fundRecipient].some(address => DEVNET_ONLY_RECIPIENTS.includes(address))) throw new Error('devnet_wallet_cannot_be_mainnet_treasury');
+  return Object.freeze({ schema: value.schema, version: value.version, network: value.network, genesisHash: SOLANA_GENESIS[value.network],
+    serviceLamports: value.serviceLamports, serviceRecipient: value.serviceRecipient, fundRecipient: value.fundRecipient });
+}
+export function validateCheckoutPolicy(value: unknown): CheckoutPolicy {
+  return value && typeof value === 'object' && 'schema' in value && value.schema === 'sejire/contribution-policy/v1'
+    ? validateContributionPolicy(value) : validatePaidPolicy(value);
+}
 export async function sha256Hex(bytes: Uint8Array): Promise<string> {
   const digest = await crypto.subtle.digest('SHA-256', new Uint8Array(bytes));
   return Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, '0')).join('');
 }
-export async function paidPolicyHash(policy: PaidPolicy): Promise<string> {
-  return sha256Hex(new TextEncoder().encode(canonical(validatePaidPolicy(policy))));
+export async function paidPolicyHash(policy: CheckoutPolicy): Promise<string> {
+  return sha256Hex(new TextEncoder().encode(canonical(validateCheckoutPolicy(policy))));
 }
-export async function createPaidOrderFromPolicy(policy: PaidPolicy, input: {
+type PaidOrderCommonRequest={id:string;payer:string;reference:string;createdAt:number;expiresAt:number;contribution?:string};
+export function createPaidOrderFromPolicy(policy:PaidPolicy,input:PaidOrderCommonRequest&{archive:PaidArchiveBinding;kind?:'preservation'}):Promise<PaidPreservationOrder>;
+export function createPaidOrderFromPolicy(policy:CheckoutPolicy,input:PaidOrderCommonRequest&{kind:'contribution';archive?:never}):Promise<PaidContributionOrder>;
+export function createPaidOrderFromPolicy(policy:CheckoutPolicy,input:PaidOrderCommonRequest&{kind:'preservation'|'contribution';archive?:PaidArchiveBinding}):Promise<PaidOrder>;
+export async function createPaidOrderFromPolicy(policy: CheckoutPolicy, input: {
   id: string; payer: string; reference: string; createdAt: number; expiresAt: number;
-  archive: PaidArchiveBinding;
+  kind?: 'preservation' | 'contribution'; archive?: PaidArchiveBinding;
   /** Integer lamports, not a decimal SOL string. Omission means no contribution. */
   contribution?: string;
 }): Promise<PaidOrder> {
-  const checked = validatePaidPolicy(policy), archive = validatePaidArchive(input.archive);
-  if (archive.bytes > checked.storage.maxBytes) throw new Error('envelope_too_large');
+  const checked = validateCheckoutPolicy(policy), kind = input.kind ?? 'preservation';
+  if (kind === 'preservation' && checked.schema !== 'sejire/checkout-policy/v1') throw new Error('paid_policy_mismatch');
+  const archive = kind === 'preservation' ? validatePaidArchive(input.archive) : undefined;
+  const storage = checked.schema === 'sejire/checkout-policy/v1' ? checked.storage : undefined;
+  if (archive && storage && archive.bytes > storage.maxBytes) throw new Error('envelope_too_large');
+  if (kind === 'contribution' && input.archive !== undefined) throw new Error('invalid_contribution_order');
   return createPaidOrder({ id: input.id, payer: input.payer, reference: input.reference, createdAt: input.createdAt, expiresAt: input.expiresAt,
-    kind: 'preservation', network: checked.network, asset: 'SOL', policyVersion: checked.version, policyHash: await paidPolicyHash(checked),
-    servicePayment: { amount: PAID_SERVICE_LAMPORTS, recipient: checked.serviceRecipient },
-    fundContribution: { amount: input.contribution ?? '0', recipient: checked.fundRecipient }, archive,
-    storage: { kind: checked.storage.kind, network: checked.storage.network, treasuryAddress: checked.storage.treasuryAddress } });
+    kind, network: checked.network, asset: 'SOL', policyVersion: checked.version, policyHash: await paidPolicyHash(checked),
+    servicePayment: { amount: kind === 'preservation' ? PAID_SERVICE_LAMPORTS : '0', recipient: checked.serviceRecipient },
+    fundContribution: { amount: input.contribution ?? '0', recipient: checked.fundRecipient },
+    ...(archive && storage ? { archive, storage: { kind: storage.kind, network: storage.network, treasuryAddress: storage.treasuryAddress } } : {}) } as PaidOrderInput);
 }
-export async function validatePaidOrderPolicy(order: PaidOrder, policy: PaidPolicy): Promise<void> {
-  assertOrder(order); const checked = validatePaidPolicy(policy);
+export async function validatePaidOrderPolicy(order: PaidOrder, policy: CheckoutPolicy): Promise<void> {
+  assertOrder(order); const checked = validateCheckoutPolicy(policy);
   if (order.schema !== 'sejire/order/v2' || order.policyHash !== await paidPolicyHash(checked) || order.policyVersion !== checked.version ||
-      order.network !== checked.network || order.servicePayment.amount !== checked.serviceLamports || order.servicePayment.recipient !== checked.serviceRecipient ||
-      order.fundContribution.recipient !== checked.fundRecipient || order.archive.bytes > checked.storage.maxBytes ||
-      order.storage.kind !== checked.storage.kind || order.storage.network !== checked.storage.network || order.storage.treasuryAddress !== checked.storage.treasuryAddress) throw new Error('paid_policy_mismatch');
+      order.network !== checked.network || order.servicePayment.amount !== (order.kind === 'preservation' ? checked.serviceLamports : '0') || order.servicePayment.recipient !== checked.serviceRecipient ||
+      order.fundContribution.recipient !== checked.fundRecipient || (order.kind === 'preservation' && (checked.schema !== 'sejire/checkout-policy/v1' || order.archive.bytes > checked.storage.maxBytes ||
+      order.storage.kind !== checked.storage.kind || order.storage.network !== checked.storage.network || order.storage.treasuryAddress !== checked.storage.treasuryAddress))) throw new Error('paid_policy_mismatch');
 }
 
 export type DurablePaymentPreparation = Readonly<{
@@ -195,6 +225,7 @@ export function validatePaidReceipt(value: unknown, expectedOrder?: PaidOrder): 
   const archive = validatePaidArchive(value.archive);
   if (expectedOrder) {
     assertOrder(expectedOrder);
+    if(expectedOrder.kind!=='preservation')throw new Error('paid_receipt_mismatch');
     if (expectedOrder.schema !== 'sejire/order/v2' || value.orderId !== expectedOrder.id || value.policyHash !== expectedOrder.policyHash ||
         value.paymentNetwork !== expectedOrder.network || value.arweaveNetwork !== expectedOrder.storage.network || value.treasuryAddress !== expectedOrder.storage.treasuryAddress ||
         canonical(archive) !== canonical(expectedOrder.archive)) throw new Error('paid_receipt_mismatch');

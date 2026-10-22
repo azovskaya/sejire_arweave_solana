@@ -1,0 +1,70 @@
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> sejire@0.3.0 native:build
+> VITE_PRESERVATION_V2_TEST=0 VITE_PRESERVATION_V2_ENABLED=1 VITE_NATIVE_AR_PILOT=1 VITE_NATIVE_AR_ENABLED=1 VITE_NATIVE_AR_BROADCAST=0 VITE_NATIVE_SOL_MAINNET=0 npm run solana:build
+
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> sejire@0.3.0 solana:build
+> VITE_PUBLISH_MODE=solana VITE_SOLANA_NETWORK=devnet VITE_QA_TOOLS=0 npm run web:build
+
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> sejire@0.3.0 web:build
+> npm run build --prefix apps/web
+
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> sejire-web@0.3.0 build
+> tsc -b && vite build
+
+vite v8.1.5 building client environment for production...
+
+transforming...✓ 2542 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                                               1.10 kB │ gzip:   0.51 kB
+dist/assets/work-sans-vietnamese-400-normal-BxGuknnG.woff2    5.02 kB
+dist/assets/work-sans-vietnamese-700-normal-CqjC4WOy.woff2    5.39 kB
+dist/assets/work-sans-vietnamese-400-normal-DFZk_KN_.woff     7.08 kB
+dist/assets/work-sans-vietnamese-700-normal-BYAoORCv.woff     7.54 kB
+dist/assets/work-sans-latin-ext-400-normal-zfQnhXzv.woff2    15.29 kB
+dist/assets/work-sans-latin-ext-700-normal-Bc0iTajH.woff2    16.16 kB
+dist/assets/work-sans-latin-400-normal-jUejSri3.woff2        19.90 kB
+dist/assets/work-sans-latin-700-normal-CEeo_t6l.woff2        20.84 kB
+dist/assets/work-sans-latin-ext-400-normal-j7TZlk-s.woff     21.11 kB
+dist/assets/work-sans-latin-ext-700-normal-BP8nCPzd.woff     22.10 kB
+dist/assets/work-sans-latin-400-normal-DE1_0GuN.woff         25.24 kB
+dist/assets/work-sans-latin-700-normal-mDs79oer.woff         26.17 kB
+dist/assets/NotoSans-Regular-Dpf_lrdO.ttf                   569.20 kB
+dist/assets/NotoSans-Bold-axMicgqH.ttf                      575.74 kB
+dist/assets/index-D_DSbhqU.css                               39.61 kB │ gzip:   8.77 kB
+dist/assets/rolldown-runtime-CNC7AqOf.js                      0.87 kB │ gzip:   0.50 kB
+dist/assets/bs58-BpdPodED.js                                  1.74 kB │ gzip:   0.87 kB
+dist/assets/cache-B3QL1hUm.js                                 2.83 kB │ gzip:   1.19 kB
+dist/assets/classicTreePdf-DUPqxcvA.js                        3.75 kB │ gzip:   1.84 kB
+dist/assets/poster-61SNOB0v.js                                5.69 kB │ gzip:   2.52 kB
+dist/assets/order-aUImZ1HR.js                                 6.72 kB │ gzip:   2.55 kB
+dist/assets/shezhirePdf-rzfyyEIO.js                          13.46 kB │ gzip:   4.70 kB
+dist/assets/purify.es-C-v12ISi.js                            28.09 kB │ gzip:  11.09 kB
+dist/assets/index.es-RHOi5UNR.js                            151.39 kB │ gzip:  48.90 kB
+dist/assets/html2canvas-CshxQvNN.js                         199.56 kB │ gzip:  46.78 kB
+dist/assets/pdf-vendor-DQu28BpJ.js                          400.81 kB │ gzip: 130.37 kB
+dist/assets/wallet-Dtw52RX8.js                              878.80 kB │ gzip: 252.52 kB
+dist/assets/index-jmzvUZlQ.js                               998.79 kB │ gzip: 303.05 kB
+
+[EVAL] Use of direct `eval` function is strongly discouraged as it poses security risks and may cause issues with minification.
+     ╭─[ node_modules/vm-browserify/index.js:110:12 ]
+     │
+ 110 │     return eval(this.code); // maybe...
+     │            ──┬─
+     │              ╰─── Use of direct `eval` here.
+     │
+     │ Help: Consider using indirect eval. For more information, check the documentation: https://rolldown.rs/guide/troubleshooting#avoiding-direct-eval
+─────╯
+
+[INEFFECTIVE_DYNAMIC_IMPORT] node_modules/@solana/web3.js/lib/index.browser.esm.js is dynamically imported by src/lib/solana/client.ts, src/lib/solana/upload.ts but also statically imported by node_modules/@ardrive/turbo-sdk/lib/esm/common/arnsActions.js, node_modules/@ardrive/turbo-sdk/lib/esm/common/signer.js, node_modules/@ardrive/turbo-sdk/lib/esm/common/token/solana.js, node_modules/@ardrive/turbo-sdk/lib/esm/common/token/spl.js, node_modules/@ardrive/turbo-sdk/lib/esm/utils/common.js, ..., dynamic import will not move module into another chunk.
+
+[INEFFECTIVE_DYNAMIC_IMPORT] src/lib/native/payment.ts is dynamically imported by src/lib/native/jobs.ts, src/lib/native/successor.ts but also statically imported by src/components/NativeAdminDesk.tsx, src/components/NativeCheckoutPanel.tsx, dynamic import will not move module into another chunk.
+
+✓ built in 880ms

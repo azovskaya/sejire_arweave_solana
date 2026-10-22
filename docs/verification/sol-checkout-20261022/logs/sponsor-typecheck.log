@@ -1,0 +1,4 @@
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> sejire-sponsor@0.2.0 check
+> tsc --noEmit -p tsconfig.json

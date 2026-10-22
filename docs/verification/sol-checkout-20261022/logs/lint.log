@@ -1,0 +1,21 @@
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> sejire-web@0.3.0 lint
+> oxlint
+
+tests/native-admin.spec.mjs:52:36: warning eslint(no-unused-vars): Parameter 'v' is declared but never used. Unused parameters should start with a '_'. help: Consider removing this parameter.
+src/lib/native/native.selftest.ts:60:15: warning eslint(no-unused-vars): Variable 'chunks' is assigned a value but never used. Unused variables should start with a '_'. help: Did you mean to use this variable?
+src/components/NativeCheckoutPanel.tsx:36:1191: warning react-hooks(exhaustive-deps): React Hook useEffect has missing dependencies: 'envelope', 'envelope.vault_id', and 'resume' help: Either include it or remove the dependency array.
+src/components/NativeCheckoutPanel.tsx:38:165: warning react-hooks(exhaustive-deps): React Hook useEffect has a missing dependency: 'job' help: Either include it or remove the dependency array.
+src/components/NativeCheckoutPanel.tsx:96:58: warning react-hooks(exhaustive-deps): React Hook useEffect has missing dependencies: 'job', 'reconcile', 'run', 'job.reconciledSignature', and 'job.paymentSignature' help: Either include it or remove the dependency array.
+src/lib/native/rpc.ts:81:69: warning oxc(const-comparisons): Left-hand side of `&&` operator has no effect. help: if `rows.length<=3` evaluates to true, `rows.length<20` will always evaluate to true as well
+src/components/PreservationV2.tsx:81:60: warning react-hooks(exhaustive-deps): React Hook useEffect has missing dependencies: 'session.lastError', 'session.arTransactionId', and 'session.arSignedTransaction' help: Either include it or remove the dependency array.
+src/lib/i18n/I18nProvider.tsx:41:17: warning react(only-export-components): Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components.
+src/components/RestoreSeed.tsx:71:530: warning react-hooks(exhaustive-deps): React Hook useEffect has a missing dependency: 't.restore.badFile' help: Either include it or remove the dependency array.
+src/components/PublishSeedModal.tsx:265:21: warning react-hooks(exhaustive-deps): React Hook useEffect has a missing dependency: 't.publish.kaspiPaid' help: Either include it or remove the dependency array.
+src/components/PublishSeedModal.tsx:305:14: warning react-hooks(exhaustive-deps): React Hook useEffect has a missing dependency: 'confirmDiscardSeed' help: Either include it or remove the dependency array.
+src/components/AdminDesk.tsx:84:30: warning react-hooks(exhaustive-deps): React Hook useEffect has a missing dependency: 'refreshDesk' help: Either include it or remove the dependency array.
+src/components/VaultVersionsModal.tsx:282:17: warning react(only-export-components): Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components.
+src/components/VaultVersionsModal.tsx:102:19: warning react-hooks(exhaustive-deps): React Hook useEffect has missing dependencies: 't.versions.none', 't.versions.noneLocalToo', 't.restore.shownLocal', 't.versions.needOpen', 't.restore.arweaveFail', 't.restore.arweaveDown', and 't.publish' help: Either include it or remove the dependency array.
+src/components/Workspace.tsx:138:27: warning react-hooks(exhaustive-deps): React Hook useEffect has a missing dependency: 't.quota' help: Either include it or remove the dependency array.
+src/components/NativeAdminDesk.tsx:77:263: warning react-hooks(exhaustive-deps): React Hook useEffect has missing dependencies: 'job.arPlan.uploaded', 'inspectArchive', 'job.paymentSignature', 'job.reconciledSignature', 'job', and 'verifySelected' help: Either include it or remove the dependency array.
