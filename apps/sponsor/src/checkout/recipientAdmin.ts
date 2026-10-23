@@ -44,7 +44,7 @@ async function readSettingsBody(request: Request): Promise<unknown> {
   } finally { reader.releaseLock(); }
   const bytes = new Uint8Array(size); let offset = 0;
   for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.length; }
-  try { return JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(bytes)); }
+  try { return JSON.parse(new TextDecoder('utf-8', { fatal: true, ignoreBOM: false }).decode(bytes)); }
   catch { throw Error('invalid_solana_recipient_settings'); }
 }
 /** Public-address configuration, protected by the SAME server admin authentication. */
