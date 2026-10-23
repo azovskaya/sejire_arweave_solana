@@ -1,0 +1,159 @@
+name: Publish verified SOL recipient admin
+on:
+  push:
+    branches: [gh-pages]
+    paths: ['.github/workflows/publish-sol-recipient-admin-20261023.yml']
+permissions:
+  contents: read
+  actions: read
+  pages: write
+  id-token: write
+concurrency:
+  group: gh-pages-deploy
+  cancel-in-progress: false
+env:
+  SOURCE_SHA: 'f6fd9a2251152bf9138f1b18b04c10ca05d7b90b'
+  CHECKED_RUN: '39910256768'
+  ADMIN_RUN: '39910065936'
+  WORKER_RUN: '39910256811'
+  ARTIFACT_ID: '12483000947'
+  ZIP_SHA256: 'f6419fe290a4eeb38de5e793d63bef05aac9d53782ebd2b9d6fbdb41c6521c70'
+  STATIC_PARENT: 'bad094c33520ddf62caf2703b319dbfa1c9a1de1'
+  STATIC_TREE: '194cdeba8e5a90a2f4b39e526f746c4b2642ad26'
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify immutable source, completed tests, deployed Worker and exact static build
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REPOSITORY" = 'azovskaya/sejire_arweave_solana'
+          test "$GITHUB_REF" = 'refs/heads/gh-pages'
+          test "$(git show -s --format=%P HEAD)" = "$STATIC_PARENT"
+          test "$(git rev-parse "$STATIC_PARENT^{tree}")" = "$STATIC_TREE"
+          test "$(git diff --name-status "$STATIC_PARENT" HEAD)" = $'A\t.github/workflows/publish-sol-recipient-admin-20261023.yml'
+          cat > "$RUNNER_TEMP/check-recipient-release.mjs" <<'NODE'
+          import { readFileSync, writeFileSync } from 'node:fs';
+          import { createHash } from 'node:crypto';
+          const e = process.env;
+          async function api(path) {
+            const r = await fetch(`https://api.github.com/repos/${e.GITHUB_REPOSITORY}/${path}`, {
+              headers: { Authorization: `Bearer ${e.GH_TOKEN}`, Accept: 'application/vnd.github+json' },
+              redirect: 'error', signal: AbortSignal.timeout(20000),
+            });
+            if (!r.ok) throw Error(`GitHub evidence HTTP ${r.status}`);
+            return r.json();
+          }
+          for (const [id, name, path] of [
+            [e.CHECKED_RUN, 'SEJIRE checks', '.github/workflows/checks.yml'],
+            [e.ADMIN_RUN, 'SOL recipient admin checks', '.github/workflows/sol-recipient-admin.yml'],
+            [e.WORKER_RUN, 'Deploy promo fund Worker', '.github/workflows/deploy-promo-fund-worker.yml'],
+          ]) {
+            const run = await api(`actions/runs/${id}`);
+            if (run.head_sha !== e.SOURCE_SHA || run.name !== name || run.path !== path ||
+                run.status !== 'completed' || run.conclusion !== 'success' || run.event !== 'push') throw Error('Required source check is not successful');
+          }
+          const jobs = await api(`actions/runs/${e.WORKER_RUN}/jobs?per_page=100`);
+          if (jobs.total_count > 100 || !jobs.jobs.some(j => j.conclusion === 'success' &&
+              j.steps.some(s => s.name === 'Deploy sejire-sponsor' && s.conclusion === 'success'))) throw Error('Worker deploy did not execute');
+          const artifacts = await api(`actions/runs/${e.CHECKED_RUN}/artifacts?per_page=100`);
+          const matches = artifacts.artifacts.filter(a => a.name === 'native-admin-build' && !a.expired);
+          if (artifacts.total_count > 100 || matches.length !== 1 || String(matches[0].id) !== e.ARTIFACT_ID ||
+              matches[0].digest !== `sha256:${e.ZIP_SHA256}` || matches[0].workflow_run.head_sha !== e.SOURCE_SHA) throw Error('Artifact identity changed');
+          const expected = { artifact:'native-admin-build', run:Number(e.CHECKED_RUN), artifactId:Number(e.ARTIFACT_ID),
+            sourceCommit:e.SOURCE_SHA, zipSha256:e.ZIP_SHA256, publishedByCommit:e.SOURCE_SHA };
+          for (const path of ['build-provenance.json','native-admin/build-provenance.json']) {
+            const p = JSON.parse(readFileSync(path,'utf8'));
+            if (Object.keys(p).length !== Object.keys(expected).length || Object.entries(expected).some(([k,v]) => p[k] !== v)) throw Error('Static provenance differs');
+          }
+          const source = await api('git/ref/heads/feat/promo-funded-preservation');
+          const pages = await api('git/ref/heads/gh-pages');
+          if (source.object.sha !== e.SOURCE_SHA || pages.object.sha !== e.GITHUB_SHA) throw Error('Branch advanced; stale release refused');
+          if (e.DOWNLOAD_BUILD === 'true') {
+            const response = await fetch(`https://api.github.com/repos/${e.GITHUB_REPOSITORY}/actions/artifacts/${e.ARTIFACT_ID}/zip`, {
+              headers:{Authorization:`Bearer ${e.GH_TOKEN}`}, redirect:'manual', signal:AbortSignal.timeout(20000) });
+            if(response.status !== 302) throw Error('Artifact redirect missing');
+            const target = new URL(response.headers.get('location'));
+            if(target.protocol !== 'https:') throw Error('Unsafe artifact download');
+            const file = await fetch(target, { signal:AbortSignal.timeout(30000) });
+            if(!file.ok) throw Error('Artifact download failed');
+            const zip = Buffer.from(await file.arrayBuffer());
+            if(createHash('sha256').update(zip).digest('hex') !== e.ZIP_SHA256) throw Error('ZIP digest differs');
+            writeFileSync(`${e.RUNNER_TEMP}/recipient-build.zip`,zip);
+          }
+          console.log('Exact source, test runs, deployed Worker, artifact digest and both branch heads verified.');
+          NODE
+          DOWNLOAD_BUILD=true node "$RUNNER_TEMP/check-recipient-release.mjs"
+          python3 <<'PY'
+          import os, pathlib, zipfile
+          with zipfile.ZipFile(pathlib.Path(os.environ['RUNNER_TEMP']) / 'recipient-build.zip') as z:
+              names = set()
+              for f in z.infolist():
+                  p = pathlib.PurePosixPath(f.filename)
+                  if p.is_absolute() or '..' in p.parts or '\\' in f.filename or ((f.external_attr >> 16) & 0o170000) == 0o120000:
+                      raise RuntimeError('Unsafe artifact member')
+                  if f.is_dir(): continue
+                  if str(p) != f.filename or f.filename in names: raise RuntimeError('Invalid artifact member')
+                  names.add(f.filename)
+                  data = z.read(f)
+                  for root in [pathlib.Path('.'), pathlib.Path('native-admin')]:
+                      if root.joinpath(*p.parts).read_bytes() != data: raise RuntimeError('Static build differs from accepted artifact: ' + f.filename)
+              if not {'index.html','admin-lock.json'}.issubset(names): raise RuntimeError('Incomplete build')
+          print('Root and native-admin match the accepted ZIP byte-for-byte.')
+          PY
+          mkdir .pages-public
+          git archive "$STATIC_PARENT" | tar -x -C .pages-public
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          name: github-pages-${{ github.run_id }}-${{ github.run_attempt }}
+          path: .pages-public
+      - name: Recheck accepted evidence immediately before deployment
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node "$RUNNER_TEMP/check-recipient-release.mjs"
+      - name: Deploy verified admin fields
+        id: deployment
+        uses: actions/deploy-pages@v4
+        with:
+          artifact_name: github-pages-${{ github.run_id }}-${{ github.run_attempt }}
+      - name: Verify published source and unauthenticated settings protection
+        run: |
+          node --input-type=module <<'NODE'
+          import { readFileSync } from 'node:fs';
+          import { setTimeout as delay } from 'node:timers/promises';
+          const base='https://azovskaya.github.io/sejire_arweave_solana/';
+          let success=false;
+          for(let i=0;i<18;i++) {
+            success=true;
+            for(const path of ['build-provenance.json','native-admin/build-provenance.json','index.html','native-admin/index.html']) {
+              try {
+                const r=await fetch(base+path,{cache:'no-store',redirect:'error',signal:AbortSignal.timeout(10000)});
+                if(!r.ok || !Buffer.from(await r.arrayBuffer()).equals(readFileSync(path))) success=false;
+              } catch { success=false; }
+            }
+            if(success)break;
+            await delay(5000);
+          }
+          if(!success)throw Error('Public Pages files did not converge to accepted build');
+          for(const method of ['GET','POST']) {
+            const r=await fetch('https://sejire-sponsor.azovskaya-alissa.workers.dev/api/fund/admin/solana-recipients',{
+              method,headers:{Origin:'https://azovskaya.github.io',...(method==='POST'?{'Content-Type':'application/json'}:{})},
+              ...(method==='POST'?{body:'{}'}:{}), redirect:'error',signal:AbortSignal.timeout(15000),
+            });
+            if(r.status!==401)throw Error('Admin settings must reject an unauthenticated request: '+r.status);
+          }
+          console.log('Published root/native admin verified; settings reads and writes require existing admin authentication. No authorized writes, payments or archives were submitted.');
+          NODE
