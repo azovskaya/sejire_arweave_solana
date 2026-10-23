@@ -9,6 +9,7 @@ import { PaidLedger } from './paidLedger';
 import { runPaidOrder } from './paidRunner';
 import type { PaidEnv } from './paidPolicy';
 import type { DurablePaymentPreparation } from '../../../../packages/checkout/paid';
+import { RecipientSettings } from './recipientSettings';
 
 export const LEDGER_OBJECT_NAME = 'sejire-checkout-ledger-v1';
 type Env = PaidEnv & { CHECKOUT_LEDGER: DurableObjectNamespace };
@@ -21,12 +22,14 @@ export class CheckoutLedger {
   private readonly api: ApiLedger;
   private readonly fund: FundLedger;
   private readonly paid: PaidLedger;
+  private readonly recipients: RecipientSettings;
   constructor(private readonly ctx: DurableObjectState, private readonly env: Env) {
     if (!ctx.id.equals(env.CHECKOUT_LEDGER.idFromName(LEDGER_OBJECT_NAME))) throw new Error('wrong_ledger_object');
     this.store = new SqliteAtomicOrderStore(ctx.storage);
     this.api = new ApiLedger(ctx.storage, this.store);
     this.fund = new FundLedger(ctx.storage);
     this.paid = new PaidLedger(ctx.storage,this.store,this.api);
+    this.recipients = new RecipientSettings(ctx.storage);
     // Re-arm durable obligations after an isolate restart, without a browser token.
     ctx.blockConcurrencyWhile(()=>this.paid.arm());
   }
@@ -42,12 +45,29 @@ export class CheckoutLedger {
     const f=data as unknown as Record<string,unknown>;
     // Only trusted Worker service code has this binding. No browser input may invoke create/commit.
     switch (data.action) {
+      case 'recipientSettingsGet': return Response.json(this.recipients.get());
+      case 'recipientSettingsSave': return Response.json(await this.recipients.save(f.input, now));
       case 'treasuryRevision': return Response.json(this.fund.treasury.revision(String(f.address)));
       case 'treasuryHeld': return Response.json(this.fund.treasury.held(String(f.address),TREASURY_ADDRESS));
       case 'treasuryEffectiveBalance': return Response.json(this.fund.treasury.effectiveBalance(String(f.address),String(f.balance)));
       case 'paidTotals': return Response.json(this.fund.treasury.paidTotals(typeof f.budgetId==='string'?f.budgetId:undefined));
       case 'paidHasOrders': return Response.json(this.paid.hasOrders());
-      case 'paidCreate': return Response.json(await this.paid.create(f.input as Parameters<PaidLedger['create']>[0],now));
+      case 'paidCreate': {
+        const input = f.input as Parameters<PaidLedger['create']>[0];
+        // Serialize only admission (no network I/O) with recipient updates. An
+        // already admitted owner/key continues its immutable original policy.
+        const result = await this.ctx.blockConcurrencyWhile(async () => {
+          // Expected validation failures must not escape blockConcurrencyWhile:
+          // Cloudflare would reset the isolate on a callback exception.
+          try {
+            const existing = this.ctx.storage.sql.exec('SELECT order_id FROM api_orders WHERE owner=? AND idem_key=?', input.hash, input.key).toArray().length > 0;
+            if (!existing) this.recipients.assertPolicy(input.policy);
+            return { ok: true as const, value: await this.paid.create(input, now) };
+          } catch (error) { return { ok: false as const, error }; }
+        });
+        if (!result.ok) throw result.error;
+        return Response.json(result.value);
+      }
       case 'paidGet': return Response.json(this.paid.get(data.hash,data.id,now));
       case 'paidByKey': return Response.json(this.paid.byKey(data.hash,data.key,now));
       case 'paidCancelByKey': return Response.json(await this.paid.cancelByKey(data.hash,data.key,now));
@@ -94,6 +114,7 @@ export class CheckoutLedger {
     }
     } catch (error) {
       const known = ['order_or_reference_exists', 'order_not_found', 'previous_payment_unresolved', 'order_already_paid',
+        'invalid_solana_recipient','solana_recipient_roles_overlap','solana_test_recipient_forbidden','invalid_solana_recipient_settings','solana_recipient_revision_conflict','payment_settings_changed',
         'payment_conflict', 'payment_not_reserved', 'credit_allocation_mismatch', 'payment_already_used',
         'paid_budget_exhausted','balance_observation_stale','paid_hold_not_releasable','paid_request_cancelled','invalid_idempotency_key','order_expired','payment_not_prepared','preparation_changed',
         'invalid_payment_signature','invalid_payment_preparation','invalid_paid_archive','archive_mismatch','archive_not_canonical','invalid_envelope','envelope_too_large',

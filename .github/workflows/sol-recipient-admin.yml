@@ -1,0 +1,26 @@
+name: SOL recipient admin checks
+on:
+  push:
+    branches: [feat/admin-sol-recipients, feat/promo-funded-preservation]
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --prefix apps/web
+      - run: npm ci --prefix apps/sponsor
+      - run: npm run check --prefix apps/sponsor
+      - run: npm run test:recipients --prefix apps/sponsor
+      - run: npm run test:paid-runtime
+      - run: npm run lint --prefix apps/web
+      - run: npm run native:build
+      - run: npm exec --prefix apps/web -- playwright install --with-deps chromium
+      - run: npx playwright test --config playwright.sol-recipients.config.mjs
+        working-directory: apps/web

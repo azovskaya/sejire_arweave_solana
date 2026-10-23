@@ -1,5 +1,5 @@
 name = "sejire-sponsor"
-main = "src/index.ts"
+main = "src/configuredEntry.ts"
 compatibility_date = "2026-07-01"
 compatibility_flags = ["nodejs_compat"]
 

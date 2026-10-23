@@ -1,6 +1,7 @@
 import type { EnvelopeV1 } from '../crypto/encrypt';
 import { serializeEnvelope } from '../crypto/envelope';
 import { envelopeDigest } from '../solana/policy';
+import type { SolanaRecipientAdminView, SolanaRecipients } from '../../../../../packages/checkout/recipients';
 export type FundOrderView={preservationId:string;orderId:string;promoRevision:number;archiveSizeBytes:number;archiveDigest:string;vaultId:string;parentTxId?:string|null;estimatedRewardWinston:string;reservedRewardWinston:string;actualRewardWinston:string|null;arweaveTxId:string|null;status:string;createdAt:number;uploadedAt:number|null;verifiedAt:number|null};
 export type FundVerification={stage:'awaiting_confirmation'|'checking_archive'|'verified'|'attention';transactionConfirmed:boolean;confirmations:number|null;reason:'network_pending'|'network_unavailable'|'archive_unavailable'|'archive_verification_failed'|'reward_mismatch'|'transaction_mismatch'|null;checkedAt:number};
 export type FundOrderResult={order:FundOrderView;verification?:FundVerification};
@@ -18,7 +19,7 @@ async function call<T>(path:string,method:'GET'|'POST'='GET',value?:unknown,admi
   if(signal?.aborted)cancel();else signal?.addEventListener('abort',cancel,{once:true});
   const timer=setTimeout(cancel,30000);
   try{
-    const r=await fetch(endpoint()+path,{method,credentials:'omit',referrerPolicy:'no-referrer',cache:'no-store',headers:{...(value===undefined?{}:{'Content-Type':'application/json'}),...(adminPassword?{Authorization:`Bearer ${adminPassword}`}:{})},...(value===undefined?{}:{body:JSON.stringify(value)}),signal:controller.signal});
+    const r=await fetch(endpoint()+path,{method,credentials:'omit',referrerPolicy:'no-referrer',cache:'no-store',headers:{...(value===undefined?{}:{'Content-Type':'application/json'}),...(adminPassword?{Authorization:`Bearer ${adminPassword}`}:{})},...(value===undefined?{}:{body:JSON.stringify(value)}),signal:controller.signal,...(path==='/admin/solana-recipients'?{redirect:'error' as const}:{})});
     const data=await r.json() as {error?:string};
     if(!r.ok)throw new FundApiError(data.error||'fund_unavailable',r.status);
     return data as T;
@@ -43,3 +44,5 @@ export const fundChangePromo=(password:string,code:string,confirm:string)=>call(
 export const fundEnable=(password:string,enabled:boolean)=>call('/admin/enabled','POST',{enabled},password);
 export const fundLimit=(password:string,limitAr:string)=>call('/admin/limit','POST',{limitAr},password);
 export const fundReconcile=(password:string)=>call('/admin/reconcile','POST',{},password);
+export const solanaRecipientSettings=(password:string)=>call<SolanaRecipientAdminView>('/admin/solana-recipients','GET',undefined,password);
+export const saveSolanaRecipients=(password:string,value:SolanaRecipients&{expectedRevision:number})=>call<SolanaRecipientAdminView>('/admin/solana-recipients','POST',value,password);

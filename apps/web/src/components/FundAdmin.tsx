@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { SolanaRecipientsAdmin } from './SolanaRecipientsAdmin';
 import { formatAr, fundChangePromo, fundDashboard, fundEnable, fundLimit, fundReconcile, publicFundBalance, type FundDashboard } from '../lib/fund/client';
 const errors:Record<string,string>={admin_unauthorized:'Server admin credential required.',limit_below_spent:'Fund limit cannot be lower than actual confirmed spend.',limit_below_reserved:'Fund limit cannot be lower than confirmed spend plus active reservations.',fund_provider_unavailable:'Fund provider unavailable.',invalid_promo_format:'Use at least 6 letters, digits or hyphens.',promo_confirmation_mismatch:'Promo code confirmation does not match.',fund_ledger_inconsistent:'Fund ledger has inconsistent records. Review the server audit before enabling new uploads.'};
 const date=(at:number|null)=>at?new Date(at).toLocaleString():'—';
@@ -17,13 +18,14 @@ export function FundAdmin(){
   let newRemaining:string|null=null;try{if(data&&limit){const [w,f='']=limit.split('.');if(/^\d+$/.test(w)&&/^\d{0,12}$/.test(f)){const next=BigInt(w)*1000000000000n+BigInt(f.padEnd(12,'0'));newRemaining=formatAr((next-BigInt(data.actualSpentWinston)).toString());}}}catch{ /* invalid preview */ }
   const progress=data&&BigInt(data.limitWinston)>0n?Number(BigInt(data.actualSpentWinston)*10000n/BigInt(data.limitWinston))/100:0;
   return <section className="fund-admin" aria-label="Free Preservation Fund"><h2>FREE PRESERVATION FUND</h2>
-    <label>Server admin credential<input type="password" autoComplete="off" value={credential} onChange={e=>setCredential(e.target.value)}/></label>
+    <label>Server admin credential<input type="password" autoComplete="off" value={credential} onChange={e=>{setCredential(e.target.value);setData(null);}}/></label>
     <button className="btn ghost" disabled={busy} onClick={()=>void refresh()}>Refresh balance and dashboard</button>
     {error&&<p role="alert">{error}</p>}{message&&<p role="status">{message}</p>}
     {!data&&<div className="ops-desk-card"><p>Treasury <code>{publicBalance?.treasuryAddress??'qgoIFw9WsusMRapWzcFg4jNW08HSWvQkpAKOz86BUuI'}</code></p>
       <p>Live wallet balance <strong>{publicBalance?.walletBalanceWinston==null?'Balance unavailable':`${formatAr(publicBalance.walletBalanceWinston)} AR`}</strong></p>
       <p>Last balance check {date(publicBalance?.lastBalanceCheck??null)}</p><p>Enter the server admin credential to view and manage the fund.</p></div>}
     {data&&<>
+      <SolanaRecipientsAdmin credential={credential}/>
       <div className="fund-admin-grid"><section className="ops-desk-card"><h3>PROMO CODE</h3>
         <p>Status <strong>{data.promo.enabled?'ACTIVE':'DISABLED'}</strong></p><p>Current code <strong>{data.promo.displayHint||'—'}</strong></p>
         <p>Revision {data.promo.revision} · Changed {date(data.promo.updatedAt)}</p>
