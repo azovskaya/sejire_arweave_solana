@@ -18,7 +18,7 @@ import { parsePortableBackup } from '../crypto/backup';
 import { readPaidAccess, writePaidAccess, readPaidOperation, writePaidOperation, findPaidAttempt, findContributionAttempt } from './paidJournal';
 import { findPreservationAttempt, reservePaidAttempt, saveGuardedFundAttempt, clearGuardedFundAttempt } from './vaultGuard';
 import { beginPaidOperation, readPaidStatus, preparePaidOperation, payPaidOperation, checkPaidOperation,
-  readPaidPolicy, validatePaidSnapshot, paidCompletion, cancelPaidOperation, resolveReleasedPaidOperation } from './paidClient';
+  readPaidPolicy, validatePaidSnapshot, paidCompletion, cancelPaidOperation, resolveReleasedPaidOperation, PaidApiError } from './paidClient';
 import { cancelPaidCreation, retryPaidCreation, contributionReceipt, completeContributionLocally } from './paidClient';
 import { retrievePaidReceipt } from './paidReceipt';
 import { finalizeStandalonePaid } from './paidFinalize';
@@ -300,7 +300,8 @@ function wallet(state: NetworkState): SolanaWalletAdapter {
 }
 
 reset(); let network = syntheticNetwork(); network.loseCreate = true;
-await assert.rejects(() => beginPaidOperation(input, signer.publicKey.toBase58(), '0', offered), /lost create/);
+await assert.rejects(() => beginPaidOperation(input, signer.publicKey.toBase58(), '0', offered),
+  error => error instanceof PaidApiError && error.stage === 'create' && error.status === 0 && error.message === 'checkout_transport_failed');
 let op = (await findPaidAttempt({ vaultId: keys.vaultId }))!;
 assert.equal(op.order, undefined); assert.equal(op.serialized, serialized);
 op = await readPaidStatus(op.id); assert.ok(op.order);
@@ -377,7 +378,7 @@ assert.ok((await readPaidOperation(op.id))?.signedTransaction, 'late wallet resp
 assert.equal(walletCalls, 1); assert.equal(network.reserves, 0); assert.equal(network.sends.length, 0, 'closed context cannot reserve or broadcast');
 
 reset(); network = syntheticNetwork(); network.dropBeforeAdmission = true;
-await assert.rejects(() => beginPaidOperation(input, signer.publicKey.toBase58(), '0', offered), /before admission/);
+await assert.rejects(() => beginPaidOperation(input, signer.publicKey.toBase58(), '0', offered), /checkout_transport_failed/);
 op = (await findPaidAttempt({ treeId: second.meta.id }))!;
 await assert.rejects(() => readPaidStatus(op.id), /order_not_found/); assert.equal(network.creates, 1, 'polling never creates an order');
 network.missingStatus = 503;
@@ -393,7 +394,7 @@ op = await retryPaidCreation(op.id); assert.equal(network.creates, 2, 'found ord
 assert.equal((await cancelPaidCreation(op.id)).snapshot?.cancelled, undefined, 'existing order is adopted, never silently cancelled by key');
 
 reset(); network = syntheticNetwork(); network.loseCreate = true;
-await assert.rejects(() => beginPaidOperation(input, signer.publicKey.toBase58(), '0', offered), /lost create/);
+await assert.rejects(() => beginPaidOperation(input, signer.publicKey.toBase58(), '0', offered), /checkout_transport_failed/);
 op = (await findPaidAttempt({ treeId: second.meta.id }))!;
 assert.equal(op.order, undefined);
 op = await cancelPaidCreation(op.id);
@@ -404,7 +405,7 @@ await assert.rejects(() => resolveReleasedPaidOperation(op.id), /previous_paymen
 assert.equal(network.creates, 1); assert.equal(network.sends.length, 0);
 
 reset(); network = syntheticNetwork(); network.dropBeforeAdmission = true;
-await assert.rejects(() => beginPaidOperation(input, signer.publicKey.toBase58(), '0', offered), /before admission/);
+await assert.rejects(() => beginPaidOperation(input, signer.publicKey.toBase58(), '0', offered), /checkout_transport_failed/);
 op = (await findPaidAttempt({ treeId: second.meta.id }))!; network.loseCancel = true;
 await assert.rejects(() => cancelPaidCreation(op.id), /lost cancel/);
 op = await readPaidStatus(op.id); assert.equal(op.creationCancelled, true);
@@ -522,7 +523,8 @@ assert.equal(network.creates, 2); assert.equal(walletCalls, 1, 'new intent does 
 // Help recovery uses the original amount/key after lost creation, reserve, or
 // unknown wallet responses; opening/polling never asks for another signature.
 reset(); network = syntheticNetwork(); network.loseCreate = true; walletCalls = 0;
-await assert.rejects(() => beginPaidOperation({ mode: 'contribution' }, signer.publicKey.toBase58(), '0.1', helpOffered), /lost create/);
+await assert.rejects(() => beginPaidOperation({ mode: 'contribution' }, signer.publicKey.toBase58(), '0.1', helpOffered),
+  error => error instanceof PaidApiError && error.stage === 'create' && error.status === 0 && error.message === 'checkout_transport_failed');
 op = (await findContributionAttempt())!;
 op = await readPaidStatus(op.id); assert.equal(op.order?.fundContribution.amount, '100000000');
 assert.equal((await beginPaidOperation({ mode: 'contribution' }, signer.publicKey.toBase58(), '0.2', helpOffered)).id, op.id);
