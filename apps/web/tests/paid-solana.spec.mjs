@@ -7,7 +7,7 @@ const origin='http://127.0.0.1:5185', tx='A'.repeat(43);
 const panel=page=>page.getByRole('region',{name:'Оплата SOL',exact:true});
 const json=(route,value,status=200)=>route.fulfill({status,contentType:'application/json',body:JSON.stringify(value)});
 const networkState=()=>({ready:true,contributionReady:true,balance:'1000000000000000',requests:[],denied:[],creates:0,admissions:0,createKeys:[],bodies:[],prepares:0,reserves:0,sends:[],cancels:0,reconciles:0,
-  finish:false,paid:false,phase:'queued',lostCreate:false,lostReserve:false,lostVerify:false,lostCancel:false,
+  finish:false,paid:false,phase:'queued',createError:null,lostCreate:false,lostReserve:false,lostVerify:false,lostCancel:false,
   wrongGenesis:false,wrongOrder:false,snapshot:null,archive:null,key:null,unknownSignature:null,dropBeforeAdmission:false,tombstone:false});
 
 async function installNetwork(context,state=networkState()){
@@ -62,6 +62,7 @@ async function installNetwork(context,state=networkState()){
      expect(body.archive.digest).toBe(createHash('sha256').update(body.serialized).digest('hex'));
      expect(body.archive.bytes).toBe(Buffer.byteLength(body.serialized));state.archive=body.serialized;
     }
+    if(state.createError)return json(route,{error:state.createError},503);
     if(state.tombstone)return json(route,{error:'paid_request_cancelled'},409);
     if(state.dropBeforeAdmission){state.dropBeforeAdmission=false;return route.abort('failed');}
     state.admissions++;state.paid=false;state.finish=false;state.phase='queued';
@@ -289,6 +290,23 @@ test('request dropped before admission retries explicitly with the same key, tok
  await expect(panel(page).getByRole('button',{name:'Подключить Phantom'})).toBeEnabled();
  const after=await saved(page,state.key);expect(after.op.serialized).toBe(original.op.serialized);expect(after.op.token).toBe(original.op.token);
  expect(state.createKeys).toEqual([state.key,state.key]);expect(state.creates).toBe(2);expect(state.admissions).toBe(1);
+ expect(state.prepares).toBe(0);expect(state.sends).toHaveLength(0);expect(state.denied).toEqual([]);
+});
+
+test('a rejected create shows its POST status and safe code after by-key 404 without changing the attempt',async({page,context})=>{
+ const state=await installNetwork(context);state.createError='rpc-rate-limited';await openEditor(page);await openPaid(page);
+ await requestPayment(page);
+ const first=await saved(page,state.key);
+ await expect(panel(page).getByRole('alert')).toContainText('HTTP 503, rpc-rate-limited');
+ await check(page);
+ await expect(panel(page).getByRole('alert')).toContainText('HTTP 503, rpc-rate-limited');
+ await panel(page).getByRole('button',{name:'Повторить отправку запроса'}).click();
+ await expect(panel(page).getByRole('alert')).toContainText('HTTP 503, rpc-rate-limited');
+ const after=await saved(page,state.key);
+ expect(after.op.id).toBe(first.op.id);expect(after.op.token).toBe(first.op.token);
+ expect(after.op.serialized).toBe(first.op.serialized);expect(after.op.order).toBeUndefined();
+ expect(state.createKeys).toEqual([state.key,state.key]);expect(state.admissions).toBe(0);
+ expect(state.requests).toContain(`GET /orders/by-key/${state.key}`);
  expect(state.prepares).toBe(0);expect(state.sends).toHaveLength(0);expect(state.denied).toEqual([]);
 });
 

@@ -18,7 +18,10 @@ import type { ContributionReceipt, PaidCompletion, PaidCreationCancellation, Pai
 
 export class PaidApiError extends Error {
   readonly status: number;
-  constructor(code: string, status: number) { super(code); this.name = 'PaidApiError'; this.status = status; }
+  readonly stage: 'create' | 'other';
+  constructor(code: string, status: number, stage: 'create' | 'other' = 'other') {
+    super(code); this.name = 'PaidApiError'; this.status = status; this.stage = stage;
+  }
 }
 
 function endpoint(): string {
@@ -61,7 +64,8 @@ async function api<T>(path: string, token?: string, payload?: unknown, key?: str
     ...(payload === undefined ? {} : { body: JSON.stringify(payload) }) }, signal);
   if (response.status < 200 || response.status >= 300) {
     const code = (response.value as { error?: unknown })?.error;
-    throw new PaidApiError(typeof code === 'string' ? code : 'checkout_requires_reconciliation', response.status);
+    throw new PaidApiError(typeof code === 'string' ? code : 'checkout_requires_reconciliation', response.status,
+      path === '/orders' ? 'create' : 'other');
   }
   return response.value as T;
 }

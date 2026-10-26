@@ -352,6 +352,11 @@ export async function checkoutApi(request: Request, env: CheckoutApiEnv,
     if (code === 'rate_limited') return reply(429, { error: code });
     if (['idempotency_conflict', 'previous_payment_unresolved', 'order_already_paid', 'preservation_not_paid','order_expired','payment_not_prepared','payment_not_reserved','paid_hold_not_releasable','paid_request_cancelled','preparation_changed','paid_policy_changed'].includes(code)) return reply(409, { error: code });
     if(['paid_not_configured','paid_not_ready','contribution_not_configured','contribution_not_ready','paid_budget_exhausted','balance_observation_stale','wallet_low','payment_balance_not_ready','recipient_not_ready','payment_network_not_ready'].includes(code))return reply(503,{error:code});
+    // These are bounded, secret-free preparation failures. Report the cause of
+    // a rejected create instead of letting a later by-key 404 mask it.
+    if(['rpc-timeout','rpc-rate-limited','rpc-server-error','rpc-unavailable','rpc-malformed','rpc-response-too-large',
+      'direct_network_unavailable','direct_reward_limit','direct_signer_unavailable','direct_plan_mismatch',
+      'direct_archive_mismatch','direct_archive_size_invalid','network_fee_not_ready','invalid_block_height'].includes(code))return reply(503,{error:code});
     if (['invalid_base58', 'invalid_amount', 'excess_precision', 'technical_amount_overflow', 'invalid_contribution_order', 'recipient_roles_overlap', 'invalid_order_id_or_policy', 'archive_mismatch', 'invalid_envelope', 'envelope_too_large','invalid_paid_archive','archive_not_canonical','invalid_payment_signature','invalid_payment_preparation','invalid_idempotency_key'].includes(code)) return reply(400, { error: code });
     // Transport/commit failure can mean commit succeeded. No unpaid claim, no fresh-payment instruction.
     return reply(503, { error: 'checkout_requires_reconciliation' });

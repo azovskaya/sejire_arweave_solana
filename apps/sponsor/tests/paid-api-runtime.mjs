@@ -34,13 +34,14 @@ const arKey = await webcrypto.subtle.exportKey('jwk', arPair.privateKey);
 const treasury = createHash('sha256').update(Buffer.from(arKey.n, 'base64url')).digest('base64url');
 const fetchMock = createFetchMock(); fetchMock.disableNetConnect();
 const wire = { calls: [], payments: new Map(), archives: new Map(), submissions: new Map(),
-  lostSingleAck: true, failChunkOnce: true, droppedChunks: 0, chunkPosts: 0 };
+  lostSingleAck: true, failChunkOnce: true, droppedChunks: 0, chunkPosts: 0, rpcRateLimited: false };
 const observe = (url, method) => wire.calls.push({ url, method });
 const parsedBody = options => JSON.parse(typeof options.body === 'string' ? options.body : Buffer.from(options.body).toString());
 
 fetchMock.get('https://api.mainnet-beta.solana.com').intercept({ path: '/', method: 'POST' }).reply(options => {
   observe('https://api.mainnet-beta.solana.com/', 'POST');
   const request = parsedBody(options); let result;
+  if (wire.rpcRateLimited && request.method === 'getGenesisHash') return { statusCode: 429, data: 'synthetic rate limit' };
   if (request.method === 'getGenesisHash') result = genesis;
   else if (request.method === 'getAccountInfo') result = { context: { slot: 100 }, value: { owner: system, executable: false } };
   else if (request.method === 'getLatestBlockhash') result = { context: { slot: 100 }, value: { blockhash: addr(8), lastValidBlockHeight: 1000 } };
@@ -242,6 +243,16 @@ try {
       const result = await call('/orders', a, { ...input, ...patch }, { 'Idempotency-Key': 'invalid_paid_body_01' }); assert.equal(result.status, 400);
     }
     assert.equal((await call('/orders', a, ' '.repeat(524288 * 2 + 4097), { 'Idempotency-Key': 'large_paid_body_01' })).status, 413);
+  });
+  await test('a rejected create reports the mainnet RPC cause while the same key remains unadmitted', async () => {
+    const key = 'paid_rpc_failure_01'; wire.rpcRateLimited = true;
+    try {
+      for (let attempt = 0; attempt < 2; attempt++) {
+        assert.deepEqual(await create(a, key), { status: 503, body: { error: 'rpc-rate-limited' } });
+        assert.deepEqual(await call(`/orders/by-key/${key}`, a), { status: 404, body: { error: 'order_not_found' } });
+      }
+      await noAdmitted(2);
+    } finally { wire.rpcRateLimited = false; }
   });
   await test('v2 admission persists exact ciphertext/parent/policy and one idempotent order', async () => {
     const made = await create(a, 'paid_first_order_01'); assert.equal(made.status, 201); first = made.body.record.order;

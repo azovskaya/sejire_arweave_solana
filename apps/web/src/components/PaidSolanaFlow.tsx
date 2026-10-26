@@ -26,6 +26,10 @@ type Props = {
 function errorMessage(error: unknown): string {
   if (error && typeof error === 'object' && 'code' in error && error.code === 4001) return 'Кошелёк отклонил подпись. Оплата не отправлена. Можно подтвердить тот же запрос или отменить его.';
   const code = error instanceof Error ? error.message : '';
+  if (error instanceof PaidApiError && error.stage === 'create') {
+    const safeCode = /^[a-z][a-z0-9_-]{0,63}$/.test(code) ? code : 'checkout_requires_reconciliation';
+    return `Заказ не создан: HTTP ${error.status}, ${safeCode}. Исходная попытка сохранена; новая оплата не начинается.`;
+  }
   if (error instanceof PaidApiError && error.status === 404) return 'Сервер пока не нашёл сохранённый запрос. Продолжаем проверять тот же запрос; новый заказ не создаётся.';
   if (error instanceof PaidApiError && error.status === 401) return 'Доступ к прежнему запросу требует восстановления. Сведения о платеже остаются в этом браузере; новая оплата не начинается.';
   const known: Record<string, string> = {
@@ -85,6 +89,7 @@ export function PaidSolanaFlow({ input, onBack, onBusy, onComplete, onAdoptAttem
   const [finishing, setFinishing] = useState(false);
   const context = useRef({ active: false });
   const running = useRef(false), reading = useRef(false), completing = useRef(false);
+  const creationError = useRef<string | null>(null);
   const completedAttempt = useRef('');
   const latest = useRef<PaidOperation | null>(null);
   const callbacks = useRef({ onBusy, onComplete, onAdoptAttempt }); callbacks.current = { onBusy, onComplete, onAdoptAttempt };
@@ -103,7 +108,7 @@ export function PaidSolanaFlow({ input, onBack, onBusy, onComplete, onAdoptAttem
     const current = { active: true }; context.current = current;
     const source = latestInput.current;
     setInitializing(true); setOp(null); latest.current = null; setPolicy(null);
-    setError(''); setConsent(false); setCompletionError(false); completedAttempt.current = '';
+    creationError.current = null; setError(''); setConsent(false); setCompletionError(false); completedAttempt.current = '';
     const controller = new AbortController();
     const timer = setTimeout(() => {
       void (async () => {
@@ -134,8 +139,9 @@ export function PaidSolanaFlow({ input, onBack, onBusy, onComplete, onAdoptAttem
     const current = context.current, previous = latest.current;
     if (!previous || reading.current || running.current || !current.active) return;
     reading.current = true; setChecking(true);
-    try { const next = await checkPaidOperation(previous.id, () => current.active); if (current.active) { remember(next); setError(''); } }
-    catch (e) { if (current.active) setError(errorMessage(e)); }
+    try { const next = await checkPaidOperation(previous.id, () => current.active); if (current.active) { remember(next); creationError.current = null; setError(''); } }
+    catch (e) { if (current.active) setError(e instanceof PaidApiError && e.status === 404 && creationError.current
+      ? creationError.current : errorMessage(e)); }
     finally { reading.current = false; if (current.active) setChecking(false); }
   }, [remember]);
 
@@ -156,7 +162,9 @@ export function PaidSolanaFlow({ input, onBack, onBusy, onComplete, onAdoptAttem
     try { await action(); }
     catch (e) {
       if (current.active) {
-        setError(errorMessage(e));
+        const message = errorMessage(e);
+        if (e instanceof PaidApiError && e.stage === 'create') creationError.current = message;
+        setError(message);
         try {
           const old = latest.current;
           const source=latestInput.current;
