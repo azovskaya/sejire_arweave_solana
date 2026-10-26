@@ -284,6 +284,9 @@ test('request dropped before admission retries explicitly with the same key, tok
  const state=await installNetwork(context);state.dropBeforeAdmission=true;await openEditor(page);await openPaid(page);
  await requestPayment(page);
  await expect(panel(page).getByRole('button',{name:'Повторить отправку запроса'})).toBeEnabled();
+ await expect(panel(page).getByRole('alert')).toContainText('ответ POST недоступен, checkout_transport_failed');
+ await check(page);
+ await expect(panel(page).getByRole('alert')).toContainText('ответ POST недоступен, checkout_transport_failed');
  const original=await saved(page,state.key);await page.reload();await expect(panel(page).getByRole('alert')).toContainText('не нашёл');
  expect(state.creates).toBe(1);expect(state.admissions).toBe(0);
  await panel(page).getByRole('button',{name:'Повторить отправку запроса'}).click();

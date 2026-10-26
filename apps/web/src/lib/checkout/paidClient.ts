@@ -59,9 +59,17 @@ async function jsonRequest(url: string, init: RequestInit, signal?: AbortSignal,
 }
 
 async function api<T>(path: string, token?: string, payload?: unknown, key?: string, signal?: AbortSignal): Promise<T> {
-  const response = await jsonRequest(endpoint() + path, { method: payload === undefined ? 'GET' : 'POST',
-    headers: { ...(payload === undefined ? {} : { 'Content-Type': 'application/json' }), ...(token ? { Authorization: `Bearer ${token}` } : {}), ...(key ? { 'Idempotency-Key': key } : {}) },
-    ...(payload === undefined ? {} : { body: JSON.stringify(payload) }) }, signal);
+  let response: Awaited<ReturnType<typeof jsonRequest>>;
+  try {
+    response = await jsonRequest(endpoint() + path, { method: payload === undefined ? 'GET' : 'POST',
+      headers: { ...(payload === undefined ? {} : { 'Content-Type': 'application/json' }), ...(token ? { Authorization: `Bearer ${token}` } : {}), ...(key ? { 'Idempotency-Key': key } : {}) },
+      ...(payload === undefined ? {} : { body: JSON.stringify(payload) }) }, signal);
+  } catch (error) {
+    if (path !== '/orders') throw error;
+    const code = error instanceof Error && ['checkout_request_timed_out','checkout_response_too_large','checkout_response_missing'].includes(error.message)
+      ? error.message : 'checkout_transport_failed';
+    throw new PaidApiError(code, 0, 'create');
+  }
   if (response.status < 200 || response.status >= 300) {
     const code = (response.value as { error?: unknown })?.error;
     throw new PaidApiError(typeof code === 'string' ? code : 'checkout_requires_reconciliation', response.status,

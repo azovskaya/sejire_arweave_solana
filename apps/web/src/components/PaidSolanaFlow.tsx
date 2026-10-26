@@ -28,7 +28,7 @@ function errorMessage(error: unknown): string {
   const code = error instanceof Error ? error.message : '';
   if (error instanceof PaidApiError && error.stage === 'create') {
     const safeCode = /^[a-z][a-z0-9_-]{0,63}$/.test(code) ? code : 'checkout_requires_reconciliation';
-    return `Заказ не создан: HTTP ${error.status}, ${safeCode}. Исходная попытка сохранена; новая оплата не начинается.`;
+    return `Заказ не создан: ${error.status ? `HTTP ${error.status}` : 'ответ POST недоступен'}, ${safeCode}. Исходная попытка сохранена; новая оплата не начинается.`;
   }
   if (error instanceof PaidApiError && error.status === 404) return 'Сервер пока не нашёл сохранённый запрос. Продолжаем проверять тот же запрос; новый заказ не создаётся.';
   if (error instanceof PaidApiError && error.status === 401) return 'Доступ к прежнему запросу требует восстановления. Сведения о платеже остаются в этом браузере; новая оплата не начинается.';
