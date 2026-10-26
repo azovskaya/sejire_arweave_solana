@@ -6,13 +6,19 @@ compatibility_flags = ["nodejs_compat"]
 [vars]
 PAYMENT_PROVIDER = "mock"
 FUND_API_ENABLED = "true"
-# General paid flow is implemented independently of the historical devnet pilot.
-# Activation requires explicit public recipients and a separate AR budget; an
-# admission pause does not erase existing paid orders or their stored TX bytes.
-CHECKOUT_PAID_ENABLED = "false"
-CHECKOUT_PAID_EXECUTION_ENABLED = "false"
-# Standalone help has its own admission gate and no storage budget requirement.
-CHECKOUT_CONTRIBUTION_ENABLED = "false"
+# Paid mainnet orders use the existing Fund Admin recipient settings. Do not put
+# recipient addresses here: missing settings make new offers fail closed.
+CHECKOUT_PAID_ENABLED = "true"
+CHECKOUT_PAID_EXECUTION_ENABLED = "true"
+CHECKOUT_CONTRIBUTION_ENABLED = "true"
+CHECKOUT_PAID_NETWORK = "mainnet-beta"
+# configuredEntry replaces this fallback with admin-sol-recipients-<revision>
+# whenever the saved Fund Admin settings are present.
+CHECKOUT_PAID_POLICY_VERSION = "admin-sol-recipients-1"
+CHECKOUT_PAID_TREASURY_ADDRESS = "qgoIFw9WsusMRapWzcFg4jNW08HSWvQkpAKOz86BUuI"
+CHECKOUT_PAID_AR_BUDGET_ID = "paid-mainnet-v1"
+CHECKOUT_PAID_AR_BUDGET_WINSTON = "1000000000000"
+CHECKOUT_PAID_MAX_REWARD_WINSTON = "10000000000"
 CHECKOUT_ALLOWED_ORIGINS = "https://azovskaya.github.io,https://sejire.ar.io"
 PUBLISH_PRICE_MINOR = "1500"
 PUBLISH_CURRENCY = "KZT"
