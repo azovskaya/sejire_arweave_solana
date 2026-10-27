@@ -299,6 +299,7 @@ test('request dropped before admission retries explicitly with the same key, tok
 test('a rejected create shows its POST status and safe code after by-key 404 without changing the attempt',async({page,context})=>{
  const state=await installNetwork(context);state.createError='rpc-rate-limited';await openEditor(page);await openPaid(page);
  await requestPayment(page);
+ await expect.poll(()=>state.key).toMatch(/^[a-f0-9]{32}$/);
  const first=await saved(page,state.key);
  await expect(panel(page).getByRole('alert')).toContainText('HTTP 503, rpc-rate-limited');
  await check(page);
