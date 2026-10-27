@@ -301,6 +301,7 @@ test('a rejected create shows its POST status and safe code after by-key 404 wit
  await requestPayment(page);
  await expect.poll(()=>state.key).toMatch(/^[a-f0-9]{32}$/);
  const first=await saved(page,state.key);
+ expect(first.op.id).toBe(state.key);expect(first.op.createAttempted).toBe(true);
  await expect(panel(page).getByRole('alert')).toContainText('HTTP 503, rpc-rate-limited');
  await check(page);
  await expect(panel(page).getByRole('alert')).toContainText('HTTP 503, rpc-rate-limited');
@@ -308,6 +309,7 @@ test('a rejected create shows its POST status and safe code after by-key 404 wit
  await expect(panel(page).getByRole('alert')).toContainText('HTTP 503, rpc-rate-limited');
  const after=await saved(page,state.key);
  expect(after.op.id).toBe(first.op.id);expect(after.op.token).toBe(first.op.token);
+ expect(after.op.createAttempted).toBe(true);
  expect(after.op.serialized).toBe(first.op.serialized);expect(after.op.order).toBeUndefined();
  expect(state.createKeys).toEqual([state.key,state.key]);expect(state.admissions).toBe(0);
  expect(state.requests).toContain(`GET /orders/by-key/${state.key}`);
