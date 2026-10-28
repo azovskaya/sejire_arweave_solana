@@ -1,5 +1,6 @@
 name: SEJIRE checks
 on:
+  workflow_dispatch:
   pull_request:
   push:
     branches: [main, feat/solana-preservation, feat/preservation-v2-simple, feat/promo-funded-preservation]

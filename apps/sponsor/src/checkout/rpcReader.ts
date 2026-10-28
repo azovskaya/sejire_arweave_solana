@@ -102,11 +102,11 @@ export class SolanaRpcReader implements TrustedTransactionReader {
   }
   /** Recover a lost wallet result using the SAME reference and saved message, never a new payment.
    * A bounded/incomplete scan is uncertainty, not proof that no payment happened. */
-  async findByReference(order: PaidOrder, preparation: DurablePaymentPreparation): Promise<ReferencePaymentResult> {
+  async findByReference(order: PaidOrder, preparation: DurablePaymentPreparation, operationDeadline = Date.now() + 22000): Promise<ReferencePaymentResult> {
     try { await validatePaymentPreparation(order, preparation); }
     catch { return { status: 'requires-reconciliation', reason: 'validation-rejected' }; }
     if (this.chain.network !== order.network || this.chain.genesisHash !== preparation.genesisHash) return { status: 'requires-reconciliation', reason: 'wrong-network' };
-    const deadline = Date.now() + 22000, limit = 16;
+    const deadline = operationDeadline, limit = 16;
     let rows: unknown;
     try {
       if (await this.rpc('getGenesisHash', [], deadline) !== this.chain.genesisHash) throw new RpcEvidenceError('wrong-network');

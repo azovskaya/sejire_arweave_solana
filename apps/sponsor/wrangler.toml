@@ -14,6 +14,9 @@ CHECKOUT_CONTRIBUTION_ENABLED = "true"
 CHECKOUT_PAID_NETWORK = "mainnet-beta"
 # Server-only paid Solana RPC endpoint with provider authorization belongs in
 # Worker secret CHECKOUT_SOLANA_RPC_URL, never in this file or the web bundle.
+# Optional JSON array CHECKOUT_SOLANA_RPC_URLS can add up to four more server
+# endpoints (including self-hosted RPC/PATH); keep credentialed URLs as secrets.
+# Paid Mainnet also tries Pocket's public portal, then the Solana public RPC.
 # configuredEntry replaces this fallback with admin-sol-recipients-<revision>
 # whenever the saved Fund Admin settings are present.
 CHECKOUT_PAID_POLICY_VERSION = "admin-sol-recipients-1"

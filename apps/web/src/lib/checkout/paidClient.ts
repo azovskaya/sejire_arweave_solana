@@ -31,7 +31,7 @@ function endpoint(): string {
   return url.origin + '/api/checkout';
 }
 
-async function jsonRequest(url: string, init: RequestInit, signal?: AbortSignal, decode: (source: string) => unknown = JSON.parse): Promise<{ status: number; value: unknown }> {
+async function jsonRequest(url: string, init: RequestInit, signal?: AbortSignal, decode: (source: string) => unknown = JSON.parse): Promise<{ status: number; value: unknown; retryAfter: string | null }> {
   const ctrl = new AbortController();
   let reader: ReadableStreamDefaultReader<Uint8Array> | undefined;
   let body: ReadableStream<Uint8Array> | null = null;
@@ -52,7 +52,7 @@ async function jsonRequest(url: string, init: RequestInit, signal?: AbortSignal,
     for (;;) { const next = await reader.read(); if (ctrl.signal.aborted) throw Error('checkout_request_timed_out'); if (next.done) break; size += next.value.length; if (size > cap) throw Error('checkout_response_too_large'); chunks.push(next.value); }
     const bytes = new Uint8Array(size); let offset = 0;
     for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.length; }
-    return { status: response.status, value: decode(new TextDecoder('utf-8', { fatal: true }).decode(bytes)) };
+    return { status: response.status, value: decode(new TextDecoder('utf-8', { fatal: true }).decode(bytes)), retryAfter: response.headers.get('Retry-After') };
   };
   try { return await Promise.race([read(), aborted]); }
   finally { ctrl.abort(); void (reader ? reader.cancel() : (body as ReadableStream<Uint8Array> | null)?.cancel())?.catch(() => {}); clearTimeout(timer); signal?.removeEventListener('abort', cancel); }
@@ -270,16 +270,55 @@ export async function preparePaidOperation(id: string, wallet: SolanaWalletAdapt
   });
 }
 
-async function rpc(op: PaidOperation, method: string, params: unknown[] = []): Promise<unknown> {
+type RpcCall = (method: string, params?: unknown[]) => Promise<unknown>;
+class RpcUnavailable extends Error {
+  constructor(readonly status: number, readonly retryAfter: string | null = null) { super('solana_unavailable'); }
+}
+const cooledRpc = new Map<string, number>();
+function rpcUrls(op: PaidOperation): string[] {
+  return op.policy.network === 'mainnet-beta'
+    ? ['https://solana.api.pocket.network', SOLANA_RPCS['mainnet-beta']]
+    : [SOLANA_RPCS[op.policy.network]];
+}
+function pauseRpc(url: string, error: RpcUnavailable): void {
+  const seconds = Number(error.retryAfter);
+  const retry = Number.isFinite(seconds) && seconds >= 0 ? seconds * 1000 : Date.parse(error.retryAfter ?? '');
+  const delay = error.status === 403 ? 300000 :
+    Number.isFinite(retry) ? Math.max(60000, Math.min(300000, retry > 1000000000000 ? retry - Date.now() : retry)) : 60000;
+  cooledRpc.set(url, Date.now() + delay);
+}
+async function rpcAt(url: string, method: string, params: unknown[] = []): Promise<unknown> {
   const id = crypto.randomUUID();
-  const response = await jsonRequest(SOLANA_RPCS[op.policy.network], { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', id, method, params }) }, undefined, parseRpcJson);
+  let response: Awaited<ReturnType<typeof jsonRequest>>;
+  try {
+    response = await jsonRequest(url, { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ jsonrpc: '2.0', id, method, params }) }, undefined,
+    source => { try { return parseRpcJson(source); } catch { return null; } });
+  } catch { throw new RpcUnavailable(0); }
   const value = response.value as { jsonrpc?: string; id?: string; error?: unknown; result?: unknown };
-  if (response.status !== 200 || value?.jsonrpc !== '2.0' || value.id !== id || value.error || !Object.hasOwn(value, 'result')) throw Error('solana_unavailable');
+  if (response.status !== 200) throw new RpcUnavailable(response.status, response.retryAfter);
+  if (value?.jsonrpc !== '2.0' || value.id !== id || value.error || !Object.hasOwn(value, 'result'))
+    throw Error('solana_rpc_malformed');
   return value.result;
 }
 
-async function checkPaymentNetwork(op: PaidOperation): Promise<void> {
-  if (await rpc(op, 'getGenesisHash') !== SOLANA_GENESIS[op.policy.network]) throw Error('wrong_solana_network');
+async function withPublicRpc<T>(op: PaidOperation, action: (call: RpcCall) => Promise<T>): Promise<T> {
+  let last: RpcUnavailable | null = null;
+  for (const url of rpcUrls(op)) {
+    if ((cooledRpc.get(url) ?? 0) > Date.now()) continue;
+    const call: RpcCall = async (method, params) => {
+      try { return await rpcAt(url, method, params); }
+      catch (error) { if (error instanceof RpcUnavailable) pauseRpc(url, error); throw error; }
+    };
+    try {
+      if (await call('getGenesisHash') !== SOLANA_GENESIS[op.policy.network]) throw Error('wrong_solana_network');
+      return await action(call);
+    } catch (error) {
+      if (!(error instanceof RpcUnavailable)) throw error;
+      last = error;
+    }
+  }
+  throw last ?? new RpcUnavailable(0);
 }
 
 async function validateSignedTransaction(op: PaidOperation): Promise<void> {
@@ -301,12 +340,12 @@ async function broadcast(op: PaidOperation, isActive: ActiveContext): Promise<vo
   await validateSignedTransaction(op);
   if (op.order.expiresAt <= Date.now()) return;
   requireActive(isActive);
-  await checkPaymentNetwork(op);
+  const selected = await withPublicRpc(op, async call => ({ call,
+    height: await call('getBlockHeight', [{ commitment: 'finalized' }]) }));
   requireActive(isActive);
-  const height = await rpc(op, 'getBlockHeight', [{ commitment: 'finalized' }]);
-  requireActive(isActive);
-  if (!Number.isSafeInteger(height) || (height as number) > op.preparation.lastValidBlockHeight) return;
-  const signature = await rpc(op, 'sendTransaction', [op.signedTransaction, { encoding: 'base64', skipPreflight: false, maxRetries: 2 }]);
+  if (!Number.isSafeInteger(selected.height) || (selected.height as number) > op.preparation.lastValidBlockHeight) return;
+  // A lost send response is uncertain. This invocation never broadcasts to a second RPC.
+  const signature = await selected.call('sendTransaction', [op.signedTransaction, { encoding: 'base64', skipPreflight: false, maxRetries: 2 }]);
   if (signature !== op.signature) throw Error('checkout_signature_mismatch');
 }
 
@@ -320,12 +359,12 @@ export async function payPaidOperation(id: string, preparationId: string, wallet
     const preparation = await validatePaymentPreparation(op.order, op.preparation);
     if (wallet.publicKey.toString() !== op.order.payer) throw Error('wallet_changed');
     requireActive(isActive);
-    await checkPaymentNetwork(op);
-    requireActive(isActive);
-    const fee = await rpc(op, 'getFeeForMessage', [preparation.messageBase64, { commitment: 'finalized' }]) as { value?: unknown };
-    if (rpcU64(fee?.value) !== preparation.feeLamports || BigInt(preparation.feeLamports) > 100000n) throw Error('network_fee_changed');
-    const balance=await rpc(op,'getBalance',[op.order.payer,{commitment:'finalized'}]) as {value?:unknown};
-    if(BigInt(rpcU64(balance?.value))<BigInt(op.order.total)+BigInt(preparation.feeLamports))throw Error('insufficient_wallet_balance');
+    await withPublicRpc(op, async call => {
+      const fee = await call('getFeeForMessage', [preparation.messageBase64, { commitment: 'finalized' }]) as { value?: unknown };
+      if (rpcU64(fee?.value) !== preparation.feeLamports || BigInt(preparation.feeLamports) > 100000n) throw Error('network_fee_changed');
+      const balance = await call('getBalance', [op.order!.payer, { commitment: 'finalized' }]) as { value?: unknown };
+      if (BigInt(rpcU64(balance?.value)) < BigInt(op.order!.total) + BigInt(preparation.feeLamports)) throw Error('insufficient_wallet_balance');
+    });
     requireActive(isActive);
     op = await writePaidOperation({ ...op, signingStarted: true });
     if (!isActive()) {
