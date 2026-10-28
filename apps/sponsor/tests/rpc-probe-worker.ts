@@ -45,7 +45,7 @@ export default {
         archive: { digest: 'b'.repeat(64), bytes: 1, vaultId: 'c'.repeat(32), parentTxId: null },
         storage: { kind: 'arweave-direct', network: 'arweave.N.1', treasuryAddress: policy.treasuryAddress } });
       let observed: { httpStatus?: number; fetchException?: string; responseUrlMismatch?: boolean } = {};
-      const reader = new SolanaRpcReader({ network: policy.network }, async (url, init) => {
+      const reader = new SolanaRpcReader({ network: policy.network, endpointUrl: 'https://solana.api.pocket.network' }, async (url, init) => {
         try {
           const result = await fetch(url, init);
           observed.httpStatus = result.status;
@@ -57,7 +57,7 @@ export default {
           throw error;
         }
       });
-      const deadline = Date.now() + 22000;
+      const deadline = Date.now() + 55000;
       async function check(method: string, params: unknown[], validate: (value: unknown) => void): Promise<unknown> {
         observed = {};
         try {
@@ -97,6 +97,22 @@ export default {
         if (typeof fee !== 'number' || !Number.isSafeInteger(fee) || fee <= 0 || fee > 100000) throw Error('network_fee_not_ready');
       });
       await check('getBalance', [payer, { commitment: 'finalized' }], value => { rpcU64(asObject(value).value); });
+      await check('getBlockHeight', [{ commitment: 'finalized' }], value => {
+        if (typeof value !== 'number' || !Number.isSafeInteger(value) || value < 0) throw Error('invalid_rpc_shape');
+      });
+      const signatures = await check('getSignaturesForAddress',
+        ['Vote111111111111111111111111111111111111111', { commitment: 'finalized', limit: 1 }], value => {
+          if (!Array.isArray(value) || !value.length || typeof asObject(value[0]).signature !== 'string') throw Error('invalid_rpc_shape');
+        }) as Record<string, unknown>[];
+      const knownSignature = String(signatures[0].signature);
+      await check('getSignatureStatuses', [[knownSignature], { searchTransactionHistory: true }], value => {
+        if (!asObject(value).value || !Array.isArray(asObject(value).value) ||
+            (asObject(value).value as unknown[])[0] === null) throw Error('invalid_rpc_shape');
+      });
+      await check('getTransaction', [knownSignature,
+        { commitment: 'finalized', encoding: 'json', maxSupportedTransactionVersion: 0 }], value => {
+          if (!value || !asObject(value).transaction) throw Error('invalid_rpc_shape');
+        });
       return response(200, { schema: 'sejire/rpc-probe/v1', network: policy.network, steps });
     } catch {
       return response(200, { schema: 'sejire/rpc-probe/v1', steps,

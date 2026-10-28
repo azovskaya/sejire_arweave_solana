@@ -41,7 +41,7 @@ jobs:
           cache: npm
           cache-dependency-path: apps/sponsor/package-lock.json
       - run: npm ci --prefix apps/sponsor
-      - name: Probe the pinned Solana RPC from an isolated Cloudflare Worker
+      - name: Probe Pocket Solana RPC from an isolated Cloudflare Worker
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
