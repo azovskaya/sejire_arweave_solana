@@ -39,6 +39,7 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          RPC_PROBE_SOURCE_TOKEN: ${{ secrets.SEJIRE_RPC_PROBE_TOKEN }}
         run: |
           set -euo pipefail
           mkdir -p .cache/rpc-probe
@@ -61,38 +62,11 @@ jobs:
           PY
           }
           trap cleanup EXIT
+          test -n "$RPC_PROBE_SOURCE_TOKEN"
           npx --yes wrangler@4.47.0 deploy --config .cache/rpc-probe/wrangler.toml
-          probe_token="$(openssl rand -hex 32)"
-          echo "::add-mask::$probe_token"
-          printf '%s' "$probe_token" | npx --yes wrangler@4.47.0 secret put RPC_PROBE_TOKEN --config .cache/rpc-probe/wrangler.toml
-          export RPC_PROBE_TOKEN="$probe_token"
-          python3 - <<'PY'
-          import json,os,time,urllib.error,urllib.request
-          url='https://'+os.environ['PROBE_NAME']+'.azovskaya-alissa.workers.dev/probe'
-          try:
-            with urllib.request.urlopen('https://sejire-sponsor.azovskaya-alissa.workers.dev/api/checkout/policy',timeout=15) as check:
-              print('production policy read-only HTTP',check.status)
-          except urllib.error.HTTPError as error:
-            print('production policy read-only HTTP',error.code,'type',error.headers.get('Content-Type','unknown'))
-          value=None
-          for attempt in range(8):
-            request=urllib.request.Request(url,headers={'Authorization':'Bearer '+os.environ['RPC_PROBE_TOKEN']})
-            try:
-              with urllib.request.urlopen(request,timeout=35) as response: value=json.load(response)
-              break
-            except urllib.error.HTTPError as error:
-              if error.code != 403: raise
-              if attempt == 7:
-                print('probe access response type',error.headers.get('Content-Type','unknown'),
-                  'edge challenge',error.headers.get('cf-mitigated','none'))
-                try: code=json.load(error).get('error')
-                except Exception: code='non_json_403'
-                raise RuntimeError('probe access HTTP 403: '+str(code)) from None
-              time.sleep(3)
-          assert value is not None
-          assert value.get('schema')=='sejire/rpc-probe/v1'
-          print(json.dumps({'network':value.get('network'),'steps':value.get('steps'),'error':value.get('error')},separators=(',',':')))
-          PY
+          printf '%s' "$RPC_PROBE_SOURCE_TOKEN" | npx --yes wrangler@4.47.0 secret put RPC_PROBE_TOKEN --config .cache/rpc-probe/wrangler.toml
+          echo 'Disposable read-only RPC probe ready for remote inspection (5 minute window).'
+          sleep 300
   fund-worker:
     runs-on: ubuntu-latest
     timeout-minutes: 20
