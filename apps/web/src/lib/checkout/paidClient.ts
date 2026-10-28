@@ -272,7 +272,11 @@ export async function preparePaidOperation(id: string, wallet: SolanaWalletAdapt
 
 type RpcCall = (method: string, params?: unknown[]) => Promise<unknown>;
 class RpcUnavailable extends Error {
-  constructor(readonly status: number, readonly retryAfter: string | null = null) { super('solana_unavailable'); }
+  readonly status: number;
+  readonly retryAfter: string | null;
+  constructor(status: number, retryAfter: string | null = null) {
+    super('solana_unavailable'); this.status = status; this.retryAfter = retryAfter;
+  }
 }
 const cooledRpc = new Map<string, number>();
 function rpcUrls(op: PaidOperation): string[] {
