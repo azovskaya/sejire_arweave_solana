@@ -26,7 +26,7 @@ jobs:
   rpc-probe:
     if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/feat/promo-funded-preservation'
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -70,7 +70,8 @@ jobs:
           python3 - <<'PY'
           import pathlib,time
           path=pathlib.Path('.cache/rpc-probe/tail.log')
-          for attempt in range(36):
+          # New Cloudflare Cron Triggers can take up to 15 minutes to propagate.
+          for attempt in range(210):
             if path.exists():
               for line in path.read_text(errors='replace').splitlines():
                 if 'rpc_probe_result ' in line:
