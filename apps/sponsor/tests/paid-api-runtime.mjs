@@ -266,7 +266,6 @@ try {
     wire.rpcForbiddenDefault = true;
     assert.deepEqual(await create(token, key), { status: 503, body: { error: 'rpc-unavailable' } });
     assert.deepEqual(await call(`/orders/by-key/${key}`, token), { status: 404, body: { error: 'order_not_found' } });
-    wire.rpcForbiddenDefault = false;
     await start(true, true, true, { db, bindings: { CHECKOUT_SOLANA_RPC_URL: 'https://paid-rpc.example/v1/test-access' } });
     const first = await create(token, key);
     assert.equal(first.status, 201);
@@ -276,6 +275,7 @@ try {
     assert.equal(second.body.record.order.id, first.body.record.order.id);
     assert.equal((await call(`/orders/by-key/${key}`, token)).body.record.order.id, first.body.record.order.id);
     assert.equal((await internal({ action: '__testPaidCounts' })).paid_orders, 1);
+    wire.rpcForbiddenDefault = false;
     await start(true, true);
   });
   await test('v2 admission persists exact ciphertext/parent/policy and one idempotent order', async () => {
@@ -451,7 +451,8 @@ try {
     assert.equal((await inspect(helpOrder.id)).credits.length,1);assert.equal(wire.calls.length,calls);
     assert.equal((await call('/orders/by-key/standalone_help_key_01',helper)).body.record.order.id,helpOrder.id);
   });
-  assert(wire.calls.every(call => ['https://arweave.net', 'https://g8way.io', 'https://api.mainnet-beta.solana.com'].includes(new URL(call.url).origin)));
+  assert(wire.calls.every(call => ['https://arweave.net', 'https://g8way.io', 'https://api.mainnet-beta.solana.com',
+    'https://paid-rpc.example'].includes(new URL(call.url).origin)));
   console.log(`paid-api.runtime: PASS (${passed} scenarios); actual API/DO/SQLite/global fetch/alarm, fresh workerd isolates, unmatched outbound denied, no real payments or deployment`);
 } finally {
   await runtime?.dispose(); await fetchMock.close(); await rm(temp, { recursive: true, force: true });
