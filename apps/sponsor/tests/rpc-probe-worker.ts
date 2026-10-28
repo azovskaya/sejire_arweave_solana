@@ -17,6 +17,12 @@ const asObject = (value: unknown): Record<string, unknown> => {
 
 /** Disposable, token-gated Cloudflare probe. No ledger, AR signer, order creation, or broadcast. */
 export default {
+  async scheduled(_event: unknown, env: ProbeEnv): Promise<void> {
+    const result = await this.fetch(new Request('https://probe.invalid/probe',
+      { headers: { Authorization: 'Bearer scheduled-probe' } }),
+    { ...env, RPC_PROBE_TOKEN: 'scheduled-probe' });
+    console.log('rpc_probe_result', await result.text());
+  },
   async fetch(request: Request, env: ProbeEnv): Promise<Response> {
     if (request.method !== 'GET' || new URL(request.url).pathname !== '/probe') return response(404, { error: 'not_found' });
     if (!env.RPC_PROBE_TOKEN || request.headers.get('Authorization') !== `Bearer ${env.RPC_PROBE_TOKEN}`)
