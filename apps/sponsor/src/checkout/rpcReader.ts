@@ -8,7 +8,7 @@ import { parseRpcJson } from '../../../../packages/checkout/rpcJson';
 
 export const DEVNET_GENESIS = SOLANA_GENESIS.devnet;
 export const MAINNET_GENESIS = SOLANA_GENESIS['mainnet-beta'];
-export type ServerRpcConfig = Readonly<{ network: Network; timeoutMs?: number }>;
+export type ServerRpcConfig = Readonly<{ network: Network; timeoutMs?: number; endpointUrl?: string }>;
 /** Construct only from server configuration. No browser URL/network/finality parameters.
  * Supporting a network here never enables API admission, wallet signing or broadcast.
  */
@@ -20,8 +20,14 @@ export class SolanaRpcReader implements TrustedTransactionReader {
   private readonly transport: typeof fetch;
   constructor(config: ServerRpcConfig, transport: typeof fetch = (input, init) => fetch(input, init)) {
     this.transport = transport;
-    if ((config.network !== 'devnet' && config.network !== 'mainnet-beta') || Object.keys(config).some(k => k !== 'network' && k !== 'timeoutMs')) throw new Error('invalid_server_rpc_configuration');
-    this.endpoint = SOLANA_RPCS[config.network];
+    if ((config.network !== 'devnet' && config.network !== 'mainnet-beta') || Object.keys(config).some(k => k !== 'network' && k !== 'timeoutMs' && k !== 'endpointUrl')) throw new Error('invalid_server_rpc_configuration');
+    if (config.endpointUrl !== undefined) {
+      let endpoint: URL;
+      try { endpoint = new URL(config.endpointUrl); } catch { throw new Error('invalid_server_rpc_configuration'); }
+      if (endpoint.protocol !== 'https:' || !endpoint.hostname || endpoint.username || endpoint.password || endpoint.hash ||
+          endpoint.hostname === 'localhost' || endpoint.hostname.endsWith('.localhost')) throw new Error('invalid_server_rpc_configuration');
+      this.endpoint = endpoint.href;
+    } else this.endpoint = SOLANA_RPCS[config.network];
     this.chain = Object.freeze({ network: config.network, genesisHash: SOLANA_GENESIS[config.network] });
     this.timeoutMs = config.timeoutMs ?? 10000;
     if (!Number.isSafeInteger(this.timeoutMs) || this.timeoutMs < 1 || this.timeoutMs > 30000) throw new Error('invalid_rpc_timeout');
@@ -145,6 +151,13 @@ export class SolanaRpcReader implements TrustedTransactionReader {
     if (matches.length === 1) return matches[0];
     return { status: 'requires-reconciliation', reason: candidates.length ? 'validation-rejected' : 'not-found' };
   }
+}
+
+/** The paid endpoint is a Worker secret. Historical orders keep their own network. */
+export function configuredPaidRpcReader(env: { CHECKOUT_PAID_NETWORK?: string; CHECKOUT_SOLANA_RPC_URL?: string }, network: Network): SolanaRpcReader {
+  return new SolanaRpcReader({ network,
+    ...(env.CHECKOUT_PAID_NETWORK === network && env.CHECKOUT_SOLANA_RPC_URL
+      ? { endpointUrl: env.CHECKOUT_SOLANA_RPC_URL } : {}) });
 }
 
 function retryDelay(value:string|null):number|undefined {if(value===null)return undefined;const seconds=Number(value);if(Number.isFinite(seconds)&&seconds>=0)return seconds*1000;const date=Date.parse(value);return Number.isFinite(date)?Math.max(0,date-Date.now()):undefined;}

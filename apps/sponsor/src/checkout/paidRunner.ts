@@ -1,7 +1,7 @@
 import type { PaidPolicy, CheckoutPolicy } from '../../../../packages/checkout/paid';
 import type { TrustedTransactionReader } from './reconciliation';
 import { validatePreparedPayment } from './paymentValidator';
-import { SolanaRpcReader } from './rpcReader';
+import { configuredPaidRpcReader } from './rpcReader';
 import { DirectArweavePreservation } from './directPreservation';
 import { PaidLedger } from './paidLedger';
 import type { PaidEnv } from './paidPolicy';
@@ -25,7 +25,7 @@ export async function runPaidOrder(ledger:PaidLedger,env:PaidEnv,id:string,deps:
     let work=await ledger.claim(id,lease,Date.now());if(!work)return;acquired=true;
     if(!work.record.payment){
       if(!work.preparation){reason='payment_not_prepared';return;}
-      const reader=deps.reader?.(work.policy)??new SolanaRpcReader({network:work.record.order.network});
+      const reader=deps.reader?.(work.policy)??configuredPaidRpcReader(env,work.record.order.network);
       if(work.record.pendingSignature){
         const evidence=await reader.read(work.record.pendingSignature);
         if(!evidence){reason='not-found';return;}

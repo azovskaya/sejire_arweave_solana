@@ -12,6 +12,8 @@ CHECKOUT_PAID_ENABLED = "true"
 CHECKOUT_PAID_EXECUTION_ENABLED = "true"
 CHECKOUT_CONTRIBUTION_ENABLED = "true"
 CHECKOUT_PAID_NETWORK = "mainnet-beta"
+# Server-only paid Solana RPC endpoint with provider authorization belongs in
+# Worker secret CHECKOUT_SOLANA_RPC_URL, never in this file or the web bundle.
 # configuredEntry replaces this fallback with admin-sol-recipients-<revision>
 # whenever the saved Fund Admin settings are present.
 CHECKOUT_PAID_POLICY_VERSION = "admin-sol-recipients-1"

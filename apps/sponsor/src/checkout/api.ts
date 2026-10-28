@@ -5,7 +5,7 @@ import { DurableOrderStore } from './durableStore';
 import type { AtomicOrderStore, StoredOrder, CommitResult } from './store';
 import type { ValidatedPayment } from './paymentValidator';
 import { reconcilePayment, type TrustedTransactionReader } from './reconciliation';
-import { SolanaRpcReader } from './rpcReader';
+import { SolanaRpcReader, configuredPaidRpcReader } from './rpcReader';
 import { RpcPaymentPreparer, type PaymentPreparer } from './paymentPreparation';
 import { TestnetPreservationService, checkedArchive, type PreservationEnv, type PreservationService, type UploadPlan, type UploadAcceptance } from './preservation';
 import { envelopeDigest } from '../../../web/src/lib/solana/policy';
@@ -214,7 +214,7 @@ export async function checkoutApi(request: Request, env: CheckoutApiEnv,
           if(await paidPolicyHash(policy)!==input.policyHash)throw new HttpError(409,'paid_policy_changed');
           const now=Date.now(),order=await createPaidOrderFromPolicy(policy,{id:randomHex(16),payer:input.payer,reference:reference(),
             createdAt:now,expiresAt:now+15*60000,kind:'contribution',contribution});
-          await new RpcPaymentPreparer(new SolanaRpcReader({network:order.network})).preparePaid(order);
+          await new RpcPaymentPreparer(configuredPaidRpcReader(env,order.network)).preparePaid(order);
           const result=await ledger.call<{reused:boolean}>({action:'paidCreate',input:{hash,key,intent:normalized,order,policy}});
           return reply(result.reused?200:201,result);
         }
@@ -229,7 +229,7 @@ export async function checkoutApi(request: Request, env: CheckoutApiEnv,
         const prepared=await provider.prepare({orderId:order.id,serialized:input.serialized as string,archive:archive!});
         // Account/network/balance readiness precedes the offer. This temporary
         // message is not returned to the browser; /prepare saves its own message.
-        await new RpcPaymentPreparer(new SolanaRpcReader({network:order.network})).preparePaid(order);
+        await new RpcPaymentPreparer(configuredPaidRpcReader(env,order.network)).preparePaid(order);
         const result=await ledger.call<{reused:boolean}>({action:'paidCreate',input:{hash,key,intent:normalized,order,policy,
           serialized:input.serialized as string,prepared,budgetLimit,balance:ready.balanceWinston,balanceRevision}});
         return reply(result.reused?200:201,result);
@@ -262,7 +262,7 @@ export async function checkoutApi(request: Request, env: CheckoutApiEnv,
         if(paid.preparation)return reply(200,paid.preparation);
         if(paid.record.payment||paid.record.pendingSignature)throw new HttpError(409,'previous_payment_unresolved');
         if(paid.record.order.expiresAt<=Date.now())throw new HttpError(409,'order_expired');
-        const candidate=await new RpcPaymentPreparer(new SolanaRpcReader({network:paid.record.order.network})).preparePaid(paid.record.order);
+        const candidate=await new RpcPaymentPreparer(configuredPaidRpcReader(env,paid.record.order.network)).preparePaid(paid.record.order);
         return reply(200,await ledger.call<DurablePaymentPreparation>({action:'paidPrepare',hash,id,preparation:candidate}));
       }
       if(match![2]==='reserve'){

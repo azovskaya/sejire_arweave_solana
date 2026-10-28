@@ -183,6 +183,8 @@ await test('client cannot provide paid/evidence/finalized/recipient/amount/RPC',
   assert.deepEqual(parseVerificationRequest({ orderId: order.id, signature: sig(5) }), { orderId: order.id, signature: sig(5) });
   assert.throws(() => new SolanaRpcReader({ network: 'testnet' } as never));
   assert.throws(() => new SolanaRpcReader({ network: 'devnet', rpcUrl: 'https://attacker' } as never));
+  for (const endpointUrl of ['http://paid-rpc.example', 'https://localhost/rpc', 'https://user:password@paid-rpc.example', 'https://paid-rpc.example/#fragment'])
+    assert.throws(() => new SolanaRpcReader({ network: 'mainnet-beta', endpointUrl }), /invalid_server_rpc_configuration/);
 });
 await test('bounded RPC response and missing result reject without credit', async () => {
   const large = (async () => new Response('x'.repeat(2 * 1024 * 1024 + 1))) as typeof fetch;

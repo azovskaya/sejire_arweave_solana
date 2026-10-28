@@ -34,13 +34,15 @@ const arKey = await webcrypto.subtle.exportKey('jwk', arPair.privateKey);
 const treasury = createHash('sha256').update(Buffer.from(arKey.n, 'base64url')).digest('base64url');
 const fetchMock = createFetchMock(); fetchMock.disableNetConnect();
 const wire = { calls: [], payments: new Map(), archives: new Map(), submissions: new Map(),
-  lostSingleAck: true, failChunkOnce: true, droppedChunks: 0, chunkPosts: 0, rpcRateLimited: false };
+  lostSingleAck: true, failChunkOnce: true, droppedChunks: 0, chunkPosts: 0, rpcRateLimited: false, rpcForbiddenDefault: false };
 const observe = (url, method) => wire.calls.push({ url, method });
 const parsedBody = options => JSON.parse(typeof options.body === 'string' ? options.body : Buffer.from(options.body).toString());
 
-fetchMock.get('https://api.mainnet-beta.solana.com').intercept({ path: '/', method: 'POST' }).reply(options => {
-  observe('https://api.mainnet-beta.solana.com/', 'POST');
+const rpcReply = (options, endpoint) => {
+  observe(endpoint, 'POST');
   const request = parsedBody(options); let result;
+  if (wire.rpcForbiddenDefault && endpoint === 'https://api.mainnet-beta.solana.com/' && request.method === 'getGenesisHash')
+    return { statusCode: 403, data: 'synthetic provider denial' };
   if (wire.rpcRateLimited && request.method === 'getGenesisHash') return { statusCode: 429, data: 'synthetic rate limit' };
   if (request.method === 'getGenesisHash') result = genesis;
   else if (request.method === 'getAccountInfo') result = { context: { slot: 100 }, value: { owner: system, executable: false } };
@@ -59,7 +61,10 @@ fetchMock.get('https://api.mainnet-beta.solana.com').intercept({ path: '/', meth
   } else if (request.method === 'getTransaction') result = wire.payments.get(request.params[0])?.raw ?? null;
   else throw Error(`Unexpected synthetic RPC method: ${request.method}`);
   return { statusCode: 200, data: JSON.stringify({ jsonrpc: '2.0', id: request.id, result }) };
-}).persist();
+};
+for (const [host, path] of [['https://api.mainnet-beta.solana.com', '/'], ['https://paid-rpc.example', '/v1/test-access']]) {
+  fetchMock.get(host).intercept({ path, method: 'POST' }).reply(options => rpcReply(options, host + path)).persist();
+}
 
 for (const host of ['https://arweave.net', 'https://g8way.io']) {
   const pool = fetchMock.get(host);
@@ -253,6 +258,25 @@ try {
       }
       await noAdmitted(2);
     } finally { wire.rpcRateLimited = false; }
+  });
+  await test('provider HTTP 403 leaves the same attempt unadmitted; server-only RPC access admits it once', async () => {
+    const db = 'rpc-retry-db', key = 'paid_rpc_denied_retry_01';
+    await start(true, true, true, { db });
+    const token = (await call('/session', null, {})).body.accessToken;
+    wire.rpcForbiddenDefault = true;
+    assert.deepEqual(await create(token, key), { status: 503, body: { error: 'rpc-unavailable' } });
+    assert.deepEqual(await call(`/orders/by-key/${key}`, token), { status: 404, body: { error: 'order_not_found' } });
+    wire.rpcForbiddenDefault = false;
+    await start(true, true, true, { db, bindings: { CHECKOUT_SOLANA_RPC_URL: 'https://paid-rpc.example/v1/test-access' } });
+    const first = await create(token, key);
+    assert.equal(first.status, 201);
+    assert.deepEqual(first.body.record.order.archive, tiny.archive);
+    const second = await create(token, key);
+    assert.equal(second.status, 200);
+    assert.equal(second.body.record.order.id, first.body.record.order.id);
+    assert.equal((await call(`/orders/by-key/${key}`, token)).body.record.order.id, first.body.record.order.id);
+    assert.equal((await internal({ action: '__testPaidCounts' })).paid_orders, 1);
+    await start(true, true);
   });
   await test('v2 admission persists exact ciphertext/parent/policy and one idempotent order', async () => {
     const made = await create(a, 'paid_first_order_01'); assert.equal(made.status, 201); first = made.body.record.order;
