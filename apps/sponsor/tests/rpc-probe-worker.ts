@@ -1,6 +1,6 @@
 import bs58 from 'bs58';
 import { assertBase58, createPaidOrder, SYSTEM_PROGRAM } from '../../../packages/checkout/order';
-import { buildPaidPaymentMessage, SOLANA_GENESIS, type PaidPolicy } from '../../../packages/checkout/paid';
+import { buildPaidPaymentMessage, SOLANA_GENESIS } from '../../../packages/checkout/paid';
 import { rpcU64 } from '../../../packages/checkout/rpcJson';
 import { SolanaRpcReader } from '../src/checkout/rpcReader';
 import { RpcEvidenceError } from '../src/checkout/rpcErrors';
@@ -8,7 +8,6 @@ import { RpcEvidenceError } from '../src/checkout/rpcErrors';
 type ProbeEnv = { RPC_PROBE_TOKEN?: string };
 type Step = { method: string; outcome: 'ok' | 'error'; reason?: string; httpStatus?: number;
   rpcCode?: number; fetchException?: string; responseUrlMismatch?: boolean };
-const POLICY_URL = 'https://sejire-sponsor.azovskaya-alissa.workers.dev/api/checkout/policy';
 const headers = { 'Content-Type': 'application/json', 'Cache-Control': 'no-store', 'Referrer-Policy': 'no-referrer' };
 const response = (status: number, value: unknown) => new Response(JSON.stringify(value), { status, headers });
 const asObject = (value: unknown): Record<string, unknown> => {
@@ -24,22 +23,21 @@ export default {
       return response(403, { error: 'forbidden' });
     const steps: Step[] = [];
     try {
-      const policyResponse = await fetch(POLICY_URL, { method: 'GET', redirect: 'manual' });
-      if (!policyResponse.ok) throw Error('policy_unavailable');
-      const offered = asObject(await policyResponse.json());
-      const policy = offered.policy as PaidPolicy;
-      if (!policy || policy.network !== 'mainnet-beta' || policy.genesisHash !== SOLANA_GENESIS['mainnet-beta'] ||
-          policy.serviceLamports !== '30000000') throw Error('policy_mismatch');
+      // Public production terms from Fund Admin revision 1. The probe has no production bindings.
+      const policy = { network: 'mainnet-beta' as const, version: 'admin-sol-recipients-1', serviceLamports: '30000000' as const,
+        serviceRecipient: 'CStQTX8Mk3oX23sro6rHNRVtia1TQMdtW5epdr9YFPEj',
+        fundRecipient: 'FeCqnd4J5W9yzgCWrSkce5m86AP11ihRAGEV5jtHseYJ',
+        treasuryAddress: 'qgoIFw9WsusMRapWzcFg4jNW08HSWvQkpAKOz86BUuI' };
       const payer = bs58.encode(new Uint8Array(32).fill(7));
       const reference = bs58.encode(new Uint8Array(32).fill(8));
       const now = Date.now();
       const order = createPaidOrder({ id: 'a'.repeat(32), kind: 'preservation', network: policy.network,
         asset: 'SOL', payer, reference, createdAt: now, expiresAt: now + 15 * 60000,
-        policyVersion: policy.version, policyHash: String(offered.policyHash),
+        policyVersion: policy.version, policyHash: '0'.repeat(64),
         servicePayment: { amount: policy.serviceLamports, recipient: policy.serviceRecipient },
         fundContribution: { amount: '0', recipient: policy.fundRecipient },
         archive: { digest: 'b'.repeat(64), bytes: 1, vaultId: 'c'.repeat(32), parentTxId: null },
-        storage: { kind: 'arweave-direct', network: 'arweave.N.1', treasuryAddress: policy.storage.treasuryAddress } });
+        storage: { kind: 'arweave-direct', network: 'arweave.N.1', treasuryAddress: policy.treasuryAddress } });
       let observed: { httpStatus?: number; fetchException?: string; responseUrlMismatch?: boolean } = {};
       const reader = new SolanaRpcReader({ network: policy.network }, async (url, init) => {
         try {
