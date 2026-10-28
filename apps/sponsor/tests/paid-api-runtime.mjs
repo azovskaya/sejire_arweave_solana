@@ -415,7 +415,8 @@ try {
   let helpPolicy,helper,helpOrder,helpPreparation,helpPayment;
   const helpCreate=(payload={},key='standalone_help_key_01')=>call('/orders',helper,{kind:'contribution',payer,contribution:'0.005',
     policyHash:helpPolicy.contributionPolicyHash,...payload},{'Idempotency-Key':key});
-  const onlySolSince=index=>assert(wire.calls.slice(index).every(row=>row.url==='https://api.mainnet-beta.solana.com/'));
+  const onlySolSince=index=>assert(wire.calls.slice(index).every(row=>
+    ['https://api.mainnet-beta.solana.com/','https://solana.api.pocket.network/'].includes(row.url)));
   await test('standalone readiness has its own explicit gate and works without AR settings, signer or preservation admission',async()=>{
     const before=wire.calls.length,result=await call('/policy/contribution');assert.equal(result.status,200);helpPolicy=result.body;
     assert.equal(helpPolicy.ready,false);assert.equal(helpPolicy.contributionReady,true);assert.equal(helpPolicy.policy,undefined);
