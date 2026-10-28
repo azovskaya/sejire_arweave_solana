@@ -51,22 +51,26 @@ jobs:
           compatibility_date = "2026-07-01"
           compatibility_flags = ["nodejs_compat"]
           EOF
-          cleanup() {
-            python3 - <<'PY'
-          import os,urllib.request
-          name=os.environ['PROBE_NAME']
-          assert name.startswith('sejire-rpc-probe-') and os.environ['GITHUB_RUN_ID'] in name
-          url='https://api.cloudflare.com/client/v4/accounts/'+os.environ['CLOUDFLARE_ACCOUNT_ID']+'/workers/scripts/'+name
-          request=urllib.request.Request(url,method='DELETE',headers={'Authorization':'Bearer '+os.environ['CLOUDFLARE_API_TOKEN']})
-          with urllib.request.urlopen(request,timeout=20) as response: print('Disposable probe deletion HTTP',response.status)
-          PY
-          }
-          trap cleanup EXIT
           test -n "$RPC_PROBE_SOURCE_TOKEN"
-          npx --yes wrangler@4.47.0 deploy --config .cache/rpc-probe/wrangler.toml
-          printf '%s' "$RPC_PROBE_SOURCE_TOKEN" | npx --yes wrangler@4.47.0 secret put RPC_PROBE_TOKEN --config .cache/rpc-probe/wrangler.toml
-          echo 'Disposable read-only RPC probe ready for remote inspection (5 minute window).'
-          sleep 300
+          printf 'RPC_PROBE_TOKEN="%s"\n' "$RPC_PROBE_SOURCE_TOKEN" > .cache/rpc-probe/.dev.vars
+          chmod 600 .cache/rpc-probe/.dev.vars
+          npx --yes wrangler@4.47.0 dev --remote --config .cache/rpc-probe/wrangler.toml --port 8787 > .cache/rpc-probe/dev.log 2>&1 &
+          dev_pid=$!
+          trap 'kill "$dev_pid" 2>/dev/null || true' EXIT
+          python3 - <<'PY'
+          import json,os,time,urllib.error,urllib.request
+          url='http://127.0.0.1:8787/probe'
+          for attempt in range(24):
+            try:
+              request=urllib.request.Request(url,headers={'Authorization':'Bearer '+os.environ['RPC_PROBE_SOURCE_TOKEN']})
+              with urllib.request.urlopen(request,timeout=35) as response: value=json.load(response)
+              assert value.get('schema')=='sejire/rpc-probe/v1'
+              print(json.dumps({'network':value.get('network'),'steps':value.get('steps'),'error':value.get('error')},separators=(',',':')))
+              break
+            except urllib.error.URLError as error:
+              if attempt == 23: raise RuntimeError('remote_preview_transport_'+type(error.reason).__name__) from None
+            time.sleep(5)
+          PY
   fund-worker:
     runs-on: ubuntu-latest
     timeout-minutes: 20
