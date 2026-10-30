@@ -275,9 +275,14 @@ try {
     await start(true, true, true, { db });
     const token = (await call('/session', null, {})).body.accessToken;
     wire.rpcForbiddenDefault = true; wire.rpcForbiddenPocket = true;
+    const denied = await call('/rpc-health');
+    assert.equal(denied.status, 200); assert.equal(denied.body.ready, false);
+    assert.equal(denied.body.method, 'getGenesisHash'); assert.equal(denied.body.httpStatus, 403);
+    assert.equal((await call('/policy')).body.ready, false, 'an AR-ready offer is not payment-ready without RPC');
     assert.deepEqual(await create(token, key), { status: 503, body: { error: 'rpc-unavailable' } });
     assert.deepEqual(await call(`/orders/by-key/${key}`, token), { status: 404, body: { error: 'order_not_found' } });
     await start(true, true, true, { db, bindings: { CHECKOUT_SOLANA_RPC_URL: 'https://paid-rpc.example/v1/test-access' } });
+    assert.equal((await call('/rpc-health')).body.ready, true);
     const first = await create(token, key);
     assert.equal(first.status, 201);
     assert.deepEqual(first.body.record.order.archive, tiny.archive);
