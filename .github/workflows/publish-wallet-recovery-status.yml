@@ -1,0 +1,416 @@
+name: Publish accepted wallet recovery status
+
+# Install only as .github/workflows/publish-wallet-recovery-status.yml in a new
+# gh-pages commit whose sole parent is the pinned, accepted static snapshot.
+# The checked artifact for source 9f43026b56c177f67f2010597e6ff1dce428982b
+# is verified against both editor paths without rebuilding or writing refs.
+# Keep the existing github-pages environment and its protection rules.
+on:
+  push:
+    branches: [gh-pages]
+    paths: ['.github/workflows/publish-wallet-recovery-status.yml']
+
+permissions:
+  contents: read
+  actions: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: gh-pages-deploy
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 2
+          persist-credentials: false
+
+      - name: Verify the pinned static snapshot and exact checked artifact
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          APPROVED_PAGES: '3c1f78a297b83b3fdb90e1631ebb074209a770fc'
+          APPROVED_TREE: '00fc4df97bedcb557bd351bae8e969c870167496'
+          ACCEPTED_ARTIFACT_ID: '12986335846'
+          ACCEPTED_ZIP_SHA256: '9e702ea510850a35486301f440ace8d07ba4ef195bb2efdd974ceb6a9d09e405'
+        run: |
+          set -euo pipefail
+          [[ "$APPROVED_PAGES" =~ ^[a-f0-9]{40}$ ]]
+          [[ "$APPROVED_TREE" =~ ^[a-f0-9]{40}$ ]]
+          [[ "$ACCEPTED_ARTIFACT_ID" =~ ^[1-9][0-9]*$ ]]
+          [[ "$ACCEPTED_ZIP_SHA256" =~ ^[a-f0-9]{64}$ ]]
+          [[ "$GITHUB_SHA" =~ ^[a-f0-9]{40}$ ]]
+          test "$GITHUB_REPOSITORY" = 'azovskaya/sejire_arweave_solana'
+          test "$GITHUB_REF" = 'refs/heads/gh-pages'
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git rev-list --parents -n 1 HEAD)" = "$GITHUB_SHA $APPROVED_PAGES"
+          test "$(git rev-parse "$APPROVED_PAGES^{tree}")" = "$APPROVED_TREE"
+          test "$(git diff --no-renames --name-status "$APPROVED_PAGES" HEAD --)" = $'A\t.github/workflows/publish-wallet-recovery-status.yml'
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+          python3 - <<'PY'
+          import os, pathlib, stat, subprocess
+
+          # Reject links/submodules and ambiguous paths before extracting the
+          # exact parent. The release workflow itself is never published.
+          entries = subprocess.check_output(['git', 'ls-tree', '-r', '-z', os.environ['APPROVED_PAGES']])
+          seen = set()
+          for entry in entries.split(b'\0'):
+              if not entry:
+                  continue
+              metadata, raw_path = entry.split(b'\t', 1)
+              mode, kind, _ = metadata.split()
+              path = raw_path.decode('utf-8', 'strict')
+              parts = path.split('/')
+              if kind != b'blob' or mode not in (b'100644', b'100755'):
+                  raise RuntimeError('Static parent contains a link or unsupported Git object')
+              if (path in seen or any(part in ('', '.', '..') for part in parts)
+                      or '\\' in path or any(ord(char) < 32 or ord(char) == 127 for char in path)
+                      or pathlib.PurePosixPath(path).is_absolute()):
+                  raise RuntimeError('Static parent contains an unsafe path')
+              seen.add(path)
+          PY
+          mkdir .pages-public .pages-download
+          git archive "$APPROVED_PAGES" | tar -x -C .pages-public
+          node --input-type=module <<'NODE'
+          import { createHash } from 'node:crypto';
+          import { readFileSync, writeFileSync } from 'node:fs';
+
+          const repo = 'azovskaya/sejire_arweave_solana';
+          const source = '9f43026b56c177f67f2010597e6ff1dce428982b';
+          const accepted = {
+            sourceCommit: source,
+            publishedByCommit: source,
+            artifact: 'native-admin-build',
+            run: Number('41072155928'),
+            artifactId: Number(process.env.ACCEPTED_ARTIFACT_ID),
+            zipSha256: process.env.ACCEPTED_ZIP_SHA256,
+          };
+          const maxZipBytes = 30_000_000;
+          if (process.env.GITHUB_REPOSITORY !== repo || !process.env.GH_TOKEN ||
+              !Number.isSafeInteger(accepted.run) || accepted.run <= 0 ||
+              !Number.isSafeInteger(accepted.artifactId) || accepted.artifactId <= 0 ||
+              !/^[a-f0-9]{64}$/.test(accepted.zipSha256 ?? '')) {
+            throw new Error('Accepted release placeholders must be replaced with verified pins');
+          }
+          const provenanceFiles = [
+            '.pages-public/build-provenance.json',
+            '.pages-public/native-admin/build-provenance.json',
+          ];
+          for (const path of provenanceFiles) {
+            const bytes = readFileSync(path);
+            if (bytes.length > 8192) throw new Error('Oversized build provenance');
+            const p = JSON.parse(bytes.toString('utf8'));
+            if (!p || typeof p !== 'object' || Array.isArray(p) ||
+                Object.keys(p).sort().join(',') !== Object.keys(accepted).sort().join(',') ||
+                Object.entries(accepted).some(([key, value]) => p[key] !== value)) {
+              throw new Error(`Staged build provenance differs from the accepted source: ${path}`);
+            }
+          }
+
+          async function boundedBytes(response, limit) {
+            const declared = response.headers.get('content-length');
+            if (declared !== null && (!/^\d+$/.test(declared) || Number(declared) > limit)) {
+              await response.body?.cancel();
+              throw new Error('Release response exceeds its size limit');
+            }
+            if (!response.body) throw new Error('Release response body is missing');
+            const reader = response.body.getReader();
+            const chunks = [];
+            let size = 0;
+            try {
+              for (;;) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                size += value.length;
+                if (size > limit) throw new Error('Release response exceeds its size limit');
+                chunks.push(value);
+              }
+              return Buffer.concat(chunks, size);
+            } catch {
+              throw new Error('Release response could not be read within its size limit');
+            } finally {
+              await reader.cancel().catch(() => {});
+            }
+          }
+          async function request(url, options, label) {
+            try { return await fetch(url, options); }
+            catch { throw new Error(`${label} request failed`); }
+          }
+          const apiRoot = `https://api.github.com/repos/${repo}/`;
+          const headers = {
+            Authorization: `Bearer ${process.env.GH_TOKEN}`,
+            Accept: 'application/vnd.github+json',
+            'X-GitHub-Api-Version': '2022-11-28',
+          };
+          async function api(path) {
+            const response = await request(apiRoot + path, {
+              headers, redirect: 'error', credentials: 'omit',
+              signal: AbortSignal.timeout(20000),
+            }, 'GitHub verification');
+            if (!response.ok) throw new Error(`GitHub verification HTTP ${response.status}`);
+            return JSON.parse((await boundedBytes(response, 2_000_000)).toString('utf8'));
+          }
+          const run = await api(`actions/runs/${accepted.run}`);
+          if (run.id !== accepted.run || run.head_sha !== source || run.name !== 'SEJIRE checks' ||
+              run.path !== '.github/workflows/checks.yml' || run.status !== 'completed' ||
+              run.conclusion !== 'success' || run.repository?.full_name !== repo ||
+              run.head_repository?.full_name !== repo) {
+            throw new Error('The exact accepted source checks are not successful');
+          }
+          const artifacts = [];
+          let total = null;
+          for (let page = 1; page <= 10; page++) {
+            const listing = await api(`actions/runs/${accepted.run}/artifacts?per_page=100&page=${page}`);
+            if (!Number.isSafeInteger(listing.total_count) || listing.total_count < 0 || listing.total_count > 1000 ||
+                !Array.isArray(listing.artifacts) || listing.artifacts.length > 100 ||
+                (total !== null && listing.total_count !== total)) {
+              throw new Error('Invalid or changing checked artifact listing');
+            }
+            total = listing.total_count;
+            artifacts.push(...listing.artifacts);
+            if (artifacts.length >= total) break;
+            if (!listing.artifacts.length) throw new Error('Incomplete checked artifact listing');
+          }
+          if (artifacts.length !== total || new Set(artifacts.map(a => a.id)).size !== artifacts.length) {
+            throw new Error('Incomplete or duplicate checked artifact listing');
+          }
+          const matches = artifacts.filter(a => a.name === accepted.artifact && !a.expired);
+          function checkArtifact(metadata) {
+            if (!metadata || metadata.id !== accepted.artifactId || metadata.name !== accepted.artifact || metadata.expired !== false ||
+                metadata.workflow_run?.id !== accepted.run || metadata.workflow_run?.head_sha !== source ||
+                metadata.digest !== `sha256:${accepted.zipSha256}` ||
+                !Number.isSafeInteger(metadata.size_in_bytes) || metadata.size_in_bytes <= 0 || metadata.size_in_bytes > maxZipBytes) {
+              throw new Error('Accepted artifact identity, source, or digest differs');
+            }
+          }
+          if (matches.length !== 1) throw new Error('Exactly one accepted native build is required');
+          checkArtifact(matches[0]);
+          checkArtifact(await api(`actions/artifacts/${accepted.artifactId}`));
+
+          // Authenticate only to GitHub's API. Do not forward that token to the
+          // signed storage URL or follow any further redirect with credentials.
+          const redirect = await request(apiRoot + `actions/artifacts/${accepted.artifactId}/zip`, {
+            headers, redirect: 'manual', credentials: 'omit', signal: AbortSignal.timeout(20000),
+          }, 'Artifact redirect');
+          if (redirect.status !== 302) throw new Error(`Artifact redirect HTTP ${redirect.status}`);
+          const location = redirect.headers.get('location');
+          await redirect.body?.cancel();
+          let signedUrl;
+          try { signedUrl = new URL(location ?? ''); }
+          catch { throw new Error('Artifact storage URL is invalid'); }
+          if (signedUrl.protocol !== 'https:' || signedUrl.username || signedUrl.password ||
+              signedUrl.hash || signedUrl.port && signedUrl.port !== '443' || !signedUrl.search) {
+            throw new Error('Artifact storage URL must be signed HTTPS without embedded credentials');
+          }
+          const downloaded = await request(signedUrl, {
+            method: 'GET', redirect: 'error', credentials: 'omit', signal: AbortSignal.timeout(60000),
+          }, 'Artifact download');
+          if (downloaded.status !== 200) throw new Error(`Artifact download HTTP ${downloaded.status}`);
+          const zip = await boundedBytes(downloaded, maxZipBytes);
+          if (createHash('sha256').update(zip).digest('hex') !== accepted.zipSha256) {
+            throw new Error('Artifact ZIP digest differs from the accepted CI digest');
+          }
+          writeFileSync('.pages-download/native.zip', zip, { flag: 'wx' });
+
+          // Read the public verifier from the immutable SOURCE commit, never
+          // from the gh-pages release commit or an unpinned branch.
+          const lockPath = 'apps/web/public/admin-lock.json';
+          const lock = await api(`contents/${lockPath}?ref=${source}`);
+          if (lock.type !== 'file' || lock.path !== lockPath || lock.encoding !== 'base64' ||
+              typeof lock.content !== 'string' || !Number.isSafeInteger(lock.size) || lock.size <= 0 || lock.size > 8192 ||
+              !/^[a-f0-9]{40}$/.test(lock.sha ?? '')) throw new Error('Pinned source admin verifier is unavailable');
+          const encoded = lock.content.replace(/\n/g, '');
+          const sourceLock = Buffer.from(encoded, 'base64');
+          if (sourceLock.toString('base64') !== encoded || sourceLock.length !== lock.size ||
+              createHash('sha1').update(`blob ${sourceLock.length}\0`).update(sourceLock).digest('hex') !== lock.sha) {
+            throw new Error('Pinned source admin verifier bytes are inconsistent');
+          }
+          writeFileSync('.pages-download/source-admin-lock.json', sourceLock, { flag: 'wx' });
+          console.log('Both provenances, exact successful source checks, artifact metadata, ZIP digest, and source verifier fetched and verified.');
+          NODE
+          python3 - <<'PY'
+          import base64, json, pathlib, re, stat, zipfile
+          from html.parser import HTMLParser
+
+          root = pathlib.Path('.pages-public')
+          native = root / 'native-admin'
+          allowed_root = {'index.html', '404.html', 'admin-lock.json', 'favicon.ico', 'favicon.svg'}
+          max_total = 30_000_000
+          max_file = 15_000_000
+          max_entries = 4096
+
+          def regular_file(path):
+              if not stat.S_ISREG(path.lstat().st_mode):
+                  raise RuntimeError('Static comparison target is not a regular file')
+              for parent in path.parents:
+                  if parent == pathlib.Path('.'):
+                      break
+                  if not stat.S_ISDIR(parent.lstat().st_mode):
+                      raise RuntimeError('Static comparison target traverses a link')
+
+          def no_duplicate_json(pairs):
+              result = {}
+              for key, value in pairs:
+                  if key in result:
+                      raise RuntimeError('Duplicate key in admin verifier')
+                  result[key] = value
+              return result
+
+          with zipfile.ZipFile('.pages-download/native.zip') as archive:
+              entries = archive.infolist()
+              if not entries or len(entries) > max_entries:
+                  raise RuntimeError('Invalid artifact entry count')
+              files, seen, total = {}, set(), 0
+              for info in entries:
+                  name = info.filename
+                  directory = info.is_dir()
+                  canonical_name = name[:-1] if directory else name
+                  parts = canonical_name.split('/')
+                  if (name != info.orig_filename or not canonical_name or len(name) > 512 or '\\' in name
+                          or any(not re.fullmatch(r'[A-Za-z0-9_-][A-Za-z0-9._-]*', part) for part in parts)
+                          or any(part in ('.', '..') for part in parts) or canonical_name in seen):
+                      raise RuntimeError('Unsafe, ambiguous, or duplicate artifact path')
+                  seen.add(canonical_name)
+                  mode = stat.S_IFMT(info.external_attr >> 16)
+                  if (info.flag_bits & 1 or info.compress_type not in (zipfile.ZIP_STORED, zipfile.ZIP_DEFLATED)
+                          or mode not in ((0, stat.S_IFDIR) if directory else (0, stat.S_IFREG))
+                          or (not directory and info.external_attr & 0x10)):
+                      raise RuntimeError('Encrypted, linked, or unsupported artifact entry')
+                  if directory:
+                      if parts[0] != 'assets' or info.file_size != 0:
+                          raise RuntimeError('Unexpected artifact directory')
+                      continue
+                  if canonical_name not in allowed_root and not (len(parts) > 1 and parts[0] == 'assets'):
+                      raise RuntimeError('Unexpected artifact file path')
+                  if not 0 <= info.file_size <= max_file or not 0 <= info.compress_size <= max_total:
+                      raise RuntimeError('Oversized artifact file')
+                  total += info.file_size
+                  if total > max_total:
+                      raise RuntimeError('Oversized artifact contents')
+                  files[canonical_name] = info
+              if not {'index.html', 'admin-lock.json'}.issubset(files) or not any(name.startswith('assets/') for name in files):
+                  raise RuntimeError('Artifact is missing required build files')
+              for name in files:
+                  if any(str(parent) in files for parent in pathlib.PurePosixPath(name).parents if str(parent) != '.'):
+                      raise RuntimeError('Artifact file/directory collision')
+
+              content = {}
+              for name, info in files.items():
+                  with archive.open(info) as stream:
+                      data = stream.read(max_file + 1)
+                      if len(data) != info.file_size or len(data) > max_file or stream.read(1):
+                          raise RuntimeError('Artifact entry size differs from its metadata')
+                  content[name] = data
+                  for destination in (root, native):
+                      target = destination.joinpath(*pathlib.PurePosixPath(name).parts)
+                      regular_file(target)
+                      if target.stat().st_size != len(data) or target.read_bytes() != data:
+                          raise RuntimeError(f'Static file differs from the exact CI artifact: {target}')
+
+              # Old root assets stay available to already-open sessions. The
+              # native-admin folder is recreated and must contain only this build.
+              actual_native = set()
+              for path in native.rglob('*'):
+                  mode = path.lstat().st_mode
+                  if stat.S_ISDIR(mode):
+                      continue
+                  if not stat.S_ISREG(mode):
+                      raise RuntimeError('Native static snapshot contains a link or unsupported file')
+                  actual_native.add(path.relative_to(native).as_posix())
+              if actual_native != set(files) | {'build-provenance.json'}:
+                  raise RuntimeError('Native static file set differs from the current artifact')
+
+              if content['admin-lock.json'] != pathlib.Path('.pages-download/source-admin-lock.json').read_bytes():
+                  raise RuntimeError('Admin verifier differs from the exact checked source bytes')
+              lock = json.loads(content['admin-lock.json'], object_pairs_hook=no_duplicate_json)
+              if (not isinstance(lock, dict) or lock.get('schema') != 'sejire/admin-lock/v1'
+                      or lock.get('configured') is not True or lock.get('algorithm') != 'PBKDF2-SHA256'
+                      or type(lock.get('iterations')) is not int or lock['iterations'] != 600000):
+                  raise RuntimeError('Owner admin verifier is not configured with the accepted schema')
+              for field in ('salt', 'digest'):
+                  value = lock.get(field)
+                  if not isinstance(value, str):
+                      raise RuntimeError('Invalid admin verifier encoding')
+                  decoded = base64.b64decode(value, validate=True)
+                  if len(decoded) != 32 or base64.b64encode(decoded).decode('ascii') != value:
+                      raise RuntimeError('Invalid admin verifier encoding')
+
+              class IndexAssets(HTMLParser):
+                  def __init__(self):
+                      super().__init__(convert_charrefs=True)
+                      self.assets = []
+                  def handle_starttag(self, tag, attrs):
+                      values = dict(attrs)
+                      if tag == 'base':
+                          raise RuntimeError('Index must use relative assets without a base override')
+                      source = values.get('src') if tag == 'script' else values.get('href') if tag == 'link' else None
+                      if source is None:
+                          return
+                      is_asset = tag == 'script' or bool(set((values.get('rel') or '').lower().split()) & {'stylesheet', 'modulepreload', 'preload'}) or 'assets/' in source
+                      if is_asset:
+                          if not source.startswith('./assets/') or source[2:] not in files:
+                              raise RuntimeError('Index asset must be an existing relative ./assets file')
+                          self.assets.append(source)
+
+              index = IndexAssets()
+              index.feed(content['index.html'].decode('utf-8', 'strict'))
+              index.close()
+              if not index.assets or not any(asset.endswith('.js') for asset in index.assets):
+                  raise RuntimeError('Index contains no relative JavaScript assets')
+          print('All allowed artifact bytes match root and native-admin; paths, sizes, verifier, and relative index assets verified.')
+          PY
+
+      - name: Refuse a stale Pages release immediately before upload
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          const r = await fetch('https://api.github.com/repos/azovskaya/sejire_arweave_solana/git/ref/heads/gh-pages', {
+            headers: { Authorization: `Bearer ${process.env.GH_TOKEN}`, Accept: 'application/vnd.github+json' },
+            redirect: 'error', credentials: 'omit', signal: AbortSignal.timeout(20000),
+          });
+          if (!r.ok) throw new Error(`GitHub head verification HTTP ${r.status}`);
+          const head = await r.json();
+          if (head.ref !== 'refs/heads/gh-pages' || head.object?.type !== 'commit' || head.object.sha !== process.env.GITHUB_SHA) {
+            throw new Error('Pages branch advanced before upload; refuse stale release');
+          }
+          console.log('Pages branch head still matches this release commit before upload.');
+          NODE
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          name: github-pages-${{ github.run_id }}-${{ github.run_attempt }}
+          path: .pages-public
+
+      - name: Refuse a stale Pages release immediately before deployment
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          const r = await fetch('https://api.github.com/repos/azovskaya/sejire_arweave_solana/git/ref/heads/gh-pages', {
+            headers: { Authorization: `Bearer ${process.env.GH_TOKEN}`, Accept: 'application/vnd.github+json' },
+            redirect: 'error', credentials: 'omit', signal: AbortSignal.timeout(20000),
+          });
+          if (!r.ok) throw new Error(`GitHub head verification HTTP ${r.status}`);
+          const head = await r.json();
+          if (head.ref !== 'refs/heads/gh-pages' || head.object?.type !== 'commit' || head.object.sha !== process.env.GITHUB_SHA) {
+            throw new Error('Pages branch advanced after upload; refuse stale release');
+          }
+          console.log('Pages branch head still matches this release commit immediately before deployment.');
+          NODE
+
+      - name: Deploy the verified static site
+        id: deployment
+        uses: actions/deploy-pages@v4
+        with:
+          artifact_name: github-pages-${{ github.run_id }}-${{ github.run_attempt }}
