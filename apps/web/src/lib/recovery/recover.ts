@@ -45,7 +45,11 @@ export async function recoverVaultFromWords(words:string,options:RecoveryOptions
       throw new RecoveryFailure(priority.find(code=>failures.includes(code))??'DATA_UNAVAILABLE');
     }
     stage('open');const {head,forks}=resolveHead(versions);
-    return {ok:true,vault:head.vault,headTxId:head.txId,versions,forks,code:forks.length?'MULTIPLE_VERIFIED_HEADS':undefined,diagnostics};
+    const verifiedIds=new Set(versions.map(version=>version.txId));
+    const incomplete=diagnostics.candidateCount>versions.length||
+      versions.some(version=>version.parentTxId!==null&&!verifiedIds.has(version.parentTxId));
+    return {ok:true,vault:head.vault,headTxId:head.txId,versions,forks,incomplete,
+      code:forks.length?'MULTIPLE_VERIFIED_HEADS':undefined,diagnostics};
   } catch(error){const code=error instanceof RecoveryFailure?error.code:controller.signal.aborted?'DATA_UNAVAILABLE':'UNKNOWN_ERROR';diagnostics.code=code;return {ok:false,code,diagnostics};}
   finally{clearTimeout(timeout);options.signal?.removeEventListener('abort',abort);}
 }

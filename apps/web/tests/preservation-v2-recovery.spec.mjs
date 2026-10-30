@@ -162,6 +162,19 @@ for(const cached of [false,true]){
   });
 }
 
+test('A verified archive is offered with an incomplete-history warning when another discovered version fails verification',async({browser,page:preparer})=>{
+  const s=await setup(browser,preparer);try{
+    s.versions.push({...s.base,id:tx(1),height:101,raw:'invalid-envelope'});
+    await runUi(s.page,s.family.words);
+    await expect(s.page.getByRole('heading',{name:'Выберите версию',exact:true})).toBeVisible();
+    await expect(s.page.getByText(/история может быть неполной/)).toBeVisible();
+    await expect(s.page.locator('.vault-version-item')).toHaveCount(1);
+    await expect(s.page.getByRole('button',{name:'Сохранить',exact:true})).toHaveCount(0);
+    await s.page.locator('.vault-version-item').first().click();
+    await expectFullTree(s,{source:'network',headTxId:s.base.id});
+  }finally{await s.context.close();}
+});
+
 test('Same-gateway base64url data repairs wrong same-length raw and restores every encrypted tree',async({browser,page:preparer})=>{
   const s=await setup(browser,preparer,{funded:true,wrongSameLengthRaw:true,dataFallback:'valid'});try{
     await runUi(s.page,s.family.words);

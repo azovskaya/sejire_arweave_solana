@@ -12,5 +12,5 @@ export interface GatewayPool {candidates(ctx:RecoveryContext):Promise<GatewayTar
 export type VerifiedVersion = {txId:string;vault:VaultV1;envelope:EnvelopeV1;parentTxId:string|null;blockHeight:number|null;blockTimestamp:number|null;sources:string[]};
 export type SafeRecoveryDiagnostics = {providers:{id:string;status:'responded'|'unavailable';count:number}[];gateways:{host:string;operation:'metadata'|'raw';status:string}[];candidateCount:number;verifiedCount:number;stage:RecoveryStage;code?:RecoveryErrorCode};
 export type RecoveryResult =
-  | {ok:true;vault:VaultV1;headTxId:string;versions:VerifiedVersion[];forks:VerifiedVersion[];code?:'MULTIPLE_VERIFIED_HEADS';diagnostics:SafeRecoveryDiagnostics}
+  | {ok:true;vault:VaultV1;headTxId:string;versions:VerifiedVersion[];forks:VerifiedVersion[];incomplete:boolean;code?:'MULTIPLE_VERIFIED_HEADS';diagnostics:SafeRecoveryDiagnostics}
   | {ok:false;code:RecoveryErrorCode;diagnostics:SafeRecoveryDiagnostics};

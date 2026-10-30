@@ -152,7 +152,7 @@ export function RestoreSeed({ onRestored, onBack }: Props) {
       setDiagnostics(result.diagnostics);
       let networkError: string | null = null;
       if(!result.ok)networkError=recoveryMessage(result.code);
-      if(result.ok&&!result.forks.length){
+      if(result.ok&&!result.forks.length&&!result.incomplete){
         const head=result.versions.find(version=>version.txId===result.headTxId);
         if(!head)throw Error(t.restore.badFile);
         await finishWithVault(result.vault,{vaultId:keys.vaultId,headTxId:result.headTxId,parentTxId:head.parentTxId,envelope:head.envelope,mnemonic:normalized,source:'network'});return;
@@ -179,8 +179,9 @@ export function RestoreSeed({ onRestored, onBack }: Props) {
       if (networkError) {
         setError(`${networkError} ${t.restore.shownLocal}`);
       } else if(result.ok&&result.forks.length){setError(recoveryMessage('MULTIPLE_VERIFIED_HEADS'));}
+      else if(result.ok&&result.incomplete){setError('Часть найденных версий недоступна или не прошла проверку. Показаны только проверенные архивы; история может быть неполной.');}
 
-      if (items.length === 1 && !networkError) {
+      if (items.length === 1 && !networkError && !(result.ok&&result.incomplete)) {
         await openPickerItem(items[0], normalized, keys.vaultId);
         return;
       }
