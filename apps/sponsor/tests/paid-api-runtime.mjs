@@ -203,6 +203,9 @@ try {
     const result = await call('/policy'); assert.equal(result.status, 200); assert.equal(result.body.ready, true); publicPolicy = result.body;
     const health = await call('/rpc-health'); assert.equal(health.status, 200); assert.equal(health.body.ready, true);
     assert.equal(health.body.checkedAt > 0, true); assert.equal(health.body.policy, undefined);
+    assert.deepEqual(health.body.methodsChecked, ['getGenesisHash', 'getAccountInfo', 'getAccountInfo',
+      'getLatestBlockhash', 'getFeeForMessage', 'getBalance', 'getBlockHeight',
+      'getSignaturesForAddress', 'getSignatureStatuses', 'getTransaction']);
     assert.equal(publicPolicy.policy.serviceLamports, '30000000'); assert.equal(publicPolicy.policy.network, 'mainnet-beta');
     assert.equal(publicPolicy.policy.storage.network, 'arweave.N.1');
     assert.equal(publicPolicy.contributionReady,false);assert.equal(publicPolicy.contributionPolicy,undefined);

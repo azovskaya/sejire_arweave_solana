@@ -49,7 +49,7 @@ function reader(network: Network, url: string): SolanaRpcReader {
   return new SolanaRpcReader({ network, endpointUrl: url });
 }
 
-type Health = { ready: boolean; checkedAt: number; method?: string; reason?: string; httpStatus?: number; rpcCode?: number };
+type Health = { ready: boolean; checkedAt: number; methodsChecked: string[]; method?: string; reason?: string; httpStatus?: number; rpcCode?: number };
 const healthCache = new Map<string, { until: number; result: Health }>();
 /** Fixed, read-only probe. No caller-supplied method, URL, payer, archive or order. */
 export async function paidRpcHealth(env: RpcEnv, policy: PaidPolicy): Promise<Health> {
@@ -68,12 +68,15 @@ export async function paidRpcHealth(env: RpcEnv, policy: PaidPolicy): Promise<He
     fundContribution: { amount: '0', recipient: policy.fundRecipient },
     archive: { digest: 'b'.repeat(64), bytes: 1, vaultId: 'c'.repeat(32), parentTxId: null },
     storage: { kind: policy.storage.kind, network: policy.storage.network, treasuryAddress: policy.storage.treasuryAddress } });
-  let failure: Health = { ready: false, checkedAt: now, reason: 'rpc-unavailable' };
+  let failure: Health = { ready: false, checkedAt: now, methodsChecked: [], reason: 'rpc-unavailable' };
   for (const url of candidates(env, policy.network)) {
     const source = reader(policy.network, url);
     let method = 'getGenesisHash';
+    const methodsChecked: string[] = [];
     try {
-      const call = async (name: string, params: unknown[] = []) => { method = name; return source.rpc(name, params, deadline); };
+      const call = async (name: string, params: unknown[] = []) => {
+        method = name; const result = await source.rpc(name, params, deadline); methodsChecked.push(name); return result;
+      };
       if (await call('getGenesisHash') !== SOLANA_GENESIS[policy.network]) throw new RpcEvidenceError('wrong-network');
       for (const recipient of [policy.serviceRecipient, policy.fundRecipient]) {
         const account = object(await call('getAccountInfo', [recipient, { encoding: 'base64', commitment: 'finalized' }]));
@@ -97,12 +100,12 @@ export async function paidRpcHealth(env: RpcEnv, policy: PaidPolicy): Promise<He
       if (!Array.isArray(status.value) || !status.value[0]) throw new RpcEvidenceError('rpc-malformed');
       const transaction = await call('getTransaction', [signature, { commitment: 'finalized', encoding: 'json', maxSupportedTransactionVersion: 0 }]);
       if (!transaction || !object(transaction).transaction) throw new RpcEvidenceError('rpc-malformed');
-      const result = { ready: true, checkedAt: now };
+      const result = { ready: true, checkedAt: now, methodsChecked };
       healthCache.set(cacheKey, { until: Date.now() + 120000, result });
       return result;
     } catch (error) {
       const evidence = error instanceof RpcEvidenceError ? error : null;
-      failure = { ready: false, checkedAt: now, method, reason: evidence?.reason ?? (error instanceof Error &&
+      failure = { ready: false, checkedAt: now, methodsChecked, method, reason: evidence?.reason ?? (error instanceof Error &&
         ['recipient_not_ready', 'network_fee_not_ready'].includes(error.message) ? error.message : 'rpc-malformed'),
         ...(evidence?.details?.httpStatus === undefined ? {} : { httpStatus: evidence.details.httpStatus }),
         ...(evidence?.details?.rpcCode === undefined ? {} : { rpcCode: evidence.details.rpcCode }) };
