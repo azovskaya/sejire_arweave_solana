@@ -1,0 +1,47 @@
+name: Read-only production Worker RPC health
+on:
+  push:
+    branches: [diagnostic/worker-rpc-health]
+    paths: [.github/workflows/worker-rpc-health.yml]
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --prefix apps/web
+      - run: npm exec --prefix apps/web -- playwright install --with-deps chromium
+      - name: Call actual production Worker from public browser origin; no orders or payments
+        run: |
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          import {chromium} from './apps/web/node_modules/playwright/index.mjs';
+          const browser=await chromium.launch();
+          try{
+            const page=await browser.newPage();
+            const root=await page.goto('https://azovskaya.github.io/sejire_arweave_solana/',{waitUntil:'domcontentloaded'});
+            assert.equal(root.status(),200);
+            const result=await page.evaluate(async()=>{
+              const base='https://sejire-sponsor.azovskaya-alissa.workers.dev/api/checkout';
+              const health=await fetch(base+'/rpc-health',{cache:'no-store'});
+              const policy=await fetch(base+'/policy',{cache:'no-store'});
+              return {healthStatus:health.status,health:await health.json(),policyStatus:policy.status,policy:await policy.json()};
+            });
+            const methods=['getGenesisHash','getAccountInfo','getLatestBlockhash','getFeeForMessage','getBalance',
+              'getBlockHeight','getSignatureStatuses','getTransaction','getSignaturesForAddress'];
+            console.log(JSON.stringify({healthStatus:result.healthStatus,ready:result.health.ready,
+              methodsChecked:result.health.methodsChecked,method:result.health.method??null,
+              reason:result.health.reason??null,httpStatus:result.health.httpStatus??null,
+              policyStatus:result.policyStatus,policyReady:result.policy.ready}));
+            assert.equal(result.healthStatus,200);
+            assert.equal(result.health.ready,true);
+            for(const method of methods)assert(result.health.methodsChecked.includes(method),method);
+            assert.equal(result.policyStatus,200);
+            assert.equal(result.policy.ready,true);
+          }finally{await browser.close();}
+          NODE
