@@ -13,7 +13,7 @@ let rpcCalls=0,backend;
 globalThis.fetch=async(input,init)=>{
   const url=String(input);
   if(url.startsWith('http://127.0.0.1:'))return originalFetch(input,init);
-  if(!['https://solana.api.pocket.network','https://api.mainnet-beta.solana.com'].includes(url))throw Error('unexpected_external_request');
+  if(!['https://solana.api.pocket.network/','https://api.mainnet-beta.solana.com/'].includes(url))throw Error('unexpected_external_request');
   rpcCalls++;const body=JSON.parse(String(init?.body));let result;
   if(body.method==='getGenesisHash')result=SOLANA_GENESIS['mainnet-beta'];
   else if(body.method==='getAccountInfo')result={context:{slot:100},value:{owner:'11111111111111111111111111111111',executable:false}};
