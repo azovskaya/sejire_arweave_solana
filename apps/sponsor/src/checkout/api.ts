@@ -6,7 +6,7 @@ import type { AtomicOrderStore, StoredOrder, CommitResult } from './store';
 import type { ValidatedPayment } from './paymentValidator';
 import { reconcilePayment, type TrustedTransactionReader } from './reconciliation';
 import { SolanaRpcReader } from './rpcReader';
-import { preparePaidWithRpc } from './rpcPool';
+import { preparePaidWithRpc, paidRpcHealth } from './rpcPool';
 import { RpcPaymentPreparer, type PaymentPreparer } from './paymentPreparation';
 import { TestnetPreservationService, checkedArchive, type PreservationEnv, type PreservationService, type UploadPlan, type UploadAcceptance } from './preservation';
 import { envelopeDigest } from '../../../web/src/lib/solana/policy';
@@ -115,8 +115,9 @@ export async function checkoutApi(request: Request, env: CheckoutApiEnv,
       contributionEnabled=env.CHECKOUT_CONTRIBUTION_ENABLED==='true';
     const contributionPolicyRoute=url.pathname===PREFIX+'/policy/contribution';
     const policyRoute=url.pathname===PREFIX+'/policy'||contributionPolicyRoute;
+    const healthRoute=url.pathname===PREFIX+'/rpc-health';
     const resumeRoute=/^\/api\/checkout\/orders\/(?:[a-f0-9]{32}(?:\/(?:verify|reconcile|reserve|prepare|execute|cancel))?|by-key\/[A-Za-z0-9_-]{16,128}(?:\/cancel)?)$/.test(url.pathname);
-    if(!legacyEnabled&&!paidEnabled&&!contributionEnabled&&!policyRoute&&!resumeRoute)return reply(404,{error:'not_found'});
+    if(!legacyEnabled&&!paidEnabled&&!contributionEnabled&&!policyRoute&&!healthRoute&&!resumeRoute)return reply(404,{error:'not_found'});
     if (!env.CHECKOUT_LEDGER || !env.CHECKOUT_ALLOWED_ORIGINS) throw new HttpError(503, 'checkout_not_configured');
     const origins = env.CHECKOUT_ALLOWED_ORIGINS.split(',');
     if (origins.some(o => { try { return new URL(o).origin !== o || (!o.startsWith('https://') && !o.startsWith('http://localhost:') && !o.startsWith('http://127.0.0.1:')); } catch { return true; } })) throw new HttpError(503, 'checkout_not_configured');
@@ -128,19 +129,25 @@ export async function checkoutApi(request: Request, env: CheckoutApiEnv,
     const byKey=/^\/api\/checkout\/orders\/by-key\/([A-Za-z0-9_-]{16,128})(?:\/(cancel))?$/.exec(url.pathname);
     const sessionRoute = url.pathname === PREFIX + '/session';
     const createRoute = url.pathname === PREFIX + '/orders';
-    if (!match && !sessionRoute && !createRoute && !policyRoute && !byKey) return reply(404, { error: 'not_found' });
+    if (!match && !sessionRoute && !createRoute && !policyRoute && !healthRoute && !byKey) return reply(404, { error: 'not_found' });
     const ledger = new DurableOrderStore(env.CHECKOUT_LEDGER);
     // A never-activated disabled installation keeps all old routes closed.
     // Exact owned keys can be cancelled/read even before the first order exists.
     // Their bearer checks below do not enable admission or expose other owners.
     if(!legacyEnabled&&!paidEnabled&&!contributionEnabled&&resumeRoute&&!byKey&&!await ledger.call<boolean>({action:'paidHasOrders'}))return reply(404,{error:'not_found'});
-    const method = policyRoute||byKey&&!byKey[2]||match&&!match[2] ? 'GET' : 'POST';
+    const method = policyRoute||healthRoute||byKey&&!byKey[2]||match&&!match[2] ? 'GET' : 'POST';
     if (request.method === 'OPTIONS') return reply(204, null);
     if (request.method !== method) return reply(405, { error: 'method_not_allowed' });
     // This header is trusted ONLY behind Cloudflare's ingress. Ignore X-Forwarded-For and client IP fields.
     // Missing header uses a shared bucket (fail closed), not a new arbitrary identity.
     const ip = await digest(request.headers.get('CF-Connecting-IP') ?? 'missing-ingress-ip');
     await ledger.call({ action: 'apiRate', buckets: ['all', `ingress:${ip}`], limit: 600 });
+    if (healthRoute) {
+      await ledger.call({ action: 'apiRate', buckets: [`rpc-health:${ip}`], limit: 10 });
+      if (!paidEnabled) return reply(200, { ready: false, reason: 'paid_disabled' });
+      const { policy } = configuredPaidPolicy(env);
+      return reply(200, await paidRpcHealth(env, policy));
+    }
     if(policyRoute){
       let contribution:{contributionReady:boolean;contributionReason?:string;contributionPolicy?:ContributionPolicy;contributionPolicyHash?:string}=
         {contributionReady:false,contributionReason:'contribution_disabled'};
@@ -166,7 +173,10 @@ export async function checkoutApi(request: Request, env: CheckoutApiEnv,
         const effective=await ledger.call<string>({action:'treasuryEffectiveBalance',address:policy.storage.treasuryAddress,balance:ready.balanceWinston});
         const sufficient=BigInt(effective)>=BigInt(held)+BigInt(policy.storage.maxRewardWinston)&&
           BigInt(budgetLimit)>=BigInt(totals.reservedWinston)+BigInt(totals.actualSpentWinston)+BigInt(policy.storage.maxRewardWinston);
-        return reply(200,{ready:sufficient,...(!sufficient?{reason:'paid_budget_unavailable'}:{}),policy,policyHash:hash,...contribution});
+        const health = sufficient ? await paidRpcHealth(env, policy) : null;
+        return reply(200,{ready:sufficient && health?.ready === true,
+          ...(!sufficient?{reason:'paid_budget_unavailable'}:health?.ready?{}:{reason:'rpc_not_ready'}),
+          policy,policyHash:hash,...contribution});
       }catch{return reply(200,{ready:false,reason:'storage_not_ready',policy,policyHash:hash,...contribution});}
     }
     if (sessionRoute) {

@@ -1,11 +1,14 @@
 import { canonical } from '../../../../packages/protocol/wire';
-import type { Network, PaidOrder } from '../../../../packages/checkout/order';
-import { SOLANA_RPCS, type DurablePaymentPreparation } from '../../../../packages/checkout/paid';
+import { createPaidOrder, SYSTEM_PROGRAM, type Network, type PaidOrder } from '../../../../packages/checkout/order';
+import { buildPaidPaymentMessage, SOLANA_GENESIS, SOLANA_RPCS, type DurablePaymentPreparation, type PaidPolicy } from '../../../../packages/checkout/paid';
+import { rpcU64 } from '../../../../packages/checkout/rpcJson';
 import { RpcPaymentPreparer } from './paymentPreparation';
 import type { TransactionEvidence, ChainPolicy } from './paymentValidator';
 import type { ReferencePaymentResult, TrustedTransactionReader } from './reconciliation';
 import { RpcEvidenceError, type RpcFailure } from './rpcErrors';
 import { SolanaRpcReader } from './rpcReader';
+import { object } from './rpcDecoder';
+import bs58 from 'bs58';
 
 type RpcEnv = { CHECKOUT_PAID_NETWORK?: string; CHECKOUT_SOLANA_RPC_URL?: string; CHECKOUT_SOLANA_RPC_URLS?: string };
 const POCKET_MAINNET = 'https://solana.api.pocket.network';
@@ -44,6 +47,71 @@ function candidates(env: RpcEnv, network: Network): string[] {
 }
 function reader(network: Network, url: string): SolanaRpcReader {
   return new SolanaRpcReader({ network, endpointUrl: url });
+}
+
+type Health = { ready: boolean; checkedAt: number; method?: string; reason?: string; httpStatus?: number; rpcCode?: number };
+const healthCache = new Map<string, { until: number; result: Health }>();
+/** Fixed, read-only probe. No caller-supplied method, URL, payer, archive or order. */
+export async function paidRpcHealth(env: RpcEnv, policy: PaidPolicy): Promise<Health> {
+  const urls = configuredUrls(env, policy.network);
+  const cacheKey = `${policy.network}:${urls.join('|')}:${policy.serviceRecipient}:${policy.fundRecipient}`;
+  const cached = healthCache.get(cacheKey);
+  if (cached && cached.until > Date.now()) return cached.result;
+  const deadline = Date.now() + 25000;
+  const payer = bs58.encode(new Uint8Array(32).fill(7));
+  const reference = bs58.encode(new Uint8Array(32).fill(8));
+  const now = Date.now();
+  const synthetic = createPaidOrder({ id: 'a'.repeat(32), kind: 'preservation', network: policy.network,
+    asset: 'SOL', payer, reference, createdAt: now, expiresAt: now + 900000,
+    policyVersion: policy.version, policyHash: '0'.repeat(64),
+    servicePayment: { amount: policy.serviceLamports, recipient: policy.serviceRecipient },
+    fundContribution: { amount: '0', recipient: policy.fundRecipient },
+    archive: { digest: 'b'.repeat(64), bytes: 1, vaultId: 'c'.repeat(32), parentTxId: null },
+    storage: policy.storage });
+  let failure: Health = { ready: false, checkedAt: now, reason: 'rpc-unavailable' };
+  for (const url of candidates(env, policy.network)) {
+    const source = reader(policy.network, url);
+    let method = 'getGenesisHash';
+    try {
+      const call = async (name: string, params: unknown[] = []) => { method = name; return source.rpc(name, params, deadline); };
+      if (await call('getGenesisHash') !== SOLANA_GENESIS[policy.network]) throw new RpcEvidenceError('wrong-network');
+      for (const recipient of [policy.serviceRecipient, policy.fundRecipient]) {
+        const account = object(await call('getAccountInfo', [recipient, { encoding: 'base64', commitment: 'finalized' }]));
+        if (account.value !== null) {
+          const details = object(account.value);
+          if (details.owner !== SYSTEM_PROGRAM || details.executable !== false) throw Error('recipient_not_ready');
+        }
+      }
+      const block = object(object(await call('getLatestBlockhash', [{ commitment: 'finalized' }])).value);
+      if (typeof block.blockhash !== 'string') throw new RpcEvidenceError('rpc-malformed');
+      const message = buildPaidPaymentMessage(synthetic, block.blockhash);
+      const fee = object(await call('getFeeForMessage', [message, { commitment: 'finalized' }]));
+      if (typeof fee.value !== 'number' || !Number.isSafeInteger(fee.value) || fee.value <= 0 || fee.value > 100000) throw Error('network_fee_not_ready');
+      rpcU64(object(await call('getBalance', [payer, { commitment: 'finalized' }])).value);
+      const height = await call('getBlockHeight', [{ commitment: 'finalized' }]);
+      if (typeof height !== 'number' || !Number.isSafeInteger(height) || height < 0) throw new RpcEvidenceError('rpc-malformed');
+      const history = await call('getSignaturesForAddress', ['Vote111111111111111111111111111111111111111', { commitment: 'finalized', limit: 1 }]);
+      if (!Array.isArray(history) || !history.length || typeof object(history[0]).signature !== 'string') throw new RpcEvidenceError('rpc-malformed');
+      const signature = object(history[0]).signature;
+      const status = object(await call('getSignatureStatuses', [[signature], { searchTransactionHistory: true }]));
+      if (!Array.isArray(status.value) || !status.value[0]) throw new RpcEvidenceError('rpc-malformed');
+      const transaction = await call('getTransaction', [signature, { commitment: 'finalized', encoding: 'json', maxSupportedTransactionVersion: 0 }]);
+      if (!transaction || !object(transaction).transaction) throw new RpcEvidenceError('rpc-malformed');
+      const result = { ready: true, checkedAt: now };
+      healthCache.set(cacheKey, { until: Date.now() + 120000, result });
+      return result;
+    } catch (error) {
+      const evidence = error instanceof RpcEvidenceError ? error : null;
+      failure = { ready: false, checkedAt: now, method, reason: evidence?.reason ?? (error instanceof Error &&
+        ['recipient_not_ready', 'network_fee_not_ready'].includes(error.message) ? error.message : 'rpc-malformed'),
+        ...(evidence?.details?.httpStatus === undefined ? {} : { httpStatus: evidence.details.httpStatus }),
+        ...(evidence?.details?.rpcCode === undefined ? {} : { rpcCode: evidence.details.rpcCode }) };
+      if (!isUnavailable(error)) break;
+      pause(url, error);
+    }
+  }
+  healthCache.set(cacheKey, { until: Date.now() + 30000, result: failure });
+  return failure;
 }
 
 /** Each preparation is entirely sourced from one RPC; failed candidates never leave a stored message. */

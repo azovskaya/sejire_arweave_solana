@@ -55,13 +55,18 @@ const rpcReply = (options, endpoint) => {
     assert.equal(message.header.numRequiredSignatures, 1); assert.equal(message.instructions.length, 1);
     result = { context: { slot: 100 }, value: 5000 };
   } else if (request.method === 'getBalance') result = { context: { slot: 100 }, value: 1000000000 };
+  else if (request.method === 'getBlockHeight') result = 100;
   else if (request.method === 'getSignaturesForAddress') {
-    result = [...wire.payments.values()].filter(payment => payment.order.reference === request.params[0])
+    result = request.params[0] === 'Vote111111111111111111111111111111111111111'
+      ? [{ signature: addr(9), slot: 100, err: null, blockTime: 100, confirmationStatus: 'finalized' }]
+      : [...wire.payments.values()].filter(payment => payment.order.reference === request.params[0])
       .map(payment => ({ signature: payment.signature, slot: payment.raw.slot, err: null, blockTime: payment.raw.blockTime, confirmationStatus: 'finalized' }));
   } else if (request.method === 'getSignatureStatuses') {
     const payment = wire.payments.get(request.params[0][0]);
-    result = { context: { slot: 200 }, value: [payment ? { slot: payment.raw.slot, confirmations: null, err: null, confirmationStatus: payment.confirmationStatus ?? 'finalized' } : null] };
-  } else if (request.method === 'getTransaction') result = wire.payments.get(request.params[0])?.raw ?? null;
+    result = { context: { slot: 200 }, value: [payment ? { slot: payment.raw.slot, confirmations: null, err: null, confirmationStatus: payment.confirmationStatus ?? 'finalized' }
+      : request.params[0][0] === addr(9) ? { slot: 100, confirmations: null, err: null, confirmationStatus: 'finalized' } : null] };
+  } else if (request.method === 'getTransaction') result = wire.payments.get(request.params[0])?.raw ??
+    (request.params[0] === addr(9) ? { transaction: { signatures: [addr(9)] } } : null);
   else throw Error(`Unexpected synthetic RPC method: ${request.method}`);
   return { statusCode: 200, data: JSON.stringify({ jsonrpc: '2.0', id: request.id, result }) };
 };
@@ -196,6 +201,8 @@ try {
   const create = (token, key, input = tiny) => call('/orders', token, { kind: 'preservation', payer, contribution: '0', policyHash: publicPolicy.policyHash, ...input }, { 'Idempotency-Key': key });
   await test('actual readiness pins SOL mainnet, separate AR network, configured roles and 0.03 SOL', async () => {
     const result = await call('/policy'); assert.equal(result.status, 200); assert.equal(result.body.ready, true); publicPolicy = result.body;
+    const health = await call('/rpc-health'); assert.equal(health.status, 200); assert.equal(health.body.ready, true);
+    assert.equal(health.body.checkedAt > 0, true); assert.equal(health.body.policy, undefined);
     assert.equal(publicPolicy.policy.serviceLamports, '30000000'); assert.equal(publicPolicy.policy.network, 'mainnet-beta');
     assert.equal(publicPolicy.policy.storage.network, 'arweave.N.1');
     assert.equal(publicPolicy.contributionReady,false);assert.equal(publicPolicy.contributionPolicy,undefined);

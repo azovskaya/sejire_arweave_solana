@@ -12,7 +12,7 @@ export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const path = new URL(request.url).pathname;
     if (path === RECIPIENT_ADMIN_PATH) return recipientAdminApi(request, env);
-    const newOffer = request.method === 'GET' && ['/api/checkout/policy', '/api/checkout/policy/contribution'].includes(path);
+    const newOffer = request.method === 'GET' && ['/api/checkout/policy', '/api/checkout/policy/contribution', '/api/checkout/rpc-health'].includes(path);
     const newOrder = request.method === 'POST' && path === '/api/checkout/orders';
     if ((newOffer || newOrder) && env.CHECKOUT_LEDGER &&
         (env.CHECKOUT_PAID_ENABLED === 'true' || env.CHECKOUT_CONTRIBUTION_ENABLED === 'true')) {
