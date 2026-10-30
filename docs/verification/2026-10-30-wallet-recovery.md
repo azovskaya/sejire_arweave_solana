@@ -98,3 +98,39 @@ this Linux workspace.
 
 The native production build was repeated with the same flags after the optimizer
 change: all 33 output files remained byte-for-byte identical.
+
+## Published acceptance
+
+- Accepted source: `cf4f6fbefe26d0144fa10a122470d37dac942b60` on
+  `feat/promo-funded-preservation`. Full [SEJIRE checks 41065339626](https://github.com/azovskaya/sejire_arweave_solana/actions/runs/41065339626)
+  completed successfully, including all paid browser and cold-start regressions.
+- Accepted `native-admin-build`: artifact `12982233511`, ZIP SHA-256
+  `d80489f66422b16005105a5bdf18d8ab7e92c393fef7148b0285c72f5290e087`.
+  Preview staging `41065339631` succeeded. The root overlay reused all 34 exact
+  native blobs including provenance, preserved all 90 older assets (94 total),
+  and preserved the other published paths without deletions.
+- Static parent: `fee47d32d818a39d43845c6ff4bbb422c6c28526`; tree
+  `510f35309285b762581f42e331d2284fa78f4973`. Release commit:
+  `6fcb89ac70474f814f6d7f1d5d6640b0da615285` on `gh-pages`.
+  [Publication 41067629885](https://github.com/azovskaya/sejire_arweave_solana/actions/runs/41067629885)
+  passed every artifact-byte, provenance, parent/tree and current-head gate and
+  deployed successfully with the existing Pages environment protections.
+- Worker recovery code `e5ab8662c8a82ef9786f67dfd64722d1d8a105fd` was deployed by
+  [Worker run 41063346828](https://github.com/azovskaya/sejire_arweave_solana/actions/runs/41063346828).
+  After deployment, production `/rpc-health` and `/policy` both returned HTTP 200
+  and `ready:true`; the ten read-only Solana RPC checks completed. The final
+  source follow-up changed only the development optimizer, browser executable
+  option and this verification record, so no second Worker deployment was needed.
+- Public HTTPS `index.html`, `build-provenance.json` and
+  `assets/index-1fklctgL.js` matched the accepted Git blob hashes. The live bundle
+  contains the three new wallet recovery labels. Managed Chrome loaded that
+  exact bundle; the public welcome screen and transition to the recovery form
+  worked without a wallet or recovery words. No application-origin console error
+  was observed. The standalone container-browser smoke could not complete due
+  to its DNS/proxy certificate environment; its two-viewport result is not claimed.
+
+The owner must now continue the original attempt in the original browser tab:
+reload the site, open the pending save if needed, and explicitly choose
+“Восстановить подтверждение”. The server either finds and continues the original
+payment or returns a fresh preparation for separate review and wallet approval.
+No real payment or archive completion has been verified by these release checks.
