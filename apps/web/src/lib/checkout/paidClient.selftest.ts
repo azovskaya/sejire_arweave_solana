@@ -164,16 +164,20 @@ type NetworkState = { snapshot?: PaidSnapshot; key?: string; creates: number; pr
   loseCreate?: boolean; loseReserve?: boolean; loseCancel?: boolean; rejectWallet?: boolean; unknownWallet?: boolean;
   signature?: string; wrongGenesis?: boolean; paid: boolean; executed: boolean; onSigned?: () => void;
   dropBeforeAdmission?: boolean; tombstone?: boolean; missingStatus?: number; missingCode?: string;
-  balance?: string; offer?: PaidPolicyResponse; sessionToken?: string; beforeSessionResponse?: () => Promise<void> };
+  balance?: string; offer?: PaidPolicyResponse; sessionToken?: string; beforeSessionResponse?: () => Promise<void>;
+  deniedRpc?: string; rpcHosts?: string[] };
 function syntheticNetwork(): NetworkState {
   const state: NetworkState = { creates: 0, prepares: 0, reserves: 0, sends: [], sessions: 0, paid: false, executed: false };
   const json = (value: unknown, status = 200) => new Response(JSON.stringify(value), { status, headers: { 'Content-Type': 'application/json' } });
   globalThis.fetch = async (url, init) => {
     const target = String(url), method = init?.method ?? 'GET', body = init?.body ? JSON.parse(String(init.body)) : undefined;
     assert.ok(!target.includes(words) && !String(init?.body ?? '').includes(words));
-    if (target === 'https://api.devnet.solana.com') {
+    if (target === 'https://api.devnet.solana.com' || target === 'https://solana.api.pocket.network' || target === 'https://api.mainnet-beta.solana.com') {
       assert.equal(method, 'POST'); let result: unknown;
-      if (body.method === 'getGenesisHash') result = state.wrongGenesis ? SOLANA_GENESIS['mainnet-beta'] : SOLANA_GENESIS.devnet;
+      state.rpcHosts ??= []; state.rpcHosts.push(target);
+      if (target === state.deniedRpc) return json({ error: 'synthetic denial' }, 403);
+      const rpcNetwork = state.offer?.policy?.network ?? 'devnet';
+      if (body.method === 'getGenesisHash') result = state.wrongGenesis ? SOLANA_GENESIS[rpcNetwork === 'devnet' ? 'mainnet-beta' : 'devnet'] : SOLANA_GENESIS[rpcNetwork];
       else if (body.method === 'getFeeForMessage') result = { value: 5000 };
       else if (body.method === 'getBalance') return new Response(`{"jsonrpc":"2.0","id":${JSON.stringify(body.id)},"result":{"value":${state.balance ?? '18446744073709551615'}}}`, { headers: { 'Content-Type': 'application/json' } });
       else if (body.method === 'getBlockHeight') result = 50;
@@ -211,7 +215,7 @@ function syntheticNetwork(): NetworkState {
       }
       if (state.tombstone) return json({ error: 'paid_request_cancelled' }, 409);
       if (state.dropBeforeAdmission) { state.dropBeforeAdmission = false; throw TypeError('synthetic dropped before admission'); }
-      const chosenPolicy = body.kind === 'contribution' ? contributionPolicy : policy;
+      const chosenPolicy = body.kind === 'contribution' ? state.offer?.contributionPolicy ?? contributionPolicy : state.offer?.policy ?? policy;
       const contribution = parseAmount(body.contribution, 9);
       const order = await createPaidOrderFromPolicy(chosenPolicy, { id: state.key, payer: body.payer, reference: address(4), createdAt: Date.now() - 1,
         expiresAt: Date.now() + 120000, kind: body.kind, ...(body.archive ? { archive: body.archive } : {}), contribution });
@@ -569,6 +573,21 @@ assert.equal(network.sends.length, 1); assert.equal(walletCalls, 1);
 assert.equal(Transaction.from(Buffer.from(network.sends[0], 'base64')).instructions.length, 2);
 assert.equal(op.order?.servicePayment.amount, '30000000'); assert.equal(op.order?.fundContribution.amount, '1');
 assert.ok(await paidCompletion(op)); assert.equal(network.executed, true);
+
+// A denied Mainnet browser RPC falls back before opening the wallet. The
+// accepted server order and one signed message are preserved throughout.
+reset(); network = syntheticNetwork(); walletCalls = 0;
+const mainnetPolicy: PaidPolicy = { ...policy, network: 'mainnet-beta', genesisHash: SOLANA_GENESIS['mainnet-beta'] };
+const mainnetOffer: PaidPolicyResponse = { ready: true, policy: mainnetPolicy, policyHash: await paidPolicyHash(mainnetPolicy) };
+network.offer = mainnetOffer; network.deniedRpc = 'https://solana.api.pocket.network';
+op = await beginPaidOperation(input, signer.publicKey.toBase58(), '0', mainnetOffer);
+op = await preparePaidOperation(op.id, wallet(network));
+op = await payPaidOperation(op.id, op.preparation!.preparationId, wallet(network));
+assert.equal(walletCalls, 1); assert.equal(network.creates, 1); assert.equal(network.sends.length, 1);
+assert.equal(op.order?.network, 'mainnet-beta'); assert.equal(op.snapshot?.record.states.payment, 'verified');
+assert.ok(network.rpcHosts?.includes('https://solana.api.pocket.network'));
+assert.ok(network.rpcHosts?.includes('https://api.mainnet-beta.solana.com'));
+assert.equal((await readPaidOperation(op.id))?.signedTransaction, network.sends[0]);
 
 // A portable receipt binds Mainnet storage even for a Devnet payment. Exact
 // parent/order/hash and native node-data fallback are verified before decryption.

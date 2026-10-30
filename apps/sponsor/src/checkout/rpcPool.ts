@@ -67,7 +67,7 @@ export async function paidRpcHealth(env: RpcEnv, policy: PaidPolicy): Promise<He
     servicePayment: { amount: policy.serviceLamports, recipient: policy.serviceRecipient },
     fundContribution: { amount: '0', recipient: policy.fundRecipient },
     archive: { digest: 'b'.repeat(64), bytes: 1, vaultId: 'c'.repeat(32), parentTxId: null },
-    storage: policy.storage });
+    storage: { kind: policy.storage.kind, network: policy.storage.network, treasuryAddress: policy.storage.treasuryAddress } });
   let failure: Health = { ready: false, checkedAt: now, reason: 'rpc-unavailable' };
   for (const url of candidates(env, policy.network)) {
     const source = reader(policy.network, url);
