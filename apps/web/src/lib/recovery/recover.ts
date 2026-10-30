@@ -47,6 +47,7 @@ export async function recoverVaultFromWords(words:string,options:RecoveryOptions
     stage('open');const {head,forks}=resolveHead(versions);
     const verifiedIds=new Set(versions.map(version=>version.txId));
     const incomplete=!discovery.responded||diagnostics.candidateCount>versions.length||
+      diagnostics.providers.some(provider=>provider.status==='unavailable'&&provider.count>0)||
       versions.some(version=>version.parentTxId!==null&&!verifiedIds.has(version.parentTxId));
     return {ok:true,vault:head.vault,headTxId:head.txId,versions,forks,incomplete,
       code:forks.length?'MULTIPLE_VERIFIED_HEADS':undefined,diagnostics};

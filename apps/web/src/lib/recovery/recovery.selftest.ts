@@ -28,6 +28,10 @@ const query=await provider.discover({...ctx,fetcher:async (_url,init)=>{
   return new Response(JSON.stringify({data:{transactions:{pageInfo:{hasNextPage:false},edges:[{node:{id,block:{height:42,timestamp:123}}}]}}}),{status:200});
 }});
 assert.equal(query.status,'responded');assert.equal(query.candidates.length,1);
+const truncated=await provider.discover({...ctx,fetcher:async()=>new Response(JSON.stringify({data:{transactions:{
+  pageInfo:{hasNextPage:true},edges:[{node:{id,block:{height:42,timestamp:123}}}]}}}))});
+assert.equal(truncated.status,'unavailable');assert.equal(truncated.candidates.length,1,
+  'a truncated index retains its candidate but cannot certify complete discovery');
 assert.equal((await provider.discover({...ctx,fetcher:async()=>{throw Error('timeout');}})).status,'unavailable');
 const meta:TxMetadata={id,tags:[{name:'App-Name',value:'SEJIRE'},{name:'Type',value:'vault-envelope'},{name:'Vault-Id',value:vaultId},{name:'Archive-SHA256',value:'a'.repeat(64)},{name:'Archive-Bytes',value:'100'},{name:'Schema',value:'sejire/envelope/v1'},{name:'Protocol-Version',value:'sejire/v0.3'}],blockHeight:42,blockTimestamp:123};
 assert.doesNotThrow(()=>validateMetadata(meta,{txId:id,source:'test'},vaultId));

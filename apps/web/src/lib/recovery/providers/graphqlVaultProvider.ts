@@ -17,10 +17,12 @@ export class GraphqlVaultProvider implements HeadDiscoveryProvider {
         const connection=result.data?.transactions;if(result.errors||!Array.isArray(connection?.edges))throw Error('index_invalid');
         for(const edge of connection.edges){if(!/^[A-Za-z0-9_-]{43}$/.test(edge.node.id))continue;
           candidates.push({txId:edge.node.id,source:this.id,blockHeight:edge.node.block?.height,blockTimestamp:edge.node.block?.timestamp});}
-        if(!connection.pageInfo?.hasNextPage||!connection.edges.length)break;
-        after=connection.edges[connection.edges.length-1].cursor??null;if(!after)break;
+        if(!connection.pageInfo?.hasNextPage)return {status:'responded',candidates};
+        if(!connection.edges.length||page===2)return {status:'unavailable',candidates};
+        after=connection.edges[connection.edges.length-1].cursor??null;
+        if(!after)return {status:'unavailable',candidates};
       }
-      return {status:'responded',candidates};
+      return {status:'unavailable',candidates};
     } catch{return {status:'unavailable',candidates};}
   }
 }
