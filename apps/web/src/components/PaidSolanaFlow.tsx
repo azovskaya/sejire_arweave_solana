@@ -118,6 +118,7 @@ export function PaidSolanaFlow({ input, onBack, onBusy, onComplete, onAdoptAttem
   const identity = activeInput.mode === 'resume' ? activeInput.operationId : activeInput.mode==='contribution'?'contribution':serializeEnvelope(activeInput.envelope) + ':' + activeInput.parentTxId + ':' + activeInput.treeId;
 
   const remember = useCallback((next: PaidOperation) => {
+    if (latest.current?.id === next.id && next.revision < latest.current.revision) return;
     setRecoveryFailure(previous => previous && (previous.operationId !== next.id ||
       previous.preparationId !== next.preparation?.preparationId || next.localCompletion !== 'pending' ||
       next.creationCancelled || next.snapshot?.expired || next.snapshot?.cancelled || next.signature ||

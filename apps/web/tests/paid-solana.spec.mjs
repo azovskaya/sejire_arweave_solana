@@ -195,6 +195,10 @@ async function openPaid(page){
  await page.getByRole('dialog').getByRole('button',{name:'Через Solana',exact:true}).click();
  await expect(panel(page)).toBeVisible();
 }
+async function resumePaid(page){
+ if(!(await panel(page).count()))await page.getByRole('button',{name:'Продолжить сохранение',exact:true}).first().click();
+ await expect(panel(page)).toBeVisible();
+}
 async function requestPayment(page,{contribution=false,wallet='Phantom'}={}){
  await panel(page).getByRole('button',{name:`Подключить ${wallet}`,exact:true}).click();
  const create=panel(page).getByRole('button',{name:contribution?'Только помочь другим':'Оплатить и сохранить',exact:true});
@@ -260,7 +264,7 @@ test('one click connects Phantom, signs once, completes one archive and restores
  await button.click();await expect.poll(()=>state.sends.length).toBe(1);
  expect(state.creates).toBe(1);expect(state.admissions).toBe(1);expect(state.reserves).toBe(1);
  expect(await page.evaluate(()=>({connects:window.paidWallet.connects,signs:window.paidWallet.signCount}))).toEqual({connects:1,signs:1});
- state.finish=true;await expect(panel(page).getByText('Сохранено',{exact:true})).toBeVisible({timeout:30000});
+ state.finish=true;await expect.poll(async()=>(await saved(page,state.key)).op.localCompletion,{timeout:30000}).toBe('done');
  const result=await saved(page,state.key);expect(result.archive).toBe(state.archive);expect(result.op.localCompletion).toBe('done');
  await cleanRestore(browser,state,await page.evaluate(()=>window.paidFamily.words),result.op.snapshot.execution.receipt);
  expect(state.sends).toHaveLength(1);expect(state.creates).toBe(1);
@@ -287,11 +291,11 @@ test('unknown wallet outcome remains visible through polling and reload without 
  await page.waitForTimeout(6500);
  await expect(panel(page).getByRole('alert')).toContainText('Phantom не вернул надёжный результат');
  expect(state.sends).toHaveLength(0);expect(state.creates).toBe(1);
- await page.reload();await expect(panel(page).getByRole('button',{name:'Продолжить сохранение'})).toBeVisible();
+ await page.reload();await resumePaid(page);await expect(panel(page).getByRole('button',{name:'Продолжить сохранение'})).toBeVisible();
  expect(state.sends).toHaveLength(0);expect(state.creates).toBe(1);
 });
 
-test('insufficient balance, null fee, unavailable RPC and wrong genesis never ask Phantom to sign',async({page,context})=>{
+test('insufficient balance, null fee and unavailable RPC never ask Phantom to sign',async({page,context})=>{
  const state=await installNetwork(context);await openEditor(page);await openPaid(page);
  state.balance='100';await panel(page).getByRole('button',{name:'Оплатить 0.03 SOL и сохранить'}).click();
  await expect(panel(page).getByRole('alert')).toContainText('недостаточно SOL');
@@ -301,9 +305,13 @@ test('insufficient balance, null fee, unavailable RPC and wrong genesis never as
  state.feeNull=false;state.rpcUnavailable=true;
  await panel(page).getByRole('button',{name:'Оплатить 0.03 SOL и сохранить'}).click();
  await expect(panel(page).getByRole('alert')).toContainText('Сеть Solana временно недоступна');
- state.rpcUnavailable=false;state.wrongGenesis=true;
+ expect(await page.evaluate(()=>window.paidWallet.signCount)).toBe(0);expect(state.creates).toBe(1);expect(state.sends).toHaveLength(0);
+});
+
+test('wrong Solana genesis fails closed before signing',async({page,context})=>{
+ const state=await installNetwork(context);state.wrongGenesis=true;await openEditor(page);await openPaid(page);
  await panel(page).getByRole('button',{name:'Оплатить 0.03 SOL и сохранить'}).click();
- await expect(panel(page).getByRole('alert')).toContainText('сеть Solana');
+ await expect(panel(page).getByRole('alert')).toContainText('Сеть Solana');
  expect(await page.evaluate(()=>window.paidWallet.signCount)).toBe(0);expect(state.creates).toBe(1);expect(state.sends).toHaveLength(0);
 });
 
@@ -318,7 +326,7 @@ test('lost create response resumes the original idempotency key, ciphertext and 
  const state=await installNetwork(context);state.lostCreate=true;await openEditor(page);await openPaid(page);
  await panel(page).getByRole('button',{name:'Оплатить 0.03 SOL и сохранить'}).click();
  await expect(panel(page).getByRole('alert')).toBeVisible();expect(state.admissions).toBe(1);
- await page.reload();await panel(page).getByRole('button',{name:'Продолжить сохранение'}).click();
+ await page.reload();await resumePaid(page);await panel(page).getByRole('button',{name:'Продолжить сохранение'}).click();
  await expect.poll(()=>state.sends.length).toBe(1);
  expect(state.creates).toBe(1);expect(state.admissions).toBe(1);expect(state.bodies[0].serialized).toBe(state.archive);
 });
@@ -359,7 +367,7 @@ test('lost verify response and later Arweave completion reuse the paid order',as
  await expect.poll(()=>state.sends.length).toBe(1);
  await expect(panel(page).getByRole('alert')).toBeVisible();
  await panel(page).getByRole('button',{name:'Продолжить сохранение'}).click();
- state.finish=true;await expect(panel(page).getByText('Сохранено',{exact:true})).toBeVisible({timeout:30000});
+ state.finish=true;await expect.poll(async()=>(await saved(page,state.key)).op.localCompletion,{timeout:30000}).toBe('done');
  expect(state.creates).toBe(1);expect(state.sends).toHaveLength(1);
  expect(await page.evaluate(()=>window.paidWallet.signCount)).toBe(1);
 });
@@ -369,7 +377,7 @@ test('a late Phantom result keeps signed bytes after the page closes its panel',
  await page.evaluate(()=>{window.paidWallet.hold=true;});
  await panel(page).getByRole('button',{name:'Оплатить 0.03 SOL и сохранить'}).evaluate(button=>button.click());
  await expect.poll(()=>page.evaluate(()=>window.paidWallet.signCount)).toBe(1);
- await page.evaluate(()=>{location.hash='#/';});
+ await page.evaluate(()=>{location.hash='#/restore';});
  await expect(panel(page)).toHaveCount(0);
  await page.evaluate(()=>{window.paidWallet.hold=false;window.paidWallet.release();});
  await expect.poll(async()=>Boolean((await saved(page,state.key)).op.signature)).toBe(true);
@@ -400,7 +408,7 @@ test('double click and a second tab keep one operation and one wallet signature'
  await other.evaluate(words=>{window.secondFamily={words};},family.words);await enterWords(other,'secondFamily');
  await other.getByRole('button',{name:'Восстановить архив',exact:true}).click();
  await other.evaluate(async()=>(await import('/tests/paid-fixture.ts')).installWallet());
- await openPaid(other);
+ await resumePaid(other);
  await page.evaluate(()=>{window.paidWallet.hold=false;window.paidWallet.release();});
  await expect(panel(other).getByRole('button',{name:'Продолжить сохранение'})).toBeVisible();
  await panel(other).getByRole('button',{name:'Продолжить сохранение'}).click();
@@ -412,8 +420,8 @@ test('confirmed payment continues one Arweave archive after reload without anoth
  const state=await installNetwork(context);await openEditor(page);await openPaid(page);
  await panel(page).getByRole('button',{name:'Оплатить 0.03 SOL и сохранить'}).click();
  await expect.poll(()=>state.sends.length).toBe(1);state.phase='requires-reconciliation';
- await page.reload();await expect(panel(page).getByRole('button',{name:'Продолжить сохранение'})).toBeVisible();
+ await page.reload();await resumePaid(page);await expect(panel(page).getByRole('button',{name:'Продолжить сохранение'})).toBeVisible();
  expect(state.creates).toBe(1);expect(state.sends).toHaveLength(1);
- state.finish=true;await expect(panel(page).getByText('Сохранено',{exact:true})).toBeVisible({timeout:30000});
+ state.finish=true;await expect.poll(async()=>(await saved(page,state.key)).op.localCompletion,{timeout:30000}).toBe('done');
  expect(state.creates).toBe(1);expect(state.sends).toHaveLength(1);
 });
