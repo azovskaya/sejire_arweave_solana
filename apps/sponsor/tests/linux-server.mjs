@@ -36,6 +36,9 @@ try{
     return {status:response.status,body:await response.json()};
   };
   assert.equal((await call('/policy')).body.ready,false,'paid preservation remains disabled by default');
+  const recipients=await originalFetch(`http://127.0.0.1:${backend.address.port}/api/fund/admin/solana-recipients`,
+    {headers:{Origin:origin}});
+  assert.equal(recipients.status,401,'the same recipient admin route rejects unauthenticated callers');
   const offer=await call('/policy/contribution');assert.equal(offer.body.contributionReady,true);
   const session=await call('/session',{method:'POST',body:{}});assert.equal(session.status,201);
   const token=session.body.accessToken,key='synthetic_linux_key_01';

@@ -10,6 +10,7 @@ import {CheckoutLedger,LEDGER_OBJECT_NAME} from './src/checkout/durableStore.ts'
 import {checkoutApi} from './src/checkout/api.ts';
 import {fundApi} from './src/fund/api.ts';
 import {RecipientSettings,withRecipientSettings} from './src/checkout/recipientSettings.ts';
+import {recipientAdminApi,RECIPIENT_ADMIN_PATH} from './src/checkout/recipientAdmin.ts';
 
 function sqliteStorage(db){
   db.exec('PRAGMA foreign_keys=ON');db.exec('PRAGMA journal_mode=WAL');
@@ -63,8 +64,9 @@ export async function startLinuxCheckout({dbPath,host='127.0.0.1',port=0,binding
         const offer=req.method==='GET'&&['/api/checkout/policy','/api/checkout/policy/contribution','/api/checkout/rpc-health'].includes(path);
         const create=req.method==='POST'&&path==='/api/checkout/orders';
         const selected=offer||create?withRecipientSettings(env,new RecipientSettings(storage).get()):env;
-        const response=await checkoutApi(request,selected)??await fundApi(request,selected)??
-          new Response('{"error":"not_found"}',{status:404,headers:{'Content-Type':'application/json'}});
+        const response=path===RECIPIENT_ADMIN_PATH?await recipientAdminApi(request,env):
+          (await checkoutApi(request,selected)??await fundApi(request,selected)??
+          new Response('{"error":"not_found"}',{status:404,headers:{'Content-Type':'application/json'}}));
         res.writeHead(response.status,Object.fromEntries(response.headers));res.end(Buffer.from(await response.arrayBuffer()));
       }catch{if(!res.headersSent)res.writeHead(503,{'Content-Type':'application/json'});res.end('{"error":"backend_unavailable"}');}
     });
