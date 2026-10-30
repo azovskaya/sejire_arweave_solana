@@ -181,3 +181,38 @@ The browser suite command was `SEJIRE_BROWSER_EXECUTABLE=<existing Chromium>
 SEJIRE_BROWSER_CHANNEL=chromium npm run test:paid-browser` from `apps/web`.
 Source acceptance and public publication are recorded separately after the
 mandatory exact-source hosted checks.
+
+### Recovery status follow-up publication
+
+- Accepted UI source: `9f43026b56c177f67f2010597e6ff1dce428982b` on
+  `feat/promo-funded-preservation`. Full [SEJIRE checks 41072155928](https://github.com/azovskaya/sejire_arweave_solana/actions/runs/41072155928),
+  recipient checks `41072156106`, and preview staging `41072156285` all passed
+  on their first attempt for this exact source.
+- The sole accepted `native-admin-build` is artifact `12986335846`,
+  1,584,814 bytes, ZIP SHA-256
+  `9e702ea510850a35486301f440ace8d07ba4ef195bb2efdd974ceb6a9d09e405`.
+  Staged Pages commit: `5a3de8cb84dbefb643e80b0a7025899c8c08251d`.
+- Static root overlay: `3c1f78a297b83b3fdb90e1631ebb074209a770fc`, tree
+  `00fc4df97bedcb557bd351bae8e969c870167496`. All 34 native blobs were reused
+  exactly. All 94 older root assets were preserved (98 total); no published
+  files were removed and unrelated paths were unchanged.
+- Release commit: `a526ec917cf5ee3c6bd12e848822408ab14e6a8d`. Independent
+  review confirmed it adds only `publish-wallet-recovery-status.yml` to the
+  accepted static parent. The existing artifact-byte, provenance, admin verifier,
+  current-head and `github-pages` environment gates are unchanged.
+  [Publication 41074447373](https://github.com/azovskaya/sejire_arweave_solana/actions/runs/41074447373)
+  passed every gate and deployed successfully.
+- Public root `index.html`, `build-provenance.json` and
+  `assets/index-2EcK8eKU.js` returned HTTP 200 and matched the accepted Git blob
+  hashes byte-for-byte. Provenance points to source `9f43026…`; the live bundle
+  contains the three new recovery status/action labels. Managed Chrome loaded
+  that exact main script and completed welcome → restore form → back. No
+  application-origin console error was observed; the browser extension emitted
+  its own metadata errors. No words or wallet were used in this smoke check.
+
+The Worker remains at its previously accepted recovery deployment; this follow-up
+changes UI state and tests only. The owner can reload the original browser tab,
+resume the original save and explicitly choose “Повторить восстановление”. In
+the open screen, an error remains visible until a retry or an accepted result. Actual wallet approval,
+payment status and archive completion are still owner-session acceptance steps,
+not outcomes established by this release verification.
