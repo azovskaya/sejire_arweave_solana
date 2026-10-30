@@ -5,7 +5,7 @@ import {LocalHintProvider} from './providers/localHintProvider';
 
 const PRIMARY=['https://arweave.net/graphql','https://arweave-search.goldsky.com/graphql','https://turbo-gateway.com/graphql'];
 export async function discoverCandidates(ctx:RecoveryContext,pool:GatewayPool,diagnostics:SafeRecoveryDiagnostics,hints:string[]=[],providers?:HeadDiscoveryProvider[]):Promise<{candidates:HeadCandidate[];responded:boolean}>{
-  const fixture=import.meta.env.VITE_RECOVERY_TEST==='1'&&typeof window!=='undefined'
+  const fixture=typeof window!=='undefined'&&import.meta.env.VITE_RECOVERY_TEST==='1'
     ?(window as Window & {__SEJIRE_RECOVERY_TEST_LOCATORS__?:ConstructorParameters<typeof LegacyLocatorProvider>[0]}).__SEJIRE_RECOVERY_TEST_LOCATORS__
     :undefined;
   const primary=providers??[...PRIMARY.map(url=>new GraphqlVaultProvider(url)),new LegacyLocatorProvider(fixture),new LocalHintProvider(hints)];

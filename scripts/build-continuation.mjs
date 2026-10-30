@@ -3,7 +3,7 @@ import {resolve,relative} from 'node:path';
 import {createHash} from 'node:crypto';
 import {bundle} from './build-protocol-bundle.mjs';
 const root=resolve('.'),out=resolve('.cache/continuation');await mkdir(out,{recursive:true});
-for(const name of ['recover-vault','replay-journal'])await bundle(resolve('scripts/'+name+'.mts'),resolve(out,name+'.mjs'));
+for(const name of ['recover-vault','recover-network','replay-journal'])await bundle(resolve('scripts/'+name+'.mts'),resolve(out,name+'.mjs'));
 await bundle(resolve('apps/sponsor/src/protocol/executor.ts'),resolve(out,'executor.mjs'));
 for(const [source,target] of [['apps/web/dist','web'],['packages/checkout','source/packages/checkout'],['packages/protocol','source/packages/protocol'],['apps/sponsor/src/protocol','source/apps/sponsor/src/protocol'],['ao/modules','source/ao/modules'],['docs/PROTOCOL_CONTINUATION.md','README.md'],['apps/web/package-lock.json','web-package-lock.json'],['apps/sponsor/package-lock.json','sponsor-package-lock.json']])await cp(resolve(source),resolve(out,target),{recursive:true});
 const hashes={};async function walk(dir){for(const name of await readdir(dir,{withFileTypes:true})){const path=resolve(dir,name.name);if(name.isDirectory())await walk(path);else if(name.name!=='manifest.json')hashes[relative(out,path)]=createHash('sha256').update(await readFile(path)).digest('hex');}}await walk(out);

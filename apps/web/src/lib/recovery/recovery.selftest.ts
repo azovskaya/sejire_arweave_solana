@@ -7,6 +7,7 @@ import {RecoveryFailure} from './errors';
 import {newDiagnostics} from './diagnostics';
 import {verifyCandidate} from './verify';
 import {firstUsable,MAX_GATEWAY_RESPONSE_BYTES,timedFetch,WayfinderGatewayPool} from './gateways';
+import {recoverVaultFromWords} from './recover';
 import {createMnemonic} from '../crypto/bip39';
 import {deriveKeysFromMnemonic} from '../crypto/keys';
 import {encryptJson} from '../crypto/encrypt';
@@ -130,6 +131,20 @@ async function readFundedArchive(rawText:string,metadata:TxMetadata,openKeys=key
 const recovered=await readFundedArchive(raw,validFundMetadata);
 assert.equal(recovered.head.txId,id);assert.equal(recovered.forks.length,0);
 assert.deepEqual(recovered.head.vault,testVault,'both trees, version history and active tree survive historical fund recovery');
+const isolatedGateway='https://independent-gateway.example';
+const isolatedPool:GatewayPool={candidates:async()=>[{url:isolatedGateway,source:'synthetic'}],markSuccess:()=>{},markFailure:()=>{}};
+const isolatedFetcher:typeof fetch=async(url,init)=>{
+  assert.equal(String(url).includes(testWords)||String(init?.body??'').includes(testWords),false,'words never leave the tool');
+  if(String(url).endsWith('/graphql'))return new Response('index unavailable',{status:503});
+  if(String(url)===`${isolatedGateway}/tx/${id}`)return new Response(JSON.stringify({...validFundMetadata,
+    tags:validFundMetadata.tags.map(tag=>({name:Buffer.from(tag.name).toString('base64url'),value:Buffer.from(tag.value).toString('base64url')}))}));
+  if(String(url)===`${isolatedGateway}/raw/${id}`)return new Response(raw);
+  throw Error('unexpected independent recovery read');
+};
+const independent=await recoverVaultFromWords(testWords,{txHints:[id],pool:isolatedPool,fetcher:isolatedFetcher});
+assert.equal(independent.ok,true,'known ID restores when every index and the SEJIRE service are unavailable');
+if(independent.ok){assert.deepEqual(independent.vault,testVault);assert.equal(independent.versions.length,1);assert.equal(independent.incomplete,true,
+  'known ID cannot establish a complete history while all indexes are unavailable');}
 assert.equal(serializeEnvelope(recovered.head.envelope),raw,'recovery retains the exact encrypted envelope instead of resealing');
 assert.deepEqual(requests.map(request=>request.method),['POST','GET','GET'],'only discovery and archive reads');
 assert.equal((await readFundedArchive(raw,{...validFundMetadata,tags:[...validFundMetadata.tags,{name:'Protocol-Version',value:'sejire/v0.3'}]})).head.txId,id,'future fund format also opens');

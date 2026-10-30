@@ -95,10 +95,19 @@ lock можно только убедившись, что прежний writer 
 ```
 node replay-journal.mjs journal.json independent-trust.json new-state.json
 node recover-vault.mjs archive.json new-private-vault.json < private-words-file
+node recover-network.mjs new-private-recovery.json [known-arweave-tx-id ...] < private-words-file
 ```
 
 Файл слов создается владельцем офлайн с правами 600, не передается оператору;
 слова не указываются в аргументах/логах. Выход recovery — приватные данные, 600.
+`recover-network.mjs` запрашивает публичные Arweave индексы и шлюзы напрямую,
+без API SEJIRE, Solana-кошелька и доказательства оплаты. Известный TX ID
+можно взять из квитанции; он помогает восстановлению, когда индекс недоступен.
+Выход содержит каждую проверенную версию и поле `historyComplete`. Значение
+`false` означает, что обнаруженная версия не прошла проверку или отсутствует
+известный родитель. Недоступные неиндексированные версии обнаружить невозможно:
+даже `true` не доказывает полноту всей истории. Точный ciphertext проверяется
+по опубликованному digest и расшифровывается только локально.
 Trust-файл содержит независимые creationHash и checkpoint, не ключи.
 `executor.mjs` экспортирует существующий совместимый исполнитель: оператор
 подключает атомарное сохранение журнала, RPC reader, uploader и собственные
