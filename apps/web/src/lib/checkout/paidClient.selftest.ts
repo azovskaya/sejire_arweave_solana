@@ -166,7 +166,7 @@ type NetworkState = { snapshot?: PaidSnapshot; key?: string; creates: number; pr
   signature?: string; wrongGenesis?: boolean; paid: boolean; executed: boolean; onSigned?: () => void;
   dropBeforeAdmission?: boolean; tombstone?: boolean; missingStatus?: number; missingCode?: string;
   balance?: string; offer?: PaidPolicyResponse; sessionToken?: string; beforeSessionResponse?: () => Promise<void>;
-  deniedRpc?: string; rpcHosts?: string[] };
+  deniedRpc?: string; rpcHosts?: string[]; feeNull?: boolean };
 function syntheticNetwork(): NetworkState {
   const state: NetworkState = { creates: 0, prepares: 0, reserves: 0, sends: [], sessions: 0, paid: false, executed: false,
     recovers: 0, reconciles: 0, recoveries: new Map() };
@@ -180,7 +180,7 @@ function syntheticNetwork(): NetworkState {
       if (target === state.deniedRpc) return json({ error: 'synthetic denial' }, 403);
       const rpcNetwork = state.offer?.policy?.network ?? 'devnet';
       if (body.method === 'getGenesisHash') result = state.wrongGenesis ? SOLANA_GENESIS[rpcNetwork === 'devnet' ? 'mainnet-beta' : 'devnet'] : SOLANA_GENESIS[rpcNetwork];
-      else if (body.method === 'getFeeForMessage') result = { value: 5000 };
+      else if (body.method === 'getFeeForMessage') result = { value: state.feeNull ? null : 5000 };
       else if (body.method === 'getBalance') return new Response(`{"jsonrpc":"2.0","id":${JSON.stringify(body.id)},"result":{"value":${state.balance ?? '18446744073709551615'}}}`, { headers: { 'Content-Type': 'application/json' } });
       else if (body.method === 'getBlockHeight') result = state.blockHeight ?? 50;
       else if (body.method === 'sendTransaction') {
@@ -652,6 +652,13 @@ for (const invalidBalance of ['1e19', '18446744073709551615.0', '184467440737095
   assert.equal(walletCalls, 0, 'invalid or non-integer RPC amount is rejected before a wallet opens');
 }
 network.balance = '9007199254745993';
+network.feeNull = true;
+await assert.rejects(() => payPaidOperation(op.id, op.preparation!.preparationId, wallet(network)), /network_fee_not_ready/);
+assert.equal(walletCalls, 0); assert.equal(network.reserves, 0);
+network.blockHeight = op.preparation!.lastValidBlockHeight + 1;
+await assert.rejects(() => payPaidOperation(op.id, op.preparation!.preparationId, wallet(network)), /payment_preparation_expired/);
+assert.equal(walletCalls, 0); assert.equal(network.reserves, 0);
+network.feeNull = false; network.blockHeight = 50;
 const paidHelp = await Promise.allSettled([
   payPaidOperation(op.id, op.preparation!.preparationId, wallet(network)),
   payPaidOperation(op.id, op.preparation!.preparationId, wallet(network)),

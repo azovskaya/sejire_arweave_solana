@@ -400,10 +400,10 @@ test('double click and a second tab keep one operation and one wallet signature'
  await other.evaluate(words=>{window.secondFamily={words};},family.words);await enterWords(other,'secondFamily');
  await other.getByRole('button',{name:'Восстановить архив',exact:true}).click();
  await other.evaluate(async()=>(await import('/tests/paid-fixture.ts')).installWallet());
- await openPaid(other);await expect(panel(other).getByRole('button',{name:'Продолжить сохранение'})).toBeVisible();
- const second=panel(other).getByRole('button',{name:'Продолжить сохранение'}).click();
+ await openPaid(other);
  await page.evaluate(()=>{window.paidWallet.hold=false;window.paidWallet.release();});
- await second;
+ await expect(panel(other).getByRole('button',{name:'Продолжить сохранение'})).toBeVisible();
+ await panel(other).getByRole('button',{name:'Продолжить сохранение'}).click();
  await expect.poll(()=>state.sends.length).toBe(1);
  expect(state.creates).toBe(1);expect(await other.evaluate(()=>window.paidWallet.signCount)).toBe(0);
 });

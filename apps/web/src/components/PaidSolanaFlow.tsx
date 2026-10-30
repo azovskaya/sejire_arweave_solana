@@ -73,7 +73,14 @@ function errorMessage(error: unknown): string {
     technical_amount_overflow: 'Сумма превышает технический предел сети Solana. Укажите меньшую сумму.',
     contribution_unavailable: 'Помощь фонду через Solana пока недоступна. Попробуйте позже.',
   };
-  return known[code] ?? 'Не удалось обновить состояние операции. Проверим ту же попытку снова; повторная оплата не запускается.';
+  if (known[code]) return known[code];
+  const { stage } = failureDetails(error);
+  if (stage === 'кошелёк') return 'Не получили подтверждение от кошелька. Проверяем эту попытку; новая подпись без вашего действия не запрашивается.';
+  if (stage === 'хранение') return 'Оплата сохранена в заказе, но архив ещё не подтверждён. Продолжим сохранение без повторной оплаты.';
+  if (stage === 'сеть/RPC' || stage === 'комиссия' || stage === 'баланс') return 'Не удалось проверить условия Solana. Подпись не запрашивалась; повторите действие позже.';
+  if (stage === 'подготовка') return 'Подготовка оплаты не завершилась. Исходный заказ сохранён; повторите действие.';
+  if (stage === 'фиксация подписи' || stage === 'отправка' || stage === 'проверка оплаты') return 'Результат оплаты пока неясен. Сверяем эту попытку; новая подпись не запрашивается.';
+  return 'Не удалось подтвердить заказ. Сохранённую попытку можно безопасно продолжить.';
 }
 export function PaidSolanaFlow({ input, onBack, onBusy, onComplete, onAdoptAttempt }: Props) {
   const inputIdentity = input.mode === 'resume' ? `resume:${input.operationId}` : input.mode === 'contribution'
@@ -387,7 +394,7 @@ export function PaidSolanaFlow({ input, onBack, onBusy, onComplete, onAdoptAttem
   return <section className="checkout-panel" aria-label="Оплата SOL">
     <h1>{title}</h1>
     {initializing && <p role="status">Проверяем прежнее сохранение и условия оплаты…</p>}
-    {unavailable && <p>{contributionOnly ? 'Помощь фонду через Solana пока недоступна.' : 'Оплата через Solana пока недоступна. Сохранение по промокоду остаётся доступно.'}</p>}
+    {unavailable && <p>{contributionOnly ? 'Помощь фонду через Solana пока недоступна.' : 'Оплата через Solana пока недоступна. Вы можете сохранить дерево по промокоду.'}</p>}
     {(offerReady || order) && !completed && <>
       {!contributionOnly && <p>Стоимость сохранения: {price ? formatAmount(price, 9) : '…'} SOL.</p>}
       <p>Комиссия Solana отдельно: {op?.preparation ? `оценка ${formatAmount(op.preparation.feeLamports, 9)} SOL` : 'уточняется перед подтверждением в Phantom'}.</p>
@@ -421,7 +428,7 @@ export function PaidSolanaFlow({ input, onBack, onBusy, onComplete, onAdoptAttem
     {recoveryFailure && !error && <p role="alert">{recoveryFailure.message}</p>}
     {completionError && <p role="alert">Архив сохранён, но запись локальной истории не завершилась. Повторная оплата не требуется.</p>}
     {!completed && <button className="btn" type="button"
-      disabled={busy || finishing || initializing || !unavailable && !canPrepare && !pendingPayment && !paid && !recoveryPending && !(op && !order) || !unavailable && !op && !validDraftAmount}
+      disabled={busy || finishing || initializing || !unavailable && !released && !completionError && !canPrepare && !pendingPayment && !paid && !recoveryPending && !(op && !order) || !unavailable && !op && !validDraftAmount}
       onClick={() => void (unavailable ? setRefresh(value => value + 1) : completionError ? finish() : released ? run(async () => { await resolveReleasedPaidOperation(op!.id); onBack(true); }) : pay())}>
       {busy ? status || 'Продолжаем…' : primaryText}
     </button>}
