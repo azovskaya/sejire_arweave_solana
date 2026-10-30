@@ -42,7 +42,8 @@ try{
   const payload={kind:'contribution',payer:addr(7),contribution:'0.001',policyHash:offer.body.contributionPolicyHash};
   const [first,second]=await Promise.all([call('/orders',{method:'POST',token,key,body:payload}),
     call('/orders',{method:'POST',token,key,body:payload})]);
-  assert.deepEqual([first.status,second.status].sort(),[200,201]);
+  assert.deepEqual([first.status,second.status].sort(),[200,201],
+    `synthetic create errors: ${first.body.error??'none'}, ${second.body.error??'none'}`);
   assert.equal(first.body.record.order.id,second.body.record.order.id);
   assert.equal(first.body.record.order.fundContribution.amount,'1000000');
   assert.equal((await call(`/orders/by-key/${key}`,{token})).body.record.order.id,first.body.record.order.id);
