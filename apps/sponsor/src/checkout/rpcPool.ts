@@ -1,6 +1,6 @@
 import { canonical } from '../../../../packages/protocol/wire';
 import { createPaidOrder, SYSTEM_PROGRAM, type Network, type PaidOrder } from '../../../../packages/checkout/order';
-import { buildPaidPaymentMessage, SOLANA_GENESIS, SOLANA_RPCS, type DurablePaymentPreparation, type PaidPolicy } from '../../../../packages/checkout/paid';
+import { buildPaidPaymentMessage, validatePaymentPreparation, SOLANA_GENESIS, SOLANA_RPCS, type DurablePaymentPreparation, type PaidPolicy } from '../../../../packages/checkout/paid';
 import { rpcU64 } from '../../../../packages/checkout/rpcJson';
 import { RpcPaymentPreparer } from './paymentPreparation';
 import type { TransactionEvidence, ChainPolicy } from './paymentValidator';
@@ -129,6 +129,39 @@ export async function preparePaidWithRpc(env: RpcEnv, order: PaidOrder): Promise
     }
   }
   throw last ?? configuredUrls(env, order.network).map(url => cooled.get(url)?.error).find(Boolean) ?? new RpcEvidenceError('rpc-unavailable');
+}
+
+export type PaymentRecoveryInspection = Extract<ReferencePaymentResult, { status: 'found' }> |
+  { status: 'renew'; preparation: DurablePaymentPreparation; finalizedBlockHeight: number };
+/** One complete read-only observation before an explicit, atomic reserve fence.
+ * This is NOT a cryptographic proof of absence. The ledger's no-reserve CAS is
+ * what prevents audited V2 clients from broadcasting superseded signed bytes. */
+export async function inspectPaymentRecoveryWithRpc(env: RpcEnv, order: PaidOrder, previous: DurablePaymentPreparation): Promise<PaymentRecoveryInspection> {
+  await validatePaymentPreparation(order, previous);
+  const deadline = Date.now() + 22000;
+  let last: RpcEvidenceError | null = null;
+  for (const url of candidates(env, order.network)) {
+    const source = reader(order.network, url);
+    try {
+      if (await source.rpc('getGenesisHash', [], deadline) !== SOLANA_GENESIS[order.network]) throw new RpcEvidenceError('wrong-network');
+      const height = await source.rpc('getBlockHeight', [{ commitment: 'finalized' }], deadline);
+      if (typeof height !== 'number' || !Number.isSafeInteger(height) || height < 0) throw new RpcEvidenceError('rpc-malformed');
+      const result = await source.findByReference(order, previous, deadline);
+      if (result.status === 'found') return result;
+      if (result.reason !== 'not-found') {
+        if (unavailable.has(result.reason as RpcFailure)) throw new RpcEvidenceError(result.reason as RpcFailure);
+        throw Error('payment_recovery_unavailable');
+      }
+      if (height <= previous.lastValidBlockHeight) throw Error('payment_not_expired');
+      const preparation = await new RpcPaymentPreparer(source).preparePaid(order, deadline, previous);
+      if (preparation.lastValidBlockHeight <= height) throw Error('payment_recovery_unavailable');
+      return { status: 'renew', preparation, finalizedBlockHeight: height };
+    } catch (error) {
+      if (!isUnavailable(error)) throw error;
+      pause(url, error); last = error;
+    }
+  }
+  throw last ?? new RpcEvidenceError('rpc-unavailable');
 }
 
 /** Independent complete observations; no method-level stitching between nodes. */

@@ -10,7 +10,7 @@ import { createOrder } from '../../../packages/checkout/order.ts';
 import { SqliteAtomicOrderStore } from '../src/checkout/sqliteStore.ts';
 import { ApiLedger } from '../src/checkout/apiLedger.ts';
 import { PaidLedger } from '../src/checkout/paidLedger.ts';
-import { runPaidOrder } from '../src/checkout/paidRunner.ts';
+import { runPaidOrder, recoverPaidOrder } from '../src/checkout/paidRunner.ts';
 import { validatePreparedPayment } from '../src/checkout/paymentValidator.ts';
 import { addr, encode58, sig } from '../src/checkout/rpcFixtures.ts';
 import { FundLedger, TREASURY_ADDRESS } from '../src/fund/ledger.ts';
@@ -83,7 +83,7 @@ function reopen(current) {
 
 async function fixture(options = {}) {
   const serial = ++sequence, id = serial.toString(16).padStart(32, '0');
-  const createdAt = Math.floor(Date.now() / 1000) * 1000 - 2000;
+  const createdAt = options.createdAt ?? Math.floor(Date.now() / 1000) * 1000 - 2000;
   const envelope = { schema: 'sejire/envelope/v1', vault_id: id, cipher: 'aes-gcm-256', kdf: 'hkdf-sha256',
     iv: 'AAAAAAAAAAAAAAAA', ciphertext: Buffer.alloc(32, serial % 255).toString('base64'), protocol: 'sejire/v0.3' };
   const serialized = JSON.stringify(envelope);
@@ -140,6 +140,14 @@ async function offer(c, f, options = {}) {
 async function prepare(c, f) { return c.paid.prepare(owner, f.order.id, f.preparation, f.order.createdAt + 300); }
 async function reserve(c, f) { return c.paid.reserve(owner, f.order.id, f.signature, f.preparation.preparationId, Date.now()); }
 async function pay(c, f) { await prepare(c, f); await reserve(c, f); return c.paid.commit(f.order.id, f.payment, Date.now()); }
+async function recoveryFor(f, patch = {}) {
+  const createdAt = Date.now();
+  return { status: 'renew', finalizedBlockHeight: 1001, preparation: await createPaymentPreparation(f.order, {
+    blockhash: addr(9), lastValidBlockHeight: 2000, feeLamports: '5000', createdAt,
+    previousPreparationId: f.preparation.preparationId, expiresAt: createdAt + 900000, ...patch,
+  }) };
+}
+const recover = (c, f, inspect) => recoverPaidOrder(c.paid, {}, owner, f.order.id, f.preparation.preparationId, { inspect });
 
 async function promo(c, amount, options = {}) {
   const id = (++sequence).toString(16).padStart(32, '0');
@@ -407,6 +415,116 @@ try {
     assert.equal(c.paid.work(unknown.order.id).preparation.preparationId, unknown.preparation.preparationId);
     assert.equal(c.paid.treasury.paidTotals().reservedWinston, '30');
     assert.equal(mock.calls.lookup, 2); assert.equal(mock.calls.sign, 0); assert.equal(mock.calls.submit.length, 0);
+  });
+
+  await test('explicit recovery renews only the payment window of an expired immutable order; a lost reply survives restart', async () => {
+    let c = await context(); const f = await fixture({ createdAt: Date.now() - 3600000 });
+    await offer(c, f); await prepare(c, f);
+    const before = c.paid.work(f.order.id), holdBefore = c.rows('SELECT * FROM paid_holds');
+    const renewal = await recoveryFor(f); let reads = 0;
+    const recovered = await recover(c, f, async work => { reads++; assert.deepEqual(work, before); return renewal; });
+    assert.deepEqual(recovered.record.order, f.order); assert.equal(recovered.record.order.expiresAt, f.order.expiresAt);
+    assert.deepEqual(recovered.preparation, renewal.preparation); assert.equal(recovered.record.pendingSignature, undefined);
+    assert.deepEqual(c.paid.work(f.order.id).input, before.input); assert.deepEqual(c.paid.work(f.order.id).prepared, before.prepared);
+    assert.deepEqual(c.rows('SELECT * FROM paid_holds'), holdBefore);
+    assert.equal(c.count('orders'), 1); assert.equal(c.count('paid_payloads'), 2); assert.equal(c.count('credits'), 0);
+    const history = c.rows('SELECT * FROM paid_payment_recoveries'); assert.equal(history.length, 1);
+    assert.deepEqual(JSON.parse(history[0].previous_preparation_json), f.preparation);
+    assert.deepEqual(JSON.parse(history[0].preparation_json), renewal.preparation);
+    // Pretend the POST acknowledgement was lost: restart with the original preparation ID.
+    c = reopen(c);
+    assert.deepEqual(await recover(c, f, async () => { reads++; throw Error('must_not_repeat_rpc'); }), recovered);
+    assert.equal(reads, 1); assert.equal(c.count('paid_payment_recoveries'), 1);
+    assert.deepEqual(await c.paid.prepare(owner, f.order.id, f.preparation, Date.now()), renewal.preparation);
+    await assert.rejects(reserve(c, f), /payment_not_prepared/);
+    const next = renewal.preparation;
+    const signature = encode58(sign(null, paymentMessageBytes(next.messageBase64), pair.privateKey));
+    const evidence = { ...f.evidence, signature, blockTimeMs: Math.floor(next.createdAt / 1000) * 1000,
+      recentBlockhash: next.blockhash, messageBase64: next.messageBase64 };
+    const payment = await validatePreparedPayment(f.order, evidence, f.chain, next);
+    assert(evidence.blockTimeMs > f.order.expiresAt);
+    await c.paid.reserve(owner, f.order.id, signature, next.preparationId, Date.now());
+    assert.equal((await c.paid.commit(f.order.id, payment, Date.now())).status, 'credited');
+    assert.equal((await c.paid.commit(f.order.id, payment, Date.now())).status, 'already-credited');
+    assert.equal(c.count('used_transactions'), 1); assert.equal(c.count('credits'), 1);
+    assert.equal(c.paid.treasury.paidTotals().reservedWinston, '30');
+    assert.equal(c.paid.work(f.order.id).signed, null);
+  });
+
+  await test('a durable reserve, lost reserve acknowledgement, payment, or active runner lease forbids recovery', async () => {
+    let c = await context(); const f = await fixture(); await offer(c, f); await prepare(c, f); await reserve(c, f);
+    c = reopen(c); let reads = 0; const inspect = async () => { reads++; return recoveryFor(f); };
+    await assert.rejects(recover(c, f, inspect), /previous_payment_unresolved/);
+    await c.paid.commit(f.order.id, f.payment, Date.now());
+    await assert.rejects(recover(c, f, inspect), /previous_payment_unresolved/);
+    assert.equal(reads, 0); assert.equal(c.count('paid_payment_recoveries'), 0);
+    const g = await fixture(); await offer(c, g); await prepare(c, g);
+    assert(await c.paid.claim(g.order.id, 'running-existing-check', Date.now()));
+    await assert.rejects(recover(c, g, inspect), /payment_recovery_busy/);
+    await assert.rejects(recoverPaidOrder(c.paid, {}, otherOwner, g.order.id, g.preparation.preparationId, { inspect }), /order_not_found/);
+    assert.equal(reads, 0); assert.equal(c.paid.work(g.order.id).preparation.preparationId, g.preparation.preparationId);
+  });
+
+  await test('recovery and reserve share an atomic preparation fence in both asynchronous race directions', async () => {
+    const c = await context(), f = await fixture(); await offer(c, f); await prepare(c, f);
+    const renewal = await recoveryFor(f);
+    let entered, resume; const reached = new Promise(resolve => { entered = resolve; });
+    const gate = new Promise(resolve => { resume = resolve; });
+    const begin = c.orders.beginReconciliationLinked.bind(c.orders);
+    c.orders.beginReconciliationLinked = async (...args) => { entered(); await gate; return begin(...args); };
+    const lateReserve = reserve(c, f); await reached;
+    await recover(c, f, async () => renewal);
+    resume(); await assert.rejects(lateReserve, /payment_not_prepared/);
+    c.orders.beginReconciliationLinked = begin;
+    assert.equal(c.paid.snapshot(f.order.id).record.pendingSignature, undefined);
+    const g = await fixture(); await offer(c, g); await prepare(c, g); const gRenewal = await recoveryFor(g);
+    let inspectEntered, releaseInspect;
+    const inspecting = new Promise(resolve => { inspectEntered = resolve; });
+    const inspectGate = new Promise(resolve => { releaseInspect = resolve; });
+    const recovery = recover(c, g, async () => { inspectEntered(); await inspectGate; return gRenewal; });
+    await inspecting; await reserve(c, g); releaseInspect();
+    await assert.rejects(recovery, /previous_payment_unresolved/);
+    assert.equal(c.paid.snapshot(g.order.id).record.pendingSignature, g.signature);
+    assert.deepEqual(c.paid.work(g.order.id).preparation, g.preparation);
+    assert.equal(c.rows('SELECT * FROM paid_payment_recoveries WHERE order_id=?', g.order.id).length, 0);
+  });
+
+  await test('concurrent recovery requests serialize; duplicate predecessor never makes another preparation', async () => {
+    const c = await context(), f = await fixture(); await offer(c, f); await prepare(c, f); const renewal = await recoveryFor(f);
+    let entered, resume, reads = 0;
+    const reached = new Promise(resolve => { entered = resolve; }), gate = new Promise(resolve => { resume = resolve; });
+    const inspect = async () => { reads++; entered(); await gate; return renewal; };
+    const first = recover(c, f, inspect); await reached;
+    await assert.rejects(recover(c, f, inspect), /payment_recovery_busy/);
+    resume(); const recovered = await first;
+    assert.deepEqual(await recover(c, f, inspect), recovered);
+    assert.equal(reads, 1); assert.equal(c.count('paid_payment_recoveries'), 1);
+  });
+
+  await test('recovery preserves a real original reference payment and never executes the archive', async () => {
+    const c = await context(), f = await fixture(); await offer(c, f); await prepare(c, f);
+    const snapshot = await recover(c, f, async () => ({ status: 'found', signature: f.signature, evidence: f.evidence, payment: f.payment }));
+    assert.equal(snapshot.record.payment.signature, f.signature); assert.deepEqual(snapshot.preparation, f.preparation);
+    assert.equal(c.count('paid_payment_recoveries'), 0); assert.equal(c.count('used_transactions'), 1);
+    assert.equal(c.paid.work(f.order.id).signed, null); assert.equal(c.count('paid_payloads'), 2);
+    assert.equal(c.paid.treasury.paidTotals().reservedWinston, '30');
+  });
+
+  await test('uncertainty, stale candidate height, and SQL failure cannot rotate or release the existing attempt', async () => {
+    const c = await context(), f = await fixture(); await offer(c, f); await prepare(c, f);
+    await assert.rejects(recover(c, f, async () => { throw Error('rpc-timeout'); }), /payment_recovery_unavailable/);
+    await assert.rejects(recover(c, f, async () => ({ ...await recoveryFor(f), finalizedBlockHeight: 1000 })), /payment_not_expired/);
+    await assert.rejects(recover(c, f, async () => recoveryFor(f, { lastValidBlockHeight: 1001 })), /payment_recovery_unavailable/);
+    const renewal = await recoveryFor(f);
+    c.storage.failSql = sql => sql.startsWith('UPDATE paid_orders SET preparation_json=?,status=?,next_at=?,attempts=0');
+    await assert.rejects(recover(c, f, async () => renewal), /payment_recovery_unavailable/);
+    c.storage.failSql = null;
+    assert.deepEqual(c.paid.work(f.order.id).preparation, f.preparation);
+    assert.equal(c.count('paid_payment_recoveries'), 0); assert.equal(c.count('credits'), 0);
+    assert.equal(c.paid.treasury.paidTotals().reservedWinston, '30');
+    assert.equal(c.rows('SELECT lease_until FROM paid_orders WHERE order_id=?', f.order.id)[0].lease_until, 0);
+    assert.deepEqual((await recover(c, f, async () => renewal)).preparation, renewal.preparation);
+    assert.equal(c.count('paid_payment_recoveries'), 1);
   });
 
   await test('shared physical balance includes paid and promo holds in both admission directions', async () => {

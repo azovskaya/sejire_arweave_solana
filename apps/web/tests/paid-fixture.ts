@@ -30,6 +30,15 @@ export async function initialSnapshot(body: { kind?: 'preservation' | 'contribut
     policy, preparation: null, execution: null, verification: null, expired: false, cancelled: false };
 }
 export const preparation = (snapshot: PaidSnapshot) => createPaymentPreparation(snapshot.record.order, { blockhash: address(8), lastValidBlockHeight: 100, feeLamports: '5000', createdAt: Date.now() });
+export function recoveredPreparation(snapshot: PaidSnapshot, generation: number, feeLamports = '6000') {
+  if (!snapshot.preparation) throw Error('Synthetic previous preparation missing');
+  const createdAt = Date.now();
+  return createPaymentPreparation(snapshot.record.order, {
+    blockhash: address(20 + generation), lastValidBlockHeight: 200 + generation,
+    feeLamports, createdAt, previousPreparationId: snapshot.preparation.preparationId,
+    expiresAt: createdAt + 15 * 60000,
+  });
+}
 export function completedSnapshot(snapshot: PaidSnapshot): PaidSnapshot {
   const s = structuredClone(snapshot), order = s.record.order, payment = s.record.payment;
   if (!payment || order.kind !== 'preservation') throw Error('Synthetic preservation payment missing');

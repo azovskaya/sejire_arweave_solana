@@ -11,7 +11,7 @@ import { finalizeStandalonePaid } from '../lib/checkout/paidFinalize';
 import {
   beginPaidOperation, checkPaidOperation, paidCompletion, payPaidOperation,
   preparePaidOperation, readPaidPolicy, readPaidStatus, PaidApiError, cancelPaidOperation, resolveReleasedPaidOperation, retryPaidCreation, cancelPaidCreation,
-  findContributionAttempt, completeContributionLocally, contributionReceipt,
+  findContributionAttempt, completeContributionLocally, contributionReceipt, recoverPaidOperation,
 } from '../lib/checkout/paidClient';
 import type { PaidCompletion, PaidInput, PaidOperation, PaidPolicyResponse } from '../lib/checkout/paidTypes';
 
@@ -45,6 +45,10 @@ function errorMessage(error: unknown): string {
     storage_unavailable: 'Браузер не смог защитить операцию от повторной оплаты. Новый платёж не начинается.',
     invalid_paid_attempt: 'Не удалось проверить сохранённую попытку. Новый платёж не начинается.',
     previous_payment_unresolved: 'Проверяем уже начатую оплату. Новая подпись и повторный платёж не запускаются.',
+    payment_not_expired: 'Предыдущее подтверждение ещё действует. Завершите открытый запрос в кошельке или попробуйте восстановление немного позже.',
+    payment_recovery_busy: 'Сервер сейчас проверяет этот заказ. Повторите восстановление после завершения проверки.',
+    payment_recovery_unavailable: 'Не удалось безопасно восстановить подтверждение. Заказ сохранён; можно повторить проверку.',
+    preparation_changed: 'Подтверждение уже изменилось в другой вкладке. Проверьте состояние этого заказа.',
     insufficient_wallet_balance: 'На кошельке недостаточно SOL для суммы заказа и комиссии сети.',
     invalid_amount: 'Введите сумму в SOL без пробелов, запятой и округления.',
     excess_precision: 'Укажите не более девяти знаков после точки.',
@@ -98,6 +102,7 @@ export function PaidSolanaFlow({ input, onBack, onBusy, onComplete, onAdoptAttem
   const identity = activeInput.mode === 'resume' ? activeInput.operationId : activeInput.mode==='contribution'?'contribution':serializeEnvelope(activeInput.envelope) + ':' + activeInput.parentTxId + ':' + activeInput.treeId;
 
   const remember = useCallback((next: PaidOperation) => {
+    if (latest.current?.preparation?.preparationId !== next.preparation?.preparationId) setConsent(false);
     latest.current = next; setOp(next);
     const current = latestInput.current;
     if (current.mode === 'create' && next.intent.kind==='preservation' && (serializeEnvelope(current.envelope) !== next.serialized || current.parentTxId !== next.archive?.parentTxId)) {
@@ -216,6 +221,16 @@ export function PaidSolanaFlow({ input, onBack, onBusy, onComplete, onAdoptAttem
     });
   }
 
+  async function recoverWalletRequest() {
+    setConsent(false);
+    await run(async () => {
+      const current = context.current, previous = latest.current;
+      if (!previous) return;
+      const next = await recoverPaidOperation(previous.id, () => current.active);
+      if (current.active) remember(next);
+    });
+  }
+
   const finish = useCallback(async () => {
     const previous = latest.current, current = context.current, callback = callbacks.current.onComplete;
     if (!previous || completing.current || !current.active) return;
@@ -248,11 +263,15 @@ export function PaidSolanaFlow({ input, onBack, onBusy, onComplete, onAdoptAttem
   const contributionOnly = op ? op.intent.kind === 'contribution' : donationOnly;
   const offeredPolicy = contributionOnly ? policy?.contributionPolicy : policy?.policy;
   const offerReady = contributionOnly ? policy?.contributionReady : policy?.ready;
-  const pendingPayment = op?.signingStarted || Boolean(op?.signature);
+  const signature = op?.snapshot?.record.payment?.signature ?? op?.snapshot?.record.pendingSignature ?? op?.signature;
+  const pendingPayment = op?.signingStarted || Boolean(signature);
+  const unsignedWalletRequest = Boolean(op?.signingStarted && !signature && !op?.signedTransaction);
+  const recoveryPending = Boolean(op?.recoveryRequestedFor);
   const envelope = op?.serialized ? parseEnvelope(JSON.parse(op.serialized)) : activeInput.mode === 'create' ? activeInput.envelope : null;
   const unavailable = !op && !initializing && !offerReady;
-  const canPrepare = !initializing && !busy && !checking && !paid && !pendingPayment && !released && !op?.cancellationRequested && Boolean(order || !op && offerReady);
-  const signature = op?.snapshot?.record.payment?.signature ?? op?.signature;
+  const canPrepare = !initializing && !busy && !checking && !paid && !pendingPayment && !recoveryPending && !released && !op?.cancellationRequested && Boolean(order || !op && offerReady);
+  const recoverable = Boolean(order && op?.preparation && op.localCompletion === 'pending' && !signature && !op.signedTransaction &&
+    !op.snapshot?.execution && !paid && !released && !op.cancellationRequested);
   const network = order?.network ?? offeredPolicy?.network;
   const executionStatus = op?.snapshot?.execution?.status;
   let amountUnits: string | null = null, draftTotal: string | null = null, amountError = '';
@@ -289,7 +308,10 @@ export function PaidSolanaFlow({ input, onBack, onBusy, onComplete, onAdoptAttem
   else if (released) title = op?.snapshot?.cancelled || op?.creationCancelled ? 'Запрос оплаты отменён' : 'Срок предложения оплаты истёк';
   else if (paid) title = executionStatus === 'requires-reconciliation' ? 'Проверяем состояние сохранения'
     : executionStatus === 'confirming' || executionStatus === 'submitted' ? 'Ждём подтверждения Arweave' : 'Оплата получена. Сохраняем дерево';
+  else if (signing) title = 'Подтвердите оплату в кошельке';
+  else if (unsignedWalletRequest) title = 'Подтверждение в кошельке не завершено';
   else if (pendingPayment) title = 'Проверяем оплату';
+  else if (recoveryPending) title = 'Восстанавливаем подтверждение';
   else if (op?.cancellationRequested) title = 'Проверяем отмену запроса';
   else if (op && !order) title = 'Проверяем созданный запрос';
 
@@ -339,14 +361,23 @@ export function PaidSolanaFlow({ input, onBack, onBusy, onComplete, onAdoptAttem
       <button className="btn ghost" type="button" disabled={!canPrepare} onClick={() => void connect('Phantom')}>Подключить Phantom</button>
       <button className="btn ghost" type="button" disabled={!canPrepare} onClick={() => void connect('Solflare')}>Подключить Solflare</button>
     </div>}
-    {wallet && !pendingPayment && !paid && !released && !op?.cancellationRequested && (order || offerReady) && <>
+    {wallet && !pendingPayment && !recoveryPending && !paid && !released && !op?.cancellationRequested && (order || offerReady) && <>
       {op?.preparation && <label><input type="checkbox" checked={consent} disabled={busy || checking}
         onChange={event => setConsent(event.target.checked)} /> Я проверил(а) сеть, получателей, сумму и отдельную комиссию.</label>}
       <button className="btn" type="button" disabled={!canPrepare || Boolean(op?.preparation && !consent) || !op && !validDraftAmount}
         onClick={() => void pay()}>{op?.preparation ? 'Подтвердить оплату в кошельке' : contributionOnly ? 'Только помочь другим' : 'Оплатить и сохранить'}</button>
     </>}
     {signing && <p role="status">Подтвердите оплату в кошельке</p>}
-    {pendingPayment && !paid && <p role="status">Проверяем оплату. {delayMessage(op?.snapshot?.verification?.reason)} Новая подпись не запускается.</p>}
+    {unsignedWalletRequest && !paid && !signing && <p role="status">Сайт пока не получил подпись от кошелька. Проверяем этот заказ. Если запрос в кошельке уже закрыт, восстановите подтверждение.</p>}
+    {pendingPayment && !unsignedWalletRequest && !paid && <p role="status">Проверяем оплату. {delayMessage(op?.snapshot?.verification?.reason)} Новая подпись не запускается.</p>}
+    {recoverable && !signing && <>
+      {recoveryPending && <p role="status">Запрос восстановления сохранён. Проверяем его результат для того же заказа.</p>}
+      <button className={unsignedWalletRequest || recoveryPending ? 'btn' : 'btn ghost'} type="button"
+        disabled={initializing || busy || checking} onClick={() => void recoverWalletRequest()}>
+        {unsignedWalletRequest || recoveryPending ? 'Восстановить подтверждение' : 'Обновить подтверждение'}
+      </button>
+      {(unsignedWalletRequest || recoveryPending) && <p className="sub">После проверки сервер обновит подтверждение этого заказа. Сумму и комиссию нужно будет проверить снова; кошелёк откроется только по вашему нажатию.</p>}
+    </>}
     {paid && !completed && <p role="status">{executionStatus === 'confirming' || executionStatus === 'submitted'
       ? 'Оплата получена, архив отправлен. Ждём подтверждения сети и проверяем, что архив можно скачать.'
       : 'Оплата получена. Сохраняем дерево.'} Этот заказ продолжится после закрытия окна.</p>}
@@ -358,7 +389,7 @@ export function PaidSolanaFlow({ input, onBack, onBusy, onComplete, onAdoptAttem
         const current = context.current; await resolveReleasedPaidOperation(op!.id); if (current.active) onBack(true);
       })}>{contributionOnly ? 'Закрыть отменённый запрос' : 'Вернуться к выбору сохранения'}</button>
     </>}
-    {order && !pendingPayment && !paid && !completed && !released && <button className="btn ghost" type="button" disabled={busy || checking}
+    {order && !pendingPayment && !recoveryPending && !paid && !completed && !released && <button className="btn ghost" type="button" disabled={busy || checking}
       onClick={() => void run(async () => { const current = context.current; const next = await cancelPaidOperation(op!.id); if (current.active) remember(next); })}>Отменить неоплаченный запрос</button>}
     {op?.cancellationRequested && !released && <p role="status">Проверяем отмену исходного запроса. До ответа сервера новая оплата не начинается.</p>}
     {op && !order && !released && <p role="status">{contributionOnly ? 'Сохранили сумму взноса и номер запроса.' : 'Сохранили исходный зашифрованный архив и номер запроса.'} Проверяем его состояние; новый заказ не создаётся.</p>}

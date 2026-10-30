@@ -1,6 +1,6 @@
 import { assertUnits } from '../../../../packages/checkout/amounts';
 import { assertBase58, assertOrder, type Order, type Network, type Asset } from '../../../../packages/checkout/order';
-import { SOLANA_GENESIS, validatePaymentPreparation, type DurablePaymentPreparation } from '../../../../packages/checkout/paid';
+import { SOLANA_GENESIS, validatePaymentPreparation, paymentExpiresAt, type DurablePaymentPreparation } from '../../../../packages/checkout/paid';
 import type { PaidOrder } from '../../../../packages/checkout/order';
 /** Normalized evidence from a TRUSTED server RPC decoder, NEVER an HTTP request body.
  * SolanaRpcReader/decoder inspect raw instructions in A2.1. They must inspect
@@ -22,7 +22,7 @@ export type Credit = Readonly<{ purpose: 'servicePayment' | 'fundContribution'; 
 export type ValidatedPayment = Readonly<{ orderId: string; network: Network; signature: string; slot: number; feeLamports: string; credits: readonly Credit[] }>;
 // Genesis must be independently obtained/pinned by the future trusted transport. No live network operation here.
 export type ChainPolicy = Readonly<{ network: Network; genesisHash: string }>;
-function validatePaymentEvidence(order: Order, tx: TransactionEvidence, chain: ChainPolicy): ValidatedPayment {
+function validatePaymentEvidence(order: Order, tx: TransactionEvidence, chain: ChainPolicy, expiresAt = order.expiresAt): ValidatedPayment {
   assertOrder(order);
   assertBase58(tx.signature, 64);
   if (chain.network !== order.network || tx.network !== order.network || !chain.genesisHash || tx.genesisHash !== chain.genesisHash) throw new Error('wrong_network');
@@ -33,7 +33,7 @@ function validatePaymentEvidence(order: Order, tx: TransactionEvidence, chain: C
   // server reference and its exact durable preparation, so inclusion in the
   // creation second is valid even when createdAt retained milliseconds.
   const startsAt = order.schema === 'sejire/order/v2' ? Math.floor(order.createdAt / 1000) * 1000 : order.createdAt;
-  if (!Number.isSafeInteger(tx.blockTimeMs) || tx.blockTimeMs === null || tx.blockTimeMs < startsAt || tx.blockTimeMs > order.expiresAt) throw new Error('payment_outside_order_window');
+  if (!Number.isSafeInteger(tx.blockTimeMs) || tx.blockTimeMs === null || tx.blockTimeMs < startsAt || tx.blockTimeMs > expiresAt) throw new Error('payment_outside_order_window');
   assertUnits(tx.feeLamports);
   if (tx.feePayer !== order.payer || !tx.signers.includes(order.payer)) throw new Error('wrong_payer');
   const expected = (['servicePayment', 'fundContribution'] as const).filter(purpose => assertUnits(order[purpose].amount) > 0n);
@@ -64,7 +64,7 @@ export async function validatePreparedPayment(order: PaidOrder, tx: TransactionE
   const checked = await validatePaymentPreparation(order, preparation);
   if (chain.genesisHash !== SOLANA_GENESIS[order.network] || chain.network !== order.network) throw new Error('wrong_network');
   if (tx.recentBlockhash !== checked.blockhash || tx.messageBase64 !== checked.messageBase64 || tx.feeLamports !== checked.feeLamports) throw new Error('payment_preparation_mismatch');
-  // RPC block time has whole-second resolution. The original order window is still checked below.
+  // Only a validated, durably fenced v2 preparation may carry a renewed payment window.
   if (tx.blockTimeMs === null || tx.blockTimeMs < Math.floor(checked.createdAt / 1000) * 1000) throw new Error('payment_predates_preparation');
-  return validatePaymentEvidence(order, tx, chain);
+  return validatePaymentEvidence(order, tx, chain, paymentExpiresAt(order, checked));
 }

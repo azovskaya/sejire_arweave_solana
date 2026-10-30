@@ -1,7 +1,7 @@
 import { assertBase58, assertOrder, SYSTEM_PROGRAM, type Order, type PaidOrder } from '../../../../packages/checkout/order';
 import { SolanaRpcReader, DEVNET_GENESIS } from './rpcReader';
 import { object } from './rpcDecoder';
-import { buildPaidPaymentMessage, createPaymentPreparation, SOLANA_GENESIS, type DurablePaymentPreparation } from '../../../../packages/checkout/paid';
+import { buildPaidPaymentMessage, createPaymentPreparation, validatePaymentPreparation, PAYMENT_RECOVERY_WINDOW_MS, SOLANA_GENESIS, type DurablePaymentPreparation } from '../../../../packages/checkout/paid';
 import { rpcU64 } from '../../../../packages/checkout/rpcJson';
 export type PaymentPreparation = { source: string; serviceDestination?: string; fundDestination?: string; blockhash: string; lastValidBlockHeight: number; feeLamports: string };
 export interface PaymentPreparer { prepare(order: Order): Promise<PaymentPreparation> }
@@ -30,10 +30,11 @@ export class RpcPaymentPreparer implements PaymentPreparer {
   }
   /** The caller must durably store this exact preparation before returning it to a wallet.
    * An already-issued preparation is resumed from the ledger, never regenerated here. */
-  async preparePaid(order: PaidOrder, operationDeadline = Date.now() + 22000): Promise<DurablePaymentPreparation> {
+  async preparePaid(order: PaidOrder, operationDeadline = Date.now() + 22000, previous?: DurablePaymentPreparation): Promise<DurablePaymentPreparation> {
     assertOrder(order);
     if (order.schema !== 'sejire/order/v2' || this.reader.chain.network !== order.network || this.reader.chain.genesisHash !== SOLANA_GENESIS[order.network]) throw new Error('payment_network_not_ready');
-    if (Date.now() < order.createdAt || Date.now() >= order.expiresAt) throw new Error('order_expired');
+    if (previous) await validatePaymentPreparation(order, previous);
+    if (Date.now() < order.createdAt || (!previous && Date.now() >= order.expiresAt)) throw new Error('order_expired');
     const deadline = operationDeadline;
     if (await this.reader.rpc('getGenesisHash', [], deadline) !== SOLANA_GENESIS[order.network]) throw new Error('payment_network_not_ready');
     for (const part of [order.servicePayment, order.fundContribution]) {
@@ -52,6 +53,9 @@ export class RpcPaymentPreparer implements PaymentPreparer {
     if (typeof fee.value !== 'number' || !Number.isSafeInteger(fee.value) || fee.value <= 0 || fee.value > 100000) throw new Error('network_fee_not_ready');
     const balance = object(await this.reader.rpc('getBalance', [order.payer, { commitment: 'finalized' }], deadline));
     requireBalance(balance.value, order.total, BigInt(fee.value));
-    return createPaymentPreparation(order, { blockhash: value.blockhash as string, lastValidBlockHeight: value.lastValidBlockHeight, feeLamports: String(fee.value), createdAt: Date.now() });
+    if (previous && value.blockhash === previous.blockhash) throw new Error('payment_recovery_unavailable');
+    const createdAt = Date.now();
+    return createPaymentPreparation(order, { blockhash: value.blockhash as string, lastValidBlockHeight: value.lastValidBlockHeight, feeLamports: String(fee.value), createdAt,
+      ...(previous ? { previousPreparationId: previous.preparationId, expiresAt: createdAt + PAYMENT_RECOVERY_WINDOW_MS } : {}) });
   }
 }

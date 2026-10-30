@@ -107,12 +107,21 @@ export async function validatePaidOrderPolicy(order: PaidOrder, policy: Checkout
       order.storage.kind !== checked.storage.kind || order.storage.network !== checked.storage.network || order.storage.treasuryAddress !== checked.storage.treasuryAddress))) throw new Error('paid_policy_mismatch');
 }
 
-export type DurablePaymentPreparation = Readonly<{
-  schema: 'sejire/payment-preparation/v1'; preparationId: string; orderId: string; policyHash: string;
+type PaymentPreparationFields = {
+  preparationId: string; orderId: string; policyHash: string;
   network: Network; genesisHash: string; payer: string; reference: string;
   blockhash: string; lastValidBlockHeight: number; messageBase64: string; messageSha256: string;
   feeLamports: string; createdAt: number;
-}>;
+};
+export const PAYMENT_RECOVERY_WINDOW_MS = 15 * 60 * 1000;
+export type DurablePaymentPreparation = Readonly<PaymentPreparationFields & (
+  { schema: 'sejire/payment-preparation/v1' } |
+  { schema: 'sejire/payment-preparation/v2'; previousPreparationId: string; expiresAt: number }
+)>;
+/** A renewed payment window belongs to its fenced preparation, not to a rewritten order. */
+export function paymentExpiresAt(order: PaidOrder, preparation: DurablePaymentPreparation): number {
+  return preparation.schema === 'sejire/payment-preparation/v2' ? preparation.expiresAt : order.expiresAt;
+}
 
 // Small native SOL templates only. No Buffer, Node SDK, arbitrary program or caller URL is needed.
 const BASE58 = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
@@ -180,22 +189,32 @@ export function buildPaidPaymentMessage(order: PaidOrder, blockhash: string): st
 }
 export async function createPaymentPreparation(order: PaidOrder, input: {
   blockhash: string; lastValidBlockHeight: number; feeLamports: string; createdAt: number;
+  previousPreparationId?: string; expiresAt?: number;
 }): Promise<DurablePaymentPreparation> {
   const messageBase64 = buildPaidPaymentMessage(order, input.blockhash), messageSha256 = await sha256Hex(paymentMessageBytes(messageBase64));
-  return validatePaymentPreparation(order, { schema: 'sejire/payment-preparation/v1', preparationId: messageSha256,
+  const renewal = input.previousPreparationId !== undefined || input.expiresAt !== undefined;
+  return validatePaymentPreparation(order, { schema: renewal ? 'sejire/payment-preparation/v2' : 'sejire/payment-preparation/v1', preparationId: messageSha256,
     orderId: order.id, policyHash: order.policyHash, network: order.network, genesisHash: SOLANA_GENESIS[order.network], payer: order.payer,
     reference: order.reference, blockhash: input.blockhash, lastValidBlockHeight: input.lastValidBlockHeight,
-    messageBase64, messageSha256, feeLamports: input.feeLamports, createdAt: input.createdAt });
+    messageBase64, messageSha256, feeLamports: input.feeLamports, createdAt: input.createdAt,
+    ...(renewal ? { previousPreparationId: input.previousPreparationId, expiresAt: input.expiresAt } : {}) });
 }
 export async function validatePaymentPreparation(order: PaidOrder, value: unknown): Promise<DurablePaymentPreparation> {
   assertOrder(order);
-  exact(value, ['schema', 'preparationId', 'orderId', 'policyHash', 'network', 'genesisHash', 'payer', 'reference', 'blockhash', 'lastValidBlockHeight', 'messageBase64', 'messageSha256', 'feeLamports', 'createdAt'], 'invalid_payment_preparation');
-  if (order.schema !== 'sejire/order/v2' || value.schema !== 'sejire/payment-preparation/v1' || value.orderId !== order.id || value.policyHash !== order.policyHash ||
+  const renewal = !!value && typeof value === 'object' && 'schema' in value && value.schema === 'sejire/payment-preparation/v2';
+  exact(value, ['schema', 'preparationId', 'orderId', 'policyHash', 'network', 'genesisHash', 'payer', 'reference', 'blockhash', 'lastValidBlockHeight', 'messageBase64', 'messageSha256', 'feeLamports', 'createdAt',
+    ...(renewal ? ['previousPreparationId', 'expiresAt'] : [])], 'invalid_payment_preparation');
+  if (order.schema !== 'sejire/order/v2' || value.schema !== (renewal ? 'sejire/payment-preparation/v2' : 'sejire/payment-preparation/v1') || value.orderId !== order.id || value.policyHash !== order.policyHash ||
       value.network !== order.network || value.genesisHash !== SOLANA_GENESIS[order.network] || value.payer !== order.payer || value.reference !== order.reference ||
       typeof value.blockhash !== 'string' || typeof value.lastValidBlockHeight !== 'number' || !Number.isSafeInteger(value.lastValidBlockHeight) || value.lastValidBlockHeight < 0 ||
       typeof value.messageBase64 !== 'string' || typeof value.messageSha256 !== 'string' || !/^[a-f0-9]{64}$/.test(value.messageSha256) || value.preparationId !== value.messageSha256 ||
-      typeof value.createdAt !== 'number' || !Number.isSafeInteger(value.createdAt) || value.createdAt < order.createdAt || value.createdAt >= order.expiresAt ||
+      typeof value.createdAt !== 'number' || !Number.isSafeInteger(value.createdAt) || value.createdAt < order.createdAt ||
       typeof value.feeLamports !== 'string' || assertUnits(value.feeLamports) < 1n) throw new Error('invalid_payment_preparation');
+  if (renewal) {
+    if (typeof value.previousPreparationId !== 'string' || !/^[a-f0-9]{64}$/.test(value.previousPreparationId) || value.previousPreparationId === value.preparationId ||
+        typeof value.expiresAt !== 'number' || !Number.isSafeInteger(value.expiresAt) || value.expiresAt <= value.createdAt ||
+        value.expiresAt > value.createdAt + PAYMENT_RECOVERY_WINDOW_MS) throw new Error('invalid_payment_preparation');
+  } else if (value.createdAt >= order.expiresAt) throw new Error('invalid_payment_preparation');
   if (buildPaidPaymentMessage(order, value.blockhash) !== value.messageBase64 || await sha256Hex(paymentMessageBytes(value.messageBase64)) !== value.messageSha256) throw new Error('payment_preparation_mismatch');
   return Object.freeze({ ...value }) as DurablePaymentPreparation;
 }

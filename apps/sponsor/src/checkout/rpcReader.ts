@@ -1,5 +1,5 @@
 import { assertBase58, type Network, type PaidOrder } from '../../../../packages/checkout/order';
-import { SOLANA_GENESIS, SOLANA_RPCS, validatePaymentPreparation, type DurablePaymentPreparation } from '../../../../packages/checkout/paid';
+import { SOLANA_GENESIS, SOLANA_RPCS, validatePaymentPreparation, paymentExpiresAt, type DurablePaymentPreparation } from '../../../../packages/checkout/paid';
 import { validatePreparedPayment, type ChainPolicy } from './paymentValidator';
 import type { TrustedTransactionReader, ReferencePaymentResult } from './reconciliation';
 import { decodeTransaction, object } from './rpcDecoder';
@@ -123,7 +123,7 @@ export class SolanaRpcReader implements TrustedTransactionReader {
         if (row.err !== null) continue;
         if (row.blockTime !== null && row.blockTime !== undefined) {
           if (typeof row.blockTime !== 'number' || !Number.isSafeInteger(row.blockTime) || row.blockTime < 0 || !Number.isSafeInteger(row.blockTime * 1000)) throw new Error('malformed');
-          if (row.blockTime * 1000 < Math.floor(order.createdAt / 1000) * 1000 || row.blockTime * 1000 > order.expiresAt) continue;
+          if (row.blockTime * 1000 < Math.floor(preparation.createdAt / 1000) * 1000 || row.blockTime * 1000 > paymentExpiresAt(order, preparation)) continue;
         }
         candidates.push({ signature: row.signature, slot: row.slot });
       }

@@ -8,7 +8,7 @@ import { parseRpcJson, rpcU64 } from '../../../../../packages/checkout/rpcJson';
 import { assertBase58, assertOrder } from '../../../../../packages/checkout/order';
 import {
   paidPolicyHash, validatePaidPolicy, validateContributionPolicy, validatePaidOrderPolicy, validatePaymentPreparation,
-  validatePaidReceipt, SOLANA_RPCS, SOLANA_GENESIS, type DurablePaymentPreparation,
+  validatePaidReceipt, paymentExpiresAt, SOLANA_RPCS, SOLANA_GENESIS, type DurablePaymentPreparation,
 } from '../../../../../packages/checkout/paid';
 import { parseEnvelope, serializeEnvelope } from '../crypto/envelope';
 import { envelopeDigest } from '../solana/policy';
@@ -106,6 +106,19 @@ async function access(): Promise<string> {
   });
 }
 
+/** A different payment message is accepted only for the exact explicit renewal
+ * saved before POST /recover. An ordinary GET never authorizes this transition. */
+function requestedRecovery(op: PaidOperation, snapshot: PaidSnapshot): boolean {
+  const next = snapshot.preparation, previous = op.preparation;
+  return Boolean(next?.schema === 'sejire/payment-preparation/v2' && previous &&
+    next.preparationId !== previous.preparationId && next.previousPreparationId === previous.preparationId &&
+    op.recoveryRequestedFor === previous.preparationId && op.localCompletion === 'pending' &&
+    !op.signature && !op.signedTransaction && !op.cancellationRequested && !op.creationCancelled &&
+    !op.snapshot?.record.pendingSignature && !op.snapshot?.record.payment && !op.snapshot?.execution &&
+    !snapshot.record.pendingSignature && !snapshot.record.payment && !snapshot.execution &&
+    !snapshot.expired && !snapshot.cancelled);
+}
+
 export async function validatePaidSnapshot(op: PaidOperation, value: unknown): Promise<PaidSnapshot> {
   const snapshot = value as PaidSnapshot;
   if (!snapshot?.record?.order || !snapshot.record.states) throw Error('checkout_order_mismatch');
@@ -133,7 +146,10 @@ export async function validatePaidSnapshot(op: PaidOperation, value: unknown): P
   } else if (states.payment === 'verified') throw Error('checkout_payment_mismatch');
   if (snapshot.preparation) {
     await validatePaymentPreparation(order, snapshot.preparation);
-    if (op.signingStarted && op.preparation && canonical(op.preparation) !== canonical(snapshot.preparation)) throw Error('payment_preparation_mismatch');
+    const changed = op.preparation && canonical(op.preparation) !== canonical(snapshot.preparation);
+    if ((changed || !op.preparation && snapshot.preparation.schema === 'sejire/payment-preparation/v2') &&
+        !requestedRecovery(op, snapshot)) throw Error('payment_preparation_mismatch');
+    if (requestedRecovery(op, snapshot) && BigInt(snapshot.preparation.feeLamports) > 100000n) throw Error('network_fee_not_ready');
   }
   if ((snapshot.expired !== undefined && typeof snapshot.expired !== 'boolean') ||
       (snapshot.cancelled !== undefined && typeof snapshot.cancelled !== 'boolean')) throw Error('checkout_state_mismatch');
@@ -173,9 +189,13 @@ async function accept(op: PaidOperation, raw: unknown): Promise<PaidOperation> {
   if (op.creationCancelled) throw Error('checkout_release_mismatch');
   const snapshot = await validatePaidSnapshot(op, raw);
   const signature = snapshot.record.payment?.signature ?? snapshot.record.pendingSignature;
-  return writePaidOperation({ ...op, order: snapshot.record.order, snapshot,
+  const recovered = requestedRecovery(op, snapshot);
+  const next: PaidOperation = { ...op, order: snapshot.record.order, snapshot,
     ...(snapshot.preparation ? { preparation: snapshot.preparation } : {}),
-    ...(signature ? { signature, signingStarted: true } : {}) });
+    ...(recovered ? { signingStarted: false } : {}),
+    ...(signature ? { signature, signingStarted: true } : {}) };
+  if (recovered || signature) delete next.recoveryRequestedFor;
+  return writePaidOperation(next);
 }
 
 async function requireOperation(id: string): Promise<PaidOperation> {
@@ -260,13 +280,40 @@ export async function preparePaidOperation(id: string, wallet: SolanaWalletAdapt
   return withPaidOperationLock(id, async () => {
     requireActive(isActive);
     let op = await refresh(await requireOperation(id));
-    if (!op.order || op.signingStarted || op.signature || op.cancellationRequested || op.snapshot?.expired || op.order.expiresAt <= Date.now()) throw Error('previous_payment_unresolved');
+    if (!op.order || op.signingStarted || op.signature || op.recoveryRequestedFor || op.cancellationRequested || op.snapshot?.expired ||
+        (op.preparation ? paymentExpiresAt(op.order, op.preparation) : op.order.expiresAt) <= Date.now()) throw Error('previous_payment_unresolved');
     if (wallet.publicKey.toString() !== op.order.payer) throw Error('wallet_changed');
     requireActive(isActive);
     const preparation = await validatePaymentPreparation(op.order, await api<DurablePaymentPreparation>(`/orders/${op.order.id}/prepare`, op.token, {}));
+    if (op.preparation ? canonical(preparation) !== canonical(op.preparation) : preparation.schema !== 'sejire/payment-preparation/v1')
+      throw Error('payment_preparation_mismatch');
     if (BigInt(preparation.feeLamports) > 100000n) throw Error('network_fee_not_ready');
     op = await writePaidOperation({ ...op, preparation });
     return op;
+  });
+}
+
+/** Explicitly renew an unreserved wallet request for the SAME immutable order.
+ * Only the server can fence the old preparation; absence of a local signature
+ * alone never resets signingStarted. Lost replies remain recoverable by GET. */
+export async function recoverPaidOperation(id: string, isActive: ActiveContext = alwaysActive): Promise<PaidOperation> {
+  return withPaidOperationLock(id, async () => {
+    requireActive(isActive);
+    const previous = await requireOperation(id);
+    if (previous.signature || previous.signedTransaction || previous.snapshot?.record.pendingSignature ||
+        previous.snapshot?.record.payment || previous.snapshot?.execution) throw Error('previous_payment_unresolved');
+    let op = await refresh(previous);
+    requireActive(isActive);
+    // A lost renewal reply or a payment found while we were away wins over a
+    // second renewal. Neither path asks the wallet to sign or creates an order.
+    if (op.signature || op.snapshot?.record.payment || op.snapshot?.record.pendingSignature ||
+        previous.recoveryRequestedFor && !op.recoveryRequestedFor) return op;
+    if (!op.order || !op.preparation || op.signedTransaction || op.cancellationRequested || op.creationCancelled ||
+        op.snapshot?.expired || op.snapshot?.execution || op.localCompletion !== 'pending') throw Error('previous_payment_unresolved');
+    if (!op.recoveryRequestedFor) op = await writePaidOperation({ ...op, recoveryRequestedFor: op.preparation.preparationId });
+    requireActive(isActive);
+    return accept(op, await api<PaidSnapshot>(`/orders/${op.order!.id}/recover`, op.token,
+      { preparationId: op.recoveryRequestedFor }));
   });
 }
 
@@ -342,7 +389,7 @@ async function validateSignedTransaction(op: PaidOperation): Promise<void> {
 async function broadcast(op: PaidOperation, isActive: ActiveContext): Promise<void> {
   if (!op.signature || !op.signedTransaction || !op.order || !op.preparation) throw Error('no_pending_payment');
   await validateSignedTransaction(op);
-  if (op.order.expiresAt <= Date.now()) return;
+  if (paymentExpiresAt(op.order, op.preparation) <= Date.now()) return;
   requireActive(isActive);
   const selected = await withPublicRpc(op, async call => ({ call,
     height: await call('getBlockHeight', [{ commitment: 'finalized' }]) }));
@@ -357,8 +404,8 @@ export async function payPaidOperation(id: string, preparationId: string, wallet
   return withPaidOperationLock(id, async () => {
     requireActive(isActive);
     let op = await refresh(await requireOperation(id));
-    if (!op.order || !op.preparation || op.preparation.preparationId !== preparationId || op.signingStarted || op.signature || op.cancellationRequested || op.snapshot?.expired ||
-        op.order.expiresAt <= Date.now()) throw Error('previous_payment_unresolved');
+    if (!op.order || !op.preparation || op.preparation.preparationId !== preparationId || op.signingStarted || op.signature || op.recoveryRequestedFor || op.cancellationRequested || op.snapshot?.expired ||
+        paymentExpiresAt(op.order, op.preparation) <= Date.now()) throw Error('previous_payment_unresolved');
     await validatePaidOrderPolicy(op.order, op.policy);
     const preparation = await validatePaymentPreparation(op.order, op.preparation);
     if (wallet.publicKey.toString() !== op.order.payer) throw Error('wallet_changed');
@@ -399,6 +446,9 @@ export async function checkPaidOperation(id: string, isActive: ActiveContext = a
     requireActive(isActive);
     let op = await refresh(await requireOperation(id));
     if (!op.order || op.localCompletion !== 'pending' || op.snapshot?.expired) return op;
+    // The explicit renewal owns the next server transition. Poll with GET only
+    // while its result is uncertain, so reconciliation cannot take its lease.
+    if (op.recoveryRequestedFor && !op.signature) return op;
     if (op.signedTransaction && op.snapshot?.record.states.payment !== 'verified') await validateSignedTransaction(op);
     if ((op.signingStarted || op.signature) && op.snapshot?.record.states.payment !== 'verified') {
       // A lost reserve response is retried with the same signature/preparation;
@@ -425,7 +475,7 @@ export async function checkPaidOperation(id: string, isActive: ActiveContext = a
 export async function cancelPaidOperation(id: string): Promise<PaidOperation> {
   return withPaidOperationLock(id, async () => {
     let op = await refresh(await requireOperation(id));
-    if (!op.order || op.signingStarted || op.signature || op.snapshot?.record.pendingSignature || op.snapshot?.record.payment || op.snapshot?.execution) throw Error('previous_payment_unresolved');
+    if (!op.order || op.signingStarted || op.signature || op.recoveryRequestedFor || op.snapshot?.record.pendingSignature || op.snapshot?.record.payment || op.snapshot?.execution) throw Error('previous_payment_unresolved');
     if (op.snapshot?.expired) return op;
     op = await writePaidOperation({ ...op, cancellationRequested: true });
     return accept(op, await api<PaidSnapshot>(`/orders/${op.order!.id}/cancel`, op.token, { preparationId: op.preparation?.preparationId ?? null }));

@@ -7,6 +7,7 @@ const origin='http://127.0.0.1:5185', tx='A'.repeat(43);
 const panel=page=>page.getByRole('region',{name:'Оплата SOL',exact:true});
 const json=(route,value,status=200)=>route.fulfill({status,contentType:'application/json',body:JSON.stringify(value)});
 const networkState=()=>({ready:true,contributionReady:true,balance:'1000000000000000',requests:[],denied:[],creates:0,admissions:0,createKeys:[],bodies:[],prepares:0,reserves:0,sends:[],cancels:0,reconciles:0,
+  recoveries:0,recoveryTransitions:{},lostRecovery:false,recoveryFee:'6000',
   finish:false,paid:false,phase:'queued',createError:null,lostCreate:false,lostReserve:false,lostVerify:false,lostCancel:false,
   wrongGenesis:false,wrongOrder:false,snapshot:null,archive:null,key:null,unknownSignature:null,dropBeforeAdmission:false,tombstone:false});
 
@@ -20,7 +21,7 @@ async function installNetwork(context,state=networkState()){
   if(state.paid&&state.snapshot){
    const s=state.snapshot,signature=s.record.pendingSignature??state.unknownSignature;
    expect(signature).toBeTruthy();
-   s.record.pendingSignature=signature;s.record.payment={signature,feeLamports:'5000'};
+   s.record.pendingSignature=signature;s.record.payment={signature,feeLamports:s.preparation?.feeLamports??'5000'};
    s.record.states.payment='verified';s.record.states.preservation=s.record.order.kind==='contribution'?'not-applicable':'ready';
    s.record.states.contribution=s.record.order.fundContribution.amount==='0'?'not-requested':'received';
    s.verification={status:'verified'};
@@ -87,6 +88,24 @@ async function installNetwork(context,state=networkState()){
     state.prepares++;state.snapshot.preparation??=await page.evaluate(async s=>(await import('/tests/paid-fixture.ts')).preparation(s),state.snapshot);
     return json(route,state.snapshot.preparation);
    }
+   if(method==='POST'&&path===`/orders/${order.id}/recover`){
+    state.recoveries++;
+    expect(Object.keys(body)).toEqual(['preparationId']);
+    if(state.snapshot.record.pendingSignature||state.snapshot.record.payment)return json(route,{error:'previous_payment_unresolved'},409);
+    const stored=await page.evaluate(async key=>(await import('/src/lib/checkout/paidJournal.ts')).readPaidOperation(key),state.key);
+    expect(stored.recoveryRequestedFor).toBe(body.preparationId);
+    expect(stored.signature).toBeUndefined();expect(stored.signedTransaction).toBeUndefined();
+    if(!state.recoveryTransitions[body.preparationId]){
+     expect(body.preparationId).toBe(state.snapshot.preparation.preparationId);
+     state.snapshot.preparation=await page.evaluate(async({snapshot,generation,fee})=>(await import('/tests/paid-fixture.ts')).recoveredPreparation(snapshot,generation,fee),
+      {snapshot:state.snapshot,generation:Object.keys(state.recoveryTransitions).length+1,fee:state.recoveryFee});
+     state.recoveryTransitions[body.preparationId]=state.snapshot.preparation.preparationId;
+     state.snapshot.verification=null;
+    }
+    expect(state.recoveryTransitions[body.preparationId]).toBe(state.snapshot.preparation.preparationId);
+    if(state.lostRecovery){state.lostRecovery=false;return route.abort('failed');}
+    return json(route,await update(page));
+   }
    if(method==='POST'&&path===`/orders/${order.id}/reserve`){
     expect(state.snapshot.expired).toBe(false);expect(body.preparationId).toBe(state.snapshot.preparation.preparationId);
     const stored=await page.evaluate(async key=>(await import('/src/lib/checkout/paidJournal.ts')).readPaidOperation(key),state.key);
@@ -117,7 +136,7 @@ async function installNetwork(context,state=networkState()){
    const body=req.postDataJSON();let result;
    if(body.method==='getGenesisHash')result=state.wrongGenesis?'5eykt4UsFv8P8NJdTREpY1vzqKqZKvdpKuc147dw2N9d':'EtWTRABZaYq6iMfeYKouRu166VU2xqa1wcaWoxPkrZBG';
    else if(body.method==='getBalance')return route.fulfill({contentType:'application/json',body:`{"jsonrpc":"2.0","id":${JSON.stringify(body.id)},"result":{"value":${state.balance}}}`});
-   else if(body.method==='getFeeForMessage')result={value:5000};
+   else if(body.method==='getFeeForMessage')result={value:Number(state.snapshot?.preparation?.feeLamports??'5000')};
    else if(body.method==='getBlockHeight')result=50;
    else if(body.method==='sendTransaction'){
     expect(state.reserves).toBeGreaterThan(0);
@@ -332,21 +351,77 @@ test('lost pre-admission cancellation response resumes the same tombstone and ne
 test('unknown wallet result reload reconciles the same reference without another signature, payment or order',async({page,context})=>{
  const state=await installNetwork(context);await openEditor(page);await openPaid(page);await prepare(page);
  await page.evaluate(()=>{window.paidWallet.unknown=true;});await pay(page);
- await expect(panel(page).getByRole('heading',{name:'Проверяем оплату'})).toBeVisible();
+ await expect(panel(page).getByRole('heading',{name:'Подтверждение в кошельке не завершено'})).toBeVisible();
  await expect(panel(page).getByRole('button',{name:/Оплатить|Отменить неоплаченный/})).toHaveCount(0);
  state.unknownSignature=await page.evaluate(()=>window.paidWallet.signature);
  expect((await saved(page,state.key)).op.signature).toBeUndefined();
- await page.reload();await expect(panel(page).getByRole('heading',{name:'Проверяем оплату'})).toBeVisible();
+ await page.reload();await expect(panel(page).getByRole('heading',{name:'Подтверждение в кошельке не завершено'})).toBeVisible();
  expect(await page.evaluate(()=>Boolean(window.phantom))).toBe(false);
  state.paid=true;state.finish=true;await check(page);
  await expect(page.getByRole('dialog')).toHaveCount(0);expect((await saved(page,state.key)).op.localCompletion).toBe('done');
  expect(state.creates).toBe(1);expect(state.reserves).toBe(0);expect(state.sends).toHaveLength(0);expect(state.denied).toEqual([]);
 });
 
+test('unsigned wallet interruption explicitly renews the same expired order and requires fresh consent before one payment',async({page,context},testInfo)=>{
+ const state=await installNetwork(context);await openEditor(page);await openPaid(page);await prepare(page);
+ const initial=(await saved(page,state.key)).op;
+ await page.evaluate(()=>{window.paidWallet.unknown=true;});await pay(page);
+ await expect(panel(page).getByRole('heading',{name:'Подтверждение в кошельке не завершено'})).toBeVisible();
+ await expect(panel(page).getByText('Проверяем прежнюю подпись.',{exact:false})).toHaveCount(0);
+ expect((await saved(page,state.key)).op.signature).toBeUndefined();expect(state.recoveries).toBe(0);
+ await check(page);await expect(panel(page).getByRole('button',{name:'Проверить статус',exact:true})).toBeEnabled();
+ expect(state.recoveries).toBe(0);expect(state.sends).toHaveLength(0);
+ await page.reload();await expect(panel(page).getByRole('button',{name:'Восстановить подтверждение',exact:true})).toBeVisible();
+ expect(await page.evaluate(()=>Boolean(window.phantom))).toBe(false);
+ await page.clock.setFixedTime(new Date(initial.order.expiresAt+60000));
+ await panel(page).getByRole('button',{name:'Восстановить подтверждение',exact:true}).click();
+ await expect(panel(page).getByRole('heading',{name:'Через Solana',exact:true})).toBeVisible();
+ const renewed=(await saved(page,state.key)).op;
+ expect(renewed.order).toEqual(initial.order);expect(renewed.id).toBe(initial.id);expect(renewed.token).toBe(initial.token);
+ expect(renewed.serialized).toBe(initial.serialized);expect(renewed.archive).toEqual(initial.archive);
+ expect(renewed.preparation.previousPreparationId).toBe(initial.preparation.preparationId);
+ expect(renewed.preparation.createdAt).toBeGreaterThan(initial.order.expiresAt);
+ expect(renewed.preparation.expiresAt).toBeGreaterThan(renewed.preparation.createdAt);
+ expect(renewed.signingStarted).toBe(false);expect(renewed.signature).toBeUndefined();
+ expect(state.recoveries).toBe(1);expect(state.creates).toBe(1);expect(state.reserves).toBe(0);expect(state.sends).toHaveLength(0);
+ await page.evaluate(async()=>(await import('/tests/paid-fixture.ts')).installWallet());
+ await panel(page).getByRole('button',{name:'Подключить Phantom',exact:true}).click();
+ await expect(panel(page).getByRole('checkbox')).not.toBeChecked();
+ await expect(panel(page).getByRole('button',{name:'Подтвердить оплату в кошельке',exact:true})).toBeDisabled();
+ await expect(panel(page)).toContainText('0.000006 SOL');
+ await page.screenshot({path:testInfo.outputPath('same-order-recovered-before-consent.png'),fullPage:true});
+ expect(await page.evaluate(()=>window.paidWallet.signCount)).toBe(0);
+ await pay(page);await expect.poll(()=>state.sends.length).toBe(1);
+ expect(await page.evaluate(()=>window.paidWallet.signCount)).toBe(1);expect(state.reserves).toBe(1);
+ await expect(panel(page).getByRole('button',{name:/Восстановить подтверждение|Обновить подтверждение/})).toHaveCount(0);
+ state.finish=true;await check(page);await expect(page.getByRole('dialog')).toHaveCount(0);
+ const done=(await saved(page,state.key)).op;
+ expect(done.localCompletion).toBe('done');expect(done.order).toEqual(initial.order);expect(done.serialized).toBe(initial.serialized);
+ expect(state.creates).toBe(1);expect(state.admissions).toBe(1);expect(state.denied).toEqual([]);
+});
+
+test('lost recovery response reload adopts only the requested generation without another order or wallet prompt',async({page,context})=>{
+ const state=await installNetwork(context);await openEditor(page);await openPaid(page);await prepare(page);
+ await page.evaluate(()=>{window.paidWallet.unknown=true;});await pay(page);
+ await expect(panel(page).getByRole('heading',{name:'Подтверждение в кошельке не завершено'})).toBeVisible();
+ const initial=(await saved(page,state.key)).op;state.lostRecovery=true;
+ await page.clock.setFixedTime(new Date(initial.order.expiresAt+60000));
+ await panel(page).getByRole('button',{name:'Восстановить подтверждение',exact:true}).click();
+ await expect.poll(()=>state.recoveries).toBe(1);
+ await page.reload();await expect(panel(page).getByRole('heading',{name:'Через Solana',exact:true})).toBeVisible();
+ const recovered=(await saved(page,state.key)).op;
+ expect(recovered.order).toEqual(initial.order);expect(recovered.serialized).toBe(initial.serialized);
+ expect(recovered.preparation.preparationId).toBe(state.recoveryTransitions[initial.preparation.preparationId]);
+ expect(recovered.signingStarted).toBe(false);expect(recovered.signature).toBeUndefined();
+ expect(state.recoveries).toBe(1);expect(state.creates).toBe(1);expect(state.sends).toHaveLength(0);expect(state.reserves).toBe(0);
+ expect(await page.evaluate(()=>Boolean(window.phantom))).toBe(false);expect(state.denied).toEqual([]);
+});
+
 test('lost reserve response never broadcasts early and resumes only identical stored signed bytes',async({page,context})=>{
  const state=await installNetwork(context);state.lostReserve=true;await openEditor(page);await openPaid(page);await prepare(page);await pay(page);
  await expect(panel(page).getByRole('heading',{name:'Проверяем оплату'})).toBeVisible();expect(state.sends).toHaveLength(0);
  const signed=(await saved(page,state.key)).op.signedTransaction;expect(signed).toBeTruthy();
+ await expect(panel(page).getByRole('button',{name:/Восстановить подтверждение|Обновить подтверждение/})).toHaveCount(0);
  await page.reload();await expect(panel(page)).toBeVisible();await check(page);
  await expect.poll(()=>state.sends.length).toBe(1);expect(state.sends[0]).toBe(signed);
  state.finish=true;await check(page);await expect(page.getByRole('dialog')).toHaveCount(0);
@@ -526,9 +601,9 @@ test('the quiet welcome link opens standalone Solflare help without a tree or AR
 test('an uncertain standalone payment resumes the original intent after reload even when new contributions are disabled',async({page,context})=>{
  const state=await installNetwork(context);await standalone(page);await amountInput(page).fill('0.15');await prepare(page,{contribution:true});
  const original=await saved(page,state.key);await page.evaluate(()=>{window.paidWallet.unknown=true;});await pay(page);
- await expect(panel(page).getByRole('heading',{name:'Проверяем оплату'})).toBeVisible();state.unknownSignature=await page.evaluate(()=>window.paidWallet.signature);
+ await expect(panel(page).getByRole('heading',{name:'Подтверждение в кошельке не завершено'})).toBeVisible();state.unknownSignature=await page.evaluate(()=>window.paidWallet.signature);
  state.ready=false;state.contributionReady=false;await page.reload();await expect(panel(page)).toHaveCount(0);
- await page.getByRole('button',{name:helpName,exact:true}).click();await expect(panel(page).getByRole('heading',{name:'Проверяем оплату'})).toBeVisible();
+ await page.getByRole('button',{name:helpName,exact:true}).click();await expect(panel(page).getByRole('heading',{name:'Подтверждение в кошельке не завершено'})).toBeVisible();
  await expect(panel(page).getByRole('button',{name:/Подключить|Подтвердить оплату/})).toHaveCount(0);
  expect(await page.evaluate(()=>Boolean(window.phantom))).toBe(false);
  const resumed=await saved(page,state.key);expect(resumed.op.id).toBe(original.op.id);expect(resumed.op.intent).toEqual(original.op.intent);expect(resumed.op.serialized).toBeNull();

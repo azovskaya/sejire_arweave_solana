@@ -5,7 +5,7 @@ import { assertOrder, createOrder, createPaidOrder, SYSTEM_PROGRAM, type PaidOrd
 import {
   SOLANA_GENESIS, SOLANA_RPCS, validatePaidPolicy, validateContributionPolicy, paidPolicyHash, createPaidOrderFromPolicy, validatePaidOrderPolicy,
   buildPaidPaymentMessage, createPaymentPreparation, validatePaymentPreparation, validatePaidReceipt,
-  paymentMessageBytes, verifyPreparedPaymentSignature, type PaidPolicy, type DurablePaymentPreparation,
+  paymentMessageBytes, paymentExpiresAt, PAYMENT_RECOVERY_WINDOW_MS, verifyPreparedPaymentSignature, type PaidPolicy, type DurablePaymentPreparation,
 } from '../../../../packages/checkout/paid';
 import { validatePayment, validatePreparedPayment } from './paymentValidator';
 import { RpcPaymentPreparer } from './paymentPreparation';
@@ -47,7 +47,8 @@ function rawTransaction(prep: DurablePaymentPreparation, signature = sig(5), blo
     meta: { err: null, fee: 5000, innerInstructions: [], preBalances: accountKeys.map(() => 100000000), postBalances: accountKeys.map(() => 100000000) } };
 }
 type Raw = ReturnType<typeof rawTransaction>;
-type ReadOptions = { rows?: unknown; transactions?: Record<string, Raw | null>; genesis?: string; unavailable?: boolean; fee?: number | null; balance?: number };
+type ReadOptions = { rows?: unknown; transactions?: Record<string, Raw | null>; genesis?: string; unavailable?: boolean; fee?: number | null; balance?: number;
+  blockhash?: string; lastValidBlockHeight?: number };
 function readerFor(order: PaidOrder, prep: DurablePaymentPreparation, options: ReadOptions = {}, calls: string[] = []): SolanaRpcReader {
   return new SolanaRpcReader({ network: order.network }, async (url, init) => {
     assert.equal(String(url), SOLANA_RPCS[order.network]); assert.equal(init?.redirect, 'manual');
@@ -61,9 +62,9 @@ function readerFor(order: PaidOrder, prep: DurablePaymentPreparation, options: R
     } else if (request.method === 'getSignatureStatuses') result = { context: { slot: 100 }, value: [{ slot: 100, confirmations: null, err: null, confirmationStatus: 'finalized' }] };
     else if (request.method === 'getTransaction') result = options.transactions ? options.transactions[request.params[0]] ?? null : rawTransaction(prep, request.params[0]);
     else if (request.method === 'getAccountInfo') result = { value: { owner: SYSTEM_PROGRAM, executable: false } };
-    else if (request.method === 'getLatestBlockhash') result = { value: { blockhash: addr(8), lastValidBlockHeight: 1000 } };
+    else if (request.method === 'getLatestBlockhash') result = { value: { blockhash: options.blockhash ?? addr(8), lastValidBlockHeight: options.lastValidBlockHeight ?? 1000 } };
     else if (request.method === 'getFeeForMessage') {
-      assert.equal(request.params[0], buildPaidPaymentMessage(order, addr(8)));
+      assert.equal(request.params[0], buildPaidPaymentMessage(order, options.blockhash ?? addr(8)));
       result = { value: Object.hasOwn(options, 'fee') ? options.fee : 5000 };
     } else if (request.method === 'getBalance') result = { value: options.balance ?? 1000000000 };
     else throw new Error(`unexpected RPC: ${request.method}`);
@@ -166,6 +167,38 @@ await test('preparation binds policy/order/payer/reference/blockhash/bytes/id an
     { lastValidBlockHeight: -1 }, { messageBase64: prep.messageBase64 + '\n' }, { messageSha256: 'd'.repeat(64) },
     { feeLamports: '0' }, { createdAt: order.expiresAt }]) await assert.rejects(validatePaymentPreparation(order, { ...prep, ...patch }));
   assert(Object.isFrozen(await validatePaymentPreparation(order, prep)));
+});
+await test('explicit recovery preparation has a bounded new window and exact predecessor without changing immutable order terms', async () => {
+  const createdAt = order.expiresAt + 10000;
+  const input = { blockhash: addr(9), lastValidBlockHeight: 2000, feeLamports: '5000', createdAt,
+    previousPreparationId: prep.preparationId, expiresAt: createdAt + PAYMENT_RECOVERY_WINDOW_MS };
+  const renewed = await createPaymentPreparation(order, input);
+  assert.equal(renewed.schema, 'sejire/payment-preparation/v2');
+  assert.equal(paymentExpiresAt(order, prep), order.expiresAt);
+  assert.equal(paymentExpiresAt(order, renewed), input.expiresAt);
+  assert.equal(order.expiresAt, 1100000); assert.notEqual(renewed.preparationId, prep.preparationId);
+  for (const patch of [{ previousPreparationId: undefined }, { previousPreparationId: renewed.preparationId },
+    { previousPreparationId: 'bad' }, { expiresAt: undefined }, { expiresAt: createdAt },
+    { expiresAt: input.expiresAt + 1 }, { unexpected: true }, { schema: 'sejire/payment-preparation/v1' }])
+    await assert.rejects(validatePaymentPreparation(order, { ...renewed, ...patch }), /invalid_payment_preparation/);
+  await assert.rejects(createPaymentPreparation(order, { ...input, blockhash: prep.blockhash }), /invalid_payment_preparation/);
+  const raw = rawTransaction(renewed, sig(5), createdAt / 1000 + 1), evidence = decodeTransaction(raw, sig(5), chain);
+  assert.equal((await validatePreparedPayment(order, evidence, chain, renewed)).orderId, order.id);
+  await assert.rejects(validatePreparedPayment(order, { ...evidence, blockTimeMs: input.expiresAt + 1 }, chain, renewed), /outside_order_window/);
+  await assert.rejects(validatePreparedPayment(order, { ...evidence, blockTimeMs: createdAt - 1000 }, chain, renewed), /predates_preparation/);
+  const found = await readerFor(order, renewed, { rows: [{ signature: sig(5), slot: 100, err: null,
+    blockTime: raw.blockTime, confirmationStatus: 'finalized' }], transactions: { [sig(5)]: raw } }).findByReference(order, renewed);
+  assert.equal(found.status, 'found');
+});
+await test('explicit RPC renewal permits expired original order but rejects the unchanged old blockhash', async () => {
+  const calls: string[] = [];
+  await assert.rejects(new RpcPaymentPreparer(readerFor(order, prep, {}, calls)).preparePaid(order, Date.now() + 10000, prep), /payment_recovery_unavailable/);
+  const renewed = await new RpcPaymentPreparer(readerFor(order, prep, { blockhash: addr(9), lastValidBlockHeight: 2000 }, calls))
+    .preparePaid(order, Date.now() + 10000, prep);
+  assert.equal(renewed.schema, 'sejire/payment-preparation/v2');
+  assert.equal(paymentExpiresAt(order, renewed) - renewed.createdAt, PAYMENT_RECOVERY_WINDOW_MS);
+  assert(renewed.createdAt > order.expiresAt);
+  assert(!calls.some(method => /send|requestAirdrop/i.test(method)));
 });
 await test('reserve can verify the payer signature against exact saved bytes without broadcasting', async () => {
   // Ephemeral test-only software key; never funded, exported, logged or used on a network.

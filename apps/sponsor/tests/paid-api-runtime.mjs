@@ -35,7 +35,8 @@ const treasury = createHash('sha256').update(Buffer.from(arKey.n, 'base64url')).
 const fetchMock = createFetchMock(); fetchMock.disableNetConnect();
 const wire = { calls: [], payments: new Map(), archives: new Map(), submissions: new Map(),
   lostSingleAck: true, failChunkOnce: true, droppedChunks: 0, chunkPosts: 0, rpcRateLimited: false,
-  rpcForbiddenDefault: false, rpcForbiddenPocket: false };
+  rpcForbiddenDefault: false, rpcForbiddenPocket: false, referenceRows: new Map(), referenceUnavailable: false,
+  blockhash: addr(8), lastValidBlockHeight: 1000, blockHeight: 100 };
 const observe = (url, method) => wire.calls.push({ url, method });
 const parsedBody = options => JSON.parse(typeof options.body === 'string' ? options.body : Buffer.from(options.body).toString());
 
@@ -49,18 +50,19 @@ const rpcReply = (options, endpoint) => {
   if (wire.rpcRateLimited && request.method === 'getGenesisHash') return { statusCode: 429, data: 'synthetic rate limit' };
   if (request.method === 'getGenesisHash') result = genesis;
   else if (request.method === 'getAccountInfo') result = { context: { slot: 100 }, value: { owner: system, executable: false } };
-  else if (request.method === 'getLatestBlockhash') result = { context: { slot: 100 }, value: { blockhash: addr(8), lastValidBlockHeight: 1000 } };
+  else if (request.method === 'getLatestBlockhash') result = { context: { slot: 100 }, value: { blockhash: wire.blockhash, lastValidBlockHeight: wire.lastValidBlockHeight } };
   else if (request.method === 'getFeeForMessage') {
     const message = Message.from(Buffer.from(request.params[0], 'base64'));
     assert.equal(message.header.numRequiredSignatures, 1); assert.equal(message.instructions.length, 1);
     result = { context: { slot: 100 }, value: 5000 };
   } else if (request.method === 'getBalance') result = { context: { slot: 100 }, value: 1000000000 };
-  else if (request.method === 'getBlockHeight') result = 100;
+  else if (request.method === 'getBlockHeight') result = wire.blockHeight;
   else if (request.method === 'getSignaturesForAddress') {
-    result = request.params[0] === 'Vote111111111111111111111111111111111111111'
+    if (wire.referenceUnavailable) return { statusCode: 503, data: 'synthetic reference RPC outage' };
+    result = wire.referenceRows.get(request.params[0]) ?? (request.params[0] === 'Vote111111111111111111111111111111111111111'
       ? [{ signature: addr(9), slot: 100, err: null, blockTime: 100, confirmationStatus: 'finalized' }]
       : [...wire.payments.values()].filter(payment => payment.order.reference === request.params[0])
-      .map(payment => ({ signature: payment.signature, slot: payment.raw.slot, err: null, blockTime: payment.raw.blockTime, confirmationStatus: 'finalized' }));
+      .map(payment => ({ signature: payment.signature, slot: payment.raw.slot, err: null, blockTime: payment.raw.blockTime, confirmationStatus: 'finalized' })));
   } else if (request.method === 'getSignatureStatuses') {
     const payment = wire.payments.get(request.params[0][0]);
     result = { context: { slot: 200 }, value: [payment ? { slot: payment.raw.slot, confirmations: null, err: null, confirmationStatus: payment.confirmationStatus ?? 'finalized' }
@@ -327,7 +329,7 @@ try {
     const before = wire.calls.length;
     assert.equal((await call(`/orders/${first.id}`, b)).status, 404);
     assert.equal((await call(`/orders/${first.id}`, null)).status, 401);
-    for (const action of ['prepare', 'reserve', 'verify', 'reconcile', 'execute', 'cancel']) assert.equal((await call(`/orders/${first.id}/${action}`, b, {})).status, 404);
+    for (const action of ['prepare', 'reserve', 'verify', 'reconcile', 'execute', 'cancel', 'recover']) assert.equal((await call(`/orders/${first.id}/${action}`, b, {})).status, 404);
     assert.equal((await call(`/orders/${first.id}`, a, undefined, { Origin: 'https://attacker.example' })).status, 403);
     assert.equal(wire.calls.length, before); assert.equal((await inspect(first.id)).row.pending_signature, null);
     assert.equal((await call(`/orders/${first.id}/execute`, a, {})).status, 409);
@@ -485,6 +487,95 @@ try {
     for(let repeat=0;repeat<2;repeat++)assert.equal((await call(`/orders/${helpOrder.id}/reconcile`,helper,{})).status,200);
     assert.equal((await inspect(helpOrder.id)).credits.length,1);assert.equal(wire.calls.length,calls);
     assert.equal((await call('/orders/by-key/standalone_help_key_01',helper)).body.record.order.id,helpOrder.id);
+  });
+  wire.storageUnavailable = false;
+  const recoveryOptions = { db: 'wallet-recovery' };
+  await start(true, true, true, recoveryOptions);
+  const recoveryPolicy = (await call('/policy')).body;
+  const recoveryOwner = (await call('/session', null, {})).body.accessToken;
+  const recoveryForeign = (await call('/session', null, {})).body.accessToken;
+  const makeRecoveryOrder = async key => {
+    const made = await call('/orders', recoveryOwner, { kind: 'preservation', payer, contribution: '0',
+      policyHash: recoveryPolicy.policyHash, ...archive(key === 'wallet_recover_key_01' ? 'e' : 'f') }, { 'Idempotency-Key': key });
+    assert.equal(made.status, 201, JSON.stringify(made.body)); const order = made.body.record.order;
+    const prepared = await call(`/orders/${order.id}/prepare`, recoveryOwner, {}); assert.equal(prepared.status, 200);
+    return { order, preparation: prepared.body };
+  };
+  const stalled = await makeRecoveryOrder('wallet_recover_key_01'), foundOriginal = await makeRecoveryOrder('wallet_recover_key_02');
+  const recoveryPath = `/orders/${stalled.order.id}/recover`, recoveryRequest = { preparationId: stalled.preparation.preparationId };
+  await internal({ action: '__testExpireSession', hash: sha(recoveryOwner) });
+  await start(false, false, false, recoveryOptions);
+  await test('explicit recovery resume route is owned and rejects unexpired, unchanged, stale and uncertain RPC evidence', async () => {
+    const initial = await inspect(stalled.order.id), before = wire.calls.length;
+    assert.equal((await call(recoveryPath, recoveryForeign, recoveryRequest)).status, 404);
+    assert.equal((await call(recoveryPath, null, recoveryRequest)).status, 401);
+    assert.equal((await call(recoveryPath, recoveryOwner, { ...recoveryRequest, automatically: true })).status, 400);
+    assert.equal((await call(recoveryPath, recoveryOwner)).status, 405);
+    assert.equal(wire.calls.length, before);
+    assert.deepEqual(await call(recoveryPath, recoveryOwner, recoveryRequest), { status: 409, body: { error: 'payment_not_expired' } });
+    wire.blockHeight = 1001;
+    assert.deepEqual(await call(recoveryPath, recoveryOwner, recoveryRequest), { status: 409, body: { error: 'payment_recovery_unavailable' } });
+    wire.blockhash = addr(9); wire.lastValidBlockHeight = 1001;
+    assert.deepEqual(await call(recoveryPath, recoveryOwner, recoveryRequest), { status: 409, body: { error: 'payment_recovery_unavailable' } });
+    wire.lastValidBlockHeight = 2000;
+    wire.referenceRows.set(stalled.order.reference, Array.from({ length: 16 }, (_, i) => ({ signature: b58(Buffer.alloc(64, i + 1)),
+      slot: 100, err: { synthetic: true }, blockTime: Math.floor(stalled.preparation.createdAt / 1000), confirmationStatus: 'finalized' })));
+    assert.deepEqual(await call(recoveryPath, recoveryOwner, recoveryRequest), { status: 409, body: { error: 'payment_recovery_unavailable' } });
+    wire.referenceRows.delete(stalled.order.reference);
+    const real = signPayment(stalled.order, stalled.preparation), ambiguousSignature = b58(Buffer.alloc(64, 55));
+    wire.payments.set(real.signature, real);
+    wire.payments.set(ambiguousSignature, { ...real, signature: ambiguousSignature,
+      raw: { ...real.raw, transaction: { ...real.raw.transaction, signatures: [ambiguousSignature] } } });
+    assert.deepEqual(await call(recoveryPath, recoveryOwner, recoveryRequest), { status: 409, body: { error: 'payment_recovery_unavailable' } });
+    wire.payments.delete(real.signature); wire.payments.delete(ambiguousSignature);
+    wire.referenceUnavailable = true;
+    assert.deepEqual(await call(recoveryPath, recoveryOwner, recoveryRequest), { status: 409, body: { error: 'payment_recovery_unavailable' } });
+    wire.referenceUnavailable = false;
+    const unchanged = await inspect(stalled.order.id);
+    assert.deepEqual(unchanged.row, initial.row); assert.deepEqual(unchanged.hold, initial.hold);
+    assert.deepEqual(unchanged.recoveries, []); assert.deepEqual(unchanged.payloadKinds, initial.payloadKinds);
+    assert.deepEqual((await call(`/orders/${stalled.order.id}`, recoveryOwner)).body.preparation, stalled.preparation);
+    onlySolSince(before);
+  });
+  // Reset the RPC cooldown while preserving the same SQLite order, owner and preparation.
+  await start(false, false, false, recoveryOptions);
+  let recoveredSnapshot;
+  await test('explicit same-order recovery persists a bounded preparation and lost-response retry after restart is idempotent', async () => {
+    const before = wire.calls.length, original = await inspect(stalled.order.id);
+    const response = await call(recoveryPath, recoveryOwner, recoveryRequest); assert.equal(response.status, 200);
+    recoveredSnapshot = response.body; const prepared = recoveredSnapshot.preparation;
+    assert.deepEqual(recoveredSnapshot.record.order, stalled.order);
+    assert.equal(prepared.schema, 'sejire/payment-preparation/v2'); assert.equal(prepared.previousPreparationId, stalled.preparation.preparationId);
+    assert.notEqual(prepared.preparationId, stalled.preparation.preparationId);
+    assert(prepared.expiresAt > prepared.createdAt && prepared.expiresAt <= prepared.createdAt + 900000);
+    assert.equal(recoveredSnapshot.record.pendingSignature, undefined); assert.equal(recoveredSnapshot.record.payment, undefined);
+    const saved = await inspect(stalled.order.id); assert.deepEqual(saved.hold, original.hold);
+    assert.equal(saved.recoveries.length, 1); assert.deepEqual(JSON.parse(saved.recoveries[0].previous_preparation_json), stalled.preparation);
+    assert.deepEqual(saved.payloadKinds, original.payloadKinds); assert.deepEqual(saved.credits, []); onlySolSince(before);
+    const noMoreRpc = wire.calls.length;
+    assert.deepEqual((await call(`/orders/${stalled.order.id}/prepare`, recoveryOwner, {})).body, prepared);
+    assert.deepEqual(await call(recoveryPath, recoveryOwner, recoveryRequest), response);
+    assert.equal(wire.calls.length, noMoreRpc);
+    const late = signPayment(stalled.order, stalled.preparation);
+    assert.deepEqual(await call(`/orders/${stalled.order.id}/reserve`, recoveryOwner,
+      { signature: late.signature, preparationId: stalled.preparation.preparationId }), { status: 409, body: { error: 'payment_not_prepared' } });
+    await start(false, false, false, recoveryOptions);
+    const beforeRetry = wire.calls.length;
+    assert.deepEqual((await call(recoveryPath, recoveryOwner, recoveryRequest)).body, recoveredSnapshot);
+    assert.equal(wire.calls.length, beforeRetry); assert.equal((await inspect(stalled.order.id)).recoveries.length, 1);
+  });
+  await test('RPC recovery finds and credits the original exact payment before checking expiry and never rotates it', async () => {
+    wire.blockHeight = 100; // A found payment wins even before the old blockhash expires.
+    const original = signPayment(foundOriginal.order, foundOriginal.preparation); wire.payments.set(original.signature, original);
+    const path = `/orders/${foundOriginal.order.id}/recover`, payload = { preparationId: foundOriginal.preparation.preparationId };
+    const before = wire.calls.length, result = await call(path, recoveryOwner, payload); assert.equal(result.status, 200);
+    assert.equal(result.body.record.payment.signature, original.signature); assert.deepEqual(result.body.preparation, foundOriginal.preparation);
+    const state = await inspect(foundOriginal.order.id);
+    assert.deepEqual(state.recoveries, []); assert.equal(state.credits.length, 1); assert.equal(state.hold.released, 0);
+    assert.equal(state.payloadKinds.some(row => row.kind === 'signed'), false); onlySolSince(before);
+    const noMoreRpc = wire.calls.length;
+    assert.deepEqual(await call(path, recoveryOwner, payload), { status: 409, body: { error: 'previous_payment_unresolved' } });
+    assert.equal(wire.calls.length, noMoreRpc);
   });
   assert(wire.calls.every(call => ['https://arweave.net', 'https://g8way.io', 'https://api.mainnet-beta.solana.com',
     'https://solana.api.pocket.network',

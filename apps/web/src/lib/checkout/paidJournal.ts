@@ -80,6 +80,10 @@ export async function validatePaidOperation(value: unknown): Promise<PaidOperati
       if (!op.order) throw Error();
       await validatePaymentPreparation(op.order, op.preparation);
     }
+    if (op.recoveryRequestedFor !== undefined && (typeof op.recoveryRequestedFor !== 'string' ||
+        !HASH.test(op.recoveryRequestedFor) || op.recoveryRequestedFor !== op.preparation?.preparationId ||
+        !op.order || op.signature || op.signedTransaction || op.cancellationRequested || op.creationCancelled ||
+        op.localCompletion !== 'pending')) throw Error();
     if (op.signature) { assertBase58(op.signature, 64); if (!op.signingStarted) throw Error(); }
     if (op.signedTransaction && (!op.signature || !op.signingStarted || op.signedTransaction.length > 4096)) throw Error();
     if (op.cancellationRequested !== undefined && typeof op.cancellationRequested !== 'boolean') throw Error();

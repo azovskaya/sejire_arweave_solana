@@ -58,6 +58,8 @@ export type PaidOperation = {
   order?: PaidOrder;
   snapshot?: PaidSnapshot;
   preparation?: DurablePaymentPreparation;
+  /** Explicit owner request, persisted before a server-fenced preparation renewal. */
+  recoveryRequestedFor?: string;
   signingStarted: boolean;
   signature?: string;
   signedTransaction?: string;

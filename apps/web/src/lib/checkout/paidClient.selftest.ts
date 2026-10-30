@@ -4,7 +4,7 @@ import { IDBFactory } from 'fake-indexeddb';
 import { Keypair, Message, Transaction } from '@solana/web3.js';
 import bs58 from 'bs58';
 import type { SolanaWalletAdapter } from '@ardrive/turbo-sdk/web';
-import { createPaidOrderFromPolicy, createPaymentPreparation, paidPolicyHash, SOLANA_GENESIS, type ContributionPolicy, type PaidPolicy, type PaidReceipt } from '../../../../../packages/checkout/paid';
+import { createPaidOrderFromPolicy, createPaymentPreparation, paymentExpiresAt, paidPolicyHash, SOLANA_GENESIS, type ContributionPolicy, type PaidPolicy, type PaidReceipt, type DurablePaymentPreparation } from '../../../../../packages/checkout/paid';
 import { parseAmount } from '../../../../../packages/checkout/amounts';
 import { parseRpcJson, rpcU64 } from '../../../../../packages/checkout/rpcJson';
 import { createMnemonic } from '../crypto/bip39';
@@ -19,7 +19,7 @@ import { readPaidAccess, writePaidAccess, readPaidOperation, writePaidOperation,
 import { findPreservationAttempt, reservePaidAttempt, saveGuardedFundAttempt, clearGuardedFundAttempt } from './vaultGuard';
 import { beginPaidOperation, readPaidStatus, preparePaidOperation, payPaidOperation, checkPaidOperation,
   readPaidPolicy, validatePaidSnapshot, paidCompletion, cancelPaidOperation, resolveReleasedPaidOperation, PaidApiError } from './paidClient';
-import { cancelPaidCreation, retryPaidCreation, contributionReceipt, completeContributionLocally } from './paidClient';
+import { cancelPaidCreation, retryPaidCreation, contributionReceipt, completeContributionLocally, recoverPaidOperation } from './paidClient';
 import { retrievePaidReceipt } from './paidReceipt';
 import { finalizeStandalonePaid } from './paidFinalize';
 import { getLocalVaultVersion } from '../vaultSession/localArchive';
@@ -161,13 +161,15 @@ for (const source of ['{9007199254740993:1}', '[01]', '{"x":9007199254740993e}',
 }
 
 type NetworkState = { snapshot?: PaidSnapshot; key?: string; creates: number; prepares: number; reserves: number; sends: string[]; sessions: number;
+  recovers: number; reconciles: number; recoveries: Map<string, DurablePaymentPreparation>; blockHeight?: number; loseRecovery?: boolean; recoveryError?: string;
   loseCreate?: boolean; loseReserve?: boolean; loseCancel?: boolean; rejectWallet?: boolean; unknownWallet?: boolean;
   signature?: string; wrongGenesis?: boolean; paid: boolean; executed: boolean; onSigned?: () => void;
   dropBeforeAdmission?: boolean; tombstone?: boolean; missingStatus?: number; missingCode?: string;
   balance?: string; offer?: PaidPolicyResponse; sessionToken?: string; beforeSessionResponse?: () => Promise<void>;
   deniedRpc?: string; rpcHosts?: string[] };
 function syntheticNetwork(): NetworkState {
-  const state: NetworkState = { creates: 0, prepares: 0, reserves: 0, sends: [], sessions: 0, paid: false, executed: false };
+  const state: NetworkState = { creates: 0, prepares: 0, reserves: 0, sends: [], sessions: 0, paid: false, executed: false,
+    recovers: 0, reconciles: 0, recoveries: new Map() };
   const json = (value: unknown, status = 200) => new Response(JSON.stringify(value), { status, headers: { 'Content-Type': 'application/json' } });
   globalThis.fetch = async (url, init) => {
     const target = String(url), method = init?.method ?? 'GET', body = init?.body ? JSON.parse(String(init.body)) : undefined;
@@ -180,7 +182,7 @@ function syntheticNetwork(): NetworkState {
       if (body.method === 'getGenesisHash') result = state.wrongGenesis ? SOLANA_GENESIS[rpcNetwork === 'devnet' ? 'mainnet-beta' : 'devnet'] : SOLANA_GENESIS[rpcNetwork];
       else if (body.method === 'getFeeForMessage') result = { value: 5000 };
       else if (body.method === 'getBalance') return new Response(`{"jsonrpc":"2.0","id":${JSON.stringify(body.id)},"result":{"value":${state.balance ?? '18446744073709551615'}}}`, { headers: { 'Content-Type': 'application/json' } });
-      else if (body.method === 'getBlockHeight') result = 50;
+      else if (body.method === 'getBlockHeight') result = state.blockHeight ?? 50;
       else if (body.method === 'sendTransaction') {
         assert.ok(state.reserves > 0, 'reserve precedes broadcast');
         const signed = Transaction.from(Buffer.from(body.params[0], 'base64'));
@@ -243,6 +245,27 @@ function syntheticNetwork(): NetworkState {
       snapshot.preparation ??= await createPaymentPreparation(snapshot.record.order, { blockhash: address(8), lastValidBlockHeight: 100, feeLamports: '5000', createdAt: Date.now() });
       return json(snapshot.preparation);
     }
+    if (path.endsWith('/recover')) {
+      state.recovers++;
+      const stored = await readPaidOperation(state.key!);
+      assert.equal(stored?.recoveryRequestedFor, body.preparationId, 'explicit recovery intent is durable before POST');
+      assert.equal(stored?.signature, undefined); assert.equal(stored?.signedTransaction, undefined);
+      if (snapshot.record.pendingSignature || snapshot.record.payment) return json({ error: 'previous_payment_unresolved' }, 409);
+      if (state.recoveryError) return json({ error: state.recoveryError }, 409);
+      const previous = snapshot.preparation; assert.ok(previous);
+      const existing = state.recoveries.get(body.preparationId);
+      if (existing) { assert.deepEqual(snapshot.preparation, existing); return json(snapshot); }
+      if (body.preparationId !== previous.preparationId) return json({ error: 'preparation_changed' }, 409);
+      if ((state.blockHeight ?? 50) <= previous.lastValidBlockHeight) return json({ error: 'payment_not_expired' }, 409);
+      const renewedAt = Date.now();
+      const renewed = await createPaymentPreparation(snapshot.record.order, { blockhash: address(10 + state.recoveries.size),
+        lastValidBlockHeight: (state.blockHeight ?? 50) + 150, feeLamports: '5000', createdAt: renewedAt,
+        previousPreparationId: previous.preparationId, expiresAt: renewedAt + 900000 });
+      state.recoveries.set(previous.preparationId, renewed); snapshot.preparation = renewed;
+      snapshot.verification = null;
+      if (state.loseRecovery) { state.loseRecovery = false; throw TypeError('synthetic lost recovery response'); }
+      return json(snapshot);
+    }
     if (path.endsWith('/reserve')) {
       assert.equal(snapshot.expired, false); assert.equal(body.preparationId, snapshot.preparation?.preparationId);
       const stored = await readPaidOperation(state.key!); assert.ok(stored); assert.equal(stored.signature, body.signature); assert.ok(stored.signedTransaction);
@@ -260,6 +283,7 @@ function syntheticNetwork(): NetworkState {
       return json(snapshot);
     }
     if (path.endsWith('/reconcile') || path.endsWith('/verify')) {
+      if (path.endsWith('/reconcile')) state.reconciles++;
       if (state.paid) {
         const signature = snapshot.record.pendingSignature ?? state.signature!;
         snapshot.record.pendingSignature = signature; snapshot.record.payment = { signature, feeLamports: '5000' };
@@ -350,8 +374,8 @@ assert.equal(getLocalVaultVersion(keys.vaultId, completed.txId)?.parentId, bindi
 assert.equal(getVaultSession()?.headTxId, completed.txId);
 assert.equal(await findPaidAttempt({ vaultId: keys.vaultId }), null);
 
-// Unknown wallet outcome has no local signature. Reference reconciliation is the
-// only path; no new create, wallet invocation, reserve or blind broadcast occurs.
+// Unknown wallet outcome has no local signature. Automatic reference checking
+// never creates, renews, asks a wallet to sign, or blindly broadcasts.
 reset(); network = syntheticNetwork(); network.unknownWallet = true; walletCalls = 0;
 op = await beginPaidOperation(input, signer.publicKey.toBase58(), '0', offered);
 op = await preparePaidOperation(op.id, wallet(network));
@@ -360,6 +384,153 @@ await assert.rejects(() => cancelPaidOperation(op.id), /previous_payment_unresol
 await assert.rejects(() => payPaidOperation(op.id, op.preparation!.preparationId, wallet(network)), /previous_payment_unresolved/);
 network.paid = true; op = await checkPaidOperation(op.id);
 assert.ok(await paidCompletion(op)); assert.equal(walletCalls, 1); assert.equal(network.creates, 1); assert.equal(network.sends.length, 0);
+assert.equal(network.recovers, 0);
+
+// An explicit renewal of an unknown wallet result keeps the exact order and
+// encrypted archive. Neither an early request nor its polling can reset it.
+{
+  reset(); network = syntheticNetwork(); network.unknownWallet = true; walletCalls = 0;
+  op = await beginPaidOperation(input, signer.publicKey.toBase58(), '0', offered);
+  op = await preparePaidOperation(op.id, wallet(network));
+  await assert.rejects(() => payPaidOperation(op.id, op.preparation!.preparationId, wallet(network)), /lost wallet/);
+  const staleCallback = (await readPaidOperation(op.id))!;
+  const originalOrder = structuredClone(op.order!), oldPreparation = op.preparation!;
+  op = await checkPaidOperation(op.id);
+  assert.equal(op.signingStarted, true); assert.equal(op.signature, undefined);
+  assert.equal(network.recovers, 0); assert.equal(walletCalls, 1);
+  await assert.rejects(() => recoverPaidOperation(op.id, () => false), /checkout_context_changed/);
+  assert.equal(network.recovers, 0);
+  await assert.rejects(() => recoverPaidOperation(op.id), /payment_not_expired/);
+  op = (await readPaidOperation(op.id))!;
+  assert.equal(op.recoveryRequestedFor, oldPreparation.preparationId);
+  assert.equal(op.signingStarted, true); assert.equal(op.signature, undefined);
+  const reconcilesBeforeRenewal = network.reconciles;
+  op = await checkPaidOperation(op.id);
+  assert.equal(network.reconciles, reconcilesBeforeRenewal, 'uncertain renewal polls GET without taking its server lease');
+  await assert.rejects(() => payPaidOperation(op.id, oldPreparation.preparationId, wallet(network)), /previous_payment_unresolved/);
+  await assert.rejects(() => cancelPaidOperation(op.id), /previous_payment_unresolved/);
+  assert.equal(walletCalls, 1); assert.equal(network.reserves, 0); assert.equal(network.sends.length, 0);
+
+  const realNow = Date.now, future = originalOrder.expiresAt + 60000;
+  Date.now = () => future;
+  try {
+    network.blockHeight = 200;
+    op = await recoverPaidOperation(op.id);
+    assert.deepEqual(op.order, originalOrder); assert.equal(op.serialized, serialized); assert.deepEqual(op.archive, binding);
+    assert.equal(op.id, staleCallback.id); assert.equal(op.token, staleCallback.token);
+    assert.equal(op.preparation?.schema, 'sejire/payment-preparation/v2');
+    assert.notEqual(op.preparation?.preparationId, oldPreparation.preparationId);
+    assert.equal(op.preparation?.schema === 'sejire/payment-preparation/v2' && op.preparation.previousPreparationId, oldPreparation.preparationId);
+    assert.equal(op.signingStarted, false); assert.equal(op.recoveryRequestedFor, undefined);
+    assert.ok(op.order!.expiresAt < Date.now()); assert.ok(paymentExpiresAt(op.order!, op.preparation!) > Date.now());
+    assert.equal(network.creates, 1); assert.equal(network.recovers, 2); assert.equal(walletCalls, 1);
+    assert.equal(network.reserves, 0); assert.equal(network.sends.length, 0);
+
+    const lateSigned = Transaction.populate(Message.from(Buffer.from(oldPreparation.messageBase64, 'base64')));
+    lateSigned.partialSign(signer);
+    await assert.rejects(() => writePaidOperation({ ...staleCallback, signature: bs58.encode(lateSigned.signatures[0].signature!),
+      signedTransaction: lateSigned.serialize().toString('base64') }), /paid_attempt_changed/);
+    assert.equal((await readPaidOperation(op.id))?.signature, undefined, 'stale wallet callback cannot overwrite renewed preparation');
+    await assert.rejects(() => payPaidOperation(op.id, oldPreparation.preparationId, wallet(network)), /previous_payment_unresolved/);
+    assert.equal(walletCalls, 1, 'stale consent cannot authorize the new preparation');
+
+    network.unknownWallet = false;
+    op = await preparePaidOperation(op.id, wallet(network));
+    op = await payPaidOperation(op.id, op.preparation!.preparationId, wallet(network));
+    assert.equal(network.sends.length, 1); assert.equal(network.reserves, 1); assert.equal(walletCalls, 2);
+    const signedOperation = (await readPaidOperation(op.id))!;
+    await assert.rejects(() => recoverPaidOperation(op.id), /previous_payment_unresolved/);
+    assert.deepEqual(await readPaidOperation(op.id), signedOperation, 'known signature and exact bytes cannot be cleared by recovery');
+    op = await checkPaidOperation(op.id);
+    const recoveredCompletion = await paidCompletion(op);
+    assert.ok(recoveredCompletion); assert.deepEqual(recoveredCompletion.order, originalOrder);
+    assert.equal(recoveredCompletion.serialized, serialized); assert.equal(network.creates, 1);
+  } finally { Date.now = realNow; }
+}
+
+// A lost recovery response is adopted after reload or explicit retry only from
+// the locally persisted predecessor; neither path rotates or signs again.
+for (const reloadByGet of [true, false]) {
+  reset(); network = syntheticNetwork(); walletCalls = 0;
+  op = await beginPaidOperation(input, signer.publicKey.toBase58(), '0', offered);
+  op = await preparePaidOperation(op.id, wallet(network));
+  const previous = structuredClone(op);
+  network.blockHeight = 200; network.loseRecovery = true;
+  await assert.rejects(() => recoverPaidOperation(op.id), /lost recovery/);
+  const persisted = (await readPaidOperation(op.id))!;
+  assert.equal(persisted.recoveryRequestedFor, previous.preparation!.preparationId);
+  assert.equal(persisted.preparation?.preparationId, previous.preparation!.preparationId);
+  op = reloadByGet ? await readPaidStatus(op.id) : await recoverPaidOperation(op.id);
+  assert.equal(op.recoveryRequestedFor, undefined); assert.equal(op.signingStarted, false);
+  assert.equal(op.preparation?.schema, 'sejire/payment-preparation/v2');
+  assert.deepEqual(op.order, previous.order); assert.equal(op.serialized, previous.serialized);
+  await checkPaidOperation(op.id); await readPaidStatus(op.id);
+  assert.equal(network.recovers, 1); assert.equal(network.recoveries.size, 1);
+  assert.equal(walletCalls, 0); assert.equal(network.creates, 1); assert.equal(network.sends.length, 0);
+}
+
+// An unsigned stale quote also needs explicit recovery. Pending recovery keeps
+// ordinary pay and cancel unavailable, even though signing was never started.
+{
+  reset(); network = syntheticNetwork(); walletCalls = 0;
+  op = await beginPaidOperation(input, signer.publicKey.toBase58(), '0', offered);
+  op = await preparePaidOperation(op.id, wallet(network));
+  const preparationId = op.preparation!.preparationId;
+  network.recoveryError = 'payment_recovery_unavailable';
+  await assert.rejects(() => recoverPaidOperation(op.id), /payment_recovery_unavailable/);
+  op = (await readPaidOperation(op.id))!;
+  assert.equal(op.signingStarted, false); assert.equal(op.recoveryRequestedFor, preparationId);
+  await assert.rejects(() => payPaidOperation(op.id, preparationId, wallet(network)), /previous_payment_unresolved/);
+  await assert.rejects(() => cancelPaidOperation(op.id), /previous_payment_unresolved/);
+  op = await checkPaidOperation(op.id);
+  assert.equal(network.recovers, 1); assert.equal(network.reconciles, 0); assert.equal(walletCalls, 0);
+
+  // A signature found for the old preparation takes precedence over renewal.
+  const foundSignature = bs58.encode(new Uint8Array(64).fill(23));
+  network.snapshot!.record.pendingSignature = foundSignature;
+  network.snapshot!.record.states.payment = 'requires-reconciliation';
+  op = await recoverPaidOperation(op.id);
+  assert.equal(op.signature, foundSignature); assert.equal(op.signingStarted, true);
+  assert.equal(op.recoveryRequestedFor, undefined); assert.equal(op.preparation?.preparationId, preparationId);
+  assert.equal(network.recovers, 1, 'server signature discovered by GET never calls recovery');
+  await assert.rejects(() => recoverPaidOperation(op.id), /previous_payment_unresolved/);
+  assert.equal((await readPaidOperation(op.id))?.signature, foundSignature);
+}
+
+// A valid new message alone is insufficient: the old persisted request must
+// match its predecessor, and no paid/signed/executing state may be discarded.
+{
+  reset(); network = syntheticNetwork();
+  op = await beginPaidOperation(input, signer.publicKey.toBase58(), '0', offered);
+  op = await preparePaidOperation(op.id, wallet(network));
+  const original = structuredClone(op), now = Date.now();
+  const replacement = await createPaymentPreparation(op.order!, { blockhash: address(10), lastValidBlockHeight: 350,
+    feeLamports: '5000', createdAt: now, previousPreparationId: op.preparation!.preparationId, expiresAt: now + 900000 });
+  const replaced = { ...structuredClone(network.snapshot!), preparation: replacement };
+  await assert.rejects(() => validatePaidSnapshot(op, replaced), /payment_preparation_mismatch/);
+  const fetchOriginal = globalThis.fetch;
+  globalThis.fetch = async (url, init) => String(url).endsWith('/prepare')
+    ? new Response(JSON.stringify(replacement), { headers: { 'Content-Type': 'application/json' } }) : fetchOriginal(url, init);
+  await assert.rejects(() => preparePaidOperation(op.id, wallet(network)), /payment_preparation_mismatch/);
+  globalThis.fetch = fetchOriginal;
+  op = await writePaidOperation({ ...(await readPaidOperation(op.id))!, signingStarted: true,
+    recoveryRequestedFor: op.preparation!.preparationId });
+  assert.equal((await validatePaidSnapshot(op, replaced)).preparation?.preparationId, replacement.preparationId);
+  const wrongChain = { ...replaced, preparation: { ...replacement, previousPreparationId: 'a'.repeat(64) } };
+  await assert.rejects(() => validatePaidSnapshot(op, wrongChain), /payment_preparation_mismatch/);
+  const otherOrder = structuredClone(replaced); otherOrder.record.order = { ...otherOrder.record.order, expiresAt: otherOrder.record.order.expiresAt + 1 };
+  await assert.rejects(() => validatePaidSnapshot(op, otherOrder), /checkout_order_mismatch/);
+  for (const mutate of [
+    (snapshot: PaidSnapshot) => { snapshot.record.pendingSignature = bs58.encode(new Uint8Array(64).fill(24)); },
+    (snapshot: PaidSnapshot) => { snapshot.execution = { kind: 'arweave-direct', txId: null, status: 'queued', verification: null }; },
+  ]) {
+    const contradictory = structuredClone(replaced); mutate(contradictory);
+    await assert.rejects(() => validatePaidSnapshot(op, contradictory), /payment_preparation_mismatch/);
+  }
+  await assert.rejects(() => writePaidOperation({ ...op, recoveryRequestedFor: 'a'.repeat(64) }), /invalid_paid_attempt/);
+  assert.deepEqual((await readPaidOperation(op.id))?.order, original.order);
+  assert.equal((await readPaidOperation(op.id))?.serialized, original.serialized);
+}
 
 // A proved 4001 allows cancellation, even when its response is lost. Only an
 // explicit later acknowledgement resolves the local guard; it creates nothing.

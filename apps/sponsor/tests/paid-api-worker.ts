@@ -23,6 +23,7 @@ export class CheckoutLedger extends ActualCheckoutLedger {
         'SELECT status,receipt_json,proof_json,lease_until,last_error FROM paid_orders WHERE order_id=?', input.id!).toArray()[0];
       return Response.json({ row, paid, credits: sql.exec('SELECT purpose,amount,signature FROM credits WHERE order_id=?', input.id!).toArray(),
         hold: sql.exec('SELECT reward,actual,released FROM paid_holds WHERE order_id=?', input.id!).toArray()[0],
+        recoveries: sql.exec('SELECT previous_preparation_id,previous_preparation_json,preparation_json FROM paid_payment_recoveries WHERE order_id=?', input.id!).toArray(),
         legacyExecution: sql.exec('SELECT order_id FROM api_execution WHERE order_id=?', input.id!).toArray(),
         payloadKinds: sql.exec('SELECT kind FROM paid_payloads WHERE order_id=?', input.id!).toArray() });
     }

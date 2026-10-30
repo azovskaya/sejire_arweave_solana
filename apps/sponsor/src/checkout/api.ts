@@ -116,7 +116,7 @@ export async function checkoutApi(request: Request, env: CheckoutApiEnv,
     const contributionPolicyRoute=url.pathname===PREFIX+'/policy/contribution';
     const policyRoute=url.pathname===PREFIX+'/policy'||contributionPolicyRoute;
     const healthRoute=url.pathname===PREFIX+'/rpc-health';
-    const resumeRoute=/^\/api\/checkout\/orders\/(?:[a-f0-9]{32}(?:\/(?:verify|reconcile|reserve|prepare|execute|cancel))?|by-key\/[A-Za-z0-9_-]{16,128}(?:\/cancel)?)$/.test(url.pathname);
+    const resumeRoute=/^\/api\/checkout\/orders\/(?:[a-f0-9]{32}(?:\/(?:verify|reconcile|reserve|prepare|execute|cancel|recover))?|by-key\/[A-Za-z0-9_-]{16,128}(?:\/cancel)?)$/.test(url.pathname);
     if(!legacyEnabled&&!paidEnabled&&!contributionEnabled&&!policyRoute&&!healthRoute&&!resumeRoute)return reply(404,{error:'not_found'});
     if (!env.CHECKOUT_LEDGER || !env.CHECKOUT_ALLOWED_ORIGINS) throw new HttpError(503, 'checkout_not_configured');
     const origins = env.CHECKOUT_ALLOWED_ORIGINS.split(',');
@@ -125,7 +125,7 @@ export async function checkoutApi(request: Request, env: CheckoutApiEnv,
     if (requestedOrigin && !origins.includes(requestedOrigin)) throw new HttpError(403, 'origin_denied');
     origin = requestedOrigin;
     if (url.search || url.hash) return bad('query_not_supported'); // No secrets in URL.
-    const match = /^\/api\/checkout\/orders\/([a-f0-9]{32})(?:\/(verify|reconcile|reserve|prepare|execute|cancel))?$/.exec(url.pathname);
+    const match = /^\/api\/checkout\/orders\/([a-f0-9]{32})(?:\/(verify|reconcile|reserve|prepare|execute|cancel|recover))?$/.exec(url.pathname);
     const byKey=/^\/api\/checkout\/orders\/by-key\/([A-Za-z0-9_-]{16,128})(?:\/(cancel))?$/.exec(url.pathname);
     const sessionRoute = url.pathname === PREFIX + '/session';
     const createRoute = url.pathname === PREFIX + '/orders';
@@ -267,6 +267,11 @@ export async function checkoutApi(request: Request, env: CheckoutApiEnv,
       type Snapshot=ReturnType<PaidLedger['snapshot']>;
       const paid=await ledger.call<Snapshot>({action:'paidGet',hash,id});
       if(method==='GET')return reply(200,paid);
+      if(match![2]==='recover'){
+        const input=fields(await body(request),['preparationId']);
+        if(typeof input.preparationId!=='string'||!/^[a-f0-9]{64}$/.test(input.preparationId))return bad();
+        return reply(200,await ledger.call({action:'paidRecover',hash,id,preparationId:input.preparationId}));
+      }
       if(match![2]==='prepare'){
         fields(await body(request),[]);
         if(paid.expired)throw new HttpError(409,'order_expired');
@@ -297,7 +302,7 @@ export async function checkoutApi(request: Request, env: CheckoutApiEnv,
     }
     if(!legacyEnabled)return reply(404,{error:'not_found'});
     if (method === 'GET') return reply(200, snapshot);
-    if(match![2]==='cancel')return reply(404,{error:'not_found'});
+    if(match![2]==='cancel'||match![2]==='recover')return reply(404,{error:'not_found'});
     if (match![2] === 'reserve') {
       const input = fields(await body(request), ['signature']);
       if (typeof input.signature !== 'string') return bad('invalid_signature');
@@ -361,7 +366,7 @@ export async function checkoutApi(request: Request, env: CheckoutApiEnv,
     if (code === 'unauthorized') return reply(401, { error: code });
     if (code === 'order_not_found') return reply(404, { error: code });
     if (code === 'rate_limited') return reply(429, { error: code });
-    if (['idempotency_conflict', 'previous_payment_unresolved', 'order_already_paid', 'preservation_not_paid','order_expired','payment_not_prepared','payment_not_reserved','paid_hold_not_releasable','paid_request_cancelled','preparation_changed','paid_policy_changed'].includes(code)) return reply(409, { error: code });
+    if (['idempotency_conflict', 'previous_payment_unresolved', 'order_already_paid', 'preservation_not_paid','order_expired','payment_not_prepared','payment_not_reserved','paid_hold_not_releasable','paid_request_cancelled','preparation_changed','paid_policy_changed','payment_not_expired','payment_recovery_busy','payment_recovery_unavailable'].includes(code)) return reply(409, { error: code });
     if(['paid_not_configured','paid_not_ready','contribution_not_configured','contribution_not_ready','paid_budget_exhausted','balance_observation_stale','wallet_low','payment_balance_not_ready','recipient_not_ready','payment_network_not_ready'].includes(code))return reply(503,{error:code});
     // These are bounded, secret-free preparation failures. Report the cause of
     // a rejected create instead of letting a later by-key 404 mask it.

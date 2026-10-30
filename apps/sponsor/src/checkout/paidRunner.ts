@@ -1,9 +1,9 @@
 import type { PaidPolicy, CheckoutPolicy } from '../../../../packages/checkout/paid';
 import type { TrustedTransactionReader } from './reconciliation';
 import { validatePreparedPayment } from './paymentValidator';
-import { PaidRpcPool } from './rpcPool';
+import { PaidRpcPool, inspectPaymentRecoveryWithRpc, type PaymentRecoveryInspection } from './rpcPool';
 import { DirectArweavePreservation } from './directPreservation';
-import { PaidLedger } from './paidLedger';
+import { PaidLedger, type PaidWork } from './paidLedger';
 import type { PaidEnv } from './paidPolicy';
 
 export function paidProvider(env:PaidEnv,policy:PaidPolicy):DirectArweavePreservation{
@@ -15,6 +15,31 @@ export type PaidRunnerDependencies={
   reader?:(policy:CheckoutPolicy)=>TrustedTransactionReader;
   provider?:(policy:PaidPolicy)=>Pick<DirectArweavePreservation,'prepare'|'sign'|'submit'|'reconcile'>;
 };
+export type PaidRecoveryDependencies={inspect?:(work:PaidWork)=>Promise<PaymentRecoveryInspection>};
+/** Explicit owner action; no wallet call, new order, AR hold or archive execution.
+ * Recovery success is a durable preparation fence, never an inferred "unpaid" bit. */
+export async function recoverPaidOrder(ledger:PaidLedger,env:PaidEnv,hash:string,id:string,preparationId:string,deps:PaidRecoveryDependencies={}){
+  const lease=crypto.randomUUID().replace(/-/g,''),claimed=await ledger.claimPaymentRecovery(hash,id,preparationId,lease,Date.now());
+  if(claimed.reused)return ledger.snapshot(id);
+  let reason:string|null=null;
+  try{
+    const work=claimed.work;
+    if(!work.preparation)throw Error('payment_not_prepared');
+    const inspection=await(deps.inspect?.(work)??inspectPaymentRecoveryWithRpc(env,work.record.order,work.preparation));
+    if(inspection.status==='found'){
+      // A genuine lost wallet result remains the original payment, never a renewal.
+      await ledger.reserveInternal(id,inspection.signature,preparationId,Date.now());
+      await ledger.commit(id,inspection.payment,Date.now());
+      return ledger.snapshot(id);
+    }
+    return await ledger.finishPaymentRecovery(id,lease,preparationId,inspection.preparation,inspection.finalizedBlockHeight,Date.now());
+  }catch(error){
+    const code=error instanceof Error?error.message:'';
+    reason=['payment_not_expired','payment_recovery_busy','previous_payment_unresolved','preparation_changed','order_expired',
+      'payment_not_prepared','invalid_payment_preparation','invalid_payment_signature'].includes(code)?code:'payment_recovery_unavailable';
+    throw Error(reason);
+  }finally{await ledger.releaseLease(id,lease,reason,Date.now());}
+}
 /** Service-owned continuation. Never depends on the browser bearer token/session.
  * The lease spans verification and signing; persisted signed bytes precede submit.
  * Fixtures can inject ports from a local test entry, never HTTP fields or env URLs. */

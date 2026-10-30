@@ -29,7 +29,10 @@ export class PaidLedger {
         next_at INTEGER NOT NULL,attempts INTEGER NOT NULL DEFAULT 0,proof_json TEXT,receipt_json TEXT,
         paid INTEGER NOT NULL DEFAULT 0,released INTEGER NOT NULL DEFAULT 0,last_error TEXT,submission_ack INTEGER NOT NULL DEFAULT 0);
       CREATE TABLE IF NOT EXISTS paid_payloads(order_id TEXT NOT NULL REFERENCES paid_orders(order_id),kind TEXT NOT NULL,
-        payload TEXT NOT NULL,PRIMARY KEY(order_id,kind));`);
+        payload TEXT NOT NULL,PRIMARY KEY(order_id,kind));
+      CREATE TABLE IF NOT EXISTS paid_payment_recoveries(order_id TEXT NOT NULL REFERENCES paid_orders(order_id),
+        previous_preparation_id TEXT NOT NULL,previous_preparation_json TEXT NOT NULL,preparation_json TEXT NOT NULL,
+        finalized_block_height INTEGER NOT NULL,recovered_at INTEGER NOT NULL,PRIMARY KEY(order_id,previous_preparation_id));`);
       if(!this.sql.exec<{name:string}>('PRAGMA table_info(paid_orders)').toArray().some(c=>c.name==='submission_ack'))
         this.sql.exec('ALTER TABLE paid_orders ADD COLUMN submission_ack INTEGER NOT NULL DEFAULT 0');
     });
@@ -131,6 +134,53 @@ export class PaidLedger {
   }
   async reserve(hash:string,id:string,signature:string,preparationId:string,now:number){
     this.api.ownerPaid(hash,id);return this.reserveInternal(id,signature,preparationId,now);
+  }
+  /** An explicit recovery only fences a preparation that this ledger never
+   * authorized for broadcast. Existing V2 clients reserve before sending. */
+  async claimPaymentRecovery(hash:string,id:string,preparationId:string,lease:string,now:number):Promise<
+    {reused:true;work:null}|{reused:false;work:PaidWork}> {
+    this.api.ownerPaid(hash,id);
+    if(!/^[a-f0-9]{64}$/.test(preparationId))throw Error('invalid_payment_preparation');
+    const reused=this.storage.transactionSync(()=>{
+      const row=this.row(id),record=this.record(id),current=json<DurablePaymentPreparation>(row.preparation_json);
+      const prior=this.sql.exec<{preparation_json:string}>(
+        'SELECT preparation_json FROM paid_payment_recoveries WHERE order_id=? AND previous_preparation_id=?',id,preparationId).toArray()[0];
+      if(prior){
+        const recovered=JSON.parse(prior.preparation_json) as DurablePaymentPreparation;
+        if(current?.preparationId!==recovered.preparationId)throw Error('preparation_changed');
+        return true;
+      }
+      if(!current||current.preparationId!==preparationId)throw Error('preparation_changed');
+      if(row.released)throw Error('order_expired');
+      if(record.pendingSignature||record.payment||row.paid||this.payload(id,'signed'))throw Error('previous_payment_unresolved');
+      if(row.lease_until>now)throw Error('payment_recovery_busy');
+      this.sql.exec('UPDATE paid_orders SET lease=?,lease_until=? WHERE order_id=?',lease,now+120000,id);
+      return false;
+    });
+    await this.storage.sync();
+    return reused?{reused:true,work:null}:{reused:false,work:this.work(id)};
+  }
+  async finishPaymentRecovery(id:string,lease:string,previousPreparationId:string,candidate:DurablePaymentPreparation,finalizedBlockHeight:number,now:number){
+    const record=this.record(id);
+    await validatePaymentPreparation(record.order,candidate);
+    if(candidate.schema!=='sejire/payment-preparation/v2'||candidate.previousPreparationId!==previousPreparationId||
+        candidate.createdAt>now||candidate.expiresAt<=now)throw Error('invalid_payment_preparation');
+    this.storage.transactionSync(()=>{
+      const row=this.leased(id,lease),current=this.record(id),previous=json<DurablePaymentPreparation>(row.preparation_json);
+      if(row.lease_until<=now)throw Error('payment_recovery_busy');
+      if(row.released||current.pendingSignature||current.payment||row.paid||this.payload(id,'signed'))throw Error('previous_payment_unresolved');
+      if(!previous||previous.preparationId!==previousPreparationId)throw Error('preparation_changed');
+      if(!Number.isSafeInteger(finalizedBlockHeight)||finalizedBlockHeight<=previous.lastValidBlockHeight)throw Error('payment_not_expired');
+      if(candidate.lastValidBlockHeight<=finalizedBlockHeight)throw Error('payment_recovery_unavailable');
+      if(candidate.createdAt<previous.createdAt)throw Error('invalid_payment_preparation');
+      // This transaction and reserveInternal's preparation check share SQLite's
+      // writer: either a durable reservation wins, or all late old reserves fail.
+      this.sql.exec('INSERT INTO paid_payment_recoveries(order_id,previous_preparation_id,previous_preparation_json,preparation_json,finalized_block_height,recovered_at) VALUES(?,?,?,?,?,?)',
+        id,previousPreparationId,JSON.stringify(previous),JSON.stringify(candidate),finalizedBlockHeight,now);
+      this.sql.exec('UPDATE paid_orders SET preparation_json=?,status=?,next_at=?,attempts=0,last_error=NULL,lease=NULL,lease_until=0 WHERE order_id=?',
+        JSON.stringify(candidate),'pending-payment',now+15000,id);
+    });
+    await this.storage.sync();await this.arm();return this.snapshot(id);
   }
   async reserveInternal(id:string,signature:string,preparationId:string,now:number){
     assertBase58(signature,64);const row=this.row(id),record=this.record(id),p=json<DurablePaymentPreparation>(row.preparation_json);
