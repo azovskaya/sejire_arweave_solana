@@ -77,3 +77,24 @@ performed during these checks. Mainnet configuration, price, recipients, treasur
 budgets and existing browser storage were not changed. Actual wallet approval and
 archive completion still require the owner to continue the original attempt on
 the original browser origin after the accepted build is published.
+
+## Hosted browser startup follow-up
+
+The first hosted run for `e5ab8662c8a82ef9786f67dfd64722d1d8a105fd`
+passed its unit, runtime and build checks, then stopped during setup of the
+existing wallet-history browser test: the page's execution context was destroyed
+before that test's assertions. Vite diagnostics reproduced late discovery of
+`vite-plugin-node-polyfills/shims/buffer` and the resulting development-page
+reload. The existing checkout test config already prebundles this exact shim.
+
+Cold-cache comparison with that test-only config showed one initial optimization
+and no late dependency discovery/reload; its target case and all 21 native
+browser scenarios passed. Other suites also import signer fixtures immediately,
+so the final fix prebundles the exact same shim in the shared development
+optimizer. This avoids relying on another suite's warm cache. No assertion,
+retry policy, payment logic or production build input was changed. The optional
+native browser executable setting permits the same real test config to run in
+this Linux workspace.
+
+The native production build was repeated with the same flags after the optimizer
+change: all 33 output files remained byte-for-byte identical.

@@ -31,7 +31,7 @@ export default defineConfig({
     // Dev-only fixture discovery must finish before the first browser imports its software signer.
     // Does not add test entrypoints to the production Rollup build.
     entries: ["index.html", "tests/*fixture.ts"],
-    include: ["arweave/web/index.js", "node-forge", "@scure/bip39", "@noble/hashes", "@noble/curves/ed25519", "@solana/web3.js", "bs58", "buffer"],
+    include: ["arweave/web/index.js", "node-forge", "@scure/bip39", "@noble/hashes", "@noble/curves/ed25519", "@solana/web3.js", "bs58", "buffer", "vite-plugin-node-polyfills/shims/buffer"],
   },
   build: {
     commonjsOptions: {
