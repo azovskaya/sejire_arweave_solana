@@ -8,8 +8,8 @@ const panel=page=>page.getByRole('region',{name:'Оплата SOL',exact:true});
 const json=(route,value,status=200)=>route.fulfill({status,contentType:'application/json',body:JSON.stringify(value)});
 const networkState=()=>({ready:true,contributionReady:true,balance:'1000000000000000',requests:[],denied:[],creates:0,admissions:0,createKeys:[],bodies:[],prepares:0,reserves:0,sends:[],cancels:0,reconciles:0,
   recoveries:0,recoveryTransitions:{},lostRecovery:false,recoveryFee:'6000',recoveryError:null,recoveryGate:null,
-  finish:false,paid:false,phase:'queued',createError:null,lostCreate:false,lostReserve:false,lostVerify:false,lostCancel:false,
-  wrongGenesis:false,wrongOrder:false,snapshot:null,archive:null,key:null,unknownSignature:null,dropBeforeAdmission:false,tombstone:false});
+  finish:false,paid:false,phase:'queued',createError:null,lostCreate:false,lostReserve:false,lostSend:false,lostVerify:false,lostCancel:false,
+  wrongGenesis:false,wrongOrder:false,feeNull:false,rpcUnavailable:false,height:50,snapshot:null,archive:null,key:null,unknownSignature:null,dropBeforeAdmission:false,tombstone:false});
 
 async function installNetwork(context,state=networkState()){
  await context.addInitScript(()=>localStorage.setItem('sejire.locale','ru'));
@@ -136,10 +136,11 @@ async function installNetwork(context,state=networkState()){
   }
   if(url.origin==='https://api.devnet.solana.com'&&req.method()==='POST'){
    const body=req.postDataJSON();let result;
+   if(state.rpcUnavailable)return json(route,{error:'temporarily_unavailable'},503);
    if(body.method==='getGenesisHash')result=state.wrongGenesis?'5eykt4UsFv8P8NJdTREpY1vzqKqZKvdpKuc147dw2N9d':'EtWTRABZaYq6iMfeYKouRu166VU2xqa1wcaWoxPkrZBG';
    else if(body.method==='getBalance')return route.fulfill({contentType:'application/json',body:`{"jsonrpc":"2.0","id":${JSON.stringify(body.id)},"result":{"value":${state.balance}}}`});
-   else if(body.method==='getFeeForMessage')result={value:Number(state.snapshot?.preparation?.feeLamports??'5000')};
-   else if(body.method==='getBlockHeight')result=50;
+   else if(body.method==='getFeeForMessage')result={value:state.feeNull?null:Number(state.snapshot?.preparation?.feeLamports??'5000')};
+   else if(body.method==='getBlockHeight')result=state.height;
    else if(body.method==='sendTransaction'){
     expect(state.reserves).toBeGreaterThan(0);
     result=bs58.encode(Buffer.from(body.params[0],'base64').subarray(1,65));
@@ -147,6 +148,7 @@ async function installNetwork(context,state=networkState()){
     const stored=await page.evaluate(async key=>(await import('/src/lib/checkout/paidJournal.ts')).readPaidOperation(key),state.key);
     expect(body.params[0]).toBe(stored.signedTransaction);
     state.sends.push(body.params[0]);state.paid=true;
+    if(state.lostSend){state.lostSend=false;return route.abort('failed');}
    }else{state.denied.push('unmocked RPC');return route.abort('blockedbyclient');}
    return json(route,{jsonrpc:'2.0',id:body.id,result});
   }
@@ -240,492 +242,178 @@ async function cleanRestore(browser,state,words,receipt){
  await context.close();
 }
 
-test('disabled public policy leaves promo and encrypted backup available without any wallet or order',async({page,context})=>{
- const state=await installNetwork(context);state.ready=false;
- await openEditor(page);await openPaid(page);
- await expect(panel(page).getByText('Оплата через Solana пока недоступна. Вы можете сохранить дерево по промокоду.')).toBeVisible();
- await expect(panel(page).getByRole('button',{name:/Оплатить|Подключить/})).toHaveCount(0);
+test('disabled policy keeps encrypted backup available and never calls a wallet',async({page,context})=>{
+ const state=await installNetwork(context);state.ready=false;await openEditor(page);await openPaid(page);
+ await expect(panel(page)).toContainText('Оплата через Solana пока недоступна');
+ await expect(panel(page).getByRole('button',{name:/Оплатить/})).toHaveCount(0);
+ await panel(page).getByText('Подробнее',{exact:true}).click();
  await expect(panel(page).getByRole('button',{name:'Скачать зашифрованную копию'})).toBeVisible();
- expect(state.creates).toBe(0);expect(await page.evaluate(()=>window.paidWallet.connects)).toBe(0);expect(state.denied).toEqual([]);
+ expect(state.creates).toBe(0);expect(await page.evaluate(()=>window.paidWallet.connects)).toBe(0);
 });
 
-test('modern editor pays once, checks archive proof, retries only local completion and restores both trees from receipt and words',async({page,context,browser},testInfo)=>{
- const state=await installNetwork(context);await page.setViewportSize({width:390,height:844});
- await openEditor(page);await openPaid(page);
- const downloadEvent=page.waitForEvent('download');await panel(page).getByRole('button',{name:'Скачать зашифрованную копию'}).click();
- const backup=await readFile(await(await downloadEvent).path(),'utf8');
- await prepare(page);expect(JSON.stringify(JSON.parse(backup))).toBe(state.archive);
- await expect(panel(page)).toContainText('0.000005 SOL');await expect(panel(page).getByText('0 SOL',{exact:true})).toBeVisible();
- await pay(page);await expect(panel(page).getByRole('heading',{name:'Оплата получена. Сохраняем дерево'})).toBeVisible();
+test('one click connects Phantom, signs once, completes one archive and restores it',async({page,context,browser})=>{
+ const state=await installNetwork(context);await openEditor(page);await openPaid(page);
+ const button=panel(page).getByRole('button',{name:'Оплатить 0.03 SOL и сохранить'});
+ await expect(button).toBeVisible();await expect(panel(page)).toContainText('Комиссия Solana отдельно: уточняется');
+ await expect(panel(page).getByRole('checkbox')).toHaveCount(0);
+ await expect(panel(page).getByRole('button',{name:/Подключить Phantom|Подтвердить оплату|Обновить подтверждение|Восстановить подтверждение|Проверить статус/})).toHaveCount(0);
+ await button.click();await expect.poll(()=>state.sends.length).toBe(1);
+ expect(state.creates).toBe(1);expect(state.admissions).toBe(1);expect(state.reserves).toBe(1);
+ expect(await page.evaluate(()=>({connects:window.paidWallet.connects,signs:window.paidWallet.signCount}))).toEqual({connects:1,signs:1});
+ state.finish=true;await expect(panel(page).getByText('Сохранено',{exact:true})).toBeVisible({timeout:30000});
+ const result=await saved(page,state.key);expect(result.archive).toBe(state.archive);expect(result.op.localCompletion).toBe('done');
+ await cleanRestore(browser,state,await page.evaluate(()=>window.paidFamily.words),result.op.snapshot.execution.receipt);
  expect(state.sends).toHaveLength(1);expect(state.creates).toBe(1);
- await check(page);await expect.poll(()=>state.requests.some(value=>value.endsWith('/execute'))).toBe(true);
- await expect(panel(page).getByRole('heading',{name:'Ждём подтверждения Arweave'})).toBeVisible();
- expect(await page.evaluate(async bytes=>(await import('/tests/paid-fixture.ts')).transfers(bytes),state.sends[0])).toEqual([
-  {recipient:state.snapshot.record.order.servicePayment.recipient,lamports:'30000000'},
- ]);
- await expect(panel(page).getByRole('button',{name:'Проверить статус',exact:true})).toBeEnabled();
- await page.screenshot({path:testInfo.outputPath('paid-waiting-mobile.png'),fullPage:true});
- expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
- await page.evaluate(async()=>{
-  window.failPaidLocal=true;const original=Storage.prototype.setItem;
-  Storage.prototype.setItem=function(key,value){if(window.failPaidLocal&&key.startsWith('sejire.vaultArchive.v1.'))throw new DOMException('Synthetic quota','QuotaExceededError');return original.call(this,key,value);};
-  const s=await import('/src/lib/vaultSession/session.ts');s.setVaultSession({...s.getVaultSession(),headTxId:'C'.repeat(43),source:'publish'},s.getSessionMnemonic());
- });
- state.finish=true;await check(page);
- await expect(panel(page).getByRole('alert')).toContainText('локальной истории');
- await page.screenshot({path:testInfo.outputPath('paid-local-retry-mobile.png'),fullPage:true});
- expect((await saved(page,state.key)).op.localCompletion).toBe('pending');expect(state.sends).toHaveLength(1);
- await page.evaluate(()=>{window.failPaidLocal=false;});await panel(page).getByRole('button',{name:'Повторить завершение'}).click();
- await expect(page.getByRole('dialog')).toHaveCount(0);await expect(page.getByText(/^Сохранено в Arweave /)).toBeVisible();
- const local=await saved(page,state.key);expect(local.op.localCompletion).toBe('done');expect(local.archive).toBe(state.archive);
- expect(local.session.headTxId).toBe('C'.repeat(43));expect(local.parent).toBeNull();
- expect(await page.evaluate(()=>window.paidWallet.signCount)).toBe(1);
- await page.screenshot({path:testInfo.outputPath('paid-workspace-success-mobile.png'),fullPage:true});
- const receiptDownload=page.waitForEvent('download');await page.getByRole('button',{name:'Скачать квитанцию',exact:true}).click();
- const receipt=JSON.parse(await readFile(await(await receiptDownload).path(),'utf8'));
- expect(receipt).toEqual(state.snapshot.execution.receipt);
- const words=await page.evaluate(()=>window.paidFamily.words);
- await cleanRestore(browser,state,words,receipt);await cleanRestore(browser,state,words,null);
- expect(state.sends).toHaveLength(1);expect(state.creates).toBe(1);expect(state.denied).toEqual([]);
 });
 
-test('lost create response reload uses the original GET-by-key and exact ciphertext with no reseal or second POST',async({page,context})=>{
- const state=await installNetwork(context);state.lostCreate=true;await openEditor(page);await openPaid(page);
- await requestPayment(page);
- await expect(panel(page).getByRole('heading',{name:'Проверяем созданный запрос'})).toBeVisible();
- const before=await saved(page,state.key);expect(before.op.order).toBeUndefined();
- await page.reload();await expect(panel(page)).toBeVisible();
- await expect(panel(page).getByRole('button',{name:'Подключить Phantom'})).toBeEnabled();
- const after=await saved(page,state.key);expect(after.op.serialized).toBe(before.op.serialized);expect(after.op.id).toBe(before.op.id);
- expect(after.wordsInMemory).toBe(false);expect(state.creates).toBe(1);expect(state.prepares).toBe(0);
- expect(state.requests).toContain(`GET /orders/by-key/${state.key}`);expect(state.sends).toHaveLength(0);expect(state.denied).toEqual([]);
-});
-
-test('request dropped before admission retries explicitly with the same key, token and ciphertext after reload',async({page,context})=>{
- const state=await installNetwork(context);state.dropBeforeAdmission=true;await openEditor(page);await openPaid(page);
- await requestPayment(page);
- await expect(panel(page).getByRole('button',{name:'Повторить отправку запроса'})).toBeEnabled();
- await expect(panel(page).getByRole('alert')).toContainText('ответ POST недоступен, checkout_transport_failed');
- await check(page);
- await expect(panel(page).getByRole('alert')).toContainText('ответ POST недоступен, checkout_transport_failed');
- const original=await saved(page,state.key);await page.reload();await expect(panel(page).getByRole('alert')).toContainText('не нашёл');
- expect(state.creates).toBe(1);expect(state.admissions).toBe(0);
- await panel(page).getByRole('button',{name:'Повторить отправку запроса'}).click();
- await expect(panel(page).getByRole('button',{name:'Подключить Phantom'})).toBeEnabled();
- const after=await saved(page,state.key);expect(after.op.serialized).toBe(original.op.serialized);expect(after.op.token).toBe(original.op.token);
- expect(state.createKeys).toEqual([state.key,state.key]);expect(state.creates).toBe(2);expect(state.admissions).toBe(1);
- expect(state.prepares).toBe(0);expect(state.sends).toHaveLength(0);expect(state.denied).toEqual([]);
-});
-
-test('a rejected create shows its POST status and safe code after by-key 404 without changing the attempt',async({page,context})=>{
- const state=await installNetwork(context);state.createError='rpc-rate-limited';await openEditor(page);await openPaid(page);
- await requestPayment(page);
- await expect.poll(()=>state.key).toMatch(/^[a-f0-9]{32}$/);
- const first=await saved(page,state.key);
- expect(first.op.id).toBe(state.key);expect(first.op.createAttempted).toBe(true);
- await expect(panel(page).getByRole('alert')).toContainText('HTTP 503, rpc-rate-limited');
- await check(page);
- await expect(panel(page).getByRole('alert')).toContainText('HTTP 503, rpc-rate-limited');
- await panel(page).getByRole('button',{name:'Повторить отправку запроса'}).click();
- await expect(panel(page).getByRole('alert')).toContainText('HTTP 503, rpc-rate-limited');
- const after=await saved(page,state.key);
- expect(after.op.id).toBe(first.op.id);expect(after.op.token).toBe(first.op.token);
- expect(after.op.createAttempted).toBe(true);
- expect(after.op.serialized).toBe(first.op.serialized);expect(after.op.order).toBeUndefined();
- expect(state.createKeys).toEqual([state.key,state.key]);expect(state.admissions).toBe(0);
- expect(state.requests).toContain(`GET /orders/by-key/${state.key}`);
- expect(state.prepares).toBe(0);expect(state.sends).toHaveLength(0);expect(state.denied).toEqual([]);
-});
-
-test('lost pre-admission cancellation response resumes the same tombstone and never creates an order',async({page,context})=>{
- const state=await installNetwork(context);state.dropBeforeAdmission=true;await openEditor(page);await openPaid(page);
- await requestPayment(page);
- await expect(panel(page).getByRole('button',{name:'Отменить этот запрос'})).toBeEnabled();state.lostCancel=true;
- await panel(page).getByRole('button',{name:'Отменить этот запрос'}).click();
- await expect(panel(page).getByRole('heading',{name:'Проверяем отмену запроса'})).toBeVisible();
- await page.reload();await expect(panel(page).getByRole('heading',{name:'Запрос оплаты отменён'})).toBeVisible();
- expect((await saved(page,state.key)).op.creationCancelled).toBe(true);
- await panel(page).getByRole('button',{name:'Вернуться к выбору сохранения'}).click();await expect(page.getByRole('dialog')).toHaveCount(0);
- expect((await saved(page,state.key)).op.localCompletion).toBe('released');expect(state.creates).toBe(1);expect(state.admissions).toBe(0);
- expect(state.reserves).toBe(0);expect(state.sends).toHaveLength(0);expect(state.denied).toEqual([]);
-});
-
-test('unknown wallet result reload reconciles the same reference without another signature, payment or order',async({page,context})=>{
- const state=await installNetwork(context);await openEditor(page);await openPaid(page);await prepare(page);
- await page.evaluate(()=>{window.paidWallet.unknown=true;});await pay(page);
- await expect(panel(page).getByRole('heading',{name:'Подтверждение в кошельке не завершено'})).toBeVisible();
- await expect(panel(page).getByRole('button',{name:/Оплатить|Отменить неоплаченный/})).toHaveCount(0);
- state.unknownSignature=await page.evaluate(()=>window.paidWallet.signature);
- expect((await saved(page,state.key)).op.signature).toBeUndefined();
- await page.reload();await expect(panel(page).getByRole('heading',{name:'Подтверждение в кошельке не завершено'})).toBeVisible();
- expect(await page.evaluate(()=>Boolean(window.phantom))).toBe(false);
- state.paid=true;state.finish=true;await check(page);
- await expect(page.getByRole('dialog')).toHaveCount(0);expect((await saved(page,state.key)).op.localCompletion).toBe('done');
- expect(state.creates).toBe(1);expect(state.reserves).toBe(0);expect(state.sends).toHaveLength(0);expect(state.denied).toEqual([]);
-});
-
-test('unsigned wallet interruption explicitly renews the same expired order and requires fresh consent before one payment',async({page,context},testInfo)=>{
- const state=await installNetwork(context);await openEditor(page);await openPaid(page);await prepare(page);
- const initial=(await saved(page,state.key)).op;
- await page.evaluate(()=>{window.paidWallet.unknown=true;});await pay(page);
- await expect(panel(page).getByRole('heading',{name:'Подтверждение в кошельке не завершено'})).toBeVisible();
- await expect(panel(page).getByText('Проверяем прежнюю подпись.',{exact:false})).toHaveCount(0);
- expect((await saved(page,state.key)).op.signature).toBeUndefined();expect(state.recoveries).toBe(0);
- await check(page);await expect(panel(page).getByRole('button',{name:'Проверить статус',exact:true})).toBeEnabled();
- expect(state.recoveries).toBe(0);expect(state.sends).toHaveLength(0);
- await page.reload();await expect(panel(page).getByRole('button',{name:'Восстановить подтверждение',exact:true})).toBeVisible();
- expect(await page.evaluate(()=>Boolean(window.phantom))).toBe(false);
- await page.clock.setFixedTime(new Date(initial.order.expiresAt+60000));
- await panel(page).getByRole('button',{name:'Восстановить подтверждение',exact:true}).click();
- await expect(panel(page).getByRole('heading',{name:'Через Solana',exact:true})).toBeVisible();
- const renewed=(await saved(page,state.key)).op;
- expect(renewed.order).toEqual(initial.order);expect(renewed.id).toBe(initial.id);expect(renewed.token).toBe(initial.token);
- expect(renewed.serialized).toBe(initial.serialized);expect(renewed.archive).toEqual(initial.archive);
- expect(renewed.preparation.previousPreparationId).toBe(initial.preparation.preparationId);
- expect(renewed.preparation.createdAt).toBeGreaterThan(initial.order.expiresAt);
- expect(renewed.preparation.expiresAt).toBeGreaterThan(renewed.preparation.createdAt);
- expect(renewed.signingStarted).toBe(false);expect(renewed.signature).toBeUndefined();
- expect(state.recoveries).toBe(1);expect(state.creates).toBe(1);expect(state.reserves).toBe(0);expect(state.sends).toHaveLength(0);
- await page.evaluate(async()=>(await import('/tests/paid-fixture.ts')).installWallet());
- await panel(page).getByRole('button',{name:'Подключить Phantom',exact:true}).click();
- await expect(panel(page).getByRole('checkbox')).not.toBeChecked();
- await expect(panel(page).getByRole('button',{name:'Подтвердить оплату в кошельке',exact:true})).toBeDisabled();
- await expect(panel(page)).toContainText('0.000006 SOL');
- await page.screenshot({path:testInfo.outputPath('same-order-recovered-before-consent.png'),fullPage:true});
- expect(await page.evaluate(()=>window.paidWallet.signCount)).toBe(0);
- await pay(page);await expect.poll(()=>state.sends.length).toBe(1);
- expect(await page.evaluate(()=>window.paidWallet.signCount)).toBe(1);expect(state.reserves).toBe(1);
- await expect(panel(page).getByRole('button',{name:/Восстановить подтверждение|Обновить подтверждение/})).toHaveCount(0);
- state.finish=true;await check(page);await expect(page.getByRole('dialog')).toHaveCount(0);
- const done=(await saved(page,state.key)).op;
- expect(done.localCompletion).toBe('done');expect(done.order).toEqual(initial.order);expect(done.serialized).toBe(initial.serialized);
- expect(state.creates).toBe(1);expect(state.admissions).toBe(1);expect(state.denied).toEqual([]);
-});
-
-test('lost recovery response reload adopts only the requested generation without another order or wallet prompt',async({page,context})=>{
- const state=await installNetwork(context);await openEditor(page);await openPaid(page);await prepare(page);
- await page.evaluate(()=>{window.paidWallet.unknown=true;});await pay(page);
- await expect(panel(page).getByRole('heading',{name:'Подтверждение в кошельке не завершено'})).toBeVisible();
- const initial=(await saved(page,state.key)).op;state.lostRecovery=true;
- await page.clock.setFixedTime(new Date(initial.order.expiresAt+60000));
- await panel(page).getByRole('button',{name:'Восстановить подтверждение',exact:true}).click();
- await expect.poll(()=>state.recoveries).toBe(1);
- await page.reload();await expect(panel(page).getByRole('heading',{name:'Через Solana',exact:true})).toBeVisible();
- const recovered=(await saved(page,state.key)).op;
- expect(recovered.order).toEqual(initial.order);expect(recovered.serialized).toBe(initial.serialized);
- expect(recovered.preparation.preparationId).toBe(state.recoveryTransitions[initial.preparation.preparationId]);
- expect(recovered.signingStarted).toBe(false);expect(recovered.signature).toBeUndefined();
- expect(state.recoveries).toBe(1);expect(state.creates).toBe(1);expect(state.sends).toHaveLength(0);expect(state.reserves).toBe(0);
- expect(await page.evaluate(()=>Boolean(window.phantom))).toBe(false);expect(state.denied).toEqual([]);
-});
-
-test('recovery rejection survives successful polls until an explicit same-order retry resets consent',async({page,context})=>{
- const state=await installNetwork(context);await openEditor(page);await openPaid(page);await prepare(page);
- const initial=(await saved(page,state.key)).op;
- await panel(page).getByRole('checkbox').check();
- state.recoveryError='payment_recovery_unavailable';
- await panel(page).getByRole('button',{name:'Обновить подтверждение',exact:true}).click();
- const failure=panel(page).getByRole('alert').filter({hasText:'Не удалось восстановить подтверждение.'});
- await expect(failure).toBeVisible();
- await expect(panel(page).getByRole('heading',{name:'Восстановление не завершено',exact:true})).toBeVisible();
- await expect(panel(page).getByRole('button',{name:'Повторить восстановление',exact:true})).toBeEnabled();
- await expect(panel(page).getByRole('button',{name:'Подключить Phantom',exact:true})).toBeDisabled();
- await expect(panel(page).getByText('После проверки сервер обновит подтверждение этого заказа.',{exact:false})).toHaveCount(0);
- const statusGets=()=>state.requests.filter(request=>request===`GET /orders/${initial.order.id}`).length;
- const beforePoll=statusGets();
- await expect.poll(statusGets,{timeout:12000}).toBeGreaterThan(beforePoll);
- await expect(panel(page).getByRole('button',{name:'Проверить статус',exact:true})).toBeEnabled();
- await expect(failure).toBeVisible();
- await check(page);await expect(panel(page).getByRole('button',{name:'Проверить статус',exact:true})).toBeEnabled();
- await expect(failure).toBeVisible();
- expect((await saved(page,state.key)).op.preparation.preparationId).toBe(initial.preparation.preparationId);
- expect((await saved(page,state.key)).op.recoveryRequestedFor).toBe(initial.preparation.preparationId);
- expect(state.recoveries).toBe(1);expect(state.reconciles).toBe(0);expect(state.creates).toBe(1);
- expect(await page.evaluate(()=>window.paidWallet.signCount)).toBe(0);
-
- state.recoveryError=null;
- let releaseRecovery;state.recoveryGate=new Promise(resolve=>{releaseRecovery=resolve;});
- await panel(page).getByRole('button',{name:'Повторить восстановление',exact:true}).click();
- try{
-  await expect.poll(()=>state.recoveries).toBe(2);
-  await expect(panel(page).getByRole('heading',{name:'Проверяем возможность восстановления',exact:true})).toBeVisible();
-  await expect(failure).toHaveCount(0);
-  await expect(panel(page).getByRole('button',{name:'Проверяем восстановление…',exact:true})).toBeDisabled();
-  expect(await page.evaluate(()=>window.paidWallet.signCount)).toBe(0);
- }finally{releaseRecovery();state.recoveryGate=null;}
- await expect(panel(page).getByRole('heading',{name:'Через Solana',exact:true})).toBeVisible();
- await expect(panel(page).getByRole('alert')).toHaveCount(0);
- await expect(panel(page).getByRole('checkbox')).not.toBeChecked();
- await expect(panel(page).getByRole('button',{name:'Подтвердить оплату в кошельке',exact:true})).toBeDisabled();
- const renewed=(await saved(page,state.key)).op;
- expect(renewed.id).toBe(initial.id);expect(renewed.order).toEqual(initial.order);expect(renewed.serialized).toBe(initial.serialized);
- expect(renewed.preparation.previousPreparationId).toBe(initial.preparation.preparationId);
- expect(renewed.recoveryRequestedFor).toBeUndefined();expect(renewed.signature).toBeUndefined();
- expect(state.recoveries).toBe(2);expect(state.creates).toBe(1);expect(state.reserves).toBe(0);expect(state.sends).toHaveLength(0);
- expect(await page.evaluate(()=>window.paidWallet.signCount)).toBe(0);
- await pay(page);await expect.poll(()=>state.sends.length).toBe(1);
- expect(await page.evaluate(()=>window.paidWallet.signCount)).toBe(1);expect(state.denied).toEqual([]);
-});
-
-test('persisted recovery without an in-memory error explains unknown result and requires explicit retry',async({page,context})=>{
- const state=await installNetwork(context);await openEditor(page);await openPaid(page);await prepare(page);
- const initial=(await saved(page,state.key)).op;
- state.recoveryError='payment_recovery_busy';
- await panel(page).getByRole('button',{name:'Обновить подтверждение',exact:true}).click();
- await expect(panel(page).getByRole('alert')).toContainText('Повторите восстановление');
- expect((await saved(page,state.key)).op.recoveryRequestedFor).toBe(initial.preparation.preparationId);
- await page.reload();
- await expect(panel(page).getByRole('heading',{name:'Восстановление не завершено',exact:true})).toBeVisible();
- await expect(panel(page).getByText('Запрос восстановления сохранён, но его результат пока неизвестен.',{exact:false})).toBeVisible();
- await expect(panel(page)).toContainText('Автоматическая проверка только уточняет результат.');
- await expect(panel(page).getByRole('button',{name:'Повторить восстановление',exact:true})).toBeEnabled();
- await expect(panel(page).getByRole('alert')).toHaveCount(0);
- await expect(panel(page).getByRole('heading',{name:'Проверяем возможность восстановления',exact:true})).toHaveCount(0);
- await check(page);await expect(panel(page).getByRole('button',{name:'Повторить восстановление',exact:true})).toBeEnabled();
- expect(state.recoveries).toBe(1);expect(state.creates).toBe(1);expect(state.reconciles).toBe(0);
- expect(state.reserves).toBe(0);expect(state.sends).toHaveLength(0);
- expect((await saved(page,state.key)).op.order).toEqual(initial.order);
- expect((await saved(page,state.key)).op.serialized).toBe(initial.serialized);
- expect(await page.evaluate(()=>Boolean(window.phantom))).toBe(false);expect(state.denied).toEqual([]);
-
- // A retry whose server result is lost keeps its failure until GET actually
- // adopts the accepted successor, then removes that obsolete failure.
- state.recoveryError=null;state.lostRecovery=true;
- await panel(page).getByRole('button',{name:'Повторить восстановление',exact:true}).click();
- await expect(panel(page).getByRole('alert')).toContainText('Не удалось обновить состояние операции.');
- expect(state.recoveries).toBe(2);
- expect((await saved(page,state.key)).op.recoveryRequestedFor).toBe(initial.preparation.preparationId);
- await check(page);
- await expect(panel(page).getByRole('heading',{name:'Через Solana',exact:true})).toBeVisible();
- await expect(panel(page).getByRole('alert')).toHaveCount(0);
- const adopted=(await saved(page,state.key)).op;
- expect(adopted.recoveryRequestedFor).toBeUndefined();
- expect(adopted.preparation.previousPreparationId).toBe(initial.preparation.preparationId);
- expect(adopted.order).toEqual(initial.order);expect(adopted.serialized).toBe(initial.serialized);
- expect(state.recoveries).toBe(2);expect(state.creates).toBe(1);expect(state.reserves).toBe(0);expect(state.sends).toHaveLength(0);
- expect(await page.evaluate(()=>Boolean(window.phantom))).toBe(false);expect(state.denied).toEqual([]);
-});
-
-test('lost reserve response never broadcasts early and resumes only identical stored signed bytes',async({page,context})=>{
- const state=await installNetwork(context);state.lostReserve=true;await openEditor(page);await openPaid(page);await prepare(page);await pay(page);
- await expect(panel(page).getByRole('heading',{name:'Проверяем оплату'})).toBeVisible();expect(state.sends).toHaveLength(0);
- const signed=(await saved(page,state.key)).op.signedTransaction;expect(signed).toBeTruthy();
- await expect(panel(page).getByRole('button',{name:/Восстановить подтверждение|Обновить подтверждение/})).toHaveCount(0);
- await page.reload();await expect(panel(page)).toBeVisible();await check(page);
- await expect.poll(()=>state.sends.length).toBe(1);expect(state.sends[0]).toBe(signed);
- state.finish=true;await check(page);await expect(page.getByRole('dialog')).toHaveCount(0);
- expect(state.creates).toBe(1);expect(state.denied).toEqual([]);
-});
-
-test('explicit 4001 cancellation, including a lost response, needs acknowledgement before any next save',async({page,context})=>{
- const state=await installNetwork(context);await openEditor(page);await openPaid(page);await prepare(page);
- await page.evaluate(()=>{window.paidWallet.reject=true;});await pay(page);
- await expect(panel(page).getByRole('alert')).toContainText('отклонил подпись');expect(state.sends).toHaveLength(0);
- state.lostCancel=true;await panel(page).getByRole('button',{name:'Отменить неоплаченный запрос'}).click();
- await expect(panel(page).getByRole('heading',{name:'Проверяем отмену запроса'})).toBeVisible();
- await page.reload();await expect(panel(page).getByRole('heading',{name:'Запрос оплаты отменён'})).toBeVisible();
- expect((await saved(page,state.key)).op.localCompletion).toBe('pending');
- await panel(page).getByRole('button',{name:'Вернуться к выбору сохранения'}).click();
- await expect(page.getByRole('dialog')).toHaveCount(0);expect((await saved(page,state.key)).op.localCompletion).toBe('released');
- expect(state.creates).toBe(1);expect(state.cancels).toBe(1);expect(state.reserves).toBe(0);expect(state.denied).toEqual([]);
-});
-
-test('two tabs and switching to promo adopt one durable paid attempt without new orders or ciphertext',async({page,context})=>{
- const state=await installNetwork(context);await openEditor(page);await openPaid(page);await prepare(page);
- const original=await saved(page,state.key),other=await context.newPage();await other.goto(origin);
- await other.getByRole('button',{name:'Продолжить',exact:true}).click();
- await expect(panel(other)).toBeVisible();expect((await saved(other,state.key)).op.serialized).toBe(original.op.serialized);
- await expect(other.getByRole('region',{name:'Сохранение по промокоду'})).toHaveCount(0);
- await other.evaluate(async()=>{
-  const op=await(await import('/src/lib/checkout/paidJournal.ts')).findPaidAttempt({treeId:(await import('/src/lib/draftStorage.ts')).loadDraftTree().meta.id});
-  window.guardedPromoResult=await(await import('/src/lib/checkout/vaultGuard.ts')).saveGuardedFundAttempt({orderId:'e'.repeat(32),envelope:JSON.parse(op.serialized),parentTxId:op.archive.parentTxId,treeId:op.treeId}).then(()=>false,error=>error.message==='preservation_attempt_in_progress');
- });
- expect(await other.evaluate(()=>window.guardedPromoResult)).toBe(true);
- await other.evaluate(async()=>{(await import('/tests/paid-fixture.ts')).installWallet();});await prepare(other);
- await Promise.all([panel(page).getByRole('checkbox').check(),panel(other).getByRole('checkbox').check()]);
- await Promise.all([panel(page).getByRole('button',{name:'Подтвердить оплату в кошельке',exact:true}).click(),panel(other).getByRole('button',{name:'Подтвердить оплату в кошельке',exact:true}).click()]);
+test('Phantom rejection is visible and an explicit retry reuses the same order and connection',async({page,context})=>{
+ const state=await installNetwork(context);await openEditor(page);await openPaid(page);
+ await page.evaluate(()=>{window.paidWallet.reject=true;});
+ await panel(page).getByRole('button',{name:'Оплатить 0.03 SOL и сохранить'}).click();
+ await expect(panel(page).getByRole('alert')).toContainText('Кошелёк отклонил подпись');
+ expect(state.creates).toBe(1);expect(state.sends).toHaveLength(0);
+ await page.evaluate(()=>{window.paidWallet.reject=false;});
+ await panel(page).getByRole('button',{name:'Оплатить 0.03 SOL и сохранить'}).click();
  await expect.poll(()=>state.sends.length).toBe(1);
- expect((await page.evaluate(()=>window.paidWallet.signCount))+(await other.evaluate(()=>window.paidWallet.signCount))).toBe(1);
- expect(state.creates).toBe(1);expect((await saved(other,state.key)).op.serialized).toBe(original.op.serialized);expect(state.denied).toEqual([]);
- await other.close();
+ expect(state.creates).toBe(1);expect(await page.evaluate(()=>window.paidWallet.connects)).toBe(1);
+ expect(await page.evaluate(()=>window.paidWallet.signCount)).toBe(2);
 });
 
-test('wrong network or changed order is stopped before wallet signature',async({page,context})=>{
- const state=await installNetwork(context);await openEditor(page);await openPaid(page);await prepare(page);state.wrongGenesis=true;
- await pay(page);await expect(panel(page).getByRole('alert')).toContainText('сеть Solana');
- expect(await page.evaluate(()=>window.paidWallet.signCount)).toBe(0);expect(state.reserves).toBe(0);expect(state.sends).toHaveLength(0);
- state.wrongGenesis=false;state.wrongOrder=true;await check(page);await expect(panel(page).getByRole('alert')).toBeVisible();
- await pay(page);expect(await page.evaluate(()=>window.paidWallet.signCount)).toBe(0);expect(state.creates).toBe(1);expect(state.denied).toEqual([]);
-});
-
-test('navigation while wallet is open journals the returned signature without late reserve or broadcast',async({page,context})=>{
- const state=await installNetwork(context);await openEditor(page);await openPaid(page);await prepare(page);
- await page.evaluate(()=>{window.paidWallet.hold=true;});await pay(page);
- await expect.poll(()=>page.evaluate(()=>window.paidWallet.signCount)).toBe(1);
- await page.evaluate(()=>{location.hash='#/restore';});await expect(panel(page)).toHaveCount(0);
- await page.evaluate(()=>{window.paidWallet.release();});
- await expect.poll(async()=>(await saved(page,state.key)).op.signature).toBeTruthy();
- expect(state.reserves).toBe(0);expect(state.sends).toHaveLength(0);expect(state.creates).toBe(1);expect(state.denied).toEqual([]);
-});
-
-const helpName='Помочь другим сохранить их истории';
-const amountInput=page=>panel(page).getByRole('textbox',{name:'Добровольный взнос, SOL'});
-async function vaultState(page){
- return page.evaluate(async()=>({
-  draft:JSON.stringify((await import('/src/lib/draftStorage.ts')).loadDraftTree()),
-  session:JSON.stringify((await import('/src/lib/vaultSession/session.ts')).getVaultSession()),
-  archives:Object.fromEntries(Object.keys(localStorage).filter(key=>key.startsWith('sejire.vaultArchive.')||key.startsWith('sejire.envelope.')).sort().map(key=>[key,localStorage.getItem(key)])),
- }));
-}
-async function standalone(page){
- await page.goto(origin);
- await expect(page.getByRole('button',{name:'Только помочь другим',exact:true})).toHaveCount(0);
- await expect(page.getByRole('textbox',{name:'Добровольный взнос, SOL'})).toHaveCount(0);
- await page.getByRole('button',{name:helpName,exact:true}).click();
- await expect(panel(page).getByRole('heading',{name:'Помощь другим семьям'})).toBeVisible();
- await expect(amountInput(page)).toHaveValue('0');
- await page.evaluate(async()=>(await import('/tests/paid-fixture.ts')).installWallet());
-}
-
-test('help starts hidden at zero, both wallet connections create nothing, and a fresh save resets its draft contribution',async({page,context})=>{
+test('unknown wallet outcome remains visible through polling and reload without another signature',async({page,context})=>{
  const state=await installNetwork(context);await openEditor(page);await openPaid(page);
- await expect(panel(page).getByRole('button',{name:helpName})).toHaveAttribute('aria-expanded','false');
- await expect(amountInput(page)).toHaveCount(0);await expect(panel(page)).toContainText('Итого без комиссии сети: 0.03 SOL');
- await panel(page).getByRole('button',{name:'Подключить Phantom',exact:true}).click();
- await panel(page).getByRole('button',{name:'Подключить Solflare',exact:true}).click();
- await expect(panel(page).getByRole('button',{name:'Оплатить и сохранить',exact:true})).toBeEnabled();
- expect(state.creates).toBe(0);expect(state.prepares).toBe(0);expect(state.requests.filter(value=>value.startsWith('POST '))).toEqual([]);
- expect(await page.evaluate(()=>({connects:window.paidWallet.connects,signs:window.paidWallet.signCount}))).toEqual({connects:2,signs:0});
- await panel(page).getByRole('button',{name:helpName}).click();await amountInput(page).fill('0.123456789');
- await panel(page).getByRole('button',{name:'Назад',exact:true}).click();
- await page.getByRole('dialog').getByRole('button',{name:'Через Solana',exact:true}).click();
- await expect(panel(page).getByRole('button',{name:helpName})).toHaveAttribute('aria-expanded','false');
- await expect(panel(page)).toContainText('Итого без комиссии сети: 0.03 SOL');
- await panel(page).getByRole('button',{name:helpName}).click();await expect(amountInput(page)).toHaveValue('0');
- expect(state.creates).toBe(0);expect(state.sends).toEqual([]);expect(state.denied).toEqual([]);
+ await page.evaluate(()=>{window.paidWallet.unknown=true;});
+ await panel(page).getByRole('button',{name:'Оплатить 0.03 SOL и сохранить'}).click();
+ await expect(panel(page).getByRole('alert')).toContainText('Phantom не вернул надёжный результат');
+ await page.waitForTimeout(6500);
+ await expect(panel(page).getByRole('alert')).toContainText('Phantom не вернул надёжный результат');
+ expect(state.sends).toHaveLength(0);expect(state.creates).toBe(1);
+ await page.reload();await expect(panel(page).getByRole('button',{name:'Продолжить сохранение'})).toBeVisible();
+ expect(state.sends).toHaveLength(0);expect(state.creates).toBe(1);
 });
 
-test('collapsed help retains the visible amount; switching intent preserves the archive and amount until explicitly removed',async({page,context})=>{
+test('insufficient balance, null fee, unavailable RPC and wrong genesis never ask Phantom to sign',async({page,context})=>{
  const state=await installNetwork(context);await openEditor(page);await openPaid(page);
- // Opening preservation seals its candidate once. Only the following mode changes must leave that exact candidate untouched.
- const before=await vaultState(page);
- const backupDownload=page.waitForEvent('download');await panel(page).getByRole('button',{name:'Скачать зашифрованную копию'}).click();
- const backup=await readFile(await(await backupDownload).path(),'utf8');
- await panel(page).getByRole('button',{name:helpName}).click();await amountInput(page).fill('1.25');
- await panel(page).getByRole('button',{name:helpName}).click();await expect(amountInput(page)).toHaveCount(0);
- await expect(panel(page)).toContainText('Добровольный взнос: 1.25 SOL');await expect(panel(page)).toContainText('Итого без комиссии сети: 1.28 SOL');
- await panel(page).getByRole('button',{name:helpName}).click();await panel(page).getByRole('button',{name:'Только помочь другим',exact:true}).click();
- await expect(panel(page).getByRole('heading',{name:'Помощь другим семьям'})).toBeVisible();await expect(amountInput(page)).toHaveValue('1.25');
- await expect(panel(page)).toContainText('Итого без комиссии сети: 1.25 SOL');
- await expect(panel(page).getByRole('button',{name:'Скачать зашифрованную копию'})).toHaveCount(0);
- await panel(page).getByRole('button',{name:'Вернуться к сохранению дерева'}).click();
- await expect(panel(page).getByRole('heading',{name:'Через Solana'})).toBeVisible();await expect(amountInput(page)).toHaveValue('1.25');
- await expect(panel(page)).toContainText('Итого без комиссии сети: 1.28 SOL');
- const againDownload=page.waitForEvent('download');await panel(page).getByRole('button',{name:'Скачать зашифрованную копию'}).click();
- expect(await readFile(await(await againDownload).path(),'utf8')).toBe(backup);expect(await vaultState(page)).toEqual(before);
- await panel(page).getByRole('button',{name:helpName}).click();await panel(page).getByRole('button',{name:'Убрать взнос'}).click();
- await expect(panel(page)).toContainText('Итого без комиссии сети: 0.03 SOL');await expect(panel(page).getByRole('button',{name:'Убрать взнос'})).toHaveCount(0);
- expect(state.creates).toBe(0);expect(state.sends).toEqual([]);expect(state.denied).toEqual([]);
-});
-
-test('preservation plus a precise optional contribution uses one signature and exactly two transfers',async({page,context})=>{
- const state=await installNetwork(context);await openEditor(page);await openPaid(page);
- await panel(page).getByRole('button',{name:helpName}).click();await amountInput(page).fill('7.000000001');
- await prepare(page);await expect(amountInput(page)).toHaveCount(0);await expect(panel(page).getByRole('button',{name:helpName})).toHaveCount(0);
- expect(state.snapshot.record.order.total).toBe('7030000001');
- await pay(page);await expect.poll(()=>state.sends.length).toBe(1);
- expect(await page.evaluate(async bytes=>(await import('/tests/paid-fixture.ts')).transfers(bytes),state.sends[0])).toEqual([
-  {recipient:state.snapshot.record.order.servicePayment.recipient,lamports:'30000000'},
-  {recipient:state.snapshot.record.order.fundContribution.recipient,lamports:'7000000001'},
- ]);
- expect(await page.evaluate(()=>window.paidWallet.signCount)).toBe(1);expect(state.creates).toBe(1);
- state.finish=true;await check(page);await expect(page.getByRole('dialog')).toHaveCount(0);
- expect((await saved(page,state.key)).op.localCompletion).toBe('done');expect(state.denied).toEqual([]);
-});
-
-test('invalid decimal and excessive precision cannot create an intent; insufficient balance never invokes the wallet',async({page,context})=>{
- const state=await installNetwork(context);await openEditor(page);await openPaid(page);
- await panel(page).getByRole('button',{name:'Подключить Phantom',exact:true}).click();
- await panel(page).getByRole('button',{name:helpName}).click();
- for(const amount of ['1,2','1e3','0.0000000001','18446744074']){
-  await amountInput(page).fill(amount);await expect(amountInput(page)).toHaveAttribute('aria-invalid','true');
-  await expect(panel(page).getByRole('button',{name:'Оплатить и сохранить',exact:true})).toBeDisabled();
- }
- expect(state.creates).toBe(0);
- await amountInput(page).fill('0.1');await prepare(page);state.balance='130004999';await pay(page);
+ state.balance='100';await panel(page).getByRole('button',{name:'Оплатить 0.03 SOL и сохранить'}).click();
  await expect(panel(page).getByRole('alert')).toContainText('недостаточно SOL');
- expect(await page.evaluate(()=>window.paidWallet.signCount)).toBe(0);expect(state.reserves).toBe(0);expect(state.sends).toEqual([]);
- expect((await saved(page,state.key)).op.signingStarted).toBe(false);expect(state.denied).toEqual([]);
+ state.balance='1000000000000000';state.feeNull=true;
+ await panel(page).getByRole('button',{name:'Оплатить 0.03 SOL и сохранить'}).click();
+ await expect(panel(page).getByRole('alert')).toContainText('комиссию сети');
+ state.feeNull=false;state.rpcUnavailable=true;
+ await panel(page).getByRole('button',{name:'Оплатить 0.03 SOL и сохранить'}).click();
+ await expect(panel(page).getByRole('alert')).toContainText('Сеть Solana временно недоступна');
+ state.rpcUnavailable=false;state.wrongGenesis=true;
+ await panel(page).getByRole('button',{name:'Оплатить 0.03 SOL и сохранить'}).click();
+ await expect(panel(page).getByRole('alert')).toContainText('сеть Solana');
+ expect(await page.evaluate(()=>window.paidWallet.signCount)).toBe(0);expect(state.creates).toBe(1);expect(state.sends).toHaveLength(0);
 });
 
-test('the quiet welcome link opens standalone Solflare help without a tree or AR policy, with a receipt and an explicit new zero-default contribution',async({page,context},testInfo)=>{
- const state=await installNetwork(context);state.ready=false;await page.setViewportSize({width:390,height:844});await standalone(page);
- const before=await vaultState(page);expect(before).toEqual({draft:'null',session:'null',archives:{}});
- expect(state.requests).toContain('GET /policy/contribution');
- await expect(panel(page)).not.toContainText('Хранение:');await expect(panel(page)).not.toContainText('Сохранение —');
- await panel(page).getByRole('button',{name:'Подключить Solflare',exact:true}).click();
- await expect(panel(page).getByRole('button',{name:'Только помочь другим',exact:true})).toBeDisabled();expect(state.creates).toBe(0);
- await amountInput(page).fill('0.2');await prepare(page,{contribution:true,wallet:'Solflare'});
- const firstKey=state.key,firstOrder=state.snapshot.record.order;
- expect(firstOrder.kind).toBe('contribution');expect(firstOrder.servicePayment.amount).toBe('0');expect(firstOrder.total).toBe('200000000');
- expect(firstOrder).not.toHaveProperty('archive');expect(firstOrder).not.toHaveProperty('storage');
- await pay(page);await expect(panel(page).getByRole('heading',{name:'Спасибо! Ваш взнос поступил в фонд'})).toBeVisible();
- await expect(panel(page).getByRole('button',{name:'Сделать ещё один взнос'})).toBeEnabled();
- expect((await saved(page,firstKey)).op.localCompletion).toBe('done');expect(await vaultState(page)).toEqual(before);
- expect(await page.evaluate(async bytes=>(await import('/tests/paid-fixture.ts')).transfers(bytes),state.sends[0])).toEqual([{recipient:firstOrder.fundContribution.recipient,lamports:'200000000'}]);
- const receiptDownload=page.waitForEvent('download');await panel(page).getByRole('button',{name:'Скачать квитанцию'}).click();
- const receipt=JSON.parse(await readFile(await(await receiptDownload).path(),'utf8'));
- expect(receipt).toMatchObject({schema:'sejire/contribution-receipt/v1',status:'verified',orderId:firstOrder.id,serviceLamports:'0',contributionLamports:'200000000',fundRecipient:firstOrder.fundContribution.recipient,paymentSignature:state.snapshot.record.payment.signature,feeLamports:'5000'});
- expect(receipt).not.toHaveProperty('archive');expect(receipt).not.toHaveProperty('vaultId');
- await page.screenshot({path:testInfo.outputPath('contribution-complete-mobile.png'),fullPage:true});
- expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
- await panel(page).getByRole('button',{name:'Сделать ещё один взнос'}).click();await expect(amountInput(page)).toHaveValue('0');
- await expect(panel(page).getByRole('button',{name:'Только помочь другим',exact:true})).toBeDisabled();expect(state.creates).toBe(1);
- await amountInput(page).fill('0.000000001');await prepare(page,{contribution:true,wallet:'Solflare'});await pay(page);
- await expect(panel(page).getByRole('button',{name:'Сделать ещё один взнос'})).toBeEnabled();
- expect(state.key).not.toBe(firstKey);expect(state.creates).toBe(2);expect(state.sends).toHaveLength(2);expect(await page.evaluate(()=>window.paidWallet.signCount)).toBe(2);
- expect(state.requests.some(value=>value.endsWith('/execute'))).toBe(false);expect(state.archive).toBeNull();expect(await vaultState(page)).toEqual(before);expect(state.denied).toEqual([]);
+test('expired unsigned blockhash is renewed for the same order before one wallet request',async({page,context})=>{
+ const state=await installNetwork(context);state.height=101;await openEditor(page);await openPaid(page);
+ await panel(page).getByRole('button',{name:'Оплатить 0.03 SOL и сохранить'}).click();
+ await expect.poll(()=>state.recoveries).toBe(1);await expect.poll(()=>state.sends.length).toBe(1);
+ expect(state.creates).toBe(1);expect(await page.evaluate(()=>window.paidWallet.signCount)).toBe(1);
 });
 
-test('an uncertain standalone payment resumes the original intent after reload even when new contributions are disabled',async({page,context})=>{
- const state=await installNetwork(context);await standalone(page);await amountInput(page).fill('0.15');await prepare(page,{contribution:true});
- const original=await saved(page,state.key);await page.evaluate(()=>{window.paidWallet.unknown=true;});await pay(page);
- await expect(panel(page).getByRole('heading',{name:'Подтверждение в кошельке не завершено'})).toBeVisible();state.unknownSignature=await page.evaluate(()=>window.paidWallet.signature);
- state.ready=false;state.contributionReady=false;await page.reload();await expect(panel(page)).toHaveCount(0);
- await page.getByRole('button',{name:helpName,exact:true}).click();await expect(panel(page).getByRole('heading',{name:'Подтверждение в кошельке не завершено'})).toBeVisible();
- await expect(panel(page).getByRole('button',{name:/Подключить|Подтвердить оплату/})).toHaveCount(0);
- expect(await page.evaluate(()=>Boolean(window.phantom))).toBe(false);
- const resumed=await saved(page,state.key);expect(resumed.op.id).toBe(original.op.id);expect(resumed.op.intent).toEqual(original.op.intent);expect(resumed.op.serialized).toBeNull();
- state.paid=true;await check(page);await expect(panel(page).getByRole('heading',{name:'Спасибо! Ваш взнос поступил в фонд'})).toBeVisible();
- await expect(panel(page).getByRole('button',{name:'Сделать ещё один взнос'})).toBeEnabled();
- expect((await saved(page,state.key)).op.localCompletion).toBe('done');expect(state.creates).toBe(1);expect(state.sends).toEqual([]);expect(state.reserves).toBe(0);
- expect(state.requests.some(value=>value.endsWith('/execute'))).toBe(false);expect(state.denied).toEqual([]);
+test('lost create response resumes the original idempotency key, ciphertext and order',async({page,context})=>{
+ const state=await installNetwork(context);state.lostCreate=true;await openEditor(page);await openPaid(page);
+ await panel(page).getByRole('button',{name:'Оплатить 0.03 SOL и сохранить'}).click();
+ await expect(panel(page).getByRole('alert')).toBeVisible();expect(state.admissions).toBe(1);
+ await page.reload();await panel(page).getByRole('button',{name:'Продолжить сохранение'}).click();
+ await expect.poll(()=>state.sends.length).toBe(1);
+ expect(state.creates).toBe(1);expect(state.admissions).toBe(1);expect(state.bodies[0].serialized).toBe(state.archive);
 });
 
-test('an unfinished standalone contribution never opens over the editor or its pending promo preservation',async({page,context})=>{
+test('request lost before admission retries only the stored idempotency key',async({page,context})=>{
+ const state=await installNetwork(context);state.dropBeforeAdmission=true;await openEditor(page);await openPaid(page);
+ await panel(page).getByRole('button',{name:'Оплатить 0.03 SOL и сохранить'}).click();
+ await expect(panel(page).getByRole('alert')).toBeVisible();expect(state.admissions).toBe(0);
+ await panel(page).getByRole('button',{name:'Продолжить сохранение'}).click();
+ await expect.poll(()=>state.sends.length).toBe(1);
+ expect(state.creates).toBe(2);expect(new Set(state.createKeys).size).toBe(1);expect(state.admissions).toBe(1);
+ expect(state.bodies[0].serialized).toBe(state.bodies[1].serialized);
+});
+
+test('lost reserve response persists signed bytes and reconciles without a second signature',async({page,context})=>{
+ const state=await installNetwork(context);state.lostReserve=true;await openEditor(page);await openPaid(page);
+ await panel(page).getByRole('button',{name:'Оплатить 0.03 SOL и сохранить'}).click();
+ await expect(panel(page).getByRole('alert')).toBeVisible();
+ const prior=await saved(page,state.key);expect(prior.op.signature).toBeTruthy();expect(prior.op.signedTransaction).toBeTruthy();
+ await panel(page).getByRole('button',{name:'Продолжить сохранение'}).click();
+ await expect.poll(()=>state.sends.length).toBe(1);
+ expect(state.creates).toBe(1);expect(await page.evaluate(()=>window.paidWallet.signCount)).toBe(1);
+});
+
+test('lost send response reconciles one transaction and never signs a replacement',async({page,context})=>{
+ const state=await installNetwork(context);state.lostSend=true;await openEditor(page);await openPaid(page);
+ await panel(page).getByRole('button',{name:'Оплатить 0.03 SOL и сохранить'}).click();
+ await expect.poll(()=>state.sends.length).toBe(1);
+ await panel(page).getByText('Подробнее',{exact:true}).click();
+ await panel(page).getByRole('button',{name:'Проверить статус'}).click();
+ expect(state.creates).toBe(1);expect(state.sends).toHaveLength(1);
+ expect(await page.evaluate(()=>window.paidWallet.signCount)).toBe(1);
+});
+
+test('lost verify response and later Arweave completion reuse the paid order',async({page,context})=>{
+ const state=await installNetwork(context);state.lostVerify=true;await openEditor(page);await openPaid(page);
+ await panel(page).getByRole('button',{name:'Оплатить 0.03 SOL и сохранить'}).click();
+ await expect.poll(()=>state.sends.length).toBe(1);
+ await expect(panel(page).getByRole('alert')).toBeVisible();
+ await panel(page).getByRole('button',{name:'Продолжить сохранение'}).click();
+ state.finish=true;await expect(panel(page).getByText('Сохранено',{exact:true})).toBeVisible({timeout:30000});
+ expect(state.creates).toBe(1);expect(state.sends).toHaveLength(1);
+ expect(await page.evaluate(()=>window.paidWallet.signCount)).toBe(1);
+});
+
+test('a late Phantom result keeps signed bytes after the page closes its panel',async({page,context})=>{
  const state=await installNetwork(context);await openEditor(page);await openPaid(page);
- await panel(page).getByRole('button',{name:helpName}).click();await amountInput(page).fill('0.1');
- await panel(page).getByRole('button',{name:'Только помочь другим',exact:true}).click();await prepare(page,{contribution:true});
- const contributionKey=state.key;await panel(page).getByRole('button',{name:'Назад',exact:true}).click();
- // A newly opened save returns to its version-choice step; closing that step is explicit.
- await expect(panel(page)).toHaveCount(0);await page.getByRole('dialog').getByRole('button',{name:'Отмена',exact:true}).click();
- await expect(page.getByRole('dialog')).toHaveCount(0);
- const pending=await page.evaluate(async()=>{
-  const draft=(await import('/src/lib/draftStorage.ts')).loadDraftTree();
-  return (await import('/src/lib/checkout/vaultGuard.ts')).saveGuardedFundAttempt({orderId:'e'.repeat(32),envelope:window.paidFamily.envelope,parentTxId:null,treeId:draft.meta.id});
- });
- await page.route('**/api/fund/orders/*',route=>{
-  expect(route.request().method()).toBe('GET');
-  return json(route,{order:{preservationId:pending.orderId,orderId:pending.orderId,promoRevision:1,archiveSizeBytes:Buffer.byteLength(JSON.stringify(pending.envelope)),archiveDigest:pending.archiveDigest,vaultId:pending.vaultId,parentTxId:null,
-   estimatedRewardWinston:'100',reservedRewardWinston:'100',actualRewardWinston:null,arweaveTxId:'B'.repeat(43),status:'SUBMITTED',createdAt:pending.createdAt,uploadedAt:pending.createdAt,verifiedAt:null}});
- });
- await page.getByRole('button',{name:'Сохранить',exact:true}).first().click();
- await expect(page.getByRole('region',{name:'Сохранение по промокоду',exact:true})).toBeVisible();await expect(panel(page)).toHaveCount(0);
- const found=await page.evaluate(async()=>{
-  const draft=(await import('/src/lib/draftStorage.ts')).loadDraftTree();
-  const guard=await import('/src/lib/checkout/vaultGuard.ts'),journal=await import('/src/lib/checkout/paidJournal.ts');
-  const pending=await guard.findPreservationAttempt({treeId:draft.meta.id});
-  return {method:pending?.method,paid:await journal.findPaidAttempt({treeId:draft.meta.id}),contribution:(await journal.findContributionAttempt())?.id};
- });
- expect(found).toEqual({method:'promo',paid:null,contribution:contributionKey});expect(state.creates).toBe(1);expect(state.sends).toEqual([]);expect(state.denied).toEqual([]);
+ await page.evaluate(()=>{window.paidWallet.hold=true;});
+ await panel(page).getByRole('button',{name:'Оплатить 0.03 SOL и сохранить'}).evaluate(button=>button.click());
+ await expect.poll(()=>page.evaluate(()=>window.paidWallet.signCount)).toBe(1);
+ await page.evaluate(()=>{location.hash='#/';});
+ await expect(panel(page)).toHaveCount(0);
+ await page.evaluate(()=>{window.paidWallet.hold=false;window.paidWallet.release();});
+ await expect.poll(async()=>Boolean((await saved(page,state.key)).op.signature)).toBe(true);
+ expect(state.creates).toBe(1);expect(state.sends).toHaveLength(0);
+});
+
+test('expiry while Phantom is open keeps the late signature and does not create a replacement',async({page,context})=>{
+ const state=await installNetwork(context);await openEditor(page);await openPaid(page);
+ await page.evaluate(()=>{window.paidWallet.hold=true;});
+ await panel(page).getByRole('button',{name:'Оплатить 0.03 SOL и сохранить'}).evaluate(button=>button.click());
+ await expect.poll(()=>page.evaluate(()=>window.paidWallet.signCount)).toBe(1);
+ state.height=101;
+ await page.evaluate(()=>{window.paidWallet.hold=false;window.paidWallet.release();});
+ await expect.poll(async()=>Boolean((await saved(page,state.key)).op.signature)).toBe(true);
+ expect(state.creates).toBe(1);expect(state.sends).toHaveLength(0);
+});
+
+test('double click and a second tab keep one operation and one wallet signature',async({page,context})=>{
+ const state=await installNetwork(context);await openEditor(page);await openPaid(page);
+ await page.evaluate(()=>{window.paidWallet.hold=true;});
+ await panel(page).getByRole('button',{name:'Оплатить 0.03 SOL и сохранить'}).evaluate(button=>{button.click();button.click();});
+ await expect.poll(()=>page.evaluate(()=>window.paidWallet.signCount)).toBe(1);
+ const family=await page.evaluate(()=>window.paidFamily);
+ const other=await context.newPage();await other.goto(origin);
+ await other.getByRole('button',{name:'Открыть по 12 словам',exact:true}).click();
+ await other.getByRole('button',{name:'Открыть из файла',exact:true}).click();
+ await other.locator('input[type=file]').setInputFiles({name:'synthetic.json',mimeType:'application/json',buffer:Buffer.from(family.serialized)});
+ await other.evaluate(words=>{window.secondFamily={words};},family.words);await enterWords(other,'secondFamily');
+ await other.getByRole('button',{name:'Восстановить архив',exact:true}).click();
+ await other.evaluate(async()=>(await import('/tests/paid-fixture.ts')).installWallet());
+ await openPaid(other);await expect(panel(other).getByRole('button',{name:'Продолжить сохранение'})).toBeVisible();
+ const second=panel(other).getByRole('button',{name:'Продолжить сохранение'}).click();
+ await page.evaluate(()=>{window.paidWallet.hold=false;window.paidWallet.release();});
+ await second;
+ await expect.poll(()=>state.sends.length).toBe(1);
+ expect(state.creates).toBe(1);expect(await other.evaluate(()=>window.paidWallet.signCount)).toBe(0);
+});
+
+test('confirmed payment continues one Arweave archive after reload without another wallet call',async({page,context})=>{
+ const state=await installNetwork(context);await openEditor(page);await openPaid(page);
+ await panel(page).getByRole('button',{name:'Оплатить 0.03 SOL и сохранить'}).click();
+ await expect.poll(()=>state.sends.length).toBe(1);state.phase='requires-reconciliation';
+ await page.reload();await expect(panel(page).getByRole('button',{name:'Продолжить сохранение'})).toBeVisible();
+ expect(state.creates).toBe(1);expect(state.sends).toHaveLength(1);
+ state.finish=true;await expect(panel(page).getByText('Сохранено',{exact:true})).toBeVisible({timeout:30000});
+ expect(state.creates).toBe(1);expect(state.sends).toHaveLength(1);
 });

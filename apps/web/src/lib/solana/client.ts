@@ -17,7 +17,7 @@ export function configuredNetwork(): SolanaNetwork {
   return "devnet";
 }
 
-export async function connectWallet(name: WalletName): Promise<SolanaWalletAdapter> {
+export async function connectWallet(name: WalletName, onTransactionRequested?: () => void): Promise<SolanaWalletAdapter> {
   const w = window as WalletWindow;
   const provider = name === "Phantom" ? w.phantom?.solana : w.solflare;
   if (!provider) throw new Error("wallet_not_found");
@@ -33,7 +33,7 @@ export async function connectWallet(name: WalletName): Promise<SolanaWalletAdapt
   return {
     get publicKey() { checkAccount(); return publicKey; },
     signMessage: async (message) => { checkAccount(); const result = await provider.signMessage(message); checkAccount(); return result; },
-    signTransaction: async (tx) => { checkAccount(); const result = await provider.signTransaction(tx); checkAccount(); return result; },
+    signTransaction: async (tx) => { checkAccount(); const request = provider.signTransaction(tx); onTransactionRequested?.(); const result = await request; checkAccount(); return result; },
   };
 }
 

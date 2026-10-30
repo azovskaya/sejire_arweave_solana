@@ -23,6 +23,17 @@ type Props = {
   onAdoptAttempt?: (operation: PaidOperation) => void;
 };
 type RecoveryFailure = { operationId: string; preparationId: string; message: string };
+type FailureStage = 'заказ' | 'подготовка' | 'сеть/RPC' | 'комиссия' | 'баланс' | 'кошелёк' | 'фиксация подписи' | 'отправка' | 'проверка оплаты' | 'хранение';
+function failureDetails(error: unknown): { stage: FailureStage; code: string } {
+  const code = error instanceof Error ? error.message : error && typeof error === 'object' && 'code' in error && error.code === 4001 ? 'wallet_rejected' : 'unknown';
+  const safe = /^[a-z][a-z0-9_-]{0,63}$/.test(code) ? code : 'unknown';
+  const stage: FailureStage = error instanceof PaidApiError && error.stage === 'create' ? 'заказ' :
+    /wallet|context_changed/.test(safe) ? 'кошелёк' : /fee/.test(safe) ? 'комиссия' : /balance/.test(safe) ? 'баланс' :
+    /solana|rpc|network/.test(safe) ? 'сеть/RPC' : /prepar|recovery|expired/.test(safe) ? 'подготовка' :
+    /reserv|signature|signed/.test(safe) ? 'фиксация подписи' : /send|broadcast/.test(safe) ? 'отправка' :
+    /storage|archive|execution|preservation|completion/.test(safe) ? 'хранение' : 'проверка оплаты';
+  return { stage, code: safe };
+}
 
 function errorMessage(error: unknown): string {
   if (error && typeof error === 'object' && 'code' in error && error.code === 4001) return 'Кошелёк отклонил подпись. Оплата не отправлена. Можно подтвердить тот же запрос или отменить его.';
@@ -39,6 +50,11 @@ function errorMessage(error: unknown): string {
     wrong_solana_network: 'Не удалось подтвердить выбранную сеть Solana. Оплата не начинается.',
     network_fee_changed: 'Комиссия сети изменилась. Проверьте условия оплаты ещё раз.',
     network_fee_not_ready: 'Не удалось проверить комиссию сети. Оплата не начинается.',
+    payment_preparation_expired: 'Подготовка транзакции устарела. Проверяем прежнюю попытку и обновляем её для этого заказа.',
+    solana_unavailable: 'Сеть Solana временно недоступна. Запрос сохранён; повторите действие позже.',
+    solana_rpc_malformed: 'Сеть Solana вернула неверный ответ. Подпись не запрашивалась; повторите действие позже.',
+    wallet_result_unknown: 'Phantom не вернул надёжный результат. Проверяем тот же заказ; новая подпись не запрашивается.',
+    checkout_request_timed_out: 'Сервер не ответил вовремя. Сверяем тот же запрос; новую оплату не запускаем.',
     paid_unavailable: 'Оплата через Solana пока недоступна. Вы можете сохранить дерево по промокоду.',
     preservation_attempt_in_progress: 'Есть незавершённое сохранение этого архива. Продолжите исходную попытку.',
     legacy_checkout_pending: 'Есть незавершённая прежняя оплата этого архива. Новый платёж не начинается.',
@@ -59,17 +75,6 @@ function errorMessage(error: unknown): string {
   };
   return known[code] ?? 'Не удалось обновить состояние операции. Проверим ту же попытку снова; повторная оплата не запускается.';
 }
-function delayMessage(reason?:string):string{
-  const messages:Record<string,string>={
-    'not-found':'Транзакция пока не найдена в сети Solana. Проверяем прежнюю подпись.',
-    'executor_paused':'Исполнитель сохранения временно остановлен. Заказ остаётся в очереди.',
-    'storage_network_unavailable':'Сеть хранения пока недоступна. Повторяем отправку того же архива.',
-    'reference_lookup_unavailable':'Поиск платежа по ссылке заказа временно недоступен. Повторяем проверку.',
-    'requires-reconciliation':'Результат операции пока неясен. Продолжаем сверку исходного заказа.',
-  };
-  return messages[reason??'']??'Сеть пока не вернула окончательный результат. Продолжаем проверку исходного заказа.';
-}
-
 export function PaidSolanaFlow({ input, onBack, onBusy, onComplete, onAdoptAttempt }: Props) {
   const inputIdentity = input.mode === 'resume' ? `resume:${input.operationId}` : input.mode === 'contribution'
     ? 'contribution' : `create:${serializeEnvelope(input.envelope)}:${input.parentTxId}:${input.treeId}`;
@@ -86,11 +91,12 @@ export function PaidSolanaFlow({ input, onBack, onBusy, onComplete, onAdoptAttem
   const [walletAddress, setWalletAddress] = useState('');
   const [initializing, setInitializing] = useState(true);
   const [busy, setBusy] = useState(false);
+  const [phase, setPhase] = useState<'preparing' | 'checking' | 'saving'>('preparing');
   const [signing,setSigning]=useState(false);
   const [recovering, setRecovering] = useState(false);
   const [checking, setChecking] = useState(false);
-  const [consent, setConsent] = useState(false);
   const [error, setError] = useState('');
+  const [diagnostic, setDiagnostic] = useState<{ stage: FailureStage; code: string } | null>(null);
   const [recoveryFailure, setRecoveryFailure] = useState<RecoveryFailure | null>(null);
   const [completionError, setCompletionError] = useState(false);
   const [finishing, setFinishing] = useState(false);
@@ -105,7 +111,6 @@ export function PaidSolanaFlow({ input, onBack, onBusy, onComplete, onAdoptAttem
   const identity = activeInput.mode === 'resume' ? activeInput.operationId : activeInput.mode==='contribution'?'contribution':serializeEnvelope(activeInput.envelope) + ':' + activeInput.parentTxId + ':' + activeInput.treeId;
 
   const remember = useCallback((next: PaidOperation) => {
-    if (latest.current?.preparation?.preparationId !== next.preparation?.preparationId) setConsent(false);
     setRecoveryFailure(previous => previous && (previous.operationId !== next.id ||
       previous.preparationId !== next.preparation?.preparationId || next.localCompletion !== 'pending' ||
       next.creationCancelled || next.snapshot?.expired || next.snapshot?.cancelled || next.signature ||
@@ -120,8 +125,8 @@ export function PaidSolanaFlow({ input, onBack, onBusy, onComplete, onAdoptAttem
     const current = { active: true }; context.current = current;
     const source = latestInput.current;
     setInitializing(true); setOp(null); latest.current = null; setPolicy(null);
-    creationError.current = null; setError(''); setRecoveryFailure(null); setRecovering(false);
-    setConsent(false); setCompletionError(false); completedAttempt.current = '';
+    creationError.current = null; setError(''); setDiagnostic(null); setRecoveryFailure(null); setRecovering(false);
+    setCompletionError(false); completedAttempt.current = '';
     const controller = new AbortController();
     const timer = setTimeout(() => {
       void (async () => {
@@ -141,7 +146,7 @@ export function PaidSolanaFlow({ input, onBack, onBusy, onComplete, onAdoptAttem
           const offered = await readPaidPolicy(controller.signal, source.mode === 'contribution' ? 'contribution' : 'preservation');
           if (current.active) setPolicy(offered);
         }
-      })().catch(e => { if (current.active) setError(errorMessage(e)); })
+      })().catch(e => { if (current.active) { setError(errorMessage(e)); setDiagnostic(failureDetails(e)); } })
         .finally(() => { if (current.active) setInitializing(false); });
     }, 0);
     return () => { current.active = false; clearTimeout(timer); controller.abort(); };
@@ -152,9 +157,14 @@ export function PaidSolanaFlow({ input, onBack, onBusy, onComplete, onAdoptAttem
     const current = context.current, previous = latest.current;
     if (!previous || reading.current || running.current || !current.active) return;
     reading.current = true; setChecking(true);
-    try { const next = await checkPaidOperation(previous.id, () => current.active); if (current.active) { remember(next); creationError.current = null; setError(''); } }
-    catch (e) { if (current.active) setError(e instanceof PaidApiError && e.status === 404 && creationError.current
-      ? creationError.current : errorMessage(e)); }
+    try { const next = await checkPaidOperation(previous.id, () => current.active); if (current.active) {
+      remember(next); creationError.current = null;
+      if (next.snapshot?.record.states.payment === 'verified' || next.snapshot?.record.states.preservation === 'completed') { setError(''); setDiagnostic(null); }
+    } }
+    catch (e) { if (current.active) {
+      setError(previous => previous || (e instanceof PaidApiError && e.status === 404 && creationError.current ? creationError.current : errorMessage(e)));
+      setDiagnostic(previous => previous || failureDetails(e));
+    } }
     finally { reading.current = false; if (current.active) setChecking(false); }
   }, [remember]);
 
@@ -169,16 +179,17 @@ export function PaidSolanaFlow({ input, onBack, onBusy, onComplete, onAdoptAttem
   }, [op?.id, op?.localCompletion, initializing, completed, released, check]);
 
   async function run(action: () => Promise<void>, kind: 'other' | 'recovery' = 'other') {
-    if (running.current || reading.current || initializing) return;
+    if (running.current || initializing) return;
     const current = context.current;
     const recoveryTarget = kind === 'recovery' && latest.current?.preparation
       ? { operationId: latest.current.id, preparationId: latest.current.recoveryRequestedFor ?? latest.current.preparation.preparationId } : null;
-    running.current = true; setBusy(true); callbacks.current.onBusy?.(true); setError('');
+    running.current = true; setBusy(true); callbacks.current.onBusy?.(true); setError(''); setDiagnostic(null);
     if (kind === 'recovery') { setRecoveryFailure(null); setRecovering(true); }
     try { await action(); }
     catch (e) {
       if (current.active) {
         const message = errorMessage(e);
+        setDiagnostic(failureDetails(e));
         if (e instanceof PaidApiError && e.stage === 'create') creationError.current = message;
         if (recoveryTarget) setRecoveryFailure({ ...recoveryTarget, message });
         else setError(message);
@@ -204,10 +215,9 @@ export function PaidSolanaFlow({ input, onBack, onBusy, onComplete, onAdoptAttem
   async function connect(name: WalletName) {
     await run(async () => {
       const current = context.current;
-      const next = await connectWallet(name);
+      const next = await connectWallet(name, () => { if (current.active) setSigning(true); });
       if (!current.active) return;
       const address = next.publicKey.toString();
-      setConsent(false);
       if (latest.current && latest.current.intent.payer !== address) {
         setWallet(null); setWalletAddress(''); throw Error('wallet_changed');
       }
@@ -216,33 +226,66 @@ export function PaidSolanaFlow({ input, onBack, onBusy, onComplete, onAdoptAttem
   }
 
   async function pay() {
-    if (!wallet || (op?.preparation&&!consent)) return;
     await run(async () => {
+      setPhase('preparing');
       const source=latestInput.current;
       const requested=latest.current?.intent.contribution??amount;
       parseAmount(requested,9);
       const current = context.current;
       let operation=latest.current;
+      if (operation?.snapshot?.record.states.payment === 'verified' || operation?.signingStarted || operation?.signature || operation?.recoveryRequestedFor) {
+        setPhase(operation.snapshot?.record.states.payment === 'verified' ? 'saving' : 'checking');
+        if (operation.recoveryRequestedFor && !operation.signature) {
+          operation = await recoverPaidOperation(operation.id, () => current.active);
+        } else {
+          operation = await checkPaidOperation(operation.id, () => current.active);
+          if (operation.signingStarted && !operation.signature && !operation.snapshot?.record.pendingSignature &&
+              operation.snapshot?.record.states.payment !== 'verified') {
+            operation = await recoverPaidOperation(operation.id, () => current.active);
+          }
+        }
+        if (current.active) remember(operation);
+        if (operation.snapshot?.record.states.payment === 'verified' || operation.signingStarted || operation.signature || operation.recoveryRequestedFor) return;
+      }
+      let connected = wallet;
+      if (!connected) {
+        connected = await connectWallet('Phantom', () => { if (current.active) setSigning(true); });
+        if (!current.active) return;
+        const address = connected.publicKey.toString();
+        if (operation && operation.intent.payer !== address) throw Error('wallet_changed');
+        setWallet(connected); setWalletAddress(address);
+      }
       if(!operation){
         if(source.mode==='resume'||!policy||!(source.mode==='contribution'?policy.contributionReady:policy.ready))throw Error(source.mode==='contribution'?'contribution_unavailable':'paid_unavailable');
-        operation=await beginPaidOperation(source,wallet.publicKey.toString(),requested,policy);
+        operation=await beginPaidOperation(source,connected.publicKey.toString(),requested,policy);
         if(current.active)remember(operation);
       }
+      if(!operation.order){operation=await retryPaidCreation(operation.id,()=>current.active);if(current.active)remember(operation);}
       if(!operation.order)throw Error('previous_payment_unresolved');
-      if(!operation.preparation){operation=await preparePaidOperation(operation.id,wallet,()=>current.active);if(current.active){remember(operation);setConsent(false);}return;}
-      if (requiresLargeAmountConfirmation(operation.order.fundContribution.amount, '100000000000') &&
-          !window.confirm(`Дополнительный взнос: ${formatAmount(operation.order.fundContribution.amount,9)} SOL.\n${operation.order.fundContribution.recipient}`)) return;
-      setSigning(true);
-      try{
-        const next = await payPaidOperation(operation.id, operation.preparation.preparationId, wallet, () => current.active);
-        if (current.active) { remember(next); setConsent(false); }
-      }finally{if(current.active)setSigning(false);}
+      if (operation.signingStarted || operation.signature || operation.snapshot?.record.pendingSignature || operation.snapshot?.record.payment) return;
+      if(!operation.preparation){operation=await preparePaidOperation(operation.id,connected,()=>current.active);if(current.active)remember(operation);}
+      const payableOrder = operation.order;
+      if (!payableOrder || !operation.preparation) throw Error('previous_payment_unresolved');
+      if (requiresLargeAmountConfirmation(payableOrder.fundContribution.amount, '100000000000') &&
+          !window.confirm(`Дополнительный взнос: ${formatAmount(payableOrder.fundContribution.amount,9)} SOL.\n${payableOrder.fundContribution.recipient}`)) return;
+      try {
+        let next: PaidOperation;
+        try { next = await payPaidOperation(operation.id, operation.preparation!.preparationId, connected, () => current.active); }
+        catch (e) {
+          if (!(e instanceof Error) || e.message !== 'payment_preparation_expired') throw e;
+          operation = await recoverPaidOperation(operation.id, () => current.active);
+          if (current.active) remember(operation);
+          if (!operation.preparation || operation.signingStarted || operation.signature || operation.snapshot?.record.states.payment === 'verified') return;
+          next = await payPaidOperation(operation.id, operation.preparation.preparationId, connected, () => current.active);
+        }
+        if (current.active) remember(next);
+        if (current.active) setPhase('checking');
+      } finally { if(current.active)setSigning(false); }
     });
   }
 
   async function recoverWalletRequest() {
     await run(async () => {
-      setConsent(false);
       const current = context.current, previous = latest.current;
       if (!previous) return;
       const next = await recoverPaidOperation(previous.id, () => current.active);
@@ -288,7 +331,7 @@ export function PaidSolanaFlow({ input, onBack, onBusy, onComplete, onAdoptAttem
   const recoveryPending = Boolean(op?.recoveryRequestedFor);
   const envelope = op?.serialized ? parseEnvelope(JSON.parse(op.serialized)) : activeInput.mode === 'create' ? activeInput.envelope : null;
   const unavailable = !op && !initializing && !offerReady;
-  const canPrepare = !initializing && !busy && !checking && !paid && !pendingPayment && !recoveryPending && !released && !op?.cancellationRequested && Boolean(order || !op && offerReady);
+  const canPrepare = !initializing && !busy && !released && !op?.cancellationRequested && Boolean(order || !op && offerReady);
   const recoverable = Boolean(order && op?.preparation && op.localCompletion === 'pending' && !signature && !op.signedTransaction &&
     !op.snapshot?.execution && !paid && !released && !op.cancellationRequested);
   const network = order?.network ?? offeredPolicy?.network;
@@ -306,7 +349,7 @@ export function PaidSolanaFlow({ input, onBack, onBusy, onComplete, onAdoptAttem
   }
 
   function updateDraft(patch: Partial<typeof draft>) {
-    setDraftState({ ...draft, ...patch }); setConsent(false);
+    setDraftState({ ...draft, ...patch });
   }
   function anotherContribution() {
     if (op?.intent.kind !== 'contribution' || op.localCompletion !== 'done' || busy || checking || finishing) return;
@@ -327,7 +370,7 @@ export function PaidSolanaFlow({ input, onBack, onBusy, onComplete, onAdoptAttem
   else if (released) title = op?.snapshot?.cancelled || op?.creationCancelled ? 'Запрос оплаты отменён' : 'Срок предложения оплаты истёк';
   else if (paid) title = executionStatus === 'requires-reconciliation' ? 'Проверяем состояние сохранения'
     : executionStatus === 'confirming' || executionStatus === 'submitted' ? 'Ждём подтверждения Arweave' : 'Оплата получена. Сохраняем дерево';
-  else if (signing) title = 'Подтвердите оплату в кошельке';
+  else if (signing) title = 'Подтвердите в Phantom';
   else if (recovering) title = 'Проверяем возможность восстановления';
   else if (recoveryPending) title = 'Восстановление не завершено';
   else if (unsignedWalletRequest) title = 'Подтверждение в кошельке не завершено';
@@ -335,111 +378,78 @@ export function PaidSolanaFlow({ input, onBack, onBusy, onComplete, onAdoptAttem
   else if (op?.cancellationRequested) title = 'Проверяем отмену запроса';
   else if (op && !order) title = 'Проверяем созданный запрос';
 
+  const price = order?.servicePayment.amount ?? offeredPolicy?.serviceLamports;
+  const status = completed ? 'Сохранено' : signing ? 'Подтвердите в Phantom' : paid || finishing || phase === 'saving' && busy ? 'Сохраняем' :
+    pendingPayment || checking || phase === 'checking' && busy ? 'Проверяем оплату' : busy ? 'Готовим оплату' : '';
+  const primaryText = unavailable ? 'Повторить проверку' : completionError ? 'Завершить сохранение' : released ? 'Вернуться к сохранению' :
+    paid || pendingPayment || recoveryPending || op && !order ? 'Продолжить сохранение' :
+    contributionOnly ? 'Подтвердить взнос в Phantom' : `Оплатить ${price ? formatAmount(price, 9) : '…'} SOL и сохранить`;
   return <section className="checkout-panel" aria-label="Оплата SOL">
     <h1>{title}</h1>
-    {initializing && <p role="status">{contributionOnly ? 'Проверяем прежний взнос и условия оплаты…' : 'Проверяем прежнее сохранение и условия оплаты…'}</p>}
-    {unavailable && <p>{contributionOnly ? 'Помощь фонду через Solana пока недоступна. Попробуйте позже.' : 'Оплата через Solana пока недоступна. Вы можете сохранить дерево по промокоду.'}</p>}
-    {(offerReady || order) && !completed && <p>{contributionOnly ? 'Добровольная помощь фонду' : `Сохранение — ${formatAmount(order?.servicePayment.amount ?? offeredPolicy!.serviceLamports, 9)} SOL`}. Комиссия сети отдельно.</p>}
-    {network && <p>Сеть оплаты: {network === 'devnet' ? 'Solana Devnet' : 'Solana Mainnet'}.{!contributionOnly && ' Хранение: Arweave Mainnet.'}</p>}
-    {!order && offeredPolicy && <p style={{ overflowWrap: 'anywhere' }}>
-      {!contributionOnly && <>Получатель сервисной оплаты: {offeredPolicy.serviceRecipient}<br /></>}
-      Фонд: {offeredPolicy.fundRecipient}
-    </p>}
-    {walletAddress && <p role="status" style={{ overflowWrap: 'anywhere' }}>Кошелёк подключён: {walletAddress}</p>}
-    {envelope && <button className="btn ghost" type="button" onClick={() => downloadEnvelope(envelope)}>Скачать зашифрованную копию</button>}
+    {initializing && <p role="status">Проверяем прежнее сохранение и условия оплаты…</p>}
+    {unavailable && <p>{contributionOnly ? 'Помощь фонду через Solana пока недоступна.' : 'Оплата через Solana пока недоступна. Сохранение по промокоду остаётся доступно.'}</p>}
+    {(offerReady || order) && !completed && <>
+      {!contributionOnly && <p>Стоимость сохранения: {price ? formatAmount(price, 9) : '…'} SOL.</p>}
+      <p>Комиссия Solana отдельно: {op?.preparation ? `оценка ${formatAmount(op.preparation.feeLamports, 9)} SOL` : 'уточняется перед подтверждением в Phantom'}.</p>
+      <p>Оплата: {network === 'devnet' ? 'Solana Devnet' : 'Solana Mainnet'}. {!contributionOnly && 'Зашифрованное хранение: Arweave Mainnet.'}</p>
+      {walletAddress && <p style={{ overflowWrap: 'anywhere' }}>Phantom: {walletAddress}</p>}
+      {!walletAddress && !pendingPayment && !paid && <p>При первом использовании Phantom может сначала запросить разрешение на подключение.</p>}
+    </>}
     {!op && (policy?.ready || policy?.contributionReady) && <>
       <button className="btn ghost" type="button" aria-expanded={helpOpen} aria-controls={helpId}
-        disabled={busy || checking || initializing} onClick={() => updateDraft({ helpOpen: !helpOpen })}>Помочь другим сохранить их истории</button>
+        disabled={busy || initializing} onClick={() => updateDraft({ helpOpen: !helpOpen })}>Добровольный взнос (необязательно)</button>
       {helpOpen && <div id={helpId}>
         <label>Добровольный взнос, SOL<input inputMode="decimal" value={amount}
           aria-invalid={Boolean(amountError)} aria-describedby={amountError ? amountErrorId : undefined}
-          onChange={event => updateDraft({ amount: event.target.value })} disabled={busy || checking || initializing} /></label>
+          onChange={event => updateDraft({ amount: event.target.value })} disabled={busy || initializing} /></label>
         {amountError && <p id={amountErrorId} role="alert">{amountError}</p>}
         {contributionOnly && amountUnits === '0' && <p>Укажите сумму помощи больше 0 SOL.</p>}
-        {!contributionOnly && <button className="btn ghost" type="button" disabled={busy || checking || initializing || !policy?.contributionReady}
+        {!contributionOnly && <button className="btn ghost" type="button" disabled={busy || initializing || !policy?.contributionReady}
           onClick={() => updateDraft({ donationOnly: true })}>Только помочь другим</button>}
-        {contributionOnly && input.mode === 'create' && <button className="btn ghost" type="button" disabled={busy || checking || initializing}
+        {contributionOnly && input.mode === 'create' && <button className="btn ghost" type="button" disabled={busy || initializing}
           onClick={() => updateDraft({ donationOnly: false })}>Вернуться к сохранению дерева</button>}
       </div>}
-      {(amountUnits !== '0' || contributionOnly || amountError) && <p aria-live="polite">
-        Добровольный взнос: {amountError || amountUnits === null ? 'проверьте сумму' : `${formatAmount(amountUnits, 9)} SOL`}
-        {!contributionOnly && amount !== '0' && <button className="btn ghost" type="button" disabled={busy || checking || initializing}
-          onClick={() => updateDraft({ amount: '0' })}>Убрать взнос</button>}
-      </p>}
       <p>Итого без комиссии сети: {draftTotal && !amountError ? `${formatAmount(draftTotal, 9)} SOL` : 'проверьте сумму'}</p>
     </>}
-    {order && <dl>
-      {order.kind === 'preservation' && <><dt>Сохранение</dt><dd>{formatAmount(order.servicePayment.amount, 9)} SOL</dd>
-        <dt>Получатель оплаты</dt><dd style={{ overflowWrap: 'anywhere' }}>{order.servicePayment.recipient}</dd></>}
-      <dt>{contributionOnly ? 'Помощь фонду' : 'Добровольный взнос'}</dt><dd>{formatAmount(order.fundContribution.amount, 9)} SOL</dd>
-      {order.fundContribution.amount !== '0' && <><dt>Получатель взноса</dt><dd style={{ overflowWrap: 'anywhere' }}>{order.fundContribution.recipient}</dd></>}
-      <dt>Комиссия Solana</dt><dd>{op?.preparation ? formatAmount(op.preparation.feeLamports, 9) + ' SOL' : 'Проверяем…'}</dd>
-      <dt>Итого без комиссии сети</dt><dd>{formatAmount(order.total, 9)} SOL</dd>
-      {finalTotal && <><dt>Итого с комиссией сети</dt><dd>{finalTotal} SOL</dd></>}
-    </dl>}
-    {!paid && !pendingPayment && !completed && !released && !op?.cancellationRequested && (order || !op && offerReady) && <div className="actions">
-      <button className="btn ghost" type="button" disabled={!canPrepare} onClick={() => void connect('Phantom')}>Подключить Phantom</button>
-      <button className="btn ghost" type="button" disabled={!canPrepare} onClick={() => void connect('Solflare')}>Подключить Solflare</button>
-    </div>}
-    {wallet && !pendingPayment && !recoveryPending && !paid && !released && !op?.cancellationRequested && (order || offerReady) && <>
-      {op?.preparation && <label><input type="checkbox" checked={consent} disabled={busy || checking}
-        onChange={event => setConsent(event.target.checked)} /> Я проверил(а) сеть, получателей, сумму и отдельную комиссию.</label>}
-      <button className="btn" type="button" disabled={!canPrepare || Boolean(op?.preparation && !consent) || !op && !validDraftAmount}
-        onClick={() => void pay()}>{op?.preparation ? 'Подтвердить оплату в кошельке' : contributionOnly ? 'Только помочь другим' : 'Оплатить и сохранить'}</button>
-    </>}
-    {signing && <p role="status">Подтвердите оплату в кошельке</p>}
-    {unsignedWalletRequest && !paid && !signing && !recovering && !recoveryPending && <p role="status">Сайт пока не получил подпись от кошелька. Проверяем этот заказ. Если запрос в кошельке уже закрыт, восстановите подтверждение.</p>}
-    {pendingPayment && !unsignedWalletRequest && !paid && <p role="status">Проверяем оплату. {delayMessage(op?.snapshot?.verification?.reason)} Новая подпись не запускается.</p>}
-    {recoverable && !signing && <>
-      {recovering && <p role="status">Проверяем, можно ли обновить подтверждение этого заказа. Дождитесь ответа.</p>}
-      {recoveryPending && !recovering && <p role="status">
-        {recoveryFailure ? 'Запрос восстановления сохранён. ' : 'Запрос восстановления сохранён, но его результат пока неизвестен. '}
-        Автоматическая проверка только уточняет результат. Повторить запрос для этого заказа можно кнопкой «Повторить восстановление».
-      </p>}
-      {recoveryFailure && <p role="alert">{recoveryFailure.message}</p>}
-      <button className={unsignedWalletRequest || recoveryPending ? 'btn' : 'btn ghost'} type="button"
-        disabled={initializing || busy || checking} onClick={() => void recoverWalletRequest()}>
-        {recovering ? 'Проверяем восстановление…' : recoveryPending ? 'Повторить восстановление' : unsignedWalletRequest ? 'Восстановить подтверждение' : 'Обновить подтверждение'}
-      </button>
-      {(unsignedWalletRequest || recoveryPending) && !recovering && <p className="sub">Если восстановление пройдёт, проверьте сумму и комиссию заново. Подтверждение в кошельке — отдельным нажатием.</p>}
-    </>}
-    {paid && !completed && <p role="status">{executionStatus === 'confirming' || executionStatus === 'submitted'
-      ? 'Оплата получена, архив отправлен. Ждём подтверждения сети и проверяем, что архив можно скачать.'
-      : 'Оплата получена. Сохраняем дерево.'} Этот заказ продолжится после закрытия окна.</p>}
-    {paid && executionStatus === 'requires-reconciliation' && <p role="alert">{delayMessage(op?.snapshot?.execution?.reason)} Повторная оплата не требуется.</p>}
-    {released && <>
-      <p role="status">Сервер подтвердил, что оплата не была принята. {contributionOnly
-        ? 'Новый взнос можно начать отдельным действием.' : 'Зашифрованная копия остаётся доступна. Новое сохранение можно начать только отдельным действием.'}</p>
-      <button className="btn" type="button" disabled={busy || checking} onClick={() => void run(async () => {
-        const current = context.current; await resolveReleasedPaidOperation(op!.id); if (current.active) onBack(true);
-      })}>{contributionOnly ? 'Закрыть отменённый запрос' : 'Вернуться к выбору сохранения'}</button>
-    </>}
-    {order && !pendingPayment && !recoveryPending && !paid && !completed && !released && <button className="btn ghost" type="button" disabled={busy || checking}
-      onClick={() => void run(async () => { const current = context.current; const next = await cancelPaidOperation(op!.id); if (current.active) remember(next); })}>Отменить неоплаченный запрос</button>}
-    {op?.cancellationRequested && !released && <p role="status">Проверяем отмену исходного запроса. До ответа сервера новая оплата не начинается.</p>}
-    {op && !order && !released && <p role="status">{contributionOnly ? 'Сохранили сумму взноса и номер запроса.' : 'Сохранили исходный зашифрованный архив и номер запроса.'} Проверяем его состояние; новый заказ не создаётся.</p>}
-    {op && !order && !released && !op.cancellationRequested && <button className="btn" type="button" disabled={busy || checking} onClick={() => void run(async () => {
-      const current = context.current; const next = await retryPaidCreation(op.id, () => current.active); if (current.active) remember(next);
-    })}>Повторить отправку запроса</button>}
-    {op && !order && !released && <button className="btn ghost" type="button" disabled={busy || checking} onClick={() => void run(async () => {
-      const current = context.current; const next = await cancelPaidCreation(op.id, () => current.active); if (current.active) remember(next);
-    })}>Отменить этот запрос</button>}
-    {op && !completed && !released && <button className="btn ghost" type="button" disabled={busy || checking} onClick={() => void check()}>{checking ? 'Проверяем…' : 'Проверить статус'}</button>}
-    {completed && <p role="status">{contributionOnly ? `Ваш взнос ${formatAmount(order!.fundContribution.amount, 9)} SOL подтверждён. Он поможет другим семьям сохранить свои истории.` : 'Дерево сохранено. Храните ваши 12 слов SEJIRE.'}</p>}
-    {signature && order && <p><a href={`https://explorer.solana.com/tx/${signature}${order.network === 'devnet' ? '?cluster=devnet' : ''}`} target="_blank" rel="noopener noreferrer">Посмотреть транзакцию Solana</a></p>}
-    {completed && contributionOnly && <button className="btn ghost" type="button" disabled={busy || finishing} onClick={() => void downloadContributionReceipt()}>Скачать квитанцию</button>}
-    {completed && contributionOnly && op?.localCompletion === 'done' && <button className="btn" type="button" disabled={busy || checking || finishing} onClick={anotherContribution}>Сделать ещё один взнос</button>}
-    {completed && op?.snapshot?.execution?.receipt && <button className="btn ghost" type="button" onClick={() => downloadJson(op.snapshot!.execution!.receipt, `sejire-paid-receipt-${op.order!.id}.json`)}>Скачать квитанцию</button>}
-    {order && <details><summary>{contributionOnly ? 'Данные взноса' : 'Данные сохранения'}</summary><p style={{ overflowWrap: 'anywhere' }}>Заказ: {order.id}</p>
-      {signature && <p><a href={`https://explorer.solana.com/tx/${signature}${order.network === 'devnet' ? '?cluster=devnet' : ''}`} target="_blank" rel="noopener noreferrer">Транзакция оплаты Solana</a></p>}
-      {op?.snapshot?.execution?.txId && <p><a href={`https://arweave.net/tx/${op.snapshot.execution.txId}`} target="_blank" rel="noopener noreferrer">Данные транзакции Arweave</a></p>}
-      {op?.snapshot?.execution?.reason && <p>Результат проверки: {op.snapshot.execution.reason}</p>}
-    </details>}
-    {completionError && <>
-      <p role="alert">{contributionOnly ? 'Взнос подтверждён, но браузер не смог записать завершение. Повторите завершение; новая оплата не требуется.' : 'Архив сохранён в Arweave, но браузер не смог завершить запись локальной истории. Повторите завершение; новая оплата не требуется.'}</p>
-      <button className="btn" type="button" disabled={finishing} onClick={() => void finish()}>Повторить завершение</button>
-    </>}
+    {status && <p role="status">{status}</p>}
+    {paid && !completed && <p>Оплата подтверждена. Архив завершается автоматически; этот заказ продолжится после закрытия окна.</p>}
+    {pendingPayment && !paid && !signing && <p>Сверяем прежнюю попытку. Новая подпись не запрашивается, пока результат не определён.</p>}
+    {op && !order && !released && <p>Заказ сохранён в браузере. Продолжаем тот же запрос без создания нового.</p>}
+    {released && <p>Сервер подтвердил завершение неоплаченного запроса. Зашифрованная копия доступна в подробностях.</p>}
+    {completed && <p role="status">{contributionOnly ? 'Взнос подтверждён.' : 'Семейная история сохранена. Храните ваши 12 слов SEJIRE.'}</p>}
     {error && <p role="alert">{error}</p>}
-    <button className="btn ghost" type="button" disabled={busy || checking || finishing} onClick={() => onBack(Boolean(op))}>Назад</button>
+    {recoveryFailure && !error && <p role="alert">{recoveryFailure.message}</p>}
+    {completionError && <p role="alert">Архив сохранён, но запись локальной истории не завершилась. Повторная оплата не требуется.</p>}
+    {!completed && <button className="btn" type="button"
+      disabled={busy || finishing || initializing || !unavailable && !canPrepare && !pendingPayment && !paid && !recoveryPending && !(op && !order) || !unavailable && !op && !validDraftAmount}
+      onClick={() => void (unavailable ? setRefresh(value => value + 1) : completionError ? finish() : released ? run(async () => { await resolveReleasedPaidOperation(op!.id); onBack(true); }) : pay())}>
+      {busy ? status || 'Продолжаем…' : primaryText}
+    </button>}
+    {completed && contributionOnly && op?.localCompletion === 'done' && <button className="btn" type="button" disabled={busy || finishing} onClick={anotherContribution}>Сделать ещё один взнос</button>}
+    <details><summary>Подробнее</summary>
+      {diagnostic && <p>Этап: {diagnostic.stage}. Код: {diagnostic.code}.</p>}
+      {order && <dl>
+        {order.kind === 'preservation' && <><dt>Получатель сохранения</dt><dd style={{ overflowWrap: 'anywhere' }}>{order.servicePayment.recipient}</dd></>}
+        <dt>Добровольный взнос</dt><dd>{formatAmount(order.fundContribution.amount, 9)} SOL</dd>
+        {order.fundContribution.amount !== '0' && <><dt>Получатель взноса</dt><dd style={{ overflowWrap: 'anywhere' }}>{order.fundContribution.recipient}</dd></>}
+        <dt>Итого без комиссии</dt><dd>{formatAmount(order.total, 9)} SOL</dd>
+        {finalTotal && <><dt>Итого с оценкой комиссии</dt><dd>{finalTotal} SOL</dd></>}
+      </dl>}
+      {!order && offeredPolicy && <p style={{ overflowWrap: 'anywhere' }}>Получатель сохранения: {offeredPolicy.serviceRecipient}<br />Фонд: {offeredPolicy.fundRecipient}</p>}
+      {order && <p style={{ overflowWrap: 'anywhere' }}>Заказ: {order.id}</p>}
+      {signature && order && <p><a href={`https://explorer.solana.com/tx/${signature}${order.network === 'devnet' ? '?cluster=devnet' : ''}`} target="_blank" rel="noopener noreferrer">Транзакция Solana</a></p>}
+      {op?.snapshot?.execution?.txId && <p><a href={`https://arweave.net/tx/${op.snapshot.execution.txId}`} target="_blank" rel="noopener noreferrer">Архив Arweave</a></p>}
+      {op?.snapshot?.execution?.reason && <p>Диагностика хранения: {op.snapshot.execution.reason}</p>}
+      {op?.snapshot?.verification?.reason && <p>Диагностика оплаты: {op.snapshot.verification.reason}</p>}
+      {envelope && <button className="btn ghost" type="button" onClick={() => downloadEnvelope(envelope)}>Скачать зашифрованную копию</button>}
+      {!wallet && !paid && !pendingPayment && !completed && <button className="btn ghost" type="button" disabled={busy} onClick={() => void connect('Solflare')}>Использовать Solflare</button>}
+      {order && !pendingPayment && !paid && !completed && !released && !op?.cancellationRequested && <button className="btn ghost" type="button" disabled={busy} onClick={() => void run(async () => { const next = await cancelPaidOperation(op!.id); remember(next); })}>Отменить неоплаченный запрос</button>}
+      {op && !order && !released && <button className="btn ghost" type="button" disabled={busy} onClick={() => void run(async () => { const next = await cancelPaidCreation(op.id); remember(next); })}>Отменить этот запрос</button>}
+      {op && !completed && !released && <button className="btn ghost" type="button" disabled={busy} onClick={() => void check()}>Проверить статус</button>}
+      {recoverable && <button className="btn ghost" type="button" disabled={busy} onClick={() => void recoverWalletRequest()}>Восстановить подтверждение</button>}
+      {completed && contributionOnly && <button className="btn ghost" type="button" onClick={() => void downloadContributionReceipt()}>Скачать квитанцию</button>}
+      {completed && op?.snapshot?.execution?.receipt && <button className="btn ghost" type="button" onClick={() => downloadJson(op.snapshot!.execution!.receipt, `sejire-paid-receipt-${op.order!.id}.json`)}>Скачать квитанцию</button>}
+    </details>
+    <button className="btn ghost" type="button" disabled={busy || finishing} onClick={() => onBack(Boolean(op))}>Назад</button>
   </section>;
 }

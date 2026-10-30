@@ -348,6 +348,10 @@ async function rpcAt(url: string, method: string, params: unknown[] = []): Promi
   } catch { throw new RpcUnavailable(0); }
   const value = response.value as { jsonrpc?: string; id?: string; error?: unknown; result?: unknown };
   if (response.status !== 200) throw new RpcUnavailable(response.status, response.retryAfter);
+  if (value?.jsonrpc === '2.0' && value.id === id && value.error && typeof value.error === 'object') {
+    const code = (value.error as { code?: unknown }).code;
+    if (code === -32005 || code === -32603 || code === -32004) throw new RpcUnavailable(0);
+  }
   if (value?.jsonrpc !== '2.0' || value.id !== id || value.error || !Object.hasOwn(value, 'result'))
     throw Error('solana_rpc_malformed');
   return value.result;
@@ -412,9 +416,17 @@ export async function payPaidOperation(id: string, preparationId: string, wallet
     requireActive(isActive);
     await withPublicRpc(op, async call => {
       const fee = await call('getFeeForMessage', [preparation.messageBase64, { commitment: 'finalized' }]) as { value?: unknown };
-      if (rpcU64(fee?.value) !== preparation.feeLamports || BigInt(preparation.feeLamports) > 100000n) throw Error('network_fee_changed');
+      if (fee?.value === null || fee?.value === undefined) {
+        const height = await call('getBlockHeight', [{ commitment: 'finalized' }]);
+        if (!Number.isSafeInteger(height)) throw Error('solana_rpc_malformed');
+        throw Error((height as number) > preparation.lastValidBlockHeight ? 'payment_preparation_expired' : 'network_fee_not_ready');
+      }
+      if (rpcU64(fee.value) !== preparation.feeLamports || BigInt(preparation.feeLamports) > 100000n) throw Error('network_fee_changed');
       const balance = await call('getBalance', [op.order!.payer, { commitment: 'finalized' }]) as { value?: unknown };
       if (BigInt(rpcU64(balance?.value)) < BigInt(op.order!.total) + BigInt(preparation.feeLamports)) throw Error('insufficient_wallet_balance');
+      const height = await call('getBlockHeight', [{ commitment: 'finalized' }]);
+      if (!Number.isSafeInteger(height)) throw Error('solana_rpc_malformed');
+      if ((height as number) > preparation.lastValidBlockHeight) throw Error('payment_preparation_expired');
     });
     requireActive(isActive);
     op = await writePaidOperation({ ...op, signingStarted: true });
@@ -423,10 +435,13 @@ export async function payPaidOperation(id: string, preparationId: string, wallet
       throw Error('checkout_context_changed');
     }
     let signed: Transaction;
-    try { signed = await wallet.signTransaction(Transaction.populate(Message.from(Buffer.from(preparation.messageBase64, 'base64')))); }
+    try {
+      const transaction = Transaction.populate(Message.from(Buffer.from(preparation.messageBase64, 'base64')));
+      signed = await wallet.signTransaction(transaction);
+    }
     catch (error) {
       if (error && typeof error === 'object' && 'code' in error && error.code === 4001) await writePaidOperation({ ...op, signingStarted: false });
-      throw error;
+      throw error && typeof error === 'object' && 'code' in error && error.code === 4001 ? error : Error('wallet_result_unknown');
     }
     if (wallet.publicKey.toString() !== op.order!.payer || signed.serializeMessage().toString('base64') !== preparation.messageBase64 ||
         !signed.verifySignatures() || !signed.signatures[0]?.signature) throw Error('wallet_changed');
