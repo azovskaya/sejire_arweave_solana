@@ -256,6 +256,7 @@ for(const [name,mode] of [
     const s=await setup(browser,preparer,mode);try{
       const result=await runCore(s.page,s.family.words);
       expect(result.ok).toBe(true);expect(result.headTxId).toBe(s.base.id);
+      if(name.startsWith('T'))expect(result.incomplete).toBe(true);
       if(name.startsWith('C'))expect(s.counts.graphql).toContain('dynamic.test');
       if(name.startsWith('D'))expect(s.counts.graphql.length).toBeGreaterThan(0);
       if(name.startsWith('G'))expect(new Set(s.counts.raw).size).toBeGreaterThanOrEqual(3);
@@ -267,6 +268,9 @@ for(const [name,mode] of [
 test('UI clean browser opens family tree from legacy locator without GraphQL',async({browser,page:preparer})=>{
   const s=await setup(browser,preparer,{legacy:true,allGraphqlDown:true});try{
     await runUi(s.page,s.family.words);
+    await expect(s.page.getByRole('heading',{name:'Выберите версию',exact:true})).toBeVisible();
+    await expect(s.page.getByText(/история может быть неполной/)).toBeVisible();
+    await s.page.locator('.vault-version-item').first().click();
     await expect(s.page.getByRole('button',{name:'Сохранить',exact:true}).first()).toBeVisible();
     const opened=await s.page.evaluate(async words=>(await import('/tests/browser-fixture.ts')).recovered(words),s.family.words);
     expect(opened.trees).toEqual(s.family.vault.trees);readOnly(s.counts);

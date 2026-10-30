@@ -21,6 +21,8 @@
     "treasury:init": "node apps/sponsor/scripts/init-treasury.mjs",
     "deploy:pages": "bash scripts/deploy-pages.sh",
     "deploy:permaweb": "bash scripts/deploy-permaweb.sh",
+    "permaweb:prepare": "node scripts/prepare-permaweb.mjs",
+    "test:permaweb-prepare": "node scripts/prepare-permaweb.selftest.mjs",
     "web:build:arns": "VITE_PUBLISH_MODE=self npm run build --prefix apps/web",
     "test:checkout": "npm run test:checkout --prefix apps/sponsor",
     "archive:measure": "apps/sponsor/node_modules/.bin/tsx scripts/archive-size-study.mts",

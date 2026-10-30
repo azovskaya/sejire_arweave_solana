@@ -66,6 +66,13 @@ jobs:
           name: native-admin-build
           path: apps/web/dist/
           retention-days: 14
+      - run: npm run test:permaweb-prepare
+      - run: npm run permaweb:prepare
+      - uses: actions/upload-artifact@v4
+        with:
+          name: permaweb-static-release
+          path: .cache/permaweb-release/
+          retention-days: 14
       - name: Wallet history timeout regression (read-only, balance preserved)
         run: npm run test:native-browser --prefix apps/web -- --grep 'public balances never wait for history'
       - run: npm run test:native-browser
