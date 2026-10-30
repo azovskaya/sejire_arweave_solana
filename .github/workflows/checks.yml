@@ -25,6 +25,8 @@ jobs:
       - run: npm run test:fund-runtime
       - name: Paid SOL archive, durable continuation and mainnet adapters (synthetic network)
         run: npm run test:paid-runtime
+      - name: Linux checkout adapter, SQLite writer and idempotent order (synthetic network)
+        run: npm run test:linux --prefix apps/sponsor
       - run: npm run test:checkout
       - run: npm run test:rpc
       - run: npm run test:sqlite
