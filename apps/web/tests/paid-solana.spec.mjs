@@ -7,7 +7,7 @@ const origin='http://127.0.0.1:5185', tx='A'.repeat(43);
 const panel=page=>page.getByRole('region',{name:'Оплата SOL',exact:true});
 const json=(route,value,status=200)=>route.fulfill({status,contentType:'application/json',body:JSON.stringify(value)});
 const networkState=()=>({ready:true,contributionReady:true,balance:'1000000000000000',requests:[],denied:[],creates:0,admissions:0,createKeys:[],bodies:[],prepares:0,reserves:0,sends:[],cancels:0,reconciles:0,
-  recoveries:0,recoveryTransitions:{},lostRecovery:false,recoveryFee:'6000',
+  recoveries:0,recoveryTransitions:{},lostRecovery:false,recoveryFee:'6000',recoveryError:null,recoveryGate:null,
   finish:false,paid:false,phase:'queued',createError:null,lostCreate:false,lostReserve:false,lostVerify:false,lostCancel:false,
   wrongGenesis:false,wrongOrder:false,snapshot:null,archive:null,key:null,unknownSignature:null,dropBeforeAdmission:false,tombstone:false});
 
@@ -95,6 +95,8 @@ async function installNetwork(context,state=networkState()){
     const stored=await page.evaluate(async key=>(await import('/src/lib/checkout/paidJournal.ts')).readPaidOperation(key),state.key);
     expect(stored.recoveryRequestedFor).toBe(body.preparationId);
     expect(stored.signature).toBeUndefined();expect(stored.signedTransaction).toBeUndefined();
+    if(state.recoveryGate)await state.recoveryGate;
+    if(state.recoveryError)return json(route,{error:state.recoveryError},409);
     if(!state.recoveryTransitions[body.preparationId]){
      expect(body.preparationId).toBe(state.snapshot.preparation.preparationId);
      state.snapshot.preparation=await page.evaluate(async({snapshot,generation,fee})=>(await import('/tests/paid-fixture.ts')).recoveredPreparation(snapshot,generation,fee),
@@ -414,6 +416,93 @@ test('lost recovery response reload adopts only the requested generation without
  expect(recovered.preparation.preparationId).toBe(state.recoveryTransitions[initial.preparation.preparationId]);
  expect(recovered.signingStarted).toBe(false);expect(recovered.signature).toBeUndefined();
  expect(state.recoveries).toBe(1);expect(state.creates).toBe(1);expect(state.sends).toHaveLength(0);expect(state.reserves).toBe(0);
+ expect(await page.evaluate(()=>Boolean(window.phantom))).toBe(false);expect(state.denied).toEqual([]);
+});
+
+test('recovery rejection survives successful polls until an explicit same-order retry resets consent',async({page,context})=>{
+ const state=await installNetwork(context);await openEditor(page);await openPaid(page);await prepare(page);
+ const initial=(await saved(page,state.key)).op;
+ await panel(page).getByRole('checkbox').check();
+ state.recoveryError='payment_recovery_unavailable';
+ await panel(page).getByRole('button',{name:'Обновить подтверждение',exact:true}).click();
+ const failure=panel(page).getByRole('alert').filter({hasText:'Не удалось восстановить подтверждение.'});
+ await expect(failure).toBeVisible();
+ await expect(panel(page).getByRole('heading',{name:'Восстановление не завершено',exact:true})).toBeVisible();
+ await expect(panel(page).getByRole('button',{name:'Повторить восстановление',exact:true})).toBeEnabled();
+ await expect(panel(page).getByRole('button',{name:'Подключить Phantom',exact:true})).toBeDisabled();
+ await expect(panel(page).getByText('После проверки сервер обновит подтверждение этого заказа.',{exact:false})).toHaveCount(0);
+ const statusGets=()=>state.requests.filter(request=>request===`GET /orders/${initial.order.id}`).length;
+ const beforePoll=statusGets();
+ await expect.poll(statusGets,{timeout:12000}).toBeGreaterThan(beforePoll);
+ await expect(panel(page).getByRole('button',{name:'Проверить статус',exact:true})).toBeEnabled();
+ await expect(failure).toBeVisible();
+ await check(page);await expect(panel(page).getByRole('button',{name:'Проверить статус',exact:true})).toBeEnabled();
+ await expect(failure).toBeVisible();
+ expect((await saved(page,state.key)).op.preparation.preparationId).toBe(initial.preparation.preparationId);
+ expect((await saved(page,state.key)).op.recoveryRequestedFor).toBe(initial.preparation.preparationId);
+ expect(state.recoveries).toBe(1);expect(state.reconciles).toBe(0);expect(state.creates).toBe(1);
+ expect(await page.evaluate(()=>window.paidWallet.signCount)).toBe(0);
+
+ state.recoveryError=null;
+ let releaseRecovery;state.recoveryGate=new Promise(resolve=>{releaseRecovery=resolve;});
+ await panel(page).getByRole('button',{name:'Повторить восстановление',exact:true}).click();
+ try{
+  await expect.poll(()=>state.recoveries).toBe(2);
+  await expect(panel(page).getByRole('heading',{name:'Проверяем возможность восстановления',exact:true})).toBeVisible();
+  await expect(failure).toHaveCount(0);
+  await expect(panel(page).getByRole('button',{name:'Проверяем восстановление…',exact:true})).toBeDisabled();
+  expect(await page.evaluate(()=>window.paidWallet.signCount)).toBe(0);
+ }finally{releaseRecovery();state.recoveryGate=null;}
+ await expect(panel(page).getByRole('heading',{name:'Через Solana',exact:true})).toBeVisible();
+ await expect(panel(page).getByRole('alert')).toHaveCount(0);
+ await expect(panel(page).getByRole('checkbox')).not.toBeChecked();
+ await expect(panel(page).getByRole('button',{name:'Подтвердить оплату в кошельке',exact:true})).toBeDisabled();
+ const renewed=(await saved(page,state.key)).op;
+ expect(renewed.id).toBe(initial.id);expect(renewed.order).toEqual(initial.order);expect(renewed.serialized).toBe(initial.serialized);
+ expect(renewed.preparation.previousPreparationId).toBe(initial.preparation.preparationId);
+ expect(renewed.recoveryRequestedFor).toBeUndefined();expect(renewed.signature).toBeUndefined();
+ expect(state.recoveries).toBe(2);expect(state.creates).toBe(1);expect(state.reserves).toBe(0);expect(state.sends).toHaveLength(0);
+ expect(await page.evaluate(()=>window.paidWallet.signCount)).toBe(0);
+ await pay(page);await expect.poll(()=>state.sends.length).toBe(1);
+ expect(await page.evaluate(()=>window.paidWallet.signCount)).toBe(1);expect(state.denied).toEqual([]);
+});
+
+test('persisted recovery without an in-memory error explains unknown result and requires explicit retry',async({page,context})=>{
+ const state=await installNetwork(context);await openEditor(page);await openPaid(page);await prepare(page);
+ const initial=(await saved(page,state.key)).op;
+ state.recoveryError='payment_recovery_busy';
+ await panel(page).getByRole('button',{name:'Обновить подтверждение',exact:true}).click();
+ await expect(panel(page).getByRole('alert')).toContainText('Повторите восстановление');
+ expect((await saved(page,state.key)).op.recoveryRequestedFor).toBe(initial.preparation.preparationId);
+ await page.reload();
+ await expect(panel(page).getByRole('heading',{name:'Восстановление не завершено',exact:true})).toBeVisible();
+ await expect(panel(page).getByText('Запрос восстановления сохранён, но его результат пока неизвестен.',{exact:false})).toBeVisible();
+ await expect(panel(page)).toContainText('Автоматическая проверка только уточняет результат.');
+ await expect(panel(page).getByRole('button',{name:'Повторить восстановление',exact:true})).toBeEnabled();
+ await expect(panel(page).getByRole('alert')).toHaveCount(0);
+ await expect(panel(page).getByRole('heading',{name:'Проверяем возможность восстановления',exact:true})).toHaveCount(0);
+ await check(page);await expect(panel(page).getByRole('button',{name:'Повторить восстановление',exact:true})).toBeEnabled();
+ expect(state.recoveries).toBe(1);expect(state.creates).toBe(1);expect(state.reconciles).toBe(0);
+ expect(state.reserves).toBe(0);expect(state.sends).toHaveLength(0);
+ expect((await saved(page,state.key)).op.order).toEqual(initial.order);
+ expect((await saved(page,state.key)).op.serialized).toBe(initial.serialized);
+ expect(await page.evaluate(()=>Boolean(window.phantom))).toBe(false);expect(state.denied).toEqual([]);
+
+ // A retry whose server result is lost keeps its failure until GET actually
+ // adopts the accepted successor, then removes that obsolete failure.
+ state.recoveryError=null;state.lostRecovery=true;
+ await panel(page).getByRole('button',{name:'Повторить восстановление',exact:true}).click();
+ await expect(panel(page).getByRole('alert')).toContainText('Не удалось обновить состояние операции.');
+ expect(state.recoveries).toBe(2);
+ expect((await saved(page,state.key)).op.recoveryRequestedFor).toBe(initial.preparation.preparationId);
+ await check(page);
+ await expect(panel(page).getByRole('heading',{name:'Через Solana',exact:true})).toBeVisible();
+ await expect(panel(page).getByRole('alert')).toHaveCount(0);
+ const adopted=(await saved(page,state.key)).op;
+ expect(adopted.recoveryRequestedFor).toBeUndefined();
+ expect(adopted.preparation.previousPreparationId).toBe(initial.preparation.preparationId);
+ expect(adopted.order).toEqual(initial.order);expect(adopted.serialized).toBe(initial.serialized);
+ expect(state.recoveries).toBe(2);expect(state.creates).toBe(1);expect(state.reserves).toBe(0);expect(state.sends).toHaveLength(0);
  expect(await page.evaluate(()=>Boolean(window.phantom))).toBe(false);expect(state.denied).toEqual([]);
 });
 

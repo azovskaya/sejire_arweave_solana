@@ -134,3 +134,50 @@ reload the site, open the pending save if needed, and explicitly choose
 “Восстановить подтверждение”. The server either finds and continues the original
 payment or returns a fresh preparation for separate review and wallet approval.
 No real payment or archive completion has been verified by these release checks.
+
+## Unresolved recovery result visibility
+
+A later owner screen exposed a separate UI problem. A failed recovery POST keeps
+the durable recovery marker, as required, but a successful background GET of the
+unchanged preparation cleared the generic error. Because those polls deliberately
+do not repeat recovery, the screen could continue saying recovery was in progress
+without displaying the rejected request's result. The screen alone did not prove
+an active server job or establish why that request failed.
+
+The UI now keeps a separate recovery failure for the operation and preparation.
+Successful checks of that same unresolved preparation preserve the message next
+to the recovery action. An admitted explicit retry clears the prior failure;
+an accepted successor, known payment/signature, terminal state or different
+operation clears it as well. Connecting a wallet does not clear this failure.
+
+A persisted marker without a current recovery action now shows
+“Восстановление не завершено” and “Повторить восстановление”. Its text explains
+that polling only checks the result and that another request requires the button.
+Only the admitted recovery action displays “Проверяем возможность восстановления”.
+Reload still preserves the original operation and marker; without a persisted
+POST error, the screen honestly says the result is unknown. Successful recovery
+requires fresh amount/fee consent and a separate wallet-confirmation action.
+
+This follow-up changes the component and synthetic browser coverage only. The
+client protocol, journal schema, server, recovery leases and payment boundaries
+are unchanged. No owner order API, wallet, SOL transfer or archive submission was
+used for this follow-up.
+
+Local verification for this follow-up:
+
+- The full paid browser suite passed **23/23** scenarios using the existing
+  synthetic transport and Chromium executable. The two new regressions cover
+  rejected recovery followed by unchanged successful automatic/manual checks,
+  an admitted explicit retry with fresh consent and zero premature wallet calls,
+  a neutral persisted-marker screen after reload, and removal of an in-memory
+  failure only after GET adopts a committed successor whose POST reply was lost.
+- Native production build passed with the same published Worker URL and existing
+  build flags. Web lint passed with no errors and 17 unchanged warnings outside
+  this component. `git diff --check` passed.
+- Independent review found no new automatic recovery, signing, order creation,
+  payment, cancellation or journal mutation. Backend code remains unchanged.
+
+The browser suite command was `SEJIRE_BROWSER_EXECUTABLE=<existing Chromium>
+SEJIRE_BROWSER_CHANNEL=chromium npm run test:paid-browser` from `apps/web`.
+Source acceptance and public publication are recorded separately after the
+mandatory exact-source hosted checks.

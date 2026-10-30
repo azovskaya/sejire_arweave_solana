@@ -22,6 +22,7 @@ type Props = {
   onComplete?: (result: PaidCompletion) => Promise<void>;
   onAdoptAttempt?: (operation: PaidOperation) => void;
 };
+type RecoveryFailure = { operationId: string; preparationId: string; message: string };
 
 function errorMessage(error: unknown): string {
   if (error && typeof error === 'object' && 'code' in error && error.code === 4001) return 'Кошелёк отклонил подпись. Оплата не отправлена. Можно подтвердить тот же запрос или отменить его.';
@@ -45,9 +46,9 @@ function errorMessage(error: unknown): string {
     storage_unavailable: 'Браузер не смог защитить операцию от повторной оплаты. Новый платёж не начинается.',
     invalid_paid_attempt: 'Не удалось проверить сохранённую попытку. Новый платёж не начинается.',
     previous_payment_unresolved: 'Проверяем уже начатую оплату. Новая подпись и повторный платёж не запускаются.',
-    payment_not_expired: 'Предыдущее подтверждение ещё действует. Завершите открытый запрос в кошельке или попробуйте восстановление немного позже.',
+    payment_not_expired: 'Предыдущее подтверждение ещё действует. Если в кошельке есть открытый запрос, завершите его; иначе повторите восстановление немного позже.',
     payment_recovery_busy: 'Сервер сейчас проверяет этот заказ. Повторите восстановление после завершения проверки.',
-    payment_recovery_unavailable: 'Не удалось безопасно восстановить подтверждение. Заказ сохранён; можно повторить проверку.',
+    payment_recovery_unavailable: 'Не удалось восстановить подтверждение. Заказ сохранён; повторите восстановление немного позже.',
     preparation_changed: 'Подтверждение уже изменилось в другой вкладке. Проверьте состояние этого заказа.',
     insufficient_wallet_balance: 'На кошельке недостаточно SOL для суммы заказа и комиссии сети.',
     invalid_amount: 'Введите сумму в SOL без пробелов, запятой и округления.',
@@ -86,9 +87,11 @@ export function PaidSolanaFlow({ input, onBack, onBusy, onComplete, onAdoptAttem
   const [initializing, setInitializing] = useState(true);
   const [busy, setBusy] = useState(false);
   const [signing,setSigning]=useState(false);
+  const [recovering, setRecovering] = useState(false);
   const [checking, setChecking] = useState(false);
   const [consent, setConsent] = useState(false);
   const [error, setError] = useState('');
+  const [recoveryFailure, setRecoveryFailure] = useState<RecoveryFailure | null>(null);
   const [completionError, setCompletionError] = useState(false);
   const [finishing, setFinishing] = useState(false);
   const context = useRef({ active: false });
@@ -103,6 +106,10 @@ export function PaidSolanaFlow({ input, onBack, onBusy, onComplete, onAdoptAttem
 
   const remember = useCallback((next: PaidOperation) => {
     if (latest.current?.preparation?.preparationId !== next.preparation?.preparationId) setConsent(false);
+    setRecoveryFailure(previous => previous && (previous.operationId !== next.id ||
+      previous.preparationId !== next.preparation?.preparationId || next.localCompletion !== 'pending' ||
+      next.creationCancelled || next.snapshot?.expired || next.snapshot?.cancelled || next.signature ||
+      next.snapshot?.record.pendingSignature || next.snapshot?.record.payment) ? null : previous);
     latest.current = next; setOp(next);
     const current = latestInput.current;
     if (current.mode === 'create' && next.intent.kind==='preservation' && (serializeEnvelope(current.envelope) !== next.serialized || current.parentTxId !== next.archive?.parentTxId)) {
@@ -113,7 +120,8 @@ export function PaidSolanaFlow({ input, onBack, onBusy, onComplete, onAdoptAttem
     const current = { active: true }; context.current = current;
     const source = latestInput.current;
     setInitializing(true); setOp(null); latest.current = null; setPolicy(null);
-    creationError.current = null; setError(''); setConsent(false); setCompletionError(false); completedAttempt.current = '';
+    creationError.current = null; setError(''); setRecoveryFailure(null); setRecovering(false);
+    setConsent(false); setCompletionError(false); completedAttempt.current = '';
     const controller = new AbortController();
     const timer = setTimeout(() => {
       void (async () => {
@@ -160,26 +168,37 @@ export function PaidSolanaFlow({ input, onBack, onBusy, onComplete, onAdoptAttem
     return () => { live = false; clearTimeout(timer); };
   }, [op?.id, op?.localCompletion, initializing, completed, released, check]);
 
-  async function run(action: () => Promise<void>) {
+  async function run(action: () => Promise<void>, kind: 'other' | 'recovery' = 'other') {
     if (running.current || reading.current || initializing) return;
     const current = context.current;
+    const recoveryTarget = kind === 'recovery' && latest.current?.preparation
+      ? { operationId: latest.current.id, preparationId: latest.current.recoveryRequestedFor ?? latest.current.preparation.preparationId } : null;
     running.current = true; setBusy(true); callbacks.current.onBusy?.(true); setError('');
+    if (kind === 'recovery') { setRecoveryFailure(null); setRecovering(true); }
     try { await action(); }
     catch (e) {
       if (current.active) {
         const message = errorMessage(e);
         if (e instanceof PaidApiError && e.stage === 'create') creationError.current = message;
-        setError(message);
+        if (recoveryTarget) setRecoveryFailure({ ...recoveryTarget, message });
+        else setError(message);
         try {
           const old = latest.current;
           const source=latestInput.current;
           const found = old ? await readPaidOperation(old.id) : source.mode === 'create'
             ? await findPreservationAttempt({ vaultId: source.envelope.vault_id, treeId: source.treeId }).then(value => value?.method === 'paid' ? value.attempt : null)
             : source.mode==='contribution'?await findContributionAttempt():await readPaidOperation(source.operationId);
-          if (found && current.active) remember(found);
+          if (found && current.active) {
+            if (recoveryTarget && found.id === recoveryTarget.operationId && found.recoveryRequestedFor)
+              setRecoveryFailure({ ...recoveryTarget, preparationId: found.recoveryRequestedFor, message });
+            remember(found);
+          }
         } catch { /* Keep the original operation and visible failure. */ }
       }
-    } finally { running.current = false; callbacks.current.onBusy?.(false); if (current.active) setBusy(false); }
+    } finally {
+      running.current = false; callbacks.current.onBusy?.(false);
+      if (current.active) { setBusy(false); if (kind === 'recovery') setRecovering(false); }
+    }
   }
 
   async function connect(name: WalletName) {
@@ -222,13 +241,13 @@ export function PaidSolanaFlow({ input, onBack, onBusy, onComplete, onAdoptAttem
   }
 
   async function recoverWalletRequest() {
-    setConsent(false);
     await run(async () => {
+      setConsent(false);
       const current = context.current, previous = latest.current;
       if (!previous) return;
       const next = await recoverPaidOperation(previous.id, () => current.active);
       if (current.active) remember(next);
-    });
+    }, 'recovery');
   }
 
   const finish = useCallback(async () => {
@@ -309,9 +328,10 @@ export function PaidSolanaFlow({ input, onBack, onBusy, onComplete, onAdoptAttem
   else if (paid) title = executionStatus === 'requires-reconciliation' ? 'Проверяем состояние сохранения'
     : executionStatus === 'confirming' || executionStatus === 'submitted' ? 'Ждём подтверждения Arweave' : 'Оплата получена. Сохраняем дерево';
   else if (signing) title = 'Подтвердите оплату в кошельке';
+  else if (recovering) title = 'Проверяем возможность восстановления';
+  else if (recoveryPending) title = 'Восстановление не завершено';
   else if (unsignedWalletRequest) title = 'Подтверждение в кошельке не завершено';
   else if (pendingPayment) title = 'Проверяем оплату';
-  else if (recoveryPending) title = 'Восстанавливаем подтверждение';
   else if (op?.cancellationRequested) title = 'Проверяем отмену запроса';
   else if (op && !order) title = 'Проверяем созданный запрос';
 
@@ -368,15 +388,20 @@ export function PaidSolanaFlow({ input, onBack, onBusy, onComplete, onAdoptAttem
         onClick={() => void pay()}>{op?.preparation ? 'Подтвердить оплату в кошельке' : contributionOnly ? 'Только помочь другим' : 'Оплатить и сохранить'}</button>
     </>}
     {signing && <p role="status">Подтвердите оплату в кошельке</p>}
-    {unsignedWalletRequest && !paid && !signing && <p role="status">Сайт пока не получил подпись от кошелька. Проверяем этот заказ. Если запрос в кошельке уже закрыт, восстановите подтверждение.</p>}
+    {unsignedWalletRequest && !paid && !signing && !recovering && !recoveryPending && <p role="status">Сайт пока не получил подпись от кошелька. Проверяем этот заказ. Если запрос в кошельке уже закрыт, восстановите подтверждение.</p>}
     {pendingPayment && !unsignedWalletRequest && !paid && <p role="status">Проверяем оплату. {delayMessage(op?.snapshot?.verification?.reason)} Новая подпись не запускается.</p>}
     {recoverable && !signing && <>
-      {recoveryPending && <p role="status">Запрос восстановления сохранён. Проверяем его результат для того же заказа.</p>}
+      {recovering && <p role="status">Проверяем, можно ли обновить подтверждение этого заказа. Дождитесь ответа.</p>}
+      {recoveryPending && !recovering && <p role="status">
+        {recoveryFailure ? 'Запрос восстановления сохранён. ' : 'Запрос восстановления сохранён, но его результат пока неизвестен. '}
+        Автоматическая проверка только уточняет результат. Повторить запрос для этого заказа можно кнопкой «Повторить восстановление».
+      </p>}
+      {recoveryFailure && <p role="alert">{recoveryFailure.message}</p>}
       <button className={unsignedWalletRequest || recoveryPending ? 'btn' : 'btn ghost'} type="button"
         disabled={initializing || busy || checking} onClick={() => void recoverWalletRequest()}>
-        {unsignedWalletRequest || recoveryPending ? 'Восстановить подтверждение' : 'Обновить подтверждение'}
+        {recovering ? 'Проверяем восстановление…' : recoveryPending ? 'Повторить восстановление' : unsignedWalletRequest ? 'Восстановить подтверждение' : 'Обновить подтверждение'}
       </button>
-      {(unsignedWalletRequest || recoveryPending) && <p className="sub">После проверки сервер обновит подтверждение этого заказа. Сумму и комиссию нужно будет проверить снова; кошелёк откроется только по вашему нажатию.</p>}
+      {(unsignedWalletRequest || recoveryPending) && !recovering && <p className="sub">Если восстановление пройдёт, проверьте сумму и комиссию заново. Подтверждение в кошельке — отдельным нажатием.</p>}
     </>}
     {paid && !completed && <p role="status">{executionStatus === 'confirming' || executionStatus === 'submitted'
       ? 'Оплата получена, архив отправлен. Ждём подтверждения сети и проверяем, что архив можно скачать.'
