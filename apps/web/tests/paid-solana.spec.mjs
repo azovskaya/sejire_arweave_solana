@@ -196,7 +196,8 @@ async function openPaid(page){
  await expect(panel(page)).toBeVisible();
 }
 async function resumePaid(page){
- if(!(await panel(page).count()))await page.getByRole('button',{name:'Продолжить сохранение',exact:true}).first().click();
+ const opened=await panel(page).waitFor({state:'visible',timeout:5000}).then(()=>true,()=>false);
+ if(!opened)await page.getByRole('button',{name:'Продолжить сохранение',exact:true}).first().click();
  await expect(panel(page)).toBeVisible();
 }
 async function requestPayment(page,{contribution=false,wallet='Phantom'}={}){
@@ -311,7 +312,7 @@ test('insufficient balance, null fee and unavailable RPC never ask Phantom to si
 test('wrong Solana genesis fails closed before signing',async({page,context})=>{
  const state=await installNetwork(context);state.wrongGenesis=true;await openEditor(page);await openPaid(page);
  await panel(page).getByRole('button',{name:'Оплатить 0.03 SOL и сохранить'}).click();
- await expect(panel(page).getByRole('alert')).toContainText('Сеть Solana');
+ await expect(panel(page).getByRole('alert')).toContainText('сеть Solana');
  expect(await page.evaluate(()=>window.paidWallet.signCount)).toBe(0);expect(state.creates).toBe(1);expect(state.sends).toHaveLength(0);
 });
 
