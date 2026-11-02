@@ -270,11 +270,30 @@ test('one click connects Phantom, signs once, completes one archive and restores
  await expect(panel(page).getByRole('button',{name:/Подключить Phantom|Подтвердить оплату|Обновить подтверждение|Восстановить подтверждение|Проверить статус/})).toHaveCount(0);
  await button.click();await expect.poll(()=>state.sends.length).toBe(1);
  expect(state.creates).toBe(1);expect(state.admissions).toBe(1);expect(state.reserves).toBe(1);
+ expect(state.snapshot.record.order.fundContribution.amount).toBe('0');
  expect(await page.evaluate(()=>({connects:window.paidWallet.connects,signs:window.paidWallet.signCount}))).toEqual({connects:1,signs:1});
  state.finish=true;await expect.poll(async()=>(await saved(page,state.key)).op.localCompletion,{timeout:30000}).toBe('done');
  const result=await saved(page,state.key);expect(result.archive).toBe(state.archive);expect(result.op.localCompletion).toBe('done');
  await cleanRestore(browser,state,await page.evaluate(()=>window.paidFamily.words),result.op.snapshot.execution.receipt);
  expect(state.sends).toHaveLength(1);expect(state.creates).toBe(1);
+});
+
+test('main payment labels follow the supported language switch and optional contribution starts at zero',async({page,context})=>{
+ const state=await installNetwork(context);await openEditor(page);await openPaid(page);
+ await expect(panel(page).getByRole('button',{name:'Оплатить 0.03 SOL и сохранить'})).toBeVisible();
+ await page.getByRole('radio',{name:'ENG'}).first().evaluate(button=>button.click());
+ await expect(panel(page).getByRole('button',{name:'Pay 0.03 SOL and save'})).toBeVisible();
+ await expect(panel(page)).toContainText('Solana network fee separately');
+ await page.getByRole('radio',{name:'ҚАЗ'}).first().evaluate(button=>button.click());
+ await expect(panel(page).getByRole('button',{name:'0.03 SOL төлеп, сақтау'})).toBeVisible();
+ await page.getByRole('radio',{name:'РУС'}).first().evaluate(button=>button.click());
+ await panel(page).getByRole('button',{name:'Добровольный взнос (необязательно)'}).click();
+ await expect(panel(page).getByRole('textbox',{name:'Добровольный взнос, SOL'})).toHaveValue('0');
+ await panel(page).getByRole('textbox',{name:'Добровольный взнос, SOL'}).fill('0.001');
+ await panel(page).getByRole('button',{name:'Оплатить 0.03 SOL и сохранить'}).click();
+ await expect.poll(()=>state.sends.length).toBe(1);
+ expect(state.snapshot.record.order.fundContribution.amount).toBe('1000000');
+ expect(state.creates).toBe(1);
 });
 
 test('Phantom rejection is visible and an explicit retry reuses the same order and connection',async({page,context})=>{
