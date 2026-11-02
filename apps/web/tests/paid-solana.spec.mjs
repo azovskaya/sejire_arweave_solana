@@ -389,10 +389,12 @@ test('expiry during pre-wallet network reads never prompts Phantom for the stale
  await expect(panel(page).getByRole('alert')).toBeVisible();
  expect(await page.evaluate(()=>window.paidWallet.signCount)).toBe(0);
  expect(state.creates).toBe(1);expect(state.reserves).toBe(0);expect(state.sends).toHaveLength(0);
+ expect(state.recoveries).toBe(1);expect(Object.keys(state.recoveryTransitions)).toHaveLength(0);
  expect((await saved(page,state.key)).op.signingStarted).toBe(false);
  state.height=101;
  await continuePayment(page);await expect.poll(()=>state.sends.length).toBe(1);
- expect(state.creates).toBe(1);expect(state.recoveries).toBe(1);
+ expect(state.creates).toBe(1);expect(state.recoveries).toBe(2);
+ expect(Object.keys(state.recoveryTransitions)).toHaveLength(1);
  expect(await page.evaluate(()=>window.paidWallet.signCount)).toBe(1);
 });
 
