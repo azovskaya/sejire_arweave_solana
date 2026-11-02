@@ -17,9 +17,9 @@ import type { PaidCompletion, PaidInput, PaidOperation, PaidPolicyResponse } fro
 import { useI18n } from '../lib/i18n/I18nProvider';
 
 const paidUi = {
-  ru: { title: 'Через Solana', doneTitle: 'Семейная история сохранена', preparing: 'Готовим оплату', signing: 'Подтвердите в Phantom', checking: 'Проверяем оплату', saving: 'Сохраняем', saved: 'Сохранено', continue: 'Продолжить сохранение', finish: 'Завершить сохранение', retry: 'Повторить проверку', return: 'Вернуться к сохранению', pay: (price: string) => `Оплатить ${price} SOL и сохранить`, cost: (price: string) => `Стоимость сохранения: ${price} SOL.`, feeEstimate: (fee: string) => `Комиссия Solana отдельно: оценка ${fee} SOL.`, feeUnknown: 'Комиссия Solana отдельно: уточняется перед подтверждением в Phantom.', networks: (network: string) => `Оплата: ${network}. Зашифрованное хранение: Arweave Mainnet.`, connectHint: 'При первом использовании Phantom может сначала запросить разрешение на подключение.', details: 'Подробнее', donation: 'Добровольный взнос (необязательно)', donationAmount: 'Добровольный взнос, SOL', total: (value: string) => `Итого без комиссии сети: ${value}`, paidPending: 'Оплата подтверждена. Архив завершается автоматически; этот заказ продолжится после закрытия окна.', uncertain: 'Сверяем прежнюю попытку. Новая подпись не запрашивается, пока результат не определён.', orderPending: 'Заказ сохранён в браузере. Продолжаем тот же запрос без создания нового.', success: 'Семейная история сохранена. Храните ваши 12 слов SEJIRE.', back: 'Назад' },
-  kk: { title: 'Solana арқылы', doneTitle: 'Отбасы тарихы сақталды', preparing: 'Төлемді дайындап жатырмыз', signing: 'Phantom ішінде растаңыз', checking: 'Төлемді тексеріп жатырмыз', saving: 'Сақтап жатырмыз', saved: 'Сақталды', continue: 'Сақтауды жалғастыру', finish: 'Сақтауды аяқтау', retry: 'Тексеруді қайталау', return: 'Сақтауға оралу', pay: (price: string) => `${price} SOL төлеп, сақтау`, cost: (price: string) => `Сақтау құны: ${price} SOL.`, feeEstimate: (fee: string) => `Solana желісінің комиссиясы бөлек: шамамен ${fee} SOL.`, feeUnknown: 'Solana желісінің комиссиясы бөлек: Phantom растауы алдында нақтыланады.', networks: (network: string) => `Төлем: ${network}. Шифрланған сақтау: Arweave Mainnet.`, connectHint: 'Phantom алғаш қосылғанда байланысқа рұқсатты бөлек сұрауы мүмкін.', details: 'Толығырақ', donation: 'Ерікті үлес (міндетті емес)', donationAmount: 'Ерікті үлес, SOL', total: (value: string) => `Желі комиссиясынсыз барлығы: ${value}`, paidPending: 'Төлем расталды. Мұрағат автоматты түрде сақталады; терезе жабылса да осы тапсырыс жалғасады.', uncertain: 'Алдыңғы әрекетті тексеріп жатырмыз. Нәтижесі анықталғанша жаңа қолтаңба сұралмайды.', orderPending: 'Тапсырыс браузерде сақталды. Жаңа тапсырыс жасамай, осы сұрауды жалғастырамыз.', success: 'Отбасы тарихы сақталды. SEJIRE-дің 12 сөзін сақтаңыз.', back: 'Артқа' },
-  en: { title: 'Save with Solana', doneTitle: 'Family history saved', preparing: 'Preparing payment', signing: 'Confirm in Phantom', checking: 'Checking payment', saving: 'Saving', saved: 'Saved', continue: 'Continue saving', finish: 'Finish saving', retry: 'Retry check', return: 'Return to saving', pay: (price: string) => `Pay ${price} SOL and save`, cost: (price: string) => `Save price: ${price} SOL.`, feeEstimate: (fee: string) => `Solana network fee separately: estimated ${fee} SOL.`, feeUnknown: 'Solana network fee separately: calculated before Phantom confirmation.', networks: (network: string) => `Payment: ${network}. Encrypted storage: Arweave Mainnet.`, connectHint: 'Phantom may ask for connection permission separately the first time.', details: 'Details', donation: 'Optional contribution', donationAmount: 'Optional contribution, SOL', total: (value: string) => `Total before network fee: ${value}`, paidPending: 'Payment confirmed. The archive is finishing automatically and this order continues if you close the window.', uncertain: 'Checking the previous attempt. No new signature will be requested until its result is known.', orderPending: 'Order saved in this browser. Continuing the same request without creating another.', success: 'Family history saved. Keep your 12 SEJIRE words.', back: 'Back' },
+  ru: { title: 'Через Solana', doneTitle: 'Семейная история сохранена', preparing: 'Готовим оплату', signing: 'Подтвердите в Phantom', walletSlow: 'Ждём ответа Phantom', walletSlowHint: 'Если вы уже подтвердили, не оплачивайте повторно. Когда окно Phantom закрыто, а ответ так и не появился, обновите страницу: тот же заказ будет сверен без новой подписи.', checking: 'Проверяем оплату', saving: 'Сохраняем', saved: 'Сохранено', continue: 'Продолжить сохранение', finish: 'Завершить сохранение', retry: 'Повторить проверку', return: 'Вернуться к сохранению', pay: (price: string) => `Оплатить ${price} SOL и сохранить`, cost: (price: string) => `Стоимость сохранения: ${price} SOL.`, feeEstimate: (fee: string) => `Комиссия Solana отдельно: оценка ${fee} SOL.`, feeUnknown: 'Комиссия Solana отдельно: уточняется перед подтверждением в Phantom.', networks: (network: string) => `Оплата: ${network}. Зашифрованное хранение: Arweave Mainnet.`, connectHint: 'При первом использовании Phantom может сначала запросить разрешение на подключение.', details: 'Подробнее', donation: 'Добровольный взнос (необязательно)', donationAmount: 'Добровольный взнос, SOL', total: (value: string) => `Итого без комиссии сети: ${value}`, paidPending: 'Оплата подтверждена. Архив завершается автоматически; этот заказ продолжится после закрытия окна.', uncertain: 'Сверяем прежнюю попытку. Новая подпись не запрашивается, пока результат не определён.', orderPending: 'Заказ сохранён в браузере. Продолжаем тот же запрос без создания нового.', success: 'Семейная история сохранена. Храните ваши 12 слов SEJIRE.', back: 'Назад' },
+  kk: { title: 'Solana арқылы', doneTitle: 'Отбасы тарихы сақталды', preparing: 'Төлемді дайындап жатырмыз', signing: 'Phantom ішінде растаңыз', walletSlow: 'Phantom жауабын күтіп отырмыз', walletSlowHint: 'Растаған болсаңыз, қайта төлемеңіз. Phantom терезесі жабылып, жауап келмесе, бетті жаңартыңыз: осы тапсырыс жаңа қолтаңбасыз тексеріледі.', checking: 'Төлемді тексеріп жатырмыз', saving: 'Сақтап жатырмыз', saved: 'Сақталды', continue: 'Сақтауды жалғастыру', finish: 'Сақтауды аяқтау', retry: 'Тексеруді қайталау', return: 'Сақтауға оралу', pay: (price: string) => `${price} SOL төлеп, сақтау`, cost: (price: string) => `Сақтау құны: ${price} SOL.`, feeEstimate: (fee: string) => `Solana желісінің комиссиясы бөлек: шамамен ${fee} SOL.`, feeUnknown: 'Solana желісінің комиссиясы бөлек: Phantom растауы алдында нақтыланады.', networks: (network: string) => `Төлем: ${network}. Шифрланған сақтау: Arweave Mainnet.`, connectHint: 'Phantom алғаш қосылғанда байланысқа рұқсатты бөлек сұрауы мүмкін.', details: 'Толығырақ', donation: 'Ерікті үлес (міндетті емес)', donationAmount: 'Ерікті үлес, SOL', total: (value: string) => `Желі комиссиясынсыз барлығы: ${value}`, paidPending: 'Төлем расталды. Мұрағат автоматты түрде сақталады; терезе жабылса да осы тапсырыс жалғасады.', uncertain: 'Алдыңғы әрекетті тексеріп жатырмыз. Нәтижесі анықталғанша жаңа қолтаңба сұралмайды.', orderPending: 'Тапсырыс браузерде сақталды. Жаңа тапсырыс жасамай, осы сұрауды жалғастырамыз.', success: 'Отбасы тарихы сақталды. SEJIRE-дің 12 сөзін сақтаңыз.', back: 'Артқа' },
+  en: { title: 'Save with Solana', doneTitle: 'Family history saved', preparing: 'Preparing payment', signing: 'Confirm in Phantom', walletSlow: 'Waiting for Phantom', walletSlowHint: 'If you already approved, do not pay again. Once the Phantom window is closed, refresh the page if no response arrives: this order will be checked without a new signature.', checking: 'Checking payment', saving: 'Saving', saved: 'Saved', continue: 'Continue saving', finish: 'Finish saving', retry: 'Retry check', return: 'Return to saving', pay: (price: string) => `Pay ${price} SOL and save`, cost: (price: string) => `Save price: ${price} SOL.`, feeEstimate: (fee: string) => `Solana network fee separately: estimated ${fee} SOL.`, feeUnknown: 'Solana network fee separately: calculated before Phantom confirmation.', networks: (network: string) => `Payment: ${network}. Encrypted storage: Arweave Mainnet.`, connectHint: 'Phantom may ask for connection permission separately the first time.', details: 'Details', donation: 'Optional contribution', donationAmount: 'Optional contribution, SOL', total: (value: string) => `Total before network fee: ${value}`, paidPending: 'Payment confirmed. The archive is finishing automatically and this order continues if you close the window.', uncertain: 'Checking the previous attempt. No new signature will be requested until its result is known.', orderPending: 'Order saved in this browser. Continuing the same request without creating another.', success: 'Family history saved. Keep your 12 SEJIRE words.', back: 'Back' },
 } as const;
 type PaidLocale = keyof typeof paidUi;
 function localizedError(error: unknown, locale: PaidLocale): string {
@@ -142,6 +142,7 @@ export function PaidSolanaFlow({ input, onBack, onBusy, onComplete, onAdoptAttem
   const [busy, setBusy] = useState(false);
   const [phase, setPhase] = useState<'preparing' | 'checking' | 'saving'>('preparing');
   const [signing,setSigning]=useState(false);
+  const [walletSlow,setWalletSlow]=useState(false);
   const [recovering, setRecovering] = useState(false);
   const [checking, setChecking] = useState(false);
   const [error, setError] = useState('');
@@ -219,6 +220,11 @@ export function PaidSolanaFlow({ input, onBack, onBusy, onComplete, onAdoptAttem
   }, [remember, locale]);
 
   const completed = op?.intent.kind==='contribution' ? op?.snapshot?.record.states.payment==='verified' : op?.snapshot?.record.states.preservation === 'completed';
+  useEffect(() => {
+    if (!signing) { setWalletSlow(false); return; }
+    const timer = setTimeout(() => setWalletSlow(true), 60000);
+    return () => clearTimeout(timer);
+  }, [signing]);
   const released = op?.snapshot?.expired === true || op?.creationCancelled === true;
   useEffect(() => {
     if (!op?.id || initializing || completed || released || op.localCompletion !== 'pending') return;
@@ -420,7 +426,6 @@ export function PaidSolanaFlow({ input, onBack, onBusy, onComplete, onAdoptAttem
   else if (released) title = op?.snapshot?.cancelled || op?.creationCancelled ? 'Запрос оплаты отменён' : 'Срок предложения оплаты истёк';
   else if (paid) title = locale === 'ru' ? executionStatus === 'requires-reconciliation' ? 'Проверяем состояние сохранения'
     : executionStatus === 'confirming' || executionStatus === 'submitted' ? 'Ждём подтверждения Arweave' : 'Оплата получена. Сохраняем дерево' : ui.saving;
-  else if (signing) title = ui.signing;
   else if (recovering) title = 'Проверяем возможность восстановления';
   else if (recoveryPending) title = locale === 'ru' ? 'Восстановление не завершено' : ui.checking;
   else if (unsignedWalletRequest) title = locale === 'ru' ? 'Подтверждение в кошельке не завершено' : ui.checking;
@@ -429,7 +434,7 @@ export function PaidSolanaFlow({ input, onBack, onBusy, onComplete, onAdoptAttem
   else if (op && !order) title = 'Проверяем созданный запрос';
 
   const price = order?.servicePayment.amount ?? offeredPolicy?.serviceLamports;
-  const status = completed ? ui.saved : signing ? ui.signing : paid || finishing || phase === 'saving' && busy ? ui.saving :
+  const status = completed ? ui.saved : signing ? walletSlow ? ui.walletSlow : ui.signing : paid || finishing || phase === 'saving' && busy ? ui.saving :
     pendingPayment || checking || phase === 'checking' && busy ? ui.checking : busy ? ui.preparing : '';
   const primaryText = unavailable ? ui.retry : completionError ? ui.finish : released ? ui.return :
     paid || pendingPayment || recoveryPending || op && !order ? ui.continue :
@@ -462,6 +467,7 @@ export function PaidSolanaFlow({ input, onBack, onBusy, onComplete, onAdoptAttem
       <p>{ui.total(draftTotal && !amountError ? `${formatAmount(draftTotal, 9)} SOL` : '…')}</p>
     </>}
     {status && <p role="status">{status}</p>}
+    {signing && walletSlow && <p role="alert">{ui.walletSlowHint}</p>}
     {paid && !completed && <p>{ui.paidPending}</p>}
     {pendingPayment && !paid && !signing && <p>{ui.uncertain}</p>}
     {op && !order && !released && <p>{ui.orderPending}</p>}
@@ -473,7 +479,7 @@ export function PaidSolanaFlow({ input, onBack, onBusy, onComplete, onAdoptAttem
     {!completed && <button className="btn" type="button"
       disabled={busy || finishing || initializing || !unavailable && !released && !completionError && !canPrepare && !pendingPayment && !paid && !recoveryPending && !(op && !order) || !unavailable && !op && !validDraftAmount}
       onClick={() => void (unavailable ? setRefresh(value => value + 1) : completionError ? finish() : released ? run(async () => { await resolveReleasedPaidOperation(op!.id); onBack(true); }) : pay())}>
-      {busy ? status || 'Продолжаем…' : primaryText}
+      {primaryText}
     </button>}
     {completed && contributionOnly && op?.localCompletion === 'done' && <button className="btn" type="button" disabled={busy || finishing} onClick={anotherContribution}>Сделать ещё один взнос</button>}
     <details><summary>{ui.details}</summary>
@@ -490,13 +496,14 @@ export function PaidSolanaFlow({ input, onBack, onBusy, onComplete, onAdoptAttem
       {signature && order && <p><a href={`https://explorer.solana.com/tx/${signature}${order.network === 'devnet' ? '?cluster=devnet' : ''}`} target="_blank" rel="noopener noreferrer">Транзакция Solana</a></p>}
       {op?.snapshot?.execution?.txId && <p><a href={`https://arweave.net/tx/${op.snapshot.execution.txId}`} target="_blank" rel="noopener noreferrer">Архив Arweave</a></p>}
       {op?.snapshot?.execution?.reason && <p>Диагностика хранения: {op.snapshot.execution.reason}</p>}
-      {op?.snapshot?.verification?.reason && <p>Диагностика оплаты: {op.snapshot.verification.reason}</p>}
+      {op?.snapshot?.verification?.reason && !(signing && !signature) && <p>Диагностика оплаты: {op.snapshot.verification.reason === 'not-found'
+        ? 'Транзакция пока не найдена; это не подтверждает отсутствие оплаты.' : op.snapshot.verification.reason}</p>}
       {envelope && <button className="btn ghost" type="button" onClick={() => downloadEnvelope(envelope)}>Скачать зашифрованную копию</button>}
       {!wallet && !paid && !pendingPayment && !completed && <button className="btn ghost" type="button" disabled={busy} onClick={() => void connect('Solflare')}>Использовать Solflare</button>}
-      {order && !pendingPayment && !paid && !completed && !released && !op?.cancellationRequested && <button className="btn ghost" type="button" disabled={busy} onClick={() => void run(async () => { const next = await cancelPaidOperation(op!.id); remember(next); })}>Отменить неоплаченный запрос</button>}
-      {op && !order && !released && <button className="btn ghost" type="button" disabled={busy} onClick={() => void run(async () => { const next = await cancelPaidCreation(op.id); remember(next); })}>Отменить этот запрос</button>}
-      {op && !completed && !released && <button className="btn ghost" type="button" disabled={busy} onClick={() => void check()}>Проверить статус</button>}
-      {recoverable && <button className="btn ghost" type="button" disabled={busy} onClick={() => void recoverWalletRequest()}>Восстановить подтверждение</button>}
+      {order && !busy && !pendingPayment && !paid && !completed && !released && !op?.cancellationRequested && <button className="btn ghost" type="button" onClick={() => void run(async () => { const next = await cancelPaidOperation(op!.id); remember(next); })}>Отменить неоплаченный запрос</button>}
+      {op && !order && !released && !busy && <button className="btn ghost" type="button" onClick={() => void run(async () => { const next = await cancelPaidCreation(op.id); remember(next); })}>Отменить этот запрос</button>}
+      {op && !busy && !completed && !released && <button className="btn ghost" type="button" onClick={() => void check()}>Проверить статус</button>}
+      {recoverable && !busy && <button className="btn ghost" type="button" onClick={() => void recoverWalletRequest()}>Восстановить подтверждение</button>}
       {completed && contributionOnly && <button className="btn ghost" type="button" onClick={() => void downloadContributionReceipt()}>Скачать квитанцию</button>}
       {completed && op?.snapshot?.execution?.receipt && <button className="btn ghost" type="button" onClick={() => downloadJson(op.snapshot!.execution!.receipt, `sejire-paid-receipt-${op.order!.id}.json`)}>Скачать квитанцию</button>}
     </details>

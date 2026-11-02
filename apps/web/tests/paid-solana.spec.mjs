@@ -10,7 +10,7 @@ const networkState=()=>({ready:true,contributionReady:true,balance:'100000000000
   recoveries:0,recoveryTransitions:{},lostRecovery:false,recoveryFee:'6000',recoveryError:null,recoveryGate:null,
   finish:false,paid:false,phase:'queued',createError:null,lostCreate:false,lostReserve:false,lostSend:false,lostVerify:false,lostCancel:false,
   wrongGenesis:false,wrongOrder:false,feeNull:false,rpcUnavailable:false,height:50,heightCalls:0,expireOnFinalHeight:false,
-  expireTimeOnBalance:false,snapshot:null,archive:null,key:null,unknownSignature:null,dropBeforeAdmission:false,tombstone:false});
+  expireTimeOnBalance:false,staleNotFoundOnPrepare:false,snapshot:null,archive:null,key:null,unknownSignature:null,dropBeforeAdmission:false,tombstone:false});
 
 async function installNetwork(context,state=networkState()){
  await context.addInitScript(()=>localStorage.setItem('sejire.locale','ru'));
@@ -87,6 +87,7 @@ async function installNetwork(context,state=networkState()){
    }
    if(method==='POST'&&path===`/orders/${order.id}/prepare`){
     state.prepares++;state.snapshot.preparation??=await page.evaluate(async s=>(await import('/tests/paid-fixture.ts')).preparation(s),state.snapshot);
+    if(state.staleNotFoundOnPrepare)state.snapshot.verification={status:'requires-reconciliation',reason:'not-found'};
     return json(route,state.snapshot.preparation);
    }
    if(method==='POST'&&path===`/orders/${order.id}/recover`){
@@ -328,6 +329,28 @@ test('unknown wallet outcome remains visible through polling and reload without 
  expect(state.sends).toHaveLength(0);expect(state.creates).toBe(1);
  await page.reload();await resumePaid(page);await expect(panel(page).getByRole('button',{name:'Продолжить сохранение'})).toBeVisible();
  expect(state.sends).toHaveLength(0);expect(state.creates).toBe(1);
+});
+
+test('wallet prompt shows one instruction and hides stale not-found while signing',async({page,context})=>{
+ const state=await installNetwork(context);state.staleNotFoundOnPrepare=true;await openEditor(page);await openPaid(page);
+ await page.clock.install();
+ await page.evaluate(()=>{window.paidWallet.hold=true;});
+ await panel(page).getByRole('button',{name:'Оплатить 0.03 SOL и сохранить'}).evaluate(button=>button.click());
+ await expect.poll(()=>page.evaluate(()=>window.paidWallet.signCount)).toBe(1);
+ await expect(panel(page).getByText('Подтвердите в Phantom',{exact:true})).toHaveCount(1);
+ await expect(panel(page).getByRole('button',{name:'Оплатить 0.03 SOL и сохранить'})).toBeDisabled();
+ await panel(page).getByText('Подробнее',{exact:true}).click();
+ await expect(panel(page)).not.toContainText('Диагностика оплаты: not-found');
+ await expect(panel(page).getByRole('button',{name:/Отменить неоплаченный запрос|Проверить статус|Восстановить подтверждение/})).toHaveCount(0);
+ await page.clock.fastForward(60001);
+ await expect(panel(page).getByRole('status')).toContainText('Ждём ответа Phantom');
+ await expect(panel(page).getByRole('alert')).toContainText('не оплачивайте повторно');
+ expect(state.creates).toBe(1);expect(state.reserves).toBe(0);expect(state.sends).toHaveLength(0);
+ expect(await page.evaluate(()=>window.paidWallet.signCount)).toBe(1);
+ await page.evaluate(()=>{window.paidWallet.hold=false;window.paidWallet.release();});
+ await expect.poll(()=>state.sends.length).toBe(1);
+ expect(state.creates).toBe(1);expect(state.reserves).toBe(1);
+ expect(await page.evaluate(()=>window.paidWallet.signCount)).toBe(1);
 });
 
 test('insufficient balance, null fee and unavailable RPC never ask Phantom to sign',async({page,context})=>{
