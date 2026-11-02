@@ -1,5 +1,11 @@
 # Solana paid preservation: one explicit action
 
+## Follow-up: expired unsigned preparation
+
+The first released one-action flow classified an elapsed `paymentExpiresAt` as `previous_payment_unresolved` in `payPaidOperation`. The panel only entered the existing explicit recovery path for `payment_preparation_expired`, so an unsigned preparation left after a balance/RPC preflight refusal or a Phantom `4001` rejection could stay stuck on the primary button. The corrected client emits `payment_preparation_expired` only after it has checked that no local or server signature, payment, execution, recovery intent or cancellation exists. The panel then asks the server to reconcile and fence the old preparation for the same immutable order. An unresolved signed attempt still cannot request a new signature.
+
+The client also checks the payment window and finalized block height again after journaling `signingStarted`, immediately before `signTransaction`. If this check fails, it clears that intent because the wallet was never called. Once the wallet has actually been called, any returned signature and signed bytes remain journaled even if the preparation expires while Phantom is open. New synthetic browser cases cover the unsigned preflight and `4001` retries, time and block-height expiry before the wallet call, and a known signature that cannot trigger renewal. The original 17 browser cases remain in the suite. TypeScript and syntax checks passed locally; the complete browser/build gate is run in Ubuntu CI because the installed esbuild binary is incompatible with this Catalina machine.
+
 ## Scope and evidence
 
 The production build inspected before this change identified source `9f43026` in `build-provenance.json`. The user-reported order cannot be assigned a precise server state without the original browser journal and authorized backend access. This note contains no personal order identifier or family data. The proposed `2026-10-30-payment-preflight.md` did not exist in the inspected working trees or fetched feature branch.

@@ -408,8 +408,11 @@ export async function payPaidOperation(id: string, preparationId: string, wallet
   return withPaidOperationLock(id, async () => {
     requireActive(isActive);
     let op = await refresh(await requireOperation(id));
-    if (!op.order || !op.preparation || op.preparation.preparationId !== preparationId || op.signingStarted || op.signature || op.recoveryRequestedFor || op.cancellationRequested || op.snapshot?.expired ||
-        paymentExpiresAt(op.order, op.preparation) <= Date.now()) throw Error('previous_payment_unresolved');
+    if (!op.order || !op.preparation || op.preparation.preparationId !== preparationId || op.signingStarted || op.signature || op.signedTransaction ||
+        op.snapshot?.record.pendingSignature || op.snapshot?.record.payment || op.snapshot?.execution || op.recoveryRequestedFor ||
+        op.cancellationRequested || op.snapshot?.expired || op.localCompletion !== 'pending') throw Error('previous_payment_unresolved');
+    // Only a still unsigned preparation may enter explicit, server-fenced renewal.
+    if (paymentExpiresAt(op.order, op.preparation) <= Date.now()) throw Error('payment_preparation_expired');
     await validatePaidOrderPolicy(op.order, op.policy);
     const preparation = await validatePaymentPreparation(op.order, op.preparation);
     if (wallet.publicKey.toString() !== op.order.payer) throw Error('wallet_changed');
@@ -430,9 +433,21 @@ export async function payPaidOperation(id: string, preparationId: string, wallet
     });
     requireActive(isActive);
     op = await writePaidOperation({ ...op, signingStarted: true });
-    if (!isActive()) {
-      await writePaidOperation({ ...op, signingStarted: false }); // The wallet was never invoked.
-      throw Error('checkout_context_changed');
+    // Network reads and the durable journal write can outlive the prepared
+    // blockhash. Reset the local intent only while no wallet was invoked.
+    try {
+      requireActive(isActive);
+      if (paymentExpiresAt(op.order!, preparation) <= Date.now()) throw Error('payment_preparation_expired');
+      await withPublicRpc(op, async call => {
+        const height = await call('getBlockHeight', [{ commitment: 'finalized' }]);
+        if (!Number.isSafeInteger(height)) throw Error('solana_rpc_malformed');
+        if ((height as number) > preparation.lastValidBlockHeight) throw Error('payment_preparation_expired');
+      });
+      requireActive(isActive);
+      if (paymentExpiresAt(op.order!, preparation) <= Date.now()) throw Error('payment_preparation_expired');
+    } catch (error) {
+      await writePaidOperation({ ...op, signingStarted: false });
+      throw error;
     }
     let signed: Transaction;
     try {

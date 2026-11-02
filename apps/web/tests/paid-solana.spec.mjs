@@ -9,7 +9,8 @@ const json=(route,value,status=200)=>route.fulfill({status,contentType:'applicat
 const networkState=()=>({ready:true,contributionReady:true,balance:'1000000000000000',requests:[],denied:[],creates:0,admissions:0,createKeys:[],bodies:[],prepares:0,reserves:0,sends:[],cancels:0,reconciles:0,
   recoveries:0,recoveryTransitions:{},lostRecovery:false,recoveryFee:'6000',recoveryError:null,recoveryGate:null,
   finish:false,paid:false,phase:'queued',createError:null,lostCreate:false,lostReserve:false,lostSend:false,lostVerify:false,lostCancel:false,
-  wrongGenesis:false,wrongOrder:false,feeNull:false,rpcUnavailable:false,height:50,snapshot:null,archive:null,key:null,unknownSignature:null,dropBeforeAdmission:false,tombstone:false});
+  wrongGenesis:false,wrongOrder:false,feeNull:false,rpcUnavailable:false,height:50,heightCalls:0,expireOnFinalHeight:false,
+  expireTimeOnBalance:false,snapshot:null,archive:null,key:null,unknownSignature:null,dropBeforeAdmission:false,tombstone:false});
 
 async function installNetwork(context,state=networkState()){
  await context.addInitScript(()=>localStorage.setItem('sejire.locale','ru'));
@@ -99,6 +100,7 @@ async function installNetwork(context,state=networkState()){
     if(state.recoveryError)return json(route,{error:state.recoveryError},409);
     if(!state.recoveryTransitions[body.preparationId]){
      expect(body.preparationId).toBe(state.snapshot.preparation.preparationId);
+     if(state.height<=state.snapshot.preparation.lastValidBlockHeight)return json(route,{error:'payment_not_expired'},409);
      state.snapshot.preparation=await page.evaluate(async({snapshot,generation,fee})=>(await import('/tests/paid-fixture.ts')).recoveredPreparation(snapshot,generation,fee),
       {snapshot:state.snapshot,generation:Object.keys(state.recoveryTransitions).length+1,fee:state.recoveryFee});
      state.recoveryTransitions[body.preparationId]=state.snapshot.preparation.preparationId;
@@ -138,9 +140,16 @@ async function installNetwork(context,state=networkState()){
    const body=req.postDataJSON();let result;
    if(state.rpcUnavailable)return json(route,{error:'temporarily_unavailable'},503);
    if(body.method==='getGenesisHash')result=state.wrongGenesis?'5eykt4UsFv8P8NJdTREpY1vzqKqZKvdpKuc147dw2N9d':'EtWTRABZaYq6iMfeYKouRu166VU2xqa1wcaWoxPkrZBG';
-   else if(body.method==='getBalance')return route.fulfill({contentType:'application/json',body:`{"jsonrpc":"2.0","id":${JSON.stringify(body.id)},"result":{"value":${state.balance}}}`});
+   else if(body.method==='getBalance'){
+    if(state.expireTimeOnBalance){state.expireTimeOnBalance=false;await page.evaluate(()=>{const now=Date.now;Date.now=()=>now()+360000;});}
+    return route.fulfill({contentType:'application/json',body:`{"jsonrpc":"2.0","id":${JSON.stringify(body.id)},"result":{"value":${state.balance}}}`});
+   }
    else if(body.method==='getFeeForMessage')result={value:state.feeNull?null:Number(state.snapshot?.preparation?.feeLamports??'5000')};
-   else if(body.method==='getBlockHeight')result=state.height;
+   else if(body.method==='getBlockHeight'){
+    state.heightCalls++;
+    if(state.expireOnFinalHeight&&state.heightCalls===2){state.expireOnFinalHeight=false;state.height=101;}
+    result=state.height;
+   }
    else if(body.method==='sendTransaction'){
     expect(state.reserves).toBeGreaterThan(0);
     result=bs58.encode(Buffer.from(body.params[0],'base64').subarray(1,65));
@@ -346,6 +355,67 @@ test('expired unsigned blockhash is renewed for the same order before one wallet
  await panel(page).getByRole('button',{name:'Оплатить 0.03 SOL и сохранить'}).click();
  await expect.poll(()=>state.recoveries).toBe(1);await expect.poll(()=>state.sends.length).toBe(1);
  expect(state.creates).toBe(1);expect(await page.evaluate(()=>window.paidWallet.signCount)).toBe(1);
+});
+
+test('expired unsigned preparation after a preflight refusal renews the same order on the main action',async({page,context})=>{
+ const state=await installNetwork(context);state.balance='100';await openEditor(page);await openPaid(page);
+ await continuePayment(page);await expect(panel(page).getByRole('alert')).toContainText('недостаточно SOL');
+ const before=await saved(page,state.key);expect(before.op.preparation).toBeTruthy();
+ state.balance='1000000000000000';state.height=101;
+ await page.evaluate(()=>{const now=Date.now;Date.now=()=>now()+360000;});
+ await continuePayment(page);
+ await expect.poll(()=>state.sends.length).toBe(1);
+ expect(state.recoveries).toBe(1);expect(state.creates).toBe(1);expect(state.reserves).toBe(1);
+ expect(await page.evaluate(()=>window.paidWallet.signCount)).toBe(1);
+ expect((await saved(page,state.key)).op.id).toBe(before.op.id);
+});
+
+test('expiry after a 4001 refusal permits only an explicit renewal of the original order',async({page,context})=>{
+ const state=await installNetwork(context);await openEditor(page);await openPaid(page);
+ await page.evaluate(()=>{window.paidWallet.reject=true;});
+ await continuePayment(page);await expect(panel(page).getByRole('alert')).toContainText('Кошелёк отклонил подпись');
+ const before=await saved(page,state.key);expect(before.op.signingStarted).toBe(false);
+ state.height=101;
+ await page.evaluate(()=>{window.paidWallet.reject=false;const now=Date.now;Date.now=()=>now()+360000;});
+ await continuePayment(page);await expect.poll(()=>state.sends.length).toBe(1);
+ expect(state.recoveries).toBe(1);expect(state.creates).toBe(1);expect(state.reserves).toBe(1);
+ expect(await page.evaluate(()=>window.paidWallet.signCount)).toBe(2);
+ expect((await saved(page,state.key)).op.id).toBe(before.op.id);
+});
+
+test('expiry during pre-wallet network reads never prompts Phantom for the stale preparation',async({page,context})=>{
+ const state=await installNetwork(context);state.expireTimeOnBalance=true;await openEditor(page);await openPaid(page);
+ await continuePayment(page);
+ await expect(panel(page).getByRole('alert')).toBeVisible();
+ expect(await page.evaluate(()=>window.paidWallet.signCount)).toBe(0);
+ expect(state.creates).toBe(1);expect(state.reserves).toBe(0);expect(state.sends).toHaveLength(0);
+ expect((await saved(page,state.key)).op.signingStarted).toBe(false);
+ state.height=101;
+ await continuePayment(page);await expect.poll(()=>state.sends.length).toBe(1);
+ expect(state.creates).toBe(1);expect(state.recoveries).toBe(1);
+ expect(await page.evaluate(()=>window.paidWallet.signCount)).toBe(1);
+});
+
+test('finalized expiry after journal write prevents a wallet call and renews only through the server',async({page,context})=>{
+ const state=await installNetwork(context);state.expireOnFinalHeight=true;await openEditor(page);await openPaid(page);
+ await continuePayment(page);await expect.poll(()=>state.recoveries).toBe(1);
+ await expect.poll(()=>state.sends.length).toBe(1);
+ expect(state.heightCalls).toBeGreaterThanOrEqual(3);
+ expect(state.creates).toBe(1);expect(state.reserves).toBe(1);
+ expect(await page.evaluate(()=>window.paidWallet.signCount)).toBe(1);
+});
+
+test('a known signature never authorizes renewal or a second wallet request after expiry',async({page,context})=>{
+ const state=await installNetwork(context);state.lostReserve=true;await openEditor(page);await openPaid(page);
+ await continuePayment(page);await expect(panel(page).getByRole('alert')).toBeVisible();
+ const before=await saved(page,state.key);expect(before.op.signature).toBeTruthy();expect(before.op.signedTransaction).toBeTruthy();
+ state.height=101;
+ await page.evaluate(()=>{const now=Date.now;Date.now=()=>now()+360000;});
+ await panel(page).getByRole('button',{name:'Продолжить сохранение'}).click();
+ expect(state.creates).toBe(1);expect(state.recoveries).toBe(0);expect(state.sends).toHaveLength(0);
+ expect(await page.evaluate(()=>window.paidWallet.signCount)).toBe(1);
+ const after=await saved(page,state.key);expect(after.op.signature).toBe(before.op.signature);
+ expect(after.op.signedTransaction).toBe(before.op.signedTransaction);
 });
 
 test('lost create response resumes the original idempotency key, ciphertext and order',async({page,context})=>{
