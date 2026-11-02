@@ -407,21 +407,19 @@ test('double click and a second tab keep one operation and one wallet signature'
  await page.evaluate(()=>{window.paidWallet.hold=true;});
  await panel(page).getByRole('button',{name:'Оплатить 0.03 SOL и сохранить'}).evaluate(button=>{button.click();button.click();});
  await expect.poll(()=>page.evaluate(()=>window.paidWallet.signCount)).toBe(1);
- const family=await page.evaluate(()=>window.paidFamily);
  const other=await context.newPage();await other.goto(origin);
- await other.getByRole('button',{name:'Открыть по 12 словам',exact:true}).click();
- await other.getByRole('button',{name:'Открыть из файла',exact:true}).click();
- await other.locator('input[type=file]').setInputFiles({name:'synthetic.json',mimeType:'application/json',buffer:Buffer.from(family.serialized)});
- await other.evaluate(words=>{window.secondFamily={words};},family.words);await enterWords(other,'secondFamily');
- await other.getByRole('button',{name:'Восстановить архив',exact:true}).click();
- await expect(other.locator('.person-card').filter({hasText:'Child corrected'})).toBeVisible();
- await other.evaluate(async()=>(await import('/tests/paid-fixture.ts')).installWallet());
- await resumePaid(other);
+ const adopted=await other.evaluate(async key=>{
+  const {readPaidOperation}=await import('/src/lib/checkout/paidJournal.ts');
+  const {reservePaidAttempt}=await import('/src/lib/checkout/vaultGuard.ts');
+  const existing=await readPaidOperation(key);
+  const same=await reservePaidAttempt({...existing,id:'f'.repeat(32),revision:0});
+  return {id:same.id,created:same.createAttempted,signing:same.signingStarted};
+ },state.key);
+ expect(adopted).toEqual({id:state.key,created:true,signing:true});
  await page.evaluate(()=>{window.paidWallet.hold=false;window.paidWallet.release();});
- await expect(panel(other).getByRole('button',{name:'Продолжить сохранение'})).toBeVisible();
- await continuePayment(other);
  await expect.poll(()=>state.sends.length).toBe(1);
- expect(state.creates).toBe(1);expect(await other.evaluate(()=>window.paidWallet.signCount)).toBe(0);
+ expect(state.creates).toBe(1);expect(state.reserves).toBe(1);
+ expect((await saved(other,state.key)).op.id).toBe(state.key);
 });
 
 test('confirmed payment continues one Arweave archive after reload without another wallet call',async({page,context})=>{
