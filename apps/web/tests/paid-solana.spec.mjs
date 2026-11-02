@@ -414,8 +414,8 @@ test('double click and a second tab keep one operation and one wallet signature'
  await other.locator('input[type=file]').setInputFiles({name:'synthetic.json',mimeType:'application/json',buffer:Buffer.from(family.serialized)});
  await other.evaluate(words=>{window.secondFamily={words};},family.words);await enterWords(other,'secondFamily');
  await other.getByRole('button',{name:'Восстановить архив',exact:true}).click();
+ await expect(other.locator('.person-card').filter({hasText:'Child corrected'})).toBeVisible();
  await other.evaluate(async()=>(await import('/tests/paid-fixture.ts')).installWallet());
- console.log('SECOND_TAB_SYNTHETIC_SCREEN',await other.evaluate(()=>({hash:location.hash,text:document.body.innerText.slice(0,1000)})));
  await resumePaid(other);
  await page.evaluate(()=>{window.paidWallet.hold=false;window.paidWallet.release();});
  await expect(panel(other).getByRole('button',{name:'Продолжить сохранение'})).toBeVisible();
