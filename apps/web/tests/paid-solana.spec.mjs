@@ -197,8 +197,14 @@ async function openPaid(page){
 }
 async function resumePaid(page){
  const opened=await panel(page).waitFor({state:'visible',timeout:5000}).then(()=>true,()=>false);
- if(!opened)await page.getByRole('button',{name:'Продолжить сохранение',exact:true}).first().click();
+ if(!opened){
+  if(!(await page.getByRole('dialog').isVisible()))await page.getByRole('button',{name:/^(Сохранить|Продолжить сохранение)$/}).first().click();
+  if(!(await panel(page).isVisible()))await page.getByRole('dialog').getByRole('button',{name:'Через Solana',exact:true}).click();
+ }
  await expect(panel(page)).toBeVisible();
+}
+async function continuePayment(page){
+ await panel(page).getByRole('button',{name:/^(Оплатить 0\.03 SOL и сохранить|Продолжить сохранение)$/}).click();
 }
 async function requestPayment(page,{contribution=false,wallet='Phantom'}={}){
  await panel(page).getByRole('button',{name:`Подключить ${wallet}`,exact:true}).click();
@@ -327,7 +333,7 @@ test('lost create response resumes the original idempotency key, ciphertext and 
  const state=await installNetwork(context);state.lostCreate=true;await openEditor(page);await openPaid(page);
  await panel(page).getByRole('button',{name:'Оплатить 0.03 SOL и сохранить'}).click();
  await expect(panel(page).getByRole('alert')).toBeVisible();expect(state.admissions).toBe(1);
- await page.reload();await resumePaid(page);await panel(page).getByRole('button',{name:'Продолжить сохранение'}).click();
+ await page.reload();await page.evaluate(async()=>(await import('/tests/paid-fixture.ts')).installWallet());await resumePaid(page);await continuePayment(page);
  await expect.poll(()=>state.sends.length).toBe(1);
  expect(state.creates).toBe(1);expect(state.admissions).toBe(1);expect(state.bodies[0].serialized).toBe(state.archive);
 });
@@ -412,7 +418,7 @@ test('double click and a second tab keep one operation and one wallet signature'
  await resumePaid(other);
  await page.evaluate(()=>{window.paidWallet.hold=false;window.paidWallet.release();});
  await expect(panel(other).getByRole('button',{name:'Продолжить сохранение'})).toBeVisible();
- await panel(other).getByRole('button',{name:'Продолжить сохранение'}).click();
+ await continuePayment(other);
  await expect.poll(()=>state.sends.length).toBe(1);
  expect(state.creates).toBe(1);expect(await other.evaluate(()=>window.paidWallet.signCount)).toBe(0);
 });
