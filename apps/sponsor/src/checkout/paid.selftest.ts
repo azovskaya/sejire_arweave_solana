@@ -179,6 +179,8 @@ await test('pre-existing transfer-only preparation remains valid and can be rene
   const renewed = await createPaymentPreparation(checked, { blockhash: addr(9), lastValidBlockHeight: 1200,
     feeLamports: '5000', createdAt: modern.createdAt + 1000, previousPreparationId: legacyId,
     expiresAt: modern.createdAt + 60000 });
+  assert.equal(renewed.schema, 'sejire/payment-preparation/v2');
+  if (renewed.schema !== 'sejire/payment-preparation/v2') throw Error('expected renewed preparation');
   assert.equal(renewed.previousPreparationId, legacyId);
   assert.notEqual(renewed.messageBase64, buildLegacyPaidPaymentMessage(checked, renewed.blockhash));
   await validatePaymentPreparation(checked, renewed);
