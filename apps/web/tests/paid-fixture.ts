@@ -1,6 +1,7 @@
 // Local synthetic fixtures only. Product entrypoints never import this file.
 import bs58 from 'bs58';
-import { ComputeBudgetProgram, Keypair, SystemInstruction, SystemProgram, Transaction } from '@solana/web3.js';
+import { ComputeBudgetProgram, Keypair, PublicKey, SystemInstruction, SystemProgram, Transaction, TransactionInstruction } from '@solana/web3.js';
+import { Buffer } from 'buffer';
 import { fixture } from './browser-fixture';
 import { buildLegacyPaidPaymentMessage, createPaidOrderFromPolicy, createPaymentPreparation, paidPolicyHash, paymentMessageBytes, sha256Hex, SOLANA_GENESIS, type ContributionPolicy, type PaidPolicy } from '../../../packages/checkout/paid';
 import { parseAmount } from '../../../packages/checkout/amounts';
@@ -65,7 +66,7 @@ export function transfers(serialized: string) {
 export function installWallet() {
   const key = Keypair.fromSeed(new Uint8Array(32).fill(17));
   const state = { signCount: 0, connects: 0, reject: false, unknown: false, changeMessage: false,
-    changePaymentAccount: false, changePaymentData: false,
+    changePaymentAccount: false, changePaymentData: false, extraSystemTransfer: false, extraMemo: false, removePaymentInstruction: false,
     phantomPriorityFees: false, priorityAtEnd: false, changeBudget: false, feeInjections: 0,
     changeAccountAfterSign: false, account: key.publicKey,
     signature: '', key: '', closedDuringSign: false, hold: false, release: (() => {}) as () => void };
@@ -92,6 +93,12 @@ export function installWallet() {
       if (state.changeBudget) transaction.instructions[1] = ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 1 });
       if (state.changePaymentAccount) transaction.instructions[transaction.instructions.length - 1].keys[1].pubkey = Keypair.fromSeed(new Uint8Array(32).fill(19)).publicKey;
       if (state.changePaymentData) transaction.instructions[transaction.instructions.length - 1].data[4] ^= 1;
+      if (state.extraSystemTransfer) transaction.instructions.push(SystemProgram.transfer({ fromPubkey: key.publicKey,
+        toPubkey: Keypair.fromSeed(new Uint8Array(32).fill(20)).publicKey, lamports: 1 }));
+      if (state.extraMemo) transaction.instructions.push(new TransactionInstruction({
+        programId: new PublicKey('MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr'), keys: [], data: Buffer.from('synthetic'),
+      }));
+      if (state.removePaymentInstruction) transaction.instructions.pop();
       transaction.partialSign(key); state.signature = bs58.encode(transaction.signatures[0].signature!);
       if (state.changeAccountAfterSign) state.account = Keypair.fromSeed(new Uint8Array(32).fill(18)).publicKey;
       if (state.unknown) throw Error('Synthetic unknown wallet response');

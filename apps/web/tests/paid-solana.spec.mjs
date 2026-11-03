@@ -363,6 +363,30 @@ for(const [mutation,code] of [['changePaymentAccount','wallet_payment_account_ch
  });
 }
 
+for(const [mutation,code] of [['extraSystemTransfer','wallet_extra_system_transfer'],['extraMemo','wallet_extra_memo_instruction']]){
+ test(`read-only diagnostic separates ${code} without approving an added instruction`,async({page,context})=>{
+  const state=await installNetwork(context);await openEditor(page);await openPaid(page);
+  await page.evaluate(flag=>{window.paidWallet[flag]=true;},mutation);
+  await panel(page).getByRole('button',{name:'Оплатить 0.03 SOL и сохранить'}).click();
+  await expect(panel(page).getByRole('alert')).toContainText('не совпала с этим заказом');
+  await panel(page).getByText('Подробнее',{exact:true}).click();
+  await expect(panel(page)).toContainText(`Код ответа Phantom: ${code}`);
+  expect(state.creates).toBe(1);expect(state.reserves).toBe(0);expect(state.sends).toHaveLength(0);
+  expect(await page.evaluate(()=>window.paidWallet.signCount)).toBe(1);
+ });
+}
+
+test('read-only diagnostic identifies a missing payment instruction',async({page,context})=>{
+ const state=await installNetwork(context);await openEditor(page);await openPaid(page);
+ await page.evaluate(()=>{window.paidWallet.removePaymentInstruction=true;});
+ await panel(page).getByRole('button',{name:'Оплатить 0.03 SOL и сохранить'}).click();
+ await expect(panel(page).getByRole('alert')).toContainText('не совпала с этим заказом');
+ await panel(page).getByText('Подробнее',{exact:true}).click();
+ await expect(panel(page)).toContainText('Код ответа Phantom: wallet_payment_instruction_missing');
+ expect(state.creates).toBe(1);expect(state.reserves).toBe(0);expect(state.sends).toHaveLength(0);
+ expect(await page.evaluate(()=>window.paidWallet.signCount)).toBe(1);
+});
+
 test('old journal response is not blamed on Phantom after same-order preparation renewal',async({page,context})=>{
  const state=networkState();state.legacyPreparation=true;
  await installNetwork(context,state);await openEditor(page);await openPaid(page);

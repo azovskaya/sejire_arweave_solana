@@ -517,7 +517,32 @@ export function paidWalletResponseCode(op: PaidOperation): string | null {
     const isBudget = (ix: typeof returned.instructions[number]) => ix.programId.toBase58() === budgetProgram;
     const oldPayment = expected.instructions.filter(ix => !isBudget(ix));
     const newPayment = returned.instructions.filter(ix => !isBudget(ix));
-    if (oldPayment.length !== newPayment.length) return 'wallet_payment_instruction_count_changed';
+    if (oldPayment.length !== newPayment.length) {
+      // Identify only public program classes. A changed count never relaxes
+      // the immutable message check or authorizes these bytes for broadcast.
+      if (newPayment.length < oldPayment.length) {
+        const unmatched = [...oldPayment];
+        for (const after of newPayment) {
+          const index = unmatched.findIndex(before => sameInstruction(before, after));
+          if (index < 0) return 'wallet_payment_instruction_count_and_content_changed';
+          unmatched.splice(index, 1);
+        }
+        return 'wallet_payment_instruction_missing';
+      }
+      const remaining = [...newPayment];
+      for (const before of oldPayment) {
+        const index = remaining.findIndex(after => sameInstruction(before, after));
+        if (index < 0) return 'wallet_payment_instruction_count_and_content_changed';
+        remaining.splice(index, 1);
+      }
+      if (remaining.length !== 1) return 'wallet_multiple_extra_instructions';
+      const extra = remaining[0];
+      if (extra.programId.toBase58() === '11111111111111111111111111111111')
+        return extra.data.length === 12 && extra.data.readUInt32LE(0) === 2 ? 'wallet_extra_system_transfer' : 'wallet_extra_system_instruction';
+      if (['MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr', 'Memo1UhkJRfHyvLMcVucJwxXeuD728EqVDDwQDxFMNo'].includes(extra.programId.toBase58()))
+        return 'wallet_extra_memo_instruction';
+      return 'wallet_extra_other_program';
+    }
     for (let i = 0; i < oldPayment.length; i++) {
       const before = oldPayment[i], after = newPayment[i];
       if (!before.programId.equals(after.programId)) return 'wallet_payment_program_changed';
