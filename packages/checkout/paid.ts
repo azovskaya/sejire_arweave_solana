@@ -196,17 +196,26 @@ export function buildPaidPaymentMessage(order: PaidOrder, blockhash: string): st
   if (order.schema !== 'sejire/order/v2') throw new Error('invalid_paid_order');
   assertBase58(blockhash, 32);
   const parts = [order.servicePayment, order.fundContribution].filter(part => part.amount !== '0');
-  const keys = [order.payer, ...parts.map(part => part.recipient), SYSTEM_PROGRAM, order.reference, COMPUTE_BUDGET_PROGRAM];
-  const transferInstructions = parts.map((part, index) => {
+  // web3.js recompiles a Transaction after Phantom fills its signature. Its
+  // account-meta order is signer, writable keys, then readonly keys, each
+  // group sorted by base58 address with this comparator. Match it byte-for-byte.
+  const compare = (a: string, b: string) => a.localeCompare(b, 'en', {
+    localeMatcher: 'best fit', usage: 'sort', sensitivity: 'variant', ignorePunctuation: false,
+    numeric: false, caseFirst: 'lower',
+  });
+  const keys = [order.payer, ...parts.map(part => part.recipient).sort(compare),
+    ...[SYSTEM_PROGRAM, order.reference, COMPUTE_BUDGET_PROGRAM].sort(compare)];
+  const systemIndex = keys.indexOf(SYSTEM_PROGRAM), referenceIndex = keys.indexOf(order.reference), computeIndex = keys.indexOf(COMPUTE_BUDGET_PROGRAM);
+  const transferInstructions = parts.map(part => {
     const bytes = new Uint8Array(12); bytes[0] = 2; let amount = assertUnits(part.amount);
     for (let offset = 4; offset < 12; offset++) { bytes[offset] = Number(amount & 255n); amount >>= 8n; }
-    return { programIdIndex: keys.length - 3, accounts: [0, index + 1, keys.length - 2], data: bytes };
+    return { programIdIndex: systemIndex, accounts: [0, keys.indexOf(part.recipient), referenceIndex], data: bytes };
   });
   return serializeLegacyPaymentMessage({ accountKeys: keys, recentBlockhash: blockhash,
     header: { numRequiredSignatures: 1, numReadonlySignedAccounts: 0, numReadonlyUnsignedAccounts: 3 },
     instructions: [
-      { programIdIndex: keys.length - 1, accounts: [], data: new Uint8Array([2, 64, 13, 3, 0]) }, // 200,000 CU
-      { programIdIndex: keys.length - 1, accounts: [], data: new Uint8Array([3, 0, 0, 0, 0, 0, 0, 0, 0]) }, // 0 priority lamports/CU
+      { programIdIndex: computeIndex, accounts: [], data: new Uint8Array([2, 64, 13, 3, 0]) }, // 200,000 CU
+      { programIdIndex: computeIndex, accounts: [], data: new Uint8Array([3, 0, 0, 0, 0, 0, 0, 0, 0]) }, // 0 priority lamports/CU
       ...transferInstructions,
     ] });
 }

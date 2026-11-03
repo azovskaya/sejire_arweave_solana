@@ -21,7 +21,7 @@ type SdkMessage = { header: { numRequiredSignatures: number; numReadonlySignedAc
   instructions: { programIdIndex: number; accounts: number[]; data: string }[] };
 const sdk = createRequire(new URL('../../../web/package.json', import.meta.url))('@solana/web3.js') as {
   Message: { from(bytes: Uint8Array): SdkMessage };
-  Transaction: { populate(message: SdkMessage): { serializeMessage(): Uint8Array } };
+  Transaction: { populate(message: SdkMessage): { serializeMessage(): Uint8Array; addSignature(key: SdkMessage['accountKeys'][number], signature: Uint8Array): void } };
 };
 let checks = 0;
 async function test(name: string, run: () => unknown | Promise<unknown>) { await run(); checks++; console.log(`PASS paid primitives: ${name}`); }
@@ -154,12 +154,15 @@ await test('independent SDK roundtrip: Phantom-safe compute budget, one signer a
     const message = sdk.Message.from(paymentMessageBytes(prepared.messageBase64));
     assert.deepEqual(message.header, { numRequiredSignatures: 1, numReadonlySignedAccounts: 0, numReadonlyUnsignedAccounts: 3 });
     assert.equal(message.instructions.length, contribution === '0' ? 3 : 4);
-    assert.equal(message.accountKeys.at(-1)?.toBase58(), 'ComputeBudget111111111111111111111111111111');
+    const computeIndex = message.accountKeys.findIndex(key => key.toBase58() === 'ComputeBudget111111111111111111111111111111');
+    assert.notEqual(computeIndex, -1);
     assert.deepEqual(message.instructions.slice(0, 2).map(ix => ix.programIdIndex),
-      [message.accountKeys.length - 1, message.accountKeys.length - 1]);
+      [computeIndex, computeIndex]);
     assert.equal(message.instructions[0].data, encode58(new Uint8Array([2, 64, 13, 3, 0])));
     assert.equal(message.instructions[1].data, encode58(new Uint8Array([3, 0, 0, 0, 0, 0, 0, 0, 0])));
-    assert.deepEqual(Buffer.from(sdk.Transaction.populate(message).serializeMessage()), Buffer.from(paymentMessageBytes(prepared.messageBase64)));
+    const sdkTransaction = sdk.Transaction.populate(message);
+    sdkTransaction.addSignature(message.accountKeys[0], new Uint8Array(64));
+    assert.deepEqual(Buffer.from(sdkTransaction.serializeMessage()), Buffer.from(paymentMessageBytes(prepared.messageBase64)));
     const evidence = decodeTransaction(rawTransaction(prepared), sig(5), { network: checked.network, genesisHash: SOLANA_GENESIS[checked.network] });
     assert.equal(evidence.messageBase64, prepared.messageBase64);
     const payment = await validatePreparedPayment(checked, evidence, { network: checked.network, genesisHash: SOLANA_GENESIS[checked.network] }, prepared);
