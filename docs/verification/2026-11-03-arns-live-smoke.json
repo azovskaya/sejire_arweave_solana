@@ -1,0 +1,110 @@
+{
+  "schema": "sejire/arns-live-smoke/v1",
+  "checkedAt": "2026-11-03T11:52:56.244Z",
+  "fundApi": "https://sejire-sponsor.azovskaya-alissa.workers.dev",
+  "arnsOrigin": "https://sejire.ar.io",
+  "dist": "apps/web/dist",
+  "static": {
+    "relativeAssets": true,
+    "fundUrlChunks": 1,
+    "jsAssets": 13
+  },
+  "probes": [
+    {
+      "path": "/api/fund/balance",
+      "method": "OPTIONS",
+      "origin": "https://sejire.ar.io",
+      "status": 204,
+      "allowOrigin": "https://sejire.ar.io",
+      "allowMethods": "GET, POST, PUT, OPTIONS",
+      "body": null
+    },
+    {
+      "path": "/api/fund/balance",
+      "method": "GET",
+      "origin": "https://sejire.ar.io",
+      "status": 200,
+      "allowOrigin": "https://sejire.ar.io",
+      "allowMethods": "GET, POST, PUT, OPTIONS",
+      "body": {
+        "treasuryAddress": "qgoIFw9WsusMRapWzcFg4jNW08HSWvQkpAKOz86BUuI",
+        "walletBalanceWinston": "68982625018060",
+        "lastBalanceCheck": 1793706770534
+      }
+    },
+    {
+      "path": "/api/checkout/policy",
+      "method": "OPTIONS",
+      "origin": "https://sejire.ar.io",
+      "status": 204,
+      "allowOrigin": "https://sejire.ar.io",
+      "allowMethods": "GET, POST, OPTIONS",
+      "body": null
+    },
+    {
+      "path": "/api/checkout/policy",
+      "method": "GET",
+      "origin": "https://sejire.ar.io",
+      "status": 200,
+      "allowOrigin": "https://sejire.ar.io",
+      "allowMethods": "GET, POST, OPTIONS",
+      "body": {
+        "ready": true,
+        "policy": {
+          "schema": "sejire/checkout-policy/v1",
+          "version": "admin-sol-recipients-1",
+          "network": "mainnet-beta",
+          "genesisHash": "5eykt4UsFv8P8NJdTREpY1vzqKqZKvdpKuc147dw2N9d",
+          "serviceLamports": "30000000",
+          "serviceRecipient": "CStQTX8Mk3oX23sro6rHNRVtia1TQMdtW5epdr9YFPEj",
+          "fundRecipient": "FeCqnd4J5W9yzgCWrSkce5m86AP11ihRAGEV5jtHseYJ",
+          "storage": {
+            "kind": "arweave-direct",
+            "network": "arweave.N.1",
+            "treasuryAddress": "qgoIFw9WsusMRapWzcFg4jNW08HSWvQkpAKOz86BUuI",
+            "budgetId": "paid-mainnet-v1",
+            "maxBytes": 524288,
+            "maxRewardWinston": "10000000000"
+          }
+        },
+        "policyHash": "93b6e67e36499a5e2cd32f533cc9c87cd5a48c9220069a810efeaf9fe2349f15",
+        "contributionReady": true,
+        "contributionPolicy": {
+          "schema": "sejire/contribution-policy/v1",
+          "version": "admin-sol-recipients-1",
+          "network": "mainnet-beta",
+          "genesisHash": "5eykt4UsFv8P8NJdTREpY1vzqKqZKvdpKuc147dw2N9d",
+          "serviceLamports": "0",
+          "serviceRecipient": "CStQTX8Mk3oX23sro6rHNRVtia1TQMdtW5epdr9YFPEj",
+          "fundRecipient": "FeCqnd4J5W9yzgCWrSkce5m86AP11ihRAGEV5jtHseYJ"
+        },
+        "contributionPolicyHash": "e1c20324f1470277d643976f384e9c32698e988aac11ae03999c3f09696ad51d"
+      }
+    },
+    {
+      "path": "/api/fund/balance",
+      "method": "OPTIONS",
+      "origin": "https://evil.example",
+      "status": 403,
+      "allowOrigin": null,
+      "allowMethods": null,
+      "body": {
+        "error": "origin_denied"
+      }
+    },
+    {
+      "path": "/api/fund/balance",
+      "method": "GET",
+      "origin": "https://evil.example",
+      "status": 403,
+      "allowOrigin": null,
+      "allowMethods": null,
+      "body": {
+        "error": "origin_denied"
+      }
+    }
+  ],
+  "failures": [],
+  "ok": true,
+  "note": "Read-only. No Fund order POST, no Arweave upload, no ArNS Target change."
+}
