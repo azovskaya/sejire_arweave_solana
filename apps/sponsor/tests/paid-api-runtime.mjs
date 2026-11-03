@@ -53,7 +53,7 @@ const rpcReply = (options, endpoint) => {
   else if (request.method === 'getLatestBlockhash') result = { context: { slot: 100 }, value: { blockhash: wire.blockhash, lastValidBlockHeight: wire.lastValidBlockHeight } };
   else if (request.method === 'getFeeForMessage') {
     const message = Message.from(Buffer.from(request.params[0], 'base64'));
-    assert.equal(message.header.numRequiredSignatures, 1); assert.equal(message.instructions.length, 1);
+    assert.equal(message.header.numRequiredSignatures, 1); assert.equal(message.instructions.length, 3);
     result = { context: { slot: 100 }, value: 5000 };
   } else if (request.method === 'getBalance') result = { context: { slot: 100 }, value: 1000000000 };
   else if (request.method === 'getBlockHeight') result = wire.blockHeight;
