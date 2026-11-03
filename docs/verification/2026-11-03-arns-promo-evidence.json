@@ -1,0 +1,27 @@
+{
+  "schema": "sejire/arns-promo-cutover-evidence/v1",
+  "date": "2026-11-03",
+  "timezoneNote": "Asia/Calcutta",
+  "sourceRepo": "azovskaya/sejire_arweave_solana",
+  "legacyArnsRepo": "azovskaya/Sejire_arweave",
+  "legacyArnsWriteAccess": false,
+  "fundApi": "https://sejire-sponsor.azovskaya-alissa.workers.dev",
+  "commands": {
+    "arns:build": "PASS",
+    "arns:prepare": "PASS",
+    "test:fund": "PASS",
+    "test:fund-runtime": "PASS",
+    "test:fund-browser": "PASS 25/25",
+    "security:fund": "PASS",
+    "test:permaweb-prepare": "PASS",
+    "test:paid-client": "PASS",
+    "test:permawebHost": "PASS"
+  },
+  "notRun": [
+    "Arweave upload",
+    "ArNS Target ID change",
+    "live promo order POST",
+    "Worker redeploy",
+    "push to azovskaya/Sejire_arweave"
+  ]
+}

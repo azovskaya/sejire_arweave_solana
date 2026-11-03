@@ -1,6 +1,7 @@
 name: Upload SEJIRE SPA to Arweave (manual)
 
 # Never runs on push. Does not change ArNS / Phantom Target ID.
+# Builds the promo-funded ArNS pack (native V2 + VITE_FUND_API_URL), not self-only.
 # Owner: GitHub → Actions → this workflow → Run → confirm = pack-ready
 # Secret: PERMAWEB_JWK = Wander/ArConnect keyfile JSON (treasury, not user 12 words)
 
