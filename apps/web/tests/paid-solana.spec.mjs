@@ -387,6 +387,18 @@ test('read-only diagnostic identifies a missing payment instruction',async({page
  expect(await page.evaluate(()=>window.paidWallet.signCount)).toBe(1);
 });
 
+test('read-only diagnostic reveals only the public program ID of an unmatched instruction',async({page,context})=>{
+ const state=await installNetwork(context);await openEditor(page);await openPaid(page);
+ await page.evaluate(()=>{window.paidWallet.extraOtherProgram=true;});
+ await panel(page).getByRole('button',{name:'Оплатить 0.03 SOL и сохранить'}).click();
+ await expect(panel(page).getByRole('alert')).toContainText('не совпала с этим заказом');
+ await panel(page).getByText('Подробнее',{exact:true}).click();
+ await expect(panel(page)).toContainText('Код ответа Phantom: wallet_extra_other_program');
+ await expect(panel(page)).toContainText('Публичная программа дополнительной инструкции: Stake11111111111111111111111111111111111111');
+ expect(state.creates).toBe(1);expect(state.reserves).toBe(0);expect(state.sends).toHaveLength(0);
+ expect(await page.evaluate(()=>window.paidWallet.signCount)).toBe(1);
+});
+
 test('old journal response is not blamed on Phantom after same-order preparation renewal',async({page,context})=>{
  const state=networkState();state.legacyPreparation=true;
  await installNetwork(context,state);await openEditor(page);await openPaid(page);

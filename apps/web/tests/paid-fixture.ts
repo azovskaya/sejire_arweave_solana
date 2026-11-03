@@ -66,7 +66,7 @@ export function transfers(serialized: string) {
 export function installWallet() {
   const key = Keypair.fromSeed(new Uint8Array(32).fill(17));
   const state = { signCount: 0, connects: 0, reject: false, unknown: false, changeMessage: false,
-    changePaymentAccount: false, changePaymentData: false, extraSystemTransfer: false, extraMemo: false, removePaymentInstruction: false,
+    changePaymentAccount: false, changePaymentData: false, extraSystemTransfer: false, extraMemo: false, extraOtherProgram: false, removePaymentInstruction: false,
     phantomPriorityFees: false, priorityAtEnd: false, changeBudget: false, feeInjections: 0,
     changeAccountAfterSign: false, account: key.publicKey,
     signature: '', key: '', closedDuringSign: false, hold: false, release: (() => {}) as () => void };
@@ -97,6 +97,9 @@ export function installWallet() {
         toPubkey: Keypair.fromSeed(new Uint8Array(32).fill(20)).publicKey, lamports: 1 }));
       if (state.extraMemo) transaction.instructions.push(new TransactionInstruction({
         programId: new PublicKey('MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr'), keys: [], data: Buffer.from('synthetic'),
+      }));
+      if (state.extraOtherProgram) transaction.instructions.push(new TransactionInstruction({
+        programId: new PublicKey('Stake11111111111111111111111111111111111111'), keys: [], data: Buffer.alloc(0),
       }));
       if (state.removePaymentInstruction) transaction.instructions.pop();
       transaction.partialSign(key); state.signature = bs58.encode(transaction.signatures[0].signature!);

@@ -497,6 +497,11 @@ export async function payPaidOperation(id: string, preparationId: string, wallet
 
 /** Local-only classification of a retained wallet response. Never returns the
  * signature, transaction bytes, archive content or wallet object to the UI. */
+type PaidWalletInstruction = Transaction['instructions'][number];
+const samePaidInstruction = (a: PaidWalletInstruction, b: PaidWalletInstruction) =>
+  a.programId.equals(b.programId) && a.data.equals(b.data) && a.keys.length === b.keys.length &&
+  a.keys.every((key, i) => key.pubkey.equals(b.keys[i].pubkey) && key.isSigner === b.keys[i].isSigner && key.isWritable === b.keys[i].isWritable);
+const isBudgetInstruction = (ix: PaidWalletInstruction) => ix.programId.toBase58() === 'ComputeBudget111111111111111111111111111111';
 export function paidWalletResponseCode(op: PaidOperation): string | null {
   const raw = op.walletResponse?.signedTransaction;
   const expectedMessage = op.walletResponse?.preparationMessageBase64 ?? op.preparation?.messageBase64;
@@ -510,20 +515,15 @@ export function paidWalletResponseCode(op: PaidOperation): string | null {
     if (returned.recentBlockhash !== expected.recentBlockhash)
       return op.walletResponse?.preparationMessageBase64 ? 'wallet_blockhash_changed' : 'wallet_blockhash_or_preparation_changed';
     if (returned.feePayer?.toBase58() !== (expected.feePayer?.toBase58() ?? op.order?.payer)) return 'wallet_fee_payer_changed';
-    const sameInstruction = (a: typeof returned.instructions[number], b: typeof expected.instructions[number]) =>
-      a.programId.equals(b.programId) && a.data.equals(b.data) && a.keys.length === b.keys.length &&
-      a.keys.every((key, i) => key.pubkey.equals(b.keys[i].pubkey) && key.isSigner === b.keys[i].isSigner && key.isWritable === b.keys[i].isWritable);
-    const budgetProgram = 'ComputeBudget111111111111111111111111111111';
-    const isBudget = (ix: typeof returned.instructions[number]) => ix.programId.toBase58() === budgetProgram;
-    const oldPayment = expected.instructions.filter(ix => !isBudget(ix));
-    const newPayment = returned.instructions.filter(ix => !isBudget(ix));
+    const oldPayment = expected.instructions.filter(ix => !isBudgetInstruction(ix));
+    const newPayment = returned.instructions.filter(ix => !isBudgetInstruction(ix));
     if (oldPayment.length !== newPayment.length) {
       // Identify only public program classes. A changed count never relaxes
       // the immutable message check or authorizes these bytes for broadcast.
       if (newPayment.length < oldPayment.length) {
         const unmatched = [...oldPayment];
         for (const after of newPayment) {
-          const index = unmatched.findIndex(before => sameInstruction(before, after));
+          const index = unmatched.findIndex(before => samePaidInstruction(before, after));
           if (index < 0) return 'wallet_payment_instruction_count_and_content_changed';
           unmatched.splice(index, 1);
         }
@@ -531,7 +531,7 @@ export function paidWalletResponseCode(op: PaidOperation): string | null {
       }
       const remaining = [...newPayment];
       for (const before of oldPayment) {
-        const index = remaining.findIndex(after => sameInstruction(before, after));
+        const index = remaining.findIndex(after => samePaidInstruction(before, after));
         if (index < 0) return 'wallet_payment_instruction_count_and_content_changed';
         remaining.splice(index, 1);
       }
@@ -552,13 +552,34 @@ export function paidWalletResponseCode(op: PaidOperation): string | null {
         return 'wallet_payment_account_flags_changed';
       if (!before.data.equals(after.data)) return 'wallet_payment_data_changed';
     }
-    const oldBudget = expected.instructions.filter(isBudget);
-    const newBudget = returned.instructions.filter(isBudget);
+    const oldBudget = expected.instructions.filter(isBudgetInstruction);
+    const newBudget = returned.instructions.filter(isBudgetInstruction);
     if (oldBudget.length === 0 && newBudget.length > 0) return 'phantom_added_compute_budget';
-    if (oldBudget.length !== newBudget.length || !oldBudget.every((ix, i) => sameInstruction(ix, newBudget[i])))
+    if (oldBudget.length !== newBudget.length || !oldBudget.every((ix, i) => samePaidInstruction(ix, newBudget[i])))
       return 'wallet_compute_budget_changed';
     return 'wallet_instruction_order_changed';
   } catch { return 'wallet_response_unreadable'; }
+}
+
+/** The Solana program ID of the single additional instruction is public chain
+ * metadata. Only expose it after the diagnostic proves all expected payment
+ * instructions are still present and exactly unchanged. */
+export function paidWalletExtraProgramId(op: PaidOperation): string | null {
+  if (paidWalletResponseCode(op) !== 'wallet_extra_other_program') return null;
+  const raw = op.walletResponse?.signedTransaction;
+  const expectedMessage = op.walletResponse?.preparationMessageBase64 ?? op.preparation?.messageBase64;
+  if (!raw || !expectedMessage) return null;
+  try {
+    const returned = Transaction.from(Buffer.from(raw, 'base64'));
+    const expected = Transaction.populate(Message.from(Buffer.from(expectedMessage, 'base64')));
+    const remaining = returned.instructions.filter(ix => !isBudgetInstruction(ix));
+    for (const before of expected.instructions.filter(ix => !isBudgetInstruction(ix))) {
+      const index = remaining.findIndex(after => samePaidInstruction(before, after));
+      if (index < 0) return null;
+      remaining.splice(index, 1);
+    }
+    return remaining.length === 1 ? remaining[0].programId.toBase58() : null;
+  } catch { return null; }
 }
 
 /** Resume only this ID. It never creates an order or asks a wallet to sign. */
