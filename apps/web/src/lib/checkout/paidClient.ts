@@ -517,8 +517,16 @@ export function paidWalletResponseCode(op: PaidOperation): string | null {
     const isBudget = (ix: typeof returned.instructions[number]) => ix.programId.toBase58() === budgetProgram;
     const oldPayment = expected.instructions.filter(ix => !isBudget(ix));
     const newPayment = returned.instructions.filter(ix => !isBudget(ix));
-    if (oldPayment.length !== newPayment.length || !oldPayment.every((ix, i) => sameInstruction(ix, newPayment[i])))
-      return 'wallet_payment_instructions_changed';
+    if (oldPayment.length !== newPayment.length) return 'wallet_payment_instruction_count_changed';
+    for (let i = 0; i < oldPayment.length; i++) {
+      const before = oldPayment[i], after = newPayment[i];
+      if (!before.programId.equals(after.programId)) return 'wallet_payment_program_changed';
+      if (before.keys.length !== after.keys.length) return 'wallet_payment_account_count_changed';
+      if (before.keys.some((key, index) => !key.pubkey.equals(after.keys[index].pubkey))) return 'wallet_payment_account_changed';
+      if (before.keys.some((key, index) => key.isSigner !== after.keys[index].isSigner || key.isWritable !== after.keys[index].isWritable))
+        return 'wallet_payment_account_flags_changed';
+      if (!before.data.equals(after.data)) return 'wallet_payment_data_changed';
+    }
     const oldBudget = expected.instructions.filter(isBudget);
     const newBudget = returned.instructions.filter(isBudget);
     if (oldBudget.length === 0 && newBudget.length > 0) return 'phantom_added_compute_budget';
