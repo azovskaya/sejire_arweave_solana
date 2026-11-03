@@ -398,6 +398,33 @@ assert.equal(network.reserves, 1);
 assert.equal(network.sends.length, 1);
 assert.equal(walletCalls, 1);
 
+// A returned signature for a different message is retained as local evidence,
+// but is never reserved or sent. Background reconciliation cannot sign again.
+reset(); network = syntheticNetwork(); walletCalls = 0;
+op = await beginPaidOperation(input, signer.publicKey.toBase58(), '0', offered);
+op = await preparePaidOperation(op.id, wallet(network));
+const wrongMessageWallet = wallet(network);
+const signPreparedMessage = wrongMessageWallet.signTransaction;
+wrongMessageWallet.signTransaction = async transaction => {
+  const signed = await signPreparedMessage(transaction) as Transaction;
+  signed.recentBlockhash = address(9);
+  signed.partialSign(signer);
+  return signed;
+};
+await assert.rejects(() => payPaidOperation(op.id, op.preparation!.preparationId, wrongMessageWallet), /wallet_return_mismatch/);
+const mismatched = (await readPaidOperation(op.id))!;
+assert.equal(mismatched.signingStarted, true);
+assert.equal(mismatched.signature, undefined);
+assert.ok(mismatched.walletResponse?.signature);
+assert.ok(mismatched.walletResponse?.signedTransaction);
+assert.equal(network.creates, 1);
+assert.equal(network.reserves, 0);
+assert.equal(network.sends.length, 0);
+await checkPaidOperation(op.id);
+assert.equal(walletCalls, 1);
+assert.equal(network.reserves, 0);
+assert.equal(network.sends.length, 0);
+
 // Unknown wallet outcome has no local signature. Automatic reference checking
 // never creates, renews, asks a wallet to sign, or blindly broadcasts.
 reset(); network = syntheticNetwork(); network.unknownWallet = true; walletCalls = 0;

@@ -458,12 +458,32 @@ export async function payPaidOperation(id: string, preparationId: string, wallet
       if (error && typeof error === 'object' && 'code' in error && error.code === 4001) await writePaidOperation({ ...op, signingStarted: false });
       throw error && typeof error === 'object' && 'code' in error && error.code === 4001 ? error : Error('wallet_result_unknown');
     }
-    // The wallet's selected account may change while its approval dialog is open.
-    // The returned transaction, rather than mutable adapter state, proves which
-    // payer signed the immutable prepared message.
-    if (signed.serializeMessage().toString('base64') !== preparation.messageBase64 ||
-        !signed.verifySignatures() || !signed.signatures[0]?.signature) throw Error('wallet_changed');
-    op = await writePaidOperation({ ...op, signature: bs58.encode(signed.signatures[0].signature), signedTransaction: signed.serialize().toString('base64') });
+    // Preserve every returned signature before checking the message. A wallet
+    // may return a different or malformed transaction; those bytes are local
+    // evidence only and must never be reserved or broadcast for this order.
+    let returned: { signature?: string; signedTransaction?: string } = {};
+    try {
+      const signature = signed.signatures?.[0]?.signature;
+      if (signature?.length === 64) returned.signature = bs58.encode(signature);
+    } catch { /* A malformed wallet response has no usable signature. */ }
+    try {
+      const bytes = signed.serialize({ requireAllSignatures: false, verifySignatures: false });
+      if (bytes.length > 1232) throw Error();
+      returned.signedTransaction = Buffer.from(bytes).toString('base64');
+    } catch {
+      if (returned.signature) await writePaidOperation({ ...op, walletResponse: returned });
+      throw Error('wallet_result_unknown');
+    }
+    let valid = false;
+    try {
+      valid = Buffer.from(signed.serializeMessage()).toString('base64') === preparation.messageBase64 &&
+        signed.signatures.length === 1 && Boolean(returned.signature) && signed.verifySignatures();
+    } catch { /* Keep the returned bytes, but do not submit them. */ }
+    if (!valid) {
+      await writePaidOperation({ ...op, walletResponse: returned });
+      throw Error('wallet_return_mismatch');
+    }
+    op = await writePaidOperation({ ...op, signature: returned.signature, signedTransaction: returned.signedTransaction });
     requireActive(isActive);
     await api(`/orders/${op.order!.id}/reserve`, op.token, { signature: op.signature, preparationId });
     requireActive(isActive);

@@ -63,6 +63,8 @@ export type PaidOperation = {
   signingStarted: boolean;
   signature?: string;
   signedTransaction?: string;
+  /** Wallet-returned bytes that failed binding checks. Never reserve or broadcast. */
+  walletResponse?: { signature?: string; signedTransaction?: string };
   cancellationRequested?: boolean;
   creationCancelled?: boolean;
   localCompletion: 'pending' | 'done' | 'released';

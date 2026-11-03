@@ -28,6 +28,7 @@ function localizedError(error: unknown, locale: PaidLocale): string {
   const en: Record<string, string> = {
     wallet_rejected: 'Phantom declined the signature. No payment was sent; you can retry this order.',
     wallet_result_unknown: 'Phantom did not return a reliable result. We are checking this attempt before any new signature.',
+    wallet_return_mismatch: 'Phantom returned a transaction that did not match this order. The response was saved; check this attempt before approving again.',
     wrong_solana_network: 'The Solana network could not be verified. Payment has not started.',
     insufficient_wallet_balance: 'The wallet does not have enough SOL for the order and network fee.',
     network_fee_not_ready: 'The network fee could not be verified. No signature was requested.',
@@ -37,6 +38,7 @@ function localizedError(error: unknown, locale: PaidLocale): string {
   const kk: Record<string, string> = {
     wallet_rejected: 'Phantom қолтаңбадан бас тартты. Төлем жіберілмеді; осы тапсырысты қайталауға болады.',
     wallet_result_unknown: 'Phantom сенімді нәтиже бермеді. Жаңа қолтаңба сұрамас бұрын осы әрекетті тексереміз.',
+    wallet_return_mismatch: 'Phantom осы тапсырысқа сәйкес келмейтін транзакцияны қайтарды. Жауап сақталды; қайта растаудан бұрын осы әрекетті тексеріңіз.',
     wrong_solana_network: 'Solana желісін тексеру мүмкін болмады. Төлем басталған жоқ.',
     insufficient_wallet_balance: 'Әмиянда тапсырыс пен желі комиссиясына SOL жеткіліксіз.',
     network_fee_not_ready: 'Желі комиссиясын тексеру мүмкін болмады. Қолтаңба сұралмады.',
@@ -87,6 +89,7 @@ function errorMessage(error: unknown): string {
   const known: Record<string, string> = {
     wallet_not_found: 'Кошелёк не найден. Откройте сайт в браузере с Phantom или Solflare.',
     wallet_changed: 'В кошельке выбран другой аккаунт. Продолжить можно с аккаунтом этого заказа.',
+    wallet_return_mismatch: 'Phantom вернул транзакцию, которая не совпала с этим заказом. Ответ сохранён; сначала проверьте прежнюю попытку, не подтверждайте новую оплату.',
     wrong_solana_network: 'Не удалось подтвердить выбранную сеть Solana. Оплата не начинается.',
     network_fee_changed: 'Комиссия сети изменилась. Проверьте условия оплаты ещё раз.',
     network_fee_not_ready: 'Не удалось проверить комиссию сети. Оплата не начинается.',
@@ -271,7 +274,7 @@ export function PaidSolanaFlow({ input, onBack, onBusy, onComplete, onAdoptAttem
   async function connect(name: WalletName) {
     await run(async () => {
       const current = context.current;
-      const next = await connectWallet(name, () => { if (current.active) setSigning(true); });
+      const next = await connectWallet(name, () => { if (current.active) setSigning(true); }, true);
       if (!current.active) return;
       const address = next.publicKey.toString();
       if (latest.current && latest.current.intent.payer !== address) {
@@ -291,21 +294,28 @@ export function PaidSolanaFlow({ input, onBack, onBusy, onComplete, onAdoptAttem
       let operation=latest.current;
       if (operation?.snapshot?.record.states.payment === 'verified' || operation?.signingStarted || operation?.signature || operation?.recoveryRequestedFor) {
         setPhase(operation.snapshot?.record.states.payment === 'verified' ? 'saving' : 'checking');
+        let renewedUncertainWallet = false;
         if (operation.recoveryRequestedFor && !operation.signature) {
           operation = await recoverPaidOperation(operation.id, () => current.active);
+          renewedUncertainWallet = true;
         } else {
           operation = await checkPaidOperation(operation.id, () => current.active);
           if (operation.signingStarted && !operation.signature && !operation.snapshot?.record.pendingSignature &&
               operation.snapshot?.record.states.payment !== 'verified') {
             operation = await recoverPaidOperation(operation.id, () => current.active);
+            renewedUncertainWallet = true;
           }
         }
         if (current.active) remember(operation);
+        // A prior wallet window has an uncertain result. Server recovery may
+        // fence its old preparation, but this click must never also ask Phantom
+        // for another signature. The owner can choose a later explicit action.
+        if (renewedUncertainWallet) return;
         if (operation.snapshot?.record.states.payment === 'verified' || operation.signingStarted || operation.signature || operation.recoveryRequestedFor) return;
       }
       let connected = wallet;
       if (!connected) {
-        connected = await connectWallet('Phantom', () => { if (current.active) setSigning(true); });
+        connected = await connectWallet('Phantom', () => { if (current.active) setSigning(true); }, true);
         if (!current.active) return;
         const address = connected.publicKey.toString();
         if (operation && operation.intent.payer !== address) throw Error('wallet_changed');
@@ -485,6 +495,7 @@ export function PaidSolanaFlow({ input, onBack, onBusy, onComplete, onAdoptAttem
     <details><summary>{ui.details}</summary>
       {diagnostic && <p>Этап: {diagnostic.stage}. Код: {diagnostic.code}.</p>}
       {order && <dl>
+        <dt>Аккаунт заказа</dt><dd style={{ overflowWrap: 'anywhere' }}>{order.payer}</dd>
         {order.kind === 'preservation' && <><dt>Получатель сохранения</dt><dd style={{ overflowWrap: 'anywhere' }}>{order.servicePayment.recipient}</dd></>}
         <dt>Добровольный взнос</dt><dd>{formatAmount(order.fundContribution.amount, 9)} SOL</dd>
         {order.fundContribution.amount !== '0' && <><dt>Получатель взноса</dt><dd style={{ overflowWrap: 'anywhere' }}>{order.fundContribution.recipient}</dd></>}

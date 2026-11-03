@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { connectWallet } from './client';
-import { Keypair } from '@solana/web3.js';
+import { Keypair, Transaction } from '@solana/web3.js';
 import { TurboFactory } from '@ardrive/turbo-sdk/web';
 import { DataItem } from '@dha-team/arbundles/web';
 import { disposableWallet } from './fixture.selftest';
@@ -26,6 +26,19 @@ assert.throws(() => adapter.publicKey.toString(), /wallet_changed/);
 await assert.rejects(() => adapter.signMessage(new Uint8Array([2])), /wallet_changed/);
 assert.equal(messages, 1, 'must refuse to request a signature from a different account');
 await assert.rejects(() => connectWallet('Solflare'), /wallet_not_found/);
+
+// Paid checkout must receive the actual signed result even if Phantom changes
+// its selected account while the approval window is open.
+address = originalAddress;
+const originalSignTransaction = provider.signTransaction;
+provider.signTransaction = async tx => { address = Keypair.generate().publicKey.toString(); return tx; };
+const paidAdapter = await connectWallet('Phantom', undefined, true);
+const returned = new Transaction();
+assert.equal(await paidAdapter.signTransaction(returned), returned);
+assert.throws(() => paidAdapter.publicKey.toString(), /wallet_changed/);
+await assert.rejects(() => paidAdapter.signTransaction(returned), /wallet_changed/);
+provider.signTransaction = originalSignTransaction;
+address = originalAddress;
 
 // Contract tests use cryptographically real signatures, not real browser extensions.
 for (const name of ['Phantom', 'Solflare'] as const) {

@@ -331,6 +331,55 @@ test('unknown wallet outcome remains visible through polling and reload without 
  expect(state.sends).toHaveLength(0);expect(state.creates).toBe(1);
 });
 
+test('recovering an uncertain wallet result never opens another Phantom prompt in the same click',async({page,context})=>{
+ const state=await installNetwork(context);await openEditor(page);await openPaid(page);
+ await page.evaluate(()=>{window.paidWallet.unknown=true;});
+ await continuePayment(page);
+ await expect(panel(page).getByRole('alert')).toContainText('Phantom не вернул надёжный результат');
+ expect(await page.evaluate(()=>window.paidWallet.signCount)).toBe(1);
+ state.height=101;
+ await page.evaluate(()=>{window.paidWallet.unknown=false;const now=Date.now;Date.now=()=>now()+360000;});
+ await panel(page).getByRole('button',{name:'Продолжить сохранение'}).click();
+ await expect.poll(()=>state.recoveries).toBe(1);
+ expect(await page.evaluate(()=>window.paidWallet.signCount)).toBe(1);
+ expect(state.creates).toBe(1);expect(state.reserves).toBe(0);expect(state.sends).toHaveLength(0);
+});
+
+test('wallet return for another message is retained locally and never submitted or signed again by polling',async({page,context})=>{
+ const state=await installNetwork(context);await openEditor(page);await openPaid(page);
+ await page.evaluate(()=>{window.paidWallet.changeMessage=true;});
+ await panel(page).getByRole('button',{name:'Оплатить 0.03 SOL и сохранить'}).click();
+ await expect(panel(page).getByRole('alert')).toContainText('не совпала с этим заказом');
+ const stored=await saved(page,state.key);
+ expect(stored.op.walletResponse?.signature).toBeTruthy();
+ expect(stored.op.walletResponse?.signedTransaction).toBeTruthy();
+ expect(stored.op.signature).toBeUndefined();
+ expect(state.creates).toBe(1);expect(state.reserves).toBe(0);expect(state.sends).toHaveLength(0);
+ expect(await page.evaluate(()=>window.paidWallet.signCount)).toBe(1);
+ await page.waitForTimeout(6500);
+ await expect(panel(page).getByRole('alert')).toContainText('не совпала с этим заказом');
+ await page.reload();await resumePaid(page);
+ expect((await saved(page,state.key)).op.walletResponse?.signature).toBe(stored.op.walletResponse.signature);
+ expect(await page.evaluate(()=>window.paidWallet.signCount)).toBe(0);
+ expect(state.creates).toBe(1);expect(state.reserves).toBe(0);expect(state.sends).toHaveLength(0);
+ state.height=101;
+ await page.evaluate(()=>{const now=Date.now;Date.now=()=>now()+360000;});
+ await panel(page).getByRole('button',{name:'Продолжить сохранение'}).click();
+ await expect.poll(()=>state.recoveries).toBe(1);
+ expect((await saved(page,state.key)).op.walletResponse?.signature).toBe(stored.op.walletResponse.signature);
+ expect(await page.evaluate(()=>window.paidWallet.signCount)).toBe(0);
+});
+
+test('account switch after Phantom signs does not discard the valid order signature',async({page,context})=>{
+ const state=await installNetwork(context);await openEditor(page);await openPaid(page);
+ await page.evaluate(()=>{window.paidWallet.changeAccountAfterSign=true;});
+ await panel(page).getByRole('button',{name:'Оплатить 0.03 SOL и сохранить'}).click();
+ await expect.poll(()=>state.sends.length).toBe(1);
+ expect(state.creates).toBe(1);expect(state.reserves).toBe(1);
+ expect((await saved(page,state.key)).op.signature).toBeTruthy();
+ expect(await page.evaluate(()=>window.paidWallet.signCount)).toBe(1);
+});
+
 test('wallet prompt shows one instruction and hides stale not-found while signing',async({page,context})=>{
  const state=await installNetwork(context);state.staleNotFoundOnPrepare=true;await openEditor(page);await openPaid(page);
  await page.clock.install();

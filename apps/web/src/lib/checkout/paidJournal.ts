@@ -86,6 +86,14 @@ export async function validatePaidOperation(value: unknown): Promise<PaidOperati
         op.localCompletion !== 'pending')) throw Error();
     if (op.signature) { assertBase58(op.signature, 64); if (!op.signingStarted) throw Error(); }
     if (op.signedTransaction && (!op.signature || !op.signingStarted || op.signedTransaction.length > 4096)) throw Error();
+    if (op.walletResponse) {
+      const response = op.walletResponse;
+      if (!response.signature && !response.signedTransaction) throw Error();
+      if (response.signedTransaction !== undefined &&
+          (typeof response.signedTransaction !== 'string' || !response.signedTransaction || response.signedTransaction.length > 4096 ||
+          !/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(response.signedTransaction))) throw Error();
+      if (response.signature !== undefined) assertBase58(response.signature, 64);
+    }
     if (op.cancellationRequested !== undefined && typeof op.cancellationRequested !== 'boolean') throw Error();
     if (op.creationCancelled !== undefined && typeof op.creationCancelled !== 'boolean') throw Error();
     if (op.creationCancelled && (op.order || op.preparation || op.signature || op.signingStarted || op.snapshot)) throw Error();
