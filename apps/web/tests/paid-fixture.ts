@@ -1,8 +1,8 @@
 // Local synthetic fixtures only. Product entrypoints never import this file.
 import bs58 from 'bs58';
-import { Keypair, SystemInstruction, SystemProgram, Transaction } from '@solana/web3.js';
+import { ComputeBudgetProgram, Keypair, SystemInstruction, SystemProgram, Transaction } from '@solana/web3.js';
 import { fixture } from './browser-fixture';
-import { createPaidOrderFromPolicy, createPaymentPreparation, paidPolicyHash, SOLANA_GENESIS, type ContributionPolicy, type PaidPolicy } from '../../../packages/checkout/paid';
+import { buildLegacyPaidPaymentMessage, createPaidOrderFromPolicy, createPaymentPreparation, paidPolicyHash, paymentMessageBytes, sha256Hex, SOLANA_GENESIS, type ContributionPolicy, type PaidPolicy } from '../../../packages/checkout/paid';
 import { parseAmount } from '../../../packages/checkout/amounts';
 import type { PaidArchiveBinding } from '../../../packages/checkout/order';
 import type { PaidSnapshot } from '../src/lib/checkout/paidTypes';
@@ -30,6 +30,12 @@ export async function initialSnapshot(body: { kind?: 'preservation' | 'contribut
     policy, preparation: null, execution: null, verification: null, expired: false, cancelled: false };
 }
 export const preparation = (snapshot: PaidSnapshot) => createPaymentPreparation(snapshot.record.order, { blockhash: address(8), lastValidBlockHeight: 100, feeLamports: '5000', createdAt: Date.now() });
+export async function legacyPreparation(snapshot: PaidSnapshot) {
+  const modern = await preparation(snapshot);
+  const messageBase64 = buildLegacyPaidPaymentMessage(snapshot.record.order, modern.blockhash);
+  const messageSha256 = await sha256Hex(paymentMessageBytes(messageBase64));
+  return { ...modern, preparationId: messageSha256, messageBase64, messageSha256 };
+}
 export function recoveredPreparation(snapshot: PaidSnapshot, generation: number, feeLamports = '6000') {
   if (!snapshot.preparation) throw Error('Synthetic previous preparation missing');
   const createdAt = Date.now();
@@ -59,6 +65,7 @@ export function transfers(serialized: string) {
 export function installWallet() {
   const key = Keypair.fromSeed(new Uint8Array(32).fill(17));
   const state = { signCount: 0, connects: 0, reject: false, unknown: false, changeMessage: false,
+    phantomPriorityFees: false, feeInjections: 0,
     changeAccountAfterSign: false, account: key.publicKey,
     signature: '', key: '', closedDuringSign: false, hold: false, release: (() => {}) as () => void };
   const page = window as unknown as { paidWallet: typeof state; phantom: unknown; solflare: unknown; arweaveWallet: unknown };
@@ -75,6 +82,10 @@ export function installWallet() {
       if (state.reject) throw Object.assign(Error('Synthetic rejection'), { code: 4001 });
       if (state.hold) await new Promise<void>(resolve => { state.release = resolve; });
       if (state.changeMessage) transaction.recentBlockhash = address(12);
+      if (state.phantomPriorityFees && !transaction.instructions.some(ix => ix.programId.equals(ComputeBudgetProgram.programId))) {
+        transaction.instructions.unshift(ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 1 }));
+        state.feeInjections++;
+      }
       transaction.partialSign(key); state.signature = bs58.encode(transaction.signatures[0].signature!);
       if (state.changeAccountAfterSign) state.account = Keypair.fromSeed(new Uint8Array(32).fill(18)).publicKey;
       if (state.unknown) throw Error('Synthetic unknown wallet response');

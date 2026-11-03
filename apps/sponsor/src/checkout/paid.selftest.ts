@@ -4,7 +4,7 @@ import { generateKeyPairSync, sign } from 'node:crypto';
 import { assertOrder, createOrder, createPaidOrder, SYSTEM_PROGRAM, type PaidOrder, type PaidPreservationOrder, type Network } from '../../../../packages/checkout/order';
 import {
   SOLANA_GENESIS, SOLANA_RPCS, validatePaidPolicy, validateContributionPolicy, paidPolicyHash, createPaidOrderFromPolicy, validatePaidOrderPolicy,
-  buildPaidPaymentMessage, createPaymentPreparation, validatePaymentPreparation, validatePaidReceipt,
+  buildPaidPaymentMessage, buildLegacyPaidPaymentMessage, createPaymentPreparation, validatePaymentPreparation, validatePaidReceipt, sha256Hex,
   paymentMessageBytes, paymentExpiresAt, PAYMENT_RECOVERY_WINDOW_MS, verifyPreparedPaymentSignature, type PaidPolicy, type DurablePaymentPreparation,
 } from '../../../../packages/checkout/paid';
 import { validatePayment, validatePreparedPayment } from './paymentValidator';
@@ -113,7 +113,7 @@ await test('standalone contribution has one independently decoded fund transfer,
     assert.equal(contribution.servicePayment.amount,'0');assert.equal(contribution.total,amount);
     assert(!('archive' in contribution));assert(!('storage' in contribution));
     const prepared=await preparation(contribution),message=sdk.Message.from(paymentMessageBytes(prepared.messageBase64));
-    assert.equal(message.instructions.length,1);assert.equal(message.accountKeys[1].toBase58(),help.fundRecipient);
+    assert.equal(message.instructions.length,3);assert.equal(message.accountKeys[1].toBase58(),help.fundRecipient);
     const evidence=decodeTransaction(rawTransaction(prepared),sig(5),chain);
     const payment=await validatePreparedPayment(contribution,evidence,chain,prepared);
     assert.deepEqual(payment.credits.map(({purpose,amount,recipient})=>({purpose,amount,recipient})),
@@ -148,18 +148,37 @@ await test('v2 rejects omitted parent, invalid archive/storage, test recipients 
   assert.throws(() => assertOrder({ ...order, unexpected: true } as never));
   assert.equal(createPaidOrder({ ...order, asset: 'SOL', archive: { ...order.archive, parentTxId: null } }).archive.parentTxId, null);
 });
-await test('independent SDK roundtrip: one signer, exact transfers/reference, no extra program', async () => {
+await test('independent SDK roundtrip: Phantom-safe compute budget, one signer and exact transfers', async () => {
   for (const contribution of ['0', '5000000']) {
     const checked = await orderFor('mainnet-beta', contribution), prepared = await preparation(checked);
     const message = sdk.Message.from(paymentMessageBytes(prepared.messageBase64));
-    assert.deepEqual(message.header, { numRequiredSignatures: 1, numReadonlySignedAccounts: 0, numReadonlyUnsignedAccounts: 2 });
-    assert.equal(message.instructions.length, contribution === '0' ? 1 : 2);
+    assert.deepEqual(message.header, { numRequiredSignatures: 1, numReadonlySignedAccounts: 0, numReadonlyUnsignedAccounts: 3 });
+    assert.equal(message.instructions.length, contribution === '0' ? 3 : 4);
+    assert.equal(message.accountKeys.at(-1)?.toBase58(), 'ComputeBudget111111111111111111111111111111');
+    assert.deepEqual(message.instructions.slice(0, 2).map(ix => ix.programIdIndex),
+      [message.accountKeys.length - 1, message.accountKeys.length - 1]);
+    assert.equal(message.instructions[0].data, encode58(new Uint8Array([2, 64, 13, 3, 0])));
+    assert.equal(message.instructions[1].data, encode58(new Uint8Array([3, 0, 0, 0, 0, 0, 0, 0, 0])));
     assert.deepEqual(Buffer.from(sdk.Transaction.populate(message).serializeMessage()), Buffer.from(paymentMessageBytes(prepared.messageBase64)));
     const evidence = decodeTransaction(rawTransaction(prepared), sig(5), { network: checked.network, genesisHash: SOLANA_GENESIS[checked.network] });
     assert.equal(evidence.messageBase64, prepared.messageBase64);
     const payment = await validatePreparedPayment(checked, evidence, { network: checked.network, genesisHash: SOLANA_GENESIS[checked.network] }, prepared);
     assert.deepEqual(payment.credits.map(credit => credit.amount), contribution === '0' ? ['30000000'] : ['30000000', '5000000']);
   }
+});
+await test('pre-existing transfer-only preparation remains valid and can be renewed with Phantom-safe bytes', async () => {
+  const checked = await orderFor('mainnet-beta');
+  const modern = await preparation(checked);
+  const legacyMessage = buildLegacyPaidPaymentMessage(checked, modern.blockhash);
+  const legacyId = await sha256Hex(paymentMessageBytes(legacyMessage));
+  const legacy = { ...modern, preparationId: legacyId, messageBase64: legacyMessage, messageSha256: legacyId };
+  await validatePaymentPreparation(checked, legacy);
+  const renewed = await createPaymentPreparation(checked, { blockhash: addr(9), lastValidBlockHeight: 1200,
+    feeLamports: '5000', createdAt: modern.createdAt + 1000, previousPreparationId: legacyId,
+    expiresAt: modern.createdAt + 60000 });
+  assert.equal(renewed.previousPreparationId, legacyId);
+  assert.notEqual(renewed.messageBase64, buildLegacyPaidPaymentMessage(checked, renewed.blockhash));
+  await validatePaymentPreparation(checked, renewed);
 });
 await test('preparation binds policy/order/payer/reference/blockhash/bytes/id and window', async () => {
   for (const patch of [{ preparationId: 'd'.repeat(64) }, { orderId: 'd'.repeat(32) }, { policyHash: 'd'.repeat(64) }, { payer: addr(9) },

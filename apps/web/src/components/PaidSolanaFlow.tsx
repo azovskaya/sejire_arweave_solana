@@ -11,7 +11,7 @@ import { finalizeStandalonePaid } from '../lib/checkout/paidFinalize';
 import {
   beginPaidOperation, checkPaidOperation, paidCompletion, payPaidOperation,
   preparePaidOperation, readPaidPolicy, readPaidStatus, PaidApiError, cancelPaidOperation, resolveReleasedPaidOperation, retryPaidCreation, cancelPaidCreation,
-  findContributionAttempt, completeContributionLocally, contributionReceipt, recoverPaidOperation,
+  findContributionAttempt, completeContributionLocally, contributionReceipt, recoverPaidOperation, paidWalletResponseCode,
 } from '../lib/checkout/paidClient';
 import type { PaidCompletion, PaidInput, PaidOperation, PaidPolicyResponse } from '../lib/checkout/paidTypes';
 import { useI18n } from '../lib/i18n/I18nProvider';
@@ -496,6 +496,7 @@ export function PaidSolanaFlow({ input, onBack, onBusy, onComplete, onAdoptAttem
     {completed && contributionOnly && op?.localCompletion === 'done' && <button className="btn" type="button" disabled={busy || finishing} onClick={anotherContribution}>Сделать ещё один взнос</button>}
     <details><summary>{ui.details}</summary>
       {diagnostic && <p>Этап: {diagnostic.stage}. Код: {diagnostic.code}.</p>}
+      {op?.walletResponse && <p>{locale === 'ru' ? 'Код ответа Phantom' : locale === 'kk' ? 'Phantom жауабының коды' : 'Phantom response code'}: {paidWalletResponseCode(op)}.</p>}
       {order && <dl>
         <dt>Аккаунт заказа</dt><dd style={{ overflowWrap: 'anywhere' }}>{order.payer}</dd>
         {order.kind === 'preservation' && <><dt>Получатель сохранения</dt><dd style={{ overflowWrap: 'anywhere' }}>{order.servicePayment.recipient}</dd></>}

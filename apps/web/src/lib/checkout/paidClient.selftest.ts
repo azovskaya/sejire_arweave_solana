@@ -692,7 +692,7 @@ op = await preparePaidOperation(startedHelp.id, wallet(network));
 assert.equal(op.order?.fundContribution.amount, '9007199254740993');
 assert.equal(op.order?.servicePayment.amount, '0');
 assert.equal(op.serialized, null); assert.equal(op.archive, null); assert.equal(op.treeId, null);
-assert.equal(Transaction.populate(Message.from(Buffer.from(op.preparation!.messageBase64, 'base64'))).instructions.length, 1);
+assert.equal(Transaction.populate(Message.from(Buffer.from(op.preparation!.messageBase64, 'base64'))).instructions.length, 3);
 await assert.rejects(() => completeContributionLocally(op.id), /checkout_completion_mismatch/);
 network.balance = '9007199254745992'; // Exactly one lamport below amount + fee, above safe Number.
 await assert.rejects(() => payPaidOperation(op.id, op.preparation!.preparationId, wallet(network)), /insufficient_wallet_balance/);
@@ -799,7 +799,7 @@ op = await preparePaidOperation(op.id, wallet(network));
 op = await payPaidOperation(op.id, op.preparation!.preparationId, wallet(network));
 op = await checkPaidOperation(op.id);
 assert.equal(network.sends.length, 1); assert.equal(walletCalls, 1);
-assert.equal(Transaction.from(Buffer.from(network.sends[0], 'base64')).instructions.length, 2);
+assert.equal(Transaction.from(Buffer.from(network.sends[0], 'base64')).instructions.length, 4);
 assert.equal(op.order?.servicePayment.amount, '30000000'); assert.equal(op.order?.fundContribution.amount, '1');
 assert.ok(await paidCompletion(op)); assert.equal(network.executed, true);
 

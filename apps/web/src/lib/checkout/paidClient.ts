@@ -493,6 +493,28 @@ export async function payPaidOperation(id: string, preparationId: string, wallet
   });
 }
 
+/** Local-only classification of a retained wallet response. Never returns the
+ * signature, transaction bytes, archive content or wallet object to the UI. */
+export function paidWalletResponseCode(op: PaidOperation): string | null {
+  const raw = op.walletResponse?.signedTransaction;
+  if (!raw || !op.preparation) return op.walletResponse ? 'wallet_response_incomplete' : null;
+  try {
+    const returned = Transaction.from(Buffer.from(raw, 'base64'));
+    const expected = Transaction.populate(Message.from(Buffer.from(op.preparation.messageBase64, 'base64')));
+    if (returned.serializeMessage().equals(expected.serializeMessage()))
+      return returned.verifySignatures() ? 'wallet_response_valid' : 'wallet_signature_invalid';
+    const sameInstruction = (a: typeof returned.instructions[number], b: typeof expected.instructions[number]) =>
+      a.programId.equals(b.programId) && a.data.equals(b.data) && a.keys.length === b.keys.length &&
+      a.keys.every((key, i) => key.pubkey.equals(b.keys[i].pubkey) && key.isSigner === b.keys[i].isSigner && key.isWritable === b.keys[i].isWritable);
+    const added = returned.instructions.length - expected.instructions.length;
+    if (added > 0 && returned.recentBlockhash === expected.recentBlockhash &&
+        returned.feePayer?.toBase58() === (expected.feePayer?.toBase58() ?? op.order?.payer) &&
+        returned.instructions.slice(0, added).every(ix => ix.programId.toBase58() === 'ComputeBudget111111111111111111111111111111') &&
+        expected.instructions.every((ix, i) => sameInstruction(ix, returned.instructions[i + added]))) return 'phantom_added_compute_budget';
+    return 'wallet_message_changed';
+  } catch { return 'wallet_response_unreadable'; }
+}
+
 /** Resume only this ID. It never creates an order or asks a wallet to sign. */
 export async function checkPaidOperation(id: string, isActive: ActiveContext = alwaysActive): Promise<PaidOperation> {
   return withPaidOperationLock(id, async () => {

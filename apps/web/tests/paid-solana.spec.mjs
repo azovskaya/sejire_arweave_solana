@@ -9,7 +9,7 @@ const json=(route,value,status=200)=>route.fulfill({status,contentType:'applicat
 const networkState=()=>({ready:true,contributionReady:true,balance:'1000000000000000',requests:[],denied:[],creates:0,admissions:0,createKeys:[],bodies:[],prepares:0,reserves:0,sends:[],cancels:0,reconciles:0,
   recoveries:0,recoveryTransitions:{},lostRecovery:false,recoveryFee:'6000',recoveryError:null,recoveryGate:null,
   finish:false,paid:false,phase:'queued',createError:null,lostCreate:false,lostReserve:false,lostSend:false,lostVerify:false,lostCancel:false,
-  wrongGenesis:false,wrongOrder:false,feeNull:false,rpcUnavailable:false,height:50,heightCalls:0,expireOnFinalHeight:false,
+  wrongGenesis:false,wrongOrder:false,feeNull:false,rpcUnavailable:false,legacyPreparation:false,height:50,heightCalls:0,expireOnFinalHeight:false,
   expireTimeOnBalance:false,staleNotFoundOnPrepare:false,snapshot:null,archive:null,key:null,unknownSignature:null,dropBeforeAdmission:false,tombstone:false});
 
 async function installNetwork(context,state=networkState()){
@@ -86,7 +86,10 @@ async function installNetwork(context,state=networkState()){
     return json(route,await update(page));
    }
    if(method==='POST'&&path===`/orders/${order.id}/prepare`){
-    state.prepares++;state.snapshot.preparation??=await page.evaluate(async s=>(await import('/tests/paid-fixture.ts')).preparation(s),state.snapshot);
+    state.prepares++;state.snapshot.preparation??=await page.evaluate(async({snapshot,legacy})=>{
+      const fixture=await import('/tests/paid-fixture.ts');
+      return legacy?fixture.legacyPreparation(snapshot):fixture.preparation(snapshot);
+    },{snapshot:state.snapshot,legacy:state.legacyPreparation});
     if(state.staleNotFoundOnPrepare)state.snapshot.verification={status:'requires-reconciliation',reason:'not-found'};
     return json(route,state.snapshot.preparation);
    }
@@ -288,6 +291,41 @@ test('one click connects Phantom, signs once, completes one archive and restores
  expect(state.sends).toHaveLength(1);expect(state.creates).toBe(1);
 });
 
+test('Phantom priority fee behavior leaves the prepared payment unchanged',async({page,context})=>{
+ const state=await installNetwork(context);await openEditor(page);await openPaid(page);
+ await page.evaluate(()=>{window.paidWallet.phantomPriorityFees=true;});
+ await panel(page).getByRole('button',{name:'Оплатить 0.03 SOL и сохранить'}).click();
+ await expect.poll(()=>state.sends.length).toBe(1);
+ expect(await page.evaluate(()=>({signs:window.paidWallet.signCount,injections:window.paidWallet.feeInjections})))
+  .toEqual({signs:1,injections:0});
+ expect(state.creates).toBe(1);expect(state.reserves).toBe(1);expect(state.sends).toHaveLength(1);
+});
+
+test('legacy Phantom fee mutation is fenced, then the same order recovers with a stable message',async({page,context})=>{
+ const state=networkState();state.legacyPreparation=true;
+ await installNetwork(context,state);await openEditor(page);await openPaid(page);
+ await page.evaluate(()=>{window.paidWallet.phantomPriorityFees=true;});
+ await panel(page).getByRole('button',{name:'Оплатить 0.03 SOL и сохранить'}).click();
+ await expect(panel(page).getByRole('alert')).toContainText('не совпала с этим заказом');
+ expect(await page.evaluate(()=>({signs:window.paidWallet.signCount,injections:window.paidWallet.feeInjections})))
+  .toEqual({signs:1,injections:1});
+ expect(state.creates).toBe(1);expect(state.reserves).toBe(0);expect(state.sends).toHaveLength(0);
+ const old=await saved(page,state.key);expect(old.op.walletResponse?.signature).toBeTruthy();
+ await panel(page).getByText('Подробнее',{exact:true}).click();
+ await expect(panel(page)).toContainText('Код ответа Phantom: phantom_added_compute_budget');
+ state.height=101;
+ await page.evaluate(()=>{const now=Date.now;Date.now=()=>now()+360000;});
+ await panel(page).getByRole('button',{name:'Продолжить сохранение'}).click();
+ await expect.poll(()=>state.recoveries).toBe(1);
+ expect(await page.evaluate(()=>window.paidWallet.signCount)).toBe(1);
+ await panel(page).getByRole('button',{name:'Оплатить 0.03 SOL и сохранить'}).click();
+ await expect.poll(()=>state.sends.length).toBe(1);
+ expect(await page.evaluate(()=>({signs:window.paidWallet.signCount,injections:window.paidWallet.feeInjections})))
+  .toEqual({signs:2,injections:1});
+ expect(state.creates).toBe(1);expect(state.reserves).toBe(1);expect(state.sends).toHaveLength(1);
+ expect((await saved(page,state.key)).op.walletResponse?.signature).toBe(old.op.walletResponse.signature);
+});
+
 test('main payment labels follow the supported language switch and optional contribution starts at zero',async({page,context})=>{
  const state=await installNetwork(context);await openEditor(page);await openPaid(page);
  await expect(panel(page).getByRole('button',{name:'Оплатить 0.03 SOL и сохранить'})).toBeVisible();
@@ -367,6 +405,8 @@ test('wallet return for another message is retained locally and never submitted 
  const stored=await saved(page,state.key);
  expect(stored.op.walletResponse?.signature).toBeTruthy();
  expect(stored.op.walletResponse?.signedTransaction).toBeTruthy();
+ await panel(page).getByText('Подробнее',{exact:true}).click();
+ await expect(panel(page)).toContainText('Код ответа Phantom: wallet_message_changed');
  expect(stored.op.signature).toBeUndefined();
  expect(state.creates).toBe(1);expect(state.reserves).toBe(0);expect(state.sends).toHaveLength(0);
  expect(await page.evaluate(()=>window.paidWallet.signCount)).toBe(1);

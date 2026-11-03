@@ -173,7 +173,9 @@ export function serializeLegacyPaymentMessage(message: LegacyCompiledMessage): s
   if (out.length > 1232) throw new Error('invalid_payment_message');
   return base64(new Uint8Array(out));
 }
-export function buildPaidPaymentMessage(order: PaidOrder, blockhash: string): string {
+const COMPUTE_BUDGET_PROGRAM = 'ComputeBudget111111111111111111111111111111';
+/** Retained for orders prepared before Phantom-safe compute instructions were added. */
+export function buildLegacyPaidPaymentMessage(order: PaidOrder, blockhash: string): string {
   assertOrder(order);
   if (order.schema !== 'sejire/order/v2') throw new Error('invalid_paid_order');
   assertBase58(blockhash, 32);
@@ -186,6 +188,27 @@ export function buildPaidPaymentMessage(order: PaidOrder, blockhash: string): st
       for (let offset = 4; offset < 12; offset++) { bytes[offset] = Number(amount & 255n); amount >>= 8n; }
       return { programIdIndex: keys.length - 2, accounts: [0, index + 1, keys.length - 1], data: bytes };
     }) });
+}
+/** Fix the compute budget before wallet signing so Phantom cannot rewrite the
+ * immutable message while adding its own priority fee instructions. */
+export function buildPaidPaymentMessage(order: PaidOrder, blockhash: string): string {
+  assertOrder(order);
+  if (order.schema !== 'sejire/order/v2') throw new Error('invalid_paid_order');
+  assertBase58(blockhash, 32);
+  const parts = [order.servicePayment, order.fundContribution].filter(part => part.amount !== '0');
+  const keys = [order.payer, ...parts.map(part => part.recipient), SYSTEM_PROGRAM, order.reference, COMPUTE_BUDGET_PROGRAM];
+  const transferInstructions = parts.map((part, index) => {
+    const bytes = new Uint8Array(12); bytes[0] = 2; let amount = assertUnits(part.amount);
+    for (let offset = 4; offset < 12; offset++) { bytes[offset] = Number(amount & 255n); amount >>= 8n; }
+    return { programIdIndex: keys.length - 3, accounts: [0, index + 1, keys.length - 2], data: bytes };
+  });
+  return serializeLegacyPaymentMessage({ accountKeys: keys, recentBlockhash: blockhash,
+    header: { numRequiredSignatures: 1, numReadonlySignedAccounts: 0, numReadonlyUnsignedAccounts: 3 },
+    instructions: [
+      { programIdIndex: keys.length - 1, accounts: [], data: new Uint8Array([2, 64, 13, 3, 0]) }, // 200,000 CU
+      { programIdIndex: keys.length - 1, accounts: [], data: new Uint8Array([3, 0, 0, 0, 0, 0, 0, 0, 0]) }, // 0 priority lamports/CU
+      ...transferInstructions,
+    ] });
 }
 export async function createPaymentPreparation(order: PaidOrder, input: {
   blockhash: string; lastValidBlockHeight: number; feeLamports: string; createdAt: number;
@@ -215,7 +238,10 @@ export async function validatePaymentPreparation(order: PaidOrder, value: unknow
         typeof value.expiresAt !== 'number' || !Number.isSafeInteger(value.expiresAt) || value.expiresAt <= value.createdAt ||
         value.expiresAt > value.createdAt + PAYMENT_RECOVERY_WINDOW_MS) throw new Error('invalid_payment_preparation');
   } else if (value.createdAt >= order.expiresAt) throw new Error('invalid_payment_preparation');
-  if (buildPaidPaymentMessage(order, value.blockhash) !== value.messageBase64 || await sha256Hex(paymentMessageBytes(value.messageBase64)) !== value.messageSha256) throw new Error('payment_preparation_mismatch');
+  // Existing unpaid/signed preparations keep their original bytes and ID. A
+  // server-fenced renewal uses the current template without rewriting history.
+  if (![buildPaidPaymentMessage(order, value.blockhash), buildLegacyPaidPaymentMessage(order, value.blockhash)].includes(value.messageBase64) ||
+      await sha256Hex(paymentMessageBytes(value.messageBase64)) !== value.messageSha256) throw new Error('payment_preparation_mismatch');
   return Object.freeze({ ...value }) as DurablePaymentPreparation;
 }
 /** Public-key check before reserving a client-supplied signature. No signing or broadcast occurs.
