@@ -294,9 +294,10 @@ export function PaidSolanaFlow({ input, onBack, onBusy, onComplete, onAdoptAttem
       let operation=latest.current;
       if (operation?.snapshot?.record.states.payment === 'verified' || operation?.signingStarted || operation?.signature || operation?.recoveryRequestedFor) {
         setPhase(operation.snapshot?.record.states.payment === 'verified' ? 'saving' : 'checking');
+        const uncertainWalletAtClick = Boolean(operation.signingStarted && !operation.signature);
         let renewedUncertainWallet = false;
         if (operation.recoveryRequestedFor && !operation.signature) {
-          renewedUncertainWallet = operation.signingStarted || Boolean(operation.walletResponse);
+          renewedUncertainWallet = uncertainWalletAtClick;
           operation = await recoverPaidOperation(operation.id, () => current.active);
         } else {
           operation = await checkPaidOperation(operation.id, () => current.active);
@@ -310,7 +311,8 @@ export function PaidSolanaFlow({ input, onBack, onBusy, onComplete, onAdoptAttem
         // A prior wallet window has an uncertain result. Server recovery may
         // fence its old preparation, but this click must never also ask Phantom
         // for another signature. The owner can choose a later explicit action.
-        if (renewedUncertainWallet) return;
+        if (renewedUncertainWallet || uncertainWalletAtClick && !operation.signature &&
+            operation.snapshot?.record.states.payment !== 'verified') return;
         if (operation.snapshot?.record.states.payment === 'verified' || operation.signingStarted || operation.signature || operation.recoveryRequestedFor) return;
       }
       let connected = wallet;

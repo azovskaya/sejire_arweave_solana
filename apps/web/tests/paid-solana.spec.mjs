@@ -345,6 +345,20 @@ test('recovering an uncertain wallet result never opens another Phantom prompt i
  expect(state.creates).toBe(1);expect(state.reserves).toBe(0);expect(state.sends).toHaveLength(0);
 });
 
+test('lost recovery reply cannot turn a follow-up check into another Phantom prompt',async({page,context})=>{
+ const state=await installNetwork(context);await openEditor(page);await openPaid(page);
+ await page.evaluate(()=>{window.paidWallet.unknown=true;});
+ await continuePayment(page);
+ await expect(panel(page).getByRole('alert')).toContainText('Phantom не вернул надёжный результат');
+ state.height=101;state.lostRecovery=true;
+ await page.evaluate(()=>{window.paidWallet.unknown=false;const now=Date.now;Date.now=()=>now()+360000;});
+ await panel(page).getByRole('button',{name:'Продолжить сохранение'}).click();
+ await expect.poll(()=>state.recoveries).toBe(1);
+ await panel(page).getByRole('button',{name:'Продолжить сохранение'}).click();
+ expect(await page.evaluate(()=>window.paidWallet.signCount)).toBe(1);
+ expect(state.creates).toBe(1);expect(state.reserves).toBe(0);expect(state.sends).toHaveLength(0);
+});
+
 test('wallet return for another message is retained locally and never submitted or signed again by polling',async({page,context})=>{
  const state=await installNetwork(context);await openEditor(page);await openPaid(page);
  await page.evaluate(()=>{window.paidWallet.changeMessage=true;});
