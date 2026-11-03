@@ -360,14 +360,14 @@ test('wallet return for another message is retained locally and never submitted 
  await expect(panel(page).getByRole('alert')).toContainText('не совпала с этим заказом');
  await page.reload();await resumePaid(page);
  expect((await saved(page,state.key)).op.walletResponse?.signature).toBe(stored.op.walletResponse.signature);
- expect(await page.evaluate(()=>window.paidWallet.signCount)).toBe(0);
+ expect(await page.evaluate(()=>window.paidWallet?.signCount??0)).toBe(0);
  expect(state.creates).toBe(1);expect(state.reserves).toBe(0);expect(state.sends).toHaveLength(0);
  state.height=101;
  await page.evaluate(()=>{const now=Date.now;Date.now=()=>now()+360000;});
  await panel(page).getByRole('button',{name:'Продолжить сохранение'}).click();
  await expect.poll(()=>state.recoveries).toBe(1);
  expect((await saved(page,state.key)).op.walletResponse?.signature).toBe(stored.op.walletResponse.signature);
- expect(await page.evaluate(()=>window.paidWallet.signCount)).toBe(0);
+ expect(await page.evaluate(()=>window.paidWallet?.signCount??0)).toBe(0);
 });
 
 test('account switch after Phantom signs does not discard the valid order signature',async({page,context})=>{

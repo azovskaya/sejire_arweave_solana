@@ -296,8 +296,8 @@ export function PaidSolanaFlow({ input, onBack, onBusy, onComplete, onAdoptAttem
         setPhase(operation.snapshot?.record.states.payment === 'verified' ? 'saving' : 'checking');
         let renewedUncertainWallet = false;
         if (operation.recoveryRequestedFor && !operation.signature) {
+          renewedUncertainWallet = operation.signingStarted || Boolean(operation.walletResponse);
           operation = await recoverPaidOperation(operation.id, () => current.active);
-          renewedUncertainWallet = true;
         } else {
           operation = await checkPaidOperation(operation.id, () => current.active);
           if (operation.signingStarted && !operation.signature && !operation.snapshot?.record.pendingSignature &&
