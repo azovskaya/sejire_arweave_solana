@@ -374,6 +374,30 @@ assert.equal(getLocalVaultVersion(keys.vaultId, completed.txId)?.parentId, bindi
 assert.equal(getVaultSession()?.headTxId, completed.txId);
 assert.equal(await findPaidAttempt({ vaultId: keys.vaultId }), null);
 
+// A Phantom account switch after approval must not discard a valid signature
+// for the prepared payer. No second wallet request or payment is needed.
+reset(); network = syntheticNetwork(); walletCalls = 0;
+op = await beginPaidOperation(input, signer.publicKey.toBase58(), '0', offered);
+op = await preparePaidOperation(op.id, wallet(network));
+const switchedWallet = wallet(network);
+const signedByOriginalPayer = switchedWallet.signTransaction;
+let selectedAccount = signer.publicKey;
+Object.defineProperty(switchedWallet, 'publicKey', {
+  get: () => selectedAccount,
+});
+switchedWallet.signTransaction = async transaction => {
+  const signed = await signedByOriginalPayer(transaction);
+  selectedAccount = Keypair.generate().publicKey;
+  return signed;
+};
+op = await payPaidOperation(op.id, op.preparation!.preparationId, switchedWallet);
+assert.equal(op.signature, network.signature);
+assert.ok((await readPaidOperation(op.id))?.signedTransaction);
+assert.equal(network.creates, 1);
+assert.equal(network.reserves, 1);
+assert.equal(network.sends.length, 1);
+assert.equal(walletCalls, 1);
+
 // Unknown wallet outcome has no local signature. Automatic reference checking
 // never creates, renews, asks a wallet to sign, or blindly broadcasts.
 reset(); network = syntheticNetwork(); network.unknownWallet = true; walletCalls = 0;

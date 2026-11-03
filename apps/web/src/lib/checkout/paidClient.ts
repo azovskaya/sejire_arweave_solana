@@ -458,7 +458,10 @@ export async function payPaidOperation(id: string, preparationId: string, wallet
       if (error && typeof error === 'object' && 'code' in error && error.code === 4001) await writePaidOperation({ ...op, signingStarted: false });
       throw error && typeof error === 'object' && 'code' in error && error.code === 4001 ? error : Error('wallet_result_unknown');
     }
-    if (wallet.publicKey.toString() !== op.order!.payer || signed.serializeMessage().toString('base64') !== preparation.messageBase64 ||
+    // The wallet's selected account may change while its approval dialog is open.
+    // The returned transaction, rather than mutable adapter state, proves which
+    // payer signed the immutable prepared message.
+    if (signed.serializeMessage().toString('base64') !== preparation.messageBase64 ||
         !signed.verifySignatures() || !signed.signatures[0]?.signature) throw Error('wallet_changed');
     op = await writePaidOperation({ ...op, signature: bs58.encode(signed.signatures[0].signature), signedTransaction: signed.serialize().toString('base64') });
     requireActive(isActive);
