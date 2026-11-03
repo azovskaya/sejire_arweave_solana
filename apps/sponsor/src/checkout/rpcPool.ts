@@ -98,7 +98,8 @@ export async function paidRpcHealth(env: RpcEnv, policy: PaidPolicy): Promise<He
       const signature = object(history[0]).signature;
       const status = object(await call('getSignatureStatuses', [[signature], { searchTransactionHistory: true }]));
       if (!Array.isArray(status.value) || !status.value[0]) throw new RpcEvidenceError('rpc-malformed');
-      const transaction = await call('getTransaction', [signature, { commitment: 'finalized', encoding: 'json', maxSupportedTransactionVersion: 0 }]);
+      // Vote history can contain v1 transactions; this health probe does not decode a payment.
+      const transaction = await call('getTransaction', [signature, { commitment: 'finalized', encoding: 'json', maxSupportedTransactionVersion: 1 }]);
       if (!transaction || !object(transaction).transaction) throw new RpcEvidenceError('rpc-malformed');
       const result = { ready: true, checkedAt: now, methodsChecked };
       healthCache.set(cacheKey, { until: Date.now() + 120000, result });

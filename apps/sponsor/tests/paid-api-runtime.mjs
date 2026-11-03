@@ -67,8 +67,14 @@ const rpcReply = (options, endpoint) => {
     const payment = wire.payments.get(request.params[0][0]);
     result = { context: { slot: 200 }, value: [payment ? { slot: payment.raw.slot, confirmations: null, err: null, confirmationStatus: payment.confirmationStatus ?? 'finalized' }
       : request.params[0][0] === addr(9) ? { slot: 100, confirmations: null, err: null, confirmationStatus: 'finalized' } : null] };
-  } else if (request.method === 'getTransaction') result = wire.payments.get(request.params[0])?.raw ??
-    (request.params[0] === addr(9) ? { transaction: { signatures: [addr(9)] } } : null);
+  } else if (request.method === 'getTransaction') {
+    if (request.params[0] === addr(9)) {
+      assert.equal(request.params[1]?.maxSupportedTransactionVersion, 1,
+        'RPC health must accept v1 vote transactions without widening payment decoding');
+    }
+    result = wire.payments.get(request.params[0])?.raw ??
+      (request.params[0] === addr(9) ? { transaction: { signatures: [addr(9)], version: 1 } } : null);
+  }
   else throw Error(`Unexpected synthetic RPC method: ${request.method}`);
   return { statusCode: 200, data: JSON.stringify({ jsonrpc: '2.0', id: request.id, result }) };
 };
