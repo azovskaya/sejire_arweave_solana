@@ -4,7 +4,9 @@ const manifest=JSON.parse(await readFile(new URL('../apps/web/src/lib/recovery/l
 const fixture=manifest.entries.find(entry=>entry.archiveSha256&&entry.archiveBytes);
 if(!fixture)throw Error('no public encrypted fixture');
 const id=fixture.txIds[0],origin='https://azovskaya.github.io';
-const bases=['https://arweave.net','https://turbo-gateway.com'];
+// The AR.IO peer is an independent digest-checked fallback when arweave.net
+// temporarily cannot serve this known encrypted fixture.
+const bases=['https://arweave.net','https://turbo-gateway.com','https://rigel.weavegate.net'];
 let successes=0;
 for(const base of bases){
   try{
