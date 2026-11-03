@@ -65,7 +65,7 @@ export function transfers(serialized: string) {
 export function installWallet() {
   const key = Keypair.fromSeed(new Uint8Array(32).fill(17));
   const state = { signCount: 0, connects: 0, reject: false, unknown: false, changeMessage: false,
-    phantomPriorityFees: false, feeInjections: 0,
+    phantomPriorityFees: false, priorityAtEnd: false, changeBudget: false, feeInjections: 0,
     changeAccountAfterSign: false, account: key.publicKey,
     signature: '', key: '', closedDuringSign: false, hold: false, release: (() => {}) as () => void };
   const page = window as unknown as { paidWallet: typeof state; phantom: unknown; solflare: unknown; arweaveWallet: unknown };
@@ -83,9 +83,12 @@ export function installWallet() {
       if (state.hold) await new Promise<void>(resolve => { state.release = resolve; });
       if (state.changeMessage) transaction.recentBlockhash = address(12);
       if (state.phantomPriorityFees && !transaction.instructions.some(ix => ix.programId.equals(ComputeBudgetProgram.programId))) {
-        transaction.instructions.unshift(ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 1 }));
+        const feeInstruction = ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 1 });
+        if (state.priorityAtEnd) transaction.instructions.push(feeInstruction);
+        else transaction.instructions.unshift(feeInstruction);
         state.feeInjections++;
       }
+      if (state.changeBudget) transaction.instructions[1] = ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 1 });
       transaction.partialSign(key); state.signature = bs58.encode(transaction.signatures[0].signature!);
       if (state.changeAccountAfterSign) state.account = Keypair.fromSeed(new Uint8Array(32).fill(18)).publicKey;
       if (state.unknown) throw Error('Synthetic unknown wallet response');

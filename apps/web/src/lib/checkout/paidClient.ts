@@ -461,7 +461,9 @@ export async function payPaidOperation(id: string, preparationId: string, wallet
     // Preserve every returned signature before checking the message. A wallet
     // may return a different or malformed transaction; those bytes are local
     // evidence only and must never be reserved or broadcast for this order.
-    let returned: { signature?: string; signedTransaction?: string } = {};
+    let returned: { signature?: string; signedTransaction?: string; preparationMessageBase64?: string } = {
+      preparationMessageBase64: preparation.messageBase64,
+    };
     try {
       const signature = signed.signatures?.[0]?.signature;
       if (signature?.length === 64) returned.signature = bs58.encode(signature);
@@ -497,21 +499,32 @@ export async function payPaidOperation(id: string, preparationId: string, wallet
  * signature, transaction bytes, archive content or wallet object to the UI. */
 export function paidWalletResponseCode(op: PaidOperation): string | null {
   const raw = op.walletResponse?.signedTransaction;
-  if (!raw || !op.preparation) return op.walletResponse ? 'wallet_response_incomplete' : null;
+  const expectedMessage = op.walletResponse?.preparationMessageBase64 ?? op.preparation?.messageBase64;
+  if (!raw || !expectedMessage) return op.walletResponse ? 'wallet_response_incomplete' : null;
   try {
     const returned = Transaction.from(Buffer.from(raw, 'base64'));
-    const expected = Transaction.populate(Message.from(Buffer.from(op.preparation.messageBase64, 'base64')));
+    const expected = Transaction.populate(Message.from(Buffer.from(expectedMessage, 'base64')));
     if (returned.serializeMessage().equals(expected.serializeMessage()))
       return returned.verifySignatures() ? 'wallet_response_valid' : 'wallet_signature_invalid';
+    if (!returned.verifySignatures()) return 'wallet_signature_invalid';
+    if (returned.recentBlockhash !== expected.recentBlockhash)
+      return op.walletResponse?.preparationMessageBase64 ? 'wallet_blockhash_changed' : 'wallet_blockhash_or_preparation_changed';
+    if (returned.feePayer?.toBase58() !== (expected.feePayer?.toBase58() ?? op.order?.payer)) return 'wallet_fee_payer_changed';
     const sameInstruction = (a: typeof returned.instructions[number], b: typeof expected.instructions[number]) =>
       a.programId.equals(b.programId) && a.data.equals(b.data) && a.keys.length === b.keys.length &&
       a.keys.every((key, i) => key.pubkey.equals(b.keys[i].pubkey) && key.isSigner === b.keys[i].isSigner && key.isWritable === b.keys[i].isWritable);
-    const added = returned.instructions.length - expected.instructions.length;
-    if (added > 0 && returned.recentBlockhash === expected.recentBlockhash &&
-        returned.feePayer?.toBase58() === (expected.feePayer?.toBase58() ?? op.order?.payer) &&
-        returned.instructions.slice(0, added).every(ix => ix.programId.toBase58() === 'ComputeBudget111111111111111111111111111111') &&
-        expected.instructions.every((ix, i) => sameInstruction(ix, returned.instructions[i + added]))) return 'phantom_added_compute_budget';
-    return 'wallet_message_changed';
+    const budgetProgram = 'ComputeBudget111111111111111111111111111111';
+    const isBudget = (ix: typeof returned.instructions[number]) => ix.programId.toBase58() === budgetProgram;
+    const oldPayment = expected.instructions.filter(ix => !isBudget(ix));
+    const newPayment = returned.instructions.filter(ix => !isBudget(ix));
+    if (oldPayment.length !== newPayment.length || !oldPayment.every((ix, i) => sameInstruction(ix, newPayment[i])))
+      return 'wallet_payment_instructions_changed';
+    const oldBudget = expected.instructions.filter(isBudget);
+    const newBudget = returned.instructions.filter(isBudget);
+    if (oldBudget.length === 0 && newBudget.length > 0) return 'phantom_added_compute_budget';
+    if (oldBudget.length !== newBudget.length || !oldBudget.every((ix, i) => sameInstruction(ix, newBudget[i])))
+      return 'wallet_compute_budget_changed';
+    return 'wallet_instruction_order_changed';
   } catch { return 'wallet_response_unreadable'; }
 }
 

@@ -318,12 +318,59 @@ test('legacy Phantom fee mutation is fenced, then the same order recovers with a
  await panel(page).getByRole('button',{name:'Продолжить сохранение'}).click();
  await expect.poll(()=>state.recoveries).toBe(1);
  expect(await page.evaluate(()=>window.paidWallet.signCount)).toBe(1);
+ await expect(panel(page)).toContainText('Код ответа Phantom: phantom_added_compute_budget');
  await panel(page).getByRole('button',{name:'Оплатить 0.03 SOL и сохранить'}).click();
  await expect.poll(()=>state.sends.length).toBe(1);
  expect(await page.evaluate(()=>({signs:window.paidWallet.signCount,injections:window.paidWallet.feeInjections})))
   .toEqual({signs:2,injections:1});
  expect(state.creates).toBe(1);expect(state.reserves).toBe(1);expect(state.sends).toHaveLength(1);
  expect((await saved(page,state.key)).op.walletResponse?.signature).toBe(old.op.walletResponse.signature);
+});
+
+test('read-only diagnostic recognizes a priority instruction appended by Phantom',async({page,context})=>{
+ const state=networkState();state.legacyPreparation=true;
+ await installNetwork(context,state);await openEditor(page);await openPaid(page);
+ await page.evaluate(()=>{window.paidWallet.phantomPriorityFees=true;window.paidWallet.priorityAtEnd=true;});
+ await panel(page).getByRole('button',{name:'Оплатить 0.03 SOL и сохранить'}).click();
+ await expect(panel(page).getByRole('alert')).toContainText('не совпала с этим заказом');
+ await panel(page).getByText('Подробнее',{exact:true}).click();
+ await expect(panel(page)).toContainText('Код ответа Phantom: phantom_added_compute_budget');
+ expect(state.creates).toBe(1);expect(state.reserves).toBe(0);expect(state.sends).toHaveLength(0);
+ expect(await page.evaluate(()=>window.paidWallet.signCount)).toBe(1);
+});
+
+test('read-only diagnostic separates changed compute budget from payment instructions',async({page,context})=>{
+ const state=await installNetwork(context);await openEditor(page);await openPaid(page);
+ await page.evaluate(()=>{window.paidWallet.changeBudget=true;});
+ await panel(page).getByRole('button',{name:'Оплатить 0.03 SOL и сохранить'}).click();
+ await expect(panel(page).getByRole('alert')).toContainText('не совпала с этим заказом');
+ await panel(page).getByText('Подробнее',{exact:true}).click();
+ await expect(panel(page)).toContainText('Код ответа Phantom: wallet_compute_budget_changed');
+ expect(state.creates).toBe(1);expect(state.reserves).toBe(0);expect(state.sends).toHaveLength(0);
+ expect(await page.evaluate(()=>window.paidWallet.signCount)).toBe(1);
+});
+
+test('old journal response is not blamed on Phantom after same-order preparation renewal',async({page,context})=>{
+ const state=networkState();state.legacyPreparation=true;
+ await installNetwork(context,state);await openEditor(page);await openPaid(page);
+ await page.evaluate(()=>{window.paidWallet.phantomPriorityFees=true;});
+ await panel(page).getByRole('button',{name:'Оплатить 0.03 SOL и сохранить'}).click();
+ await expect(panel(page).getByRole('alert')).toContainText('не совпала с этим заказом');
+ await page.evaluate(async key=>{
+  const journal=await import('/src/lib/checkout/paidJournal.ts');
+  const op=await journal.readPaidOperation(key);
+  delete op.walletResponse.preparationMessageBase64;
+  await journal.writePaidOperation(op);
+ },state.key);
+ state.height=101;
+ await page.evaluate(()=>{const now=Date.now;Date.now=()=>now()+360000;});
+ await panel(page).getByRole('button',{name:'Продолжить сохранение'}).click();
+ await expect.poll(()=>state.recoveries).toBe(1);
+ await page.reload();await resumePaid(page);
+ await panel(page).getByText('Подробнее',{exact:true}).click();
+ await expect(panel(page)).toContainText('Код ответа Phantom: wallet_blockhash_or_preparation_changed');
+ expect(state.creates).toBe(1);expect(state.reserves).toBe(0);expect(state.sends).toHaveLength(0);
+ expect(await page.evaluate(()=>window.paidWallet?.signCount??0)).toBe(0);
 });
 
 test('main payment labels follow the supported language switch and optional contribution starts at zero',async({page,context})=>{
@@ -406,7 +453,7 @@ test('wallet return for another message is retained locally and never submitted 
  expect(stored.op.walletResponse?.signature).toBeTruthy();
  expect(stored.op.walletResponse?.signedTransaction).toBeTruthy();
  await panel(page).getByText('Подробнее',{exact:true}).click();
- await expect(panel(page)).toContainText('Код ответа Phantom: wallet_message_changed');
+ await expect(panel(page)).toContainText('Код ответа Phantom: wallet_blockhash_changed');
  expect(stored.op.signature).toBeUndefined();
  expect(state.creates).toBe(1);expect(state.reserves).toBe(0);expect(state.sends).toHaveLength(0);
  expect(await page.evaluate(()=>window.paidWallet.signCount)).toBe(1);

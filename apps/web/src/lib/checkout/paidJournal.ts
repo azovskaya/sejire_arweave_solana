@@ -93,6 +93,10 @@ export async function validatePaidOperation(value: unknown): Promise<PaidOperati
           (typeof response.signedTransaction !== 'string' || !response.signedTransaction || response.signedTransaction.length > 4096 ||
           !/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(response.signedTransaction))) throw Error();
       if (response.signature !== undefined) assertBase58(response.signature, 64);
+      if (response.preparationMessageBase64 !== undefined &&
+          (typeof response.preparationMessageBase64 !== 'string' || !response.preparationMessageBase64 ||
+          response.preparationMessageBase64.length > 4096 ||
+          !/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(response.preparationMessageBase64))) throw Error();
     }
     if (op.cancellationRequested !== undefined && typeof op.cancellationRequested !== 'boolean') throw Error();
     if (op.creationCancelled !== undefined && typeof op.creationCancelled !== 'boolean') throw Error();
