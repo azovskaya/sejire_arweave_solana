@@ -451,18 +451,51 @@ try {
     assert.equal(c.paid.work(f.order.id).signed, null);
   });
 
-  await test('a durable reserve, lost reserve acknowledgement, payment, or active runner lease forbids recovery', async () => {
+  await test('signed recovery needs an exact checked signature; payment and active lease still forbid it', async () => {
     let c = await context(); const f = await fixture(); await offer(c, f); await prepare(c, f); await reserve(c, f);
     c = reopen(c); let reads = 0; const inspect = async () => { reads++; return recoveryFor(f); };
     await assert.rejects(recover(c, f, inspect), /previous_payment_unresolved/);
+    assert.equal((await c.orders.get(f.order.id)).pendingSignature,f.signature);
     await c.paid.commit(f.order.id, f.payment, Date.now());
     await assert.rejects(recover(c, f, inspect), /previous_payment_unresolved/);
-    assert.equal(reads, 0); assert.equal(c.count('paid_payment_recoveries'), 0);
+    assert.equal(reads, 1); assert.equal(c.count('paid_payment_recoveries'), 0);
     const g = await fixture(); await offer(c, g); await prepare(c, g);
     assert(await c.paid.claim(g.order.id, 'running-existing-check', Date.now()));
     await assert.rejects(recover(c, g, inspect), /payment_recovery_busy/);
     await assert.rejects(recoverPaidOrder(c.paid, {}, otherOwner, g.order.id, g.preparation.preparationId, { inspect }), /order_not_found/);
-    assert.equal(reads, 0); assert.equal(c.paid.work(g.order.id).preparation.preparationId, g.preparation.preparationId);
+    assert.equal(reads, 1); assert.equal(c.paid.work(g.order.id).preparation.preparationId, g.preparation.preparationId);
+  });
+
+  await test('finalized expired signed attempt is fenced on the same order and cannot credit later',async()=>{
+    let c=await context();const f=await fixture();await offer(c,f);await prepare(c,f);await reserve(c,f);
+    c=reopen(c);
+    const renewal=await recoveryFor(f);
+    await assert.rejects(recover(c,f,async()=>({...renewal,checkedSignature:sig(9)})),/previous_payment_unresolved/);
+    assert.equal(c.paid.snapshot(f.order.id).record.pendingSignature,f.signature);
+    const next=await recover(c,f,async work=>{
+      assert.equal(work.record.pendingSignature,f.signature);
+      return {...renewal,checkedSignature:f.signature};
+    });
+    assert.equal(next.record.pendingSignature,undefined);
+    assert.equal(next.record.states.payment,'awaiting-payment');
+    assert.equal(next.preparation.preparationId,renewal.preparation.preparationId);
+    assert.equal(c.rows('SELECT previous_signature FROM paid_payment_recoveries WHERE order_id=?',f.order.id)[0].previous_signature,f.signature);
+    await assert.rejects(c.paid.commit(f.order.id,f.payment,Date.now()),/payment_not_reserved/);
+    await assert.rejects(reserve(c,f),/payment_not_prepared/);
+    assert.equal(c.count('paid_orders'),1);assert.equal(c.count('credits'),0);
+    assert.deepEqual(await recover(c,f,async()=>{throw Error('unexpected_rpc');}),next);
+  });
+
+  await test('a found reserved signature credits the original payment instead of renewing it',async()=>{
+    const c=await context(),f=await fixture();await offer(c,f);await prepare(c,f);await reserve(c,f);
+    const result=await recover(c,f,async work=>{
+      assert.equal(work.record.pendingSignature,f.signature);
+      return {status:'found',signature:f.signature,evidence:f.evidence,payment:f.payment};
+    });
+    assert.equal(result.record.payment?.signature,f.signature);
+    assert.equal(c.count('paid_payment_recoveries'),0);
+    assert.equal(c.count('credits'),1);
+    assert.equal(c.paid.work(f.order.id).preparation.preparationId,f.preparation.preparationId);
   });
 
   await test('recovery and reserve share an atomic preparation fence in both asynchronous race directions', async () => {

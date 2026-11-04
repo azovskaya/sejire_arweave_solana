@@ -113,8 +113,9 @@ function requestedRecovery(op: PaidOperation, snapshot: PaidSnapshot): boolean {
   return Boolean(next?.schema === 'sejire/payment-preparation/v2' && previous &&
     next.preparationId !== previous.preparationId && next.previousPreparationId === previous.preparationId &&
     op.recoveryRequestedFor === previous.preparationId && op.localCompletion === 'pending' &&
-    !op.signature && !op.signedTransaction && !op.cancellationRequested && !op.creationCancelled &&
-    !op.snapshot?.record.pendingSignature && !op.snapshot?.record.payment && !op.snapshot?.execution &&
+    (!op.signature && !op.signedTransaction || Boolean(op.signature && op.signedTransaction &&
+      op.snapshot?.record.pendingSignature === op.signature)) && !op.cancellationRequested && !op.creationCancelled &&
+    !op.snapshot?.record.payment && !op.snapshot?.execution &&
     !snapshot.record.pendingSignature && !snapshot.record.payment && !snapshot.execution &&
     !snapshot.expired && !snapshot.cancelled);
 }
@@ -194,6 +195,12 @@ async function accept(op: PaidOperation, raw: unknown): Promise<PaidOperation> {
     ...(snapshot.preparation ? { preparation: snapshot.preparation } : {}),
     ...(recovered ? { signingStarted: false } : {}),
     ...(signature ? { signature, signingStarted: true } : {}) };
+  if(recovered && op.signature && op.signedTransaction){
+    const retired=[...(op.retiredSignedAttempts??[]),{preparationId:op.preparation!.preparationId,
+      signature:op.signature,signedTransaction:op.signedTransaction}];
+    if(retired.length>16)throw Error('checkout_journal_full');
+    next.retiredSignedAttempts=retired;delete next.signature;delete next.signedTransaction;next.signingStarted=false;
+  }
   if (recovered || signature) delete next.recoveryRequestedFor;
   return writePaidOperation(next);
 }
@@ -314,6 +321,22 @@ export async function recoverPaidOperation(id: string, isActive: ActiveContext =
     requireActive(isActive);
     return accept(op, await api<PaidSnapshot>(`/orders/${op.order!.id}/recover`, op.token,
       { preparationId: op.recoveryRequestedFor }));
+  });
+}
+
+/** An explicit click may ask the server to fence an expired signed attempt.
+ * No wallet call or new order occurs; the signed bytes remain in the journal. */
+export async function recoverSignedPaidOperation(id:string,isActive:ActiveContext=alwaysActive):Promise<PaidOperation>{
+  return withPaidOperationLock(id,async()=>{
+    requireActive(isActive);
+    let op=await requireOperation(id);
+    if(!op.order||!op.preparation||!op.signature||!op.signedTransaction||op.snapshot?.record.payment||
+        op.snapshot?.execution||op.localCompletion!=='pending')throw Error('previous_payment_unresolved');
+    const orderId=op.order.id;
+    if(!op.recoveryRequestedFor)op=await writePaidOperation({...op,recoveryRequestedFor:op.preparation.preparationId});
+    requireActive(isActive);
+    return accept(op,await api<PaidSnapshot>(`/orders/${orderId}/recover`,op.token,
+      {preparationId:op.recoveryRequestedFor}));
   });
 }
 
@@ -591,7 +614,7 @@ export async function checkPaidOperation(id: string, isActive: ActiveContext = a
     if (!op.order || op.localCompletion !== 'pending' || op.snapshot?.expired) return op;
     // The explicit renewal owns the next server transition. Poll with GET only
     // while its result is uncertain, so reconciliation cannot take its lease.
-    if (op.recoveryRequestedFor && !op.signature) return op;
+    if (op.recoveryRequestedFor) return op;
     if (op.signedTransaction && op.snapshot?.record.states.payment !== 'verified') await validateSignedTransaction(op);
     if ((op.signingStarted || op.signature) && op.snapshot?.record.states.payment !== 'verified') {
       // A lost reserve response is retried with the same signature/preparation;

@@ -3,7 +3,7 @@ import { createPaidOrder, SYSTEM_PROGRAM, type Network, type PaidOrder } from '.
 import { buildPaidPaymentMessage, validatePaymentPreparation, SOLANA_GENESIS, SOLANA_RPCS, type DurablePaymentPreparation, type PaidPolicy } from '../../../../packages/checkout/paid';
 import { rpcU64 } from '../../../../packages/checkout/rpcJson';
 import { RpcPaymentPreparer } from './paymentPreparation';
-import type { TransactionEvidence, ChainPolicy } from './paymentValidator';
+import { validatePreparedPayment, type TransactionEvidence, type ChainPolicy } from './paymentValidator';
 import type { ReferencePaymentResult, TrustedTransactionReader } from './reconciliation';
 import { RpcEvidenceError, type RpcFailure } from './rpcErrors';
 import { SolanaRpcReader } from './rpcReader';
@@ -133,11 +133,11 @@ export async function preparePaidWithRpc(env: RpcEnv, order: PaidOrder): Promise
 }
 
 export type PaymentRecoveryInspection = Extract<ReferencePaymentResult, { status: 'found' }> |
-  { status: 'renew'; preparation: DurablePaymentPreparation; finalizedBlockHeight: number };
+  { status: 'renew'; preparation: DurablePaymentPreparation; finalizedBlockHeight: number; checkedSignature?: string };
 /** One complete read-only observation before an explicit, atomic reserve fence.
  * This is NOT a cryptographic proof of absence. The ledger's no-reserve CAS is
  * what prevents audited V2 clients from broadcasting superseded signed bytes. */
-export async function inspectPaymentRecoveryWithRpc(env: RpcEnv, order: PaidOrder, previous: DurablePaymentPreparation): Promise<PaymentRecoveryInspection> {
+export async function inspectPaymentRecoveryWithRpc(env: RpcEnv, order: PaidOrder, previous: DurablePaymentPreparation, pendingSignature?: string): Promise<PaymentRecoveryInspection> {
   await validatePaymentPreparation(order, previous);
   const deadline = Date.now() + 22000;
   let last: RpcEvidenceError | null = null;
@@ -147,6 +147,16 @@ export async function inspectPaymentRecoveryWithRpc(env: RpcEnv, order: PaidOrde
       if (await source.rpc('getGenesisHash', [], deadline) !== SOLANA_GENESIS[order.network]) throw new RpcEvidenceError('wrong-network');
       const height = await source.rpc('getBlockHeight', [{ commitment: 'finalized' }], deadline);
       if (typeof height !== 'number' || !Number.isSafeInteger(height) || height < 0) throw new RpcEvidenceError('rpc-malformed');
+      if(pendingSignature){
+        const statuses=await source.rpc('getSignatureStatuses',[[pendingSignature],{searchTransactionHistory:true}],deadline) as {value?: unknown};
+        if(!statuses||!Array.isArray(statuses.value)||statuses.value.length!==1)throw new RpcEvidenceError('rpc-malformed');
+        if(statuses.value[0]!==null){
+          const evidence=await source.read(pendingSignature,deadline);
+          if(!evidence)throw Error('payment_recovery_unavailable');
+          const payment=await validatePreparedPayment(order,evidence,source.chain,previous);
+          return {status:'found',signature:pendingSignature,evidence,payment};
+        }
+      }
       const result = await source.findByReference(order, previous, deadline);
       if (result.status === 'found') return result;
       if (result.reason !== 'not-found') {
@@ -156,7 +166,8 @@ export async function inspectPaymentRecoveryWithRpc(env: RpcEnv, order: PaidOrde
       if (height <= previous.lastValidBlockHeight) throw Error('payment_not_expired');
       const preparation = await new RpcPaymentPreparer(source).preparePaid(order, deadline, previous);
       if (preparation.lastValidBlockHeight <= height) throw Error('payment_recovery_unavailable');
-      return { status: 'renew', preparation, finalizedBlockHeight: height };
+      return { status: 'renew', preparation, finalizedBlockHeight: height,
+        ...(pendingSignature?{checkedSignature:pendingSignature}:{}) };
     } catch (error) {
       if (!isUnavailable(error)) throw error;
       pause(url, error); last = error;

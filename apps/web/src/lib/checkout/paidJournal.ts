@@ -82,10 +82,18 @@ export async function validatePaidOperation(value: unknown): Promise<PaidOperati
     }
     if (op.recoveryRequestedFor !== undefined && (typeof op.recoveryRequestedFor !== 'string' ||
         !HASH.test(op.recoveryRequestedFor) || op.recoveryRequestedFor !== op.preparation?.preparationId ||
-        !op.order || op.signature || op.signedTransaction || op.cancellationRequested || op.creationCancelled ||
+        !op.order || (op.signature && !op.signedTransaction) || op.cancellationRequested || op.creationCancelled ||
         op.localCompletion !== 'pending')) throw Error();
     if (op.signature) { assertBase58(op.signature, 64); if (!op.signingStarted) throw Error(); }
     if (op.signedTransaction && (!op.signature || !op.signingStarted || op.signedTransaction.length > 4096)) throw Error();
+    if(op.retiredSignedAttempts !== undefined){
+      if(!Array.isArray(op.retiredSignedAttempts)||op.retiredSignedAttempts.length>16)throw Error();
+      for(const old of op.retiredSignedAttempts){
+        if(!HASH.test(old.preparationId)||typeof old.signedTransaction!=='string'||!old.signedTransaction||old.signedTransaction.length>4096||
+            !/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(old.signedTransaction))throw Error();
+        assertBase58(old.signature,64);
+      }
+    }
     if (op.walletResponse) {
       const response = op.walletResponse;
       if (!response.signature && !response.signedTransaction) throw Error();

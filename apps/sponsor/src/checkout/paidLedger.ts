@@ -32,9 +32,11 @@ export class PaidLedger {
         payload TEXT NOT NULL,PRIMARY KEY(order_id,kind));
       CREATE TABLE IF NOT EXISTS paid_payment_recoveries(order_id TEXT NOT NULL REFERENCES paid_orders(order_id),
         previous_preparation_id TEXT NOT NULL,previous_preparation_json TEXT NOT NULL,preparation_json TEXT NOT NULL,
-        finalized_block_height INTEGER NOT NULL,recovered_at INTEGER NOT NULL,PRIMARY KEY(order_id,previous_preparation_id));`);
+        finalized_block_height INTEGER NOT NULL,recovered_at INTEGER NOT NULL,previous_signature TEXT,PRIMARY KEY(order_id,previous_preparation_id));`);
       if(!this.sql.exec<{name:string}>('PRAGMA table_info(paid_orders)').toArray().some(c=>c.name==='submission_ack'))
         this.sql.exec('ALTER TABLE paid_orders ADD COLUMN submission_ack INTEGER NOT NULL DEFAULT 0');
+      if(!this.sql.exec<{name:string}>('PRAGMA table_info(paid_payment_recoveries)').toArray().some(c=>c.name==='previous_signature'))
+        this.sql.exec('ALTER TABLE paid_payment_recoveries ADD COLUMN previous_signature TEXT');
     });
     this.treasury=new TreasuryGuard(storage);
   }
@@ -152,7 +154,7 @@ export class PaidLedger {
       }
       if(!current||current.preparationId!==preparationId)throw Error('preparation_changed');
       if(row.released)throw Error('order_expired');
-      if(record.pendingSignature||record.payment||row.paid||this.payload(id,'signed'))throw Error('previous_payment_unresolved');
+      if(record.payment||row.paid||this.payload(id,'signed'))throw Error('previous_payment_unresolved');
       if(row.lease_until>now)throw Error('payment_recovery_busy');
       this.sql.exec('UPDATE paid_orders SET lease=?,lease_until=? WHERE order_id=?',lease,now+120000,id);
       return false;
@@ -160,7 +162,7 @@ export class PaidLedger {
     await this.storage.sync();
     return reused?{reused:true,work:null}:{reused:false,work:this.work(id)};
   }
-  async finishPaymentRecovery(id:string,lease:string,previousPreparationId:string,candidate:DurablePaymentPreparation,finalizedBlockHeight:number,now:number){
+  async finishPaymentRecovery(id:string,lease:string,previousPreparationId:string,candidate:DurablePaymentPreparation,finalizedBlockHeight:number,now:number,checkedSignature?:string){
     const record=this.record(id);
     await validatePaymentPreparation(record.order,candidate);
     if(candidate.schema!=='sejire/payment-preparation/v2'||candidate.previousPreparationId!==previousPreparationId||
@@ -168,15 +170,21 @@ export class PaidLedger {
     this.storage.transactionSync(()=>{
       const row=this.leased(id,lease),current=this.record(id),previous=json<DurablePaymentPreparation>(row.preparation_json);
       if(row.lease_until<=now)throw Error('payment_recovery_busy');
-      if(row.released||current.pendingSignature||current.payment||row.paid||this.payload(id,'signed'))throw Error('previous_payment_unresolved');
+      if(row.released||current.payment||row.paid||this.payload(id,'signed')||
+          current.pendingSignature!==checkedSignature)throw Error('previous_payment_unresolved');
       if(!previous||previous.preparationId!==previousPreparationId)throw Error('preparation_changed');
       if(!Number.isSafeInteger(finalizedBlockHeight)||finalizedBlockHeight<=previous.lastValidBlockHeight)throw Error('payment_not_expired');
       if(candidate.lastValidBlockHeight<=finalizedBlockHeight)throw Error('payment_recovery_unavailable');
       if(candidate.createdAt<previous.createdAt)throw Error('invalid_payment_preparation');
       // This transaction and reserveInternal's preparation check share SQLite's
       // writer: either a durable reservation wins, or all late old reserves fail.
-      this.sql.exec('INSERT INTO paid_payment_recoveries(order_id,previous_preparation_id,previous_preparation_json,preparation_json,finalized_block_height,recovered_at) VALUES(?,?,?,?,?,?)',
-        id,previousPreparationId,JSON.stringify(previous),JSON.stringify(candidate),finalizedBlockHeight,now);
+      this.sql.exec('INSERT INTO paid_payment_recoveries(order_id,previous_preparation_id,previous_preparation_json,preparation_json,finalized_block_height,recovered_at,previous_signature) VALUES(?,?,?,?,?,?,?)',
+        id,previousPreparationId,JSON.stringify(previous),JSON.stringify(candidate),finalizedBlockHeight,now,checkedSignature??null);
+      if(checkedSignature){
+        const states={payment:'awaiting-payment',preservation:current.order.kind==='preservation'?'awaiting-payment':'not-applicable',
+          contribution:current.order.fundContribution.amount==='0'?'not-requested':'awaiting-payment'};
+        this.sql.exec('UPDATE orders SET pending_signature=NULL,states_json=? WHERE id=? AND pending_signature=?',JSON.stringify(states),id,checkedSignature);
+      }
       this.sql.exec('UPDATE paid_orders SET preparation_json=?,status=?,next_at=?,attempts=0,last_error=NULL,lease=NULL,lease_until=0 WHERE order_id=?',
         JSON.stringify(candidate),'pending-payment',now+15000,id);
     });

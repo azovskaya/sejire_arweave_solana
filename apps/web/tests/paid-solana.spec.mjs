@@ -10,7 +10,7 @@ const networkState=()=>({ready:true,contributionReady:true,balance:'100000000000
   recoveries:0,recoveryTransitions:{},lostRecovery:false,recoveryFee:'6000',recoveryError:null,recoveryGate:null,
   finish:false,paid:false,phase:'queued',createError:null,lostCreate:false,lostReserve:false,lostSend:false,lostVerify:false,lostCancel:false,
   wrongGenesis:false,wrongOrder:false,feeNull:false,rpcUnavailable:false,legacyPreparation:false,height:50,heightCalls:0,expireOnFinalHeight:false,
-  expireTimeOnBalance:false,staleNotFoundOnPrepare:false,snapshot:null,archive:null,key:null,unknownSignature:null,dropBeforeAdmission:false,tombstone:false});
+  expireTimeOnBalance:false,staleNotFoundOnPrepare:false,signedRecoveryEnabled:false,snapshot:null,archive:null,key:null,unknownSignature:null,dropBeforeAdmission:false,tombstone:false});
 
 async function installNetwork(context,state=networkState()){
  await context.addInitScript(()=>localStorage.setItem('sejire.locale','ru'));
@@ -96,15 +96,23 @@ async function installNetwork(context,state=networkState()){
    if(method==='POST'&&path===`/orders/${order.id}/recover`){
     state.recoveries++;
     expect(Object.keys(body)).toEqual(['preparationId']);
-    if(state.snapshot.record.pendingSignature||state.snapshot.record.payment)return json(route,{error:'previous_payment_unresolved'},409);
+    if(state.snapshot.record.payment||state.snapshot.record.pendingSignature&&!state.signedRecoveryEnabled)return json(route,{error:'previous_payment_unresolved'},409);
     const stored=await page.evaluate(async key=>(await import('/src/lib/checkout/paidJournal.ts')).readPaidOperation(key),state.key);
     expect(stored.recoveryRequestedFor).toBe(body.preparationId);
-    expect(stored.signature).toBeUndefined();expect(stored.signedTransaction).toBeUndefined();
+    if(state.snapshot.record.pendingSignature){
+      expect(stored.signature).toBe(state.snapshot.record.pendingSignature);
+      expect(stored.signedTransaction).toBeTruthy();
+    }else{expect(stored.signature).toBeUndefined();expect(stored.signedTransaction).toBeUndefined();}
     if(state.recoveryGate)await state.recoveryGate;
     if(state.recoveryError)return json(route,{error:state.recoveryError},409);
     if(!state.recoveryTransitions[body.preparationId]){
      expect(body.preparationId).toBe(state.snapshot.preparation.preparationId);
      if(state.height<=state.snapshot.preparation.lastValidBlockHeight)return json(route,{error:'payment_not_expired'},409);
+     if(state.snapshot.record.pendingSignature){
+       state.snapshot.record.pendingSignature=undefined;
+       state.snapshot.record.states.payment='awaiting-payment';
+       state.snapshot.record.states.preservation='awaiting-payment';
+     }
      state.snapshot.preparation=await page.evaluate(async({snapshot,generation,fee})=>(await import('/tests/paid-fixture.ts')).recoveredPreparation(snapshot,generation,fee),
       {snapshot:state.snapshot,generation:Object.keys(state.recoveryTransitions).length+1,fee:state.recoveryFee});
      state.recoveryTransitions[body.preparationId]=state.snapshot.preparation.preparationId;
@@ -727,6 +735,48 @@ test('expiry while Phantom is open keeps the late signature and does not create 
  await expect.poll(async()=>Boolean((await saved(page,state.key)).op.signature)).toBe(true);
  await expect.poll(()=>state.reserves).toBe(1);
  expect(state.creates).toBe(1);expect(state.sends).toHaveLength(0);
+});
+
+test('expired reserved signature is fenced before a new explicit Phantom approval on the same order',async({page,context})=>{
+ const state=networkState();state.signedRecoveryEnabled=true;
+ await installNetwork(context,state);await openEditor(page);await openPaid(page);
+ await page.evaluate(()=>{window.paidWallet.hold=true;});
+ await panel(page).getByRole('button',{name:'Оплатить 0.03 SOL и сохранить'}).evaluate(button=>button.click());
+ await expect.poll(()=>page.evaluate(()=>window.paidWallet.signCount)).toBe(1);
+ state.height=101;
+ await page.evaluate(()=>{window.paidWallet.hold=false;window.paidWallet.release();});
+ await expect.poll(()=>state.reserves).toBe(1);
+ expect(state.sends).toHaveLength(0);
+ await continuePayment(page);
+ await expect.poll(()=>state.recoveries).toBe(1);
+ const retired=await saved(page,state.key);
+ expect(retired.op.retiredSignedAttempts).toHaveLength(1);
+ expect(retired.op.retiredSignedAttempts[0].signature).toBeTruthy();
+ expect(retired.op.signature).toBeUndefined();expect(retired.op.signedTransaction).toBeUndefined();
+ expect(state.creates).toBe(1);expect(state.sends).toHaveLength(0);
+ await panel(page).getByRole('button',{name:'Оплатить 0.03 SOL и сохранить'}).click();
+ await expect.poll(()=>state.sends.length).toBe(1);
+ expect(state.creates).toBe(1);expect(state.admissions).toBe(1);
+ expect(await page.evaluate(()=>window.paidWallet.signCount)).toBe(2);
+});
+
+test('lost signed recovery reply survives reload and cannot reserve or sign again during polling',async({page,context})=>{
+ const state=networkState();state.signedRecoveryEnabled=true;
+ await installNetwork(context,state);await openEditor(page);await openPaid(page);
+ await page.evaluate(()=>{window.paidWallet.hold=true;});
+ await panel(page).getByRole('button',{name:'Оплатить 0.03 SOL и сохранить'}).evaluate(button=>button.click());
+ await expect.poll(()=>page.evaluate(()=>window.paidWallet.signCount)).toBe(1);
+ state.height=101;
+ await page.evaluate(()=>{window.paidWallet.hold=false;window.paidWallet.release();});
+ await expect.poll(()=>state.reserves).toBe(1);
+ state.lostRecovery=true;
+ await continuePayment(page);
+ await expect.poll(()=>state.recoveries).toBe(1);
+ await page.reload();await resumePaid(page);
+ await expect.poll(async()=>Boolean((await saved(page,state.key)).op.retiredSignedAttempts?.length)).toBe(true);
+ expect((await saved(page,state.key)).op.signature).toBeUndefined();
+ expect(state.creates).toBe(1);expect(state.reserves).toBe(1);expect(state.sends).toHaveLength(0);
+ expect(await page.evaluate(()=>window.paidWallet?.signCount??0)).toBe(0);
 });
 
 test('double click and a second tab keep one operation and one wallet signature',async({page,context})=>{

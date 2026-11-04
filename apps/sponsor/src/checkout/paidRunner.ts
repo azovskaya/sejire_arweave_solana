@@ -25,14 +25,15 @@ export async function recoverPaidOrder(ledger:PaidLedger,env:PaidEnv,hash:string
   try{
     const work=claimed.work;
     if(!work.preparation)throw Error('payment_not_prepared');
-    const inspection=await(deps.inspect?.(work)??inspectPaymentRecoveryWithRpc(env,work.record.order,work.preparation));
+    const inspection=await(deps.inspect?.(work)??inspectPaymentRecoveryWithRpc(env,work.record.order,work.preparation,work.record.pendingSignature));
     if(inspection.status==='found'){
       // A genuine lost wallet result remains the original payment, never a renewal.
+      if(work.record.pendingSignature&&work.record.pendingSignature!==inspection.signature)throw Error('previous_payment_unresolved');
       await ledger.reserveInternal(id,inspection.signature,preparationId,Date.now(),inspection.evidence.messageBase64);
       await ledger.commit(id,inspection.payment,Date.now());
       return ledger.snapshot(id);
     }
-    return await ledger.finishPaymentRecovery(id,lease,preparationId,inspection.preparation,inspection.finalizedBlockHeight,Date.now());
+    return await ledger.finishPaymentRecovery(id,lease,preparationId,inspection.preparation,inspection.finalizedBlockHeight,Date.now(),inspection.checkedSignature);
   }catch(error){
     const code=error instanceof Error?error.message:'';
     reason=['payment_not_expired','payment_recovery_busy','previous_payment_unresolved','preparation_changed','order_expired',

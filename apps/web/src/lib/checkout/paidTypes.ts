@@ -65,6 +65,8 @@ export type PaidOperation = {
   signedTransaction?: string;
   /** Wallet-returned bytes that failed binding checks. Never reserve or broadcast. */
   walletResponse?: { signature?: string; signedTransaction?: string; preparationMessageBase64?: string };
+  /** Expired, server-fenced signatures stay in this local evidence journal. */
+  retiredSignedAttempts?: { preparationId: string; signature: string; signedTransaction: string }[];
   cancellationRequested?: boolean;
   creationCancelled?: boolean;
   localCompletion: 'pending' | 'done' | 'released';
