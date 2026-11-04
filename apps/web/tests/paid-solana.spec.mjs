@@ -749,6 +749,11 @@ test('expired reserved signature is fenced before a new explicit Phantom approva
  expect(state.sends).toHaveLength(0);
  await continuePayment(page);
  await expect.poll(()=>state.recoveries).toBe(1);
+ await expect.poll(()=>Object.keys(state.recoveryTransitions).length).toBe(1);
+ await expect.poll(async()=>{
+  const op=(await saved(page,state.key)).op;
+  return op.retiredSignedAttempts?.length?'retired':`pending=${Boolean(op.snapshot?.record.pendingSignature)} intent=${Boolean(op.recoveryRequestedFor)} signature=${Boolean(op.signature)} prepCurrent=${op.preparation?.preparationId===state.snapshot.preparation?.preparationId}`;
+ }).toBe('retired');
  const retired=await saved(page,state.key);
  expect(retired.op.retiredSignedAttempts).toHaveLength(1);
  expect(retired.op.retiredSignedAttempts[0].signature).toBeTruthy();
@@ -772,8 +777,12 @@ test('lost signed recovery reply survives reload and cannot reserve or sign agai
  state.lostRecovery=true;
  await continuePayment(page);
  await expect.poll(()=>state.recoveries).toBe(1);
+ await expect.poll(()=>Object.keys(state.recoveryTransitions).length).toBe(1);
  await page.reload();await resumePaid(page);
- await expect.poll(async()=>Boolean((await saved(page,state.key)).op.retiredSignedAttempts?.length)).toBe(true);
+ await expect.poll(async()=>{
+  const op=(await saved(page,state.key)).op;
+  return op.retiredSignedAttempts?.length?'retired':`pending=${Boolean(op.snapshot?.record.pendingSignature)} intent=${Boolean(op.recoveryRequestedFor)} signature=${Boolean(op.signature)} prepCurrent=${op.preparation?.preparationId===state.snapshot.preparation?.preparationId}`;
+ }).toBe('retired');
  expect((await saved(page,state.key)).op.signature).toBeUndefined();
  expect(state.creates).toBe(1);expect(state.reserves).toBe(1);expect(state.sends).toHaveLength(0);
  expect(await page.evaluate(()=>window.paidWallet?.signCount??0)).toBe(0);
