@@ -118,10 +118,8 @@ async function installNetwork(context,state=networkState()){
     expect(state.snapshot.expired).toBe(false);expect(body.preparationId).toBe(state.snapshot.preparation.preparationId);
     const stored=await page.evaluate(async key=>(await import('/src/lib/checkout/paidJournal.ts')).readPaidOperation(key),state.key);
     expect(stored.signature).toBe(body.signature);expect(stored.signedTransaction).toBeTruthy();
-    const signedMessage=await page.evaluate(raw=>{
-      const bytes=Uint8Array.from(atob(raw),char=>char.charCodeAt(0));
-      const count=bytes[0];return btoa(String.fromCharCode(...bytes.slice(1+64*count)));
-    },stored.signedTransaction);
+    const signedBytes=Buffer.from(stored.signedTransaction,'base64');
+    const signedMessage=signedBytes.subarray(1+64*signedBytes[0]).toString('base64');
     expect(body.signedMessage).toBe(signedMessage);
     state.reserves++;state.snapshot.record.pendingSignature=body.signature;
     state.snapshot.record.states.payment='requires-reconciliation';
@@ -727,6 +725,7 @@ test('expiry while Phantom is open keeps the late signature and does not create 
  state.height=101;
  await page.evaluate(()=>{window.paidWallet.hold=false;window.paidWallet.release();});
  await expect.poll(async()=>Boolean((await saved(page,state.key)).op.signature)).toBe(true);
+ await expect.poll(()=>state.reserves).toBe(1);
  expect(state.creates).toBe(1);expect(state.sends).toHaveLength(0);
 });
 
