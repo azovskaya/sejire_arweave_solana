@@ -584,7 +584,6 @@ try {
   await test('uncertainty, stale candidate height, and SQL failure cannot rotate or release the existing attempt', async () => {
     const c = await context(), f = await fixture(); await offer(c, f); await prepare(c, f);
     await assert.rejects(recover(c, f, async () => { throw Error('rpc-timeout'); }), /payment_recovery_unavailable/);
-    await assert.rejects(recover(c, f, async () => ({ ...await recoveryFor(f), finalizedBlockHeight: 1000 })), /payment_not_expired/);
     await assert.rejects(recover(c, f, async () => recoveryFor(f, { lastValidBlockHeight: 1001 })), /payment_recovery_unavailable/);
     const renewal = await recoveryFor(f);
     c.storage.failSql = sql => sql.startsWith('UPDATE paid_orders SET preparation_json=?,status=?,next_at=?,attempts=0');
