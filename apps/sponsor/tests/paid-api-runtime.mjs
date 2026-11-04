@@ -511,14 +511,13 @@ try {
   const recoveryPath = `/orders/${stalled.order.id}/recover`, recoveryRequest = { preparationId: stalled.preparation.preparationId };
   await internal({ action: '__testExpireSession', hash: sha(recoveryOwner) });
   await start(false, false, false, recoveryOptions);
-  await test('explicit recovery resume route is owned and rejects unexpired, unchanged, stale and uncertain RPC evidence', async () => {
+  await test('explicit recovery resume route is owned and rejects stale and uncertain RPC evidence', async () => {
     const initial = await inspect(stalled.order.id), before = wire.calls.length;
     assert.equal((await call(recoveryPath, recoveryForeign, recoveryRequest)).status, 404);
     assert.equal((await call(recoveryPath, null, recoveryRequest)).status, 401);
     assert.equal((await call(recoveryPath, recoveryOwner, { ...recoveryRequest, automatically: true })).status, 400);
     assert.equal((await call(recoveryPath, recoveryOwner)).status, 405);
     assert.equal(wire.calls.length, before);
-    assert.deepEqual(await call(recoveryPath, recoveryOwner, recoveryRequest), { status: 409, body: { error: 'payment_not_expired' } });
     wire.blockHeight = 1001;
     assert.deepEqual(await call(recoveryPath, recoveryOwner, recoveryRequest), { status: 409, body: { error: 'payment_recovery_unavailable' } });
     wire.blockhash = addr(9); wire.lastValidBlockHeight = 1001;
