@@ -13,6 +13,7 @@ export function paidProvider(env:PaidEnv,policy:PaidPolicy):DirectArweavePreserv
 }
 export type PaidRunnerDependencies={
   reader?:(policy:CheckoutPolicy)=>TrustedTransactionReader;
+  sendPayment?:(raw:string,signature:string,lastValidBlockHeight:number,policy:CheckoutPolicy)=>Promise<void>;
   provider?:(policy:PaidPolicy)=>Pick<DirectArweavePreservation,'prepare'|'sign'|'submit'|'reconcile'>;
 };
 export type PaidRecoveryDependencies={inspect?:(work:PaidWork)=>Promise<PaymentRecoveryInspection>};
@@ -53,8 +54,16 @@ export async function runPaidOrder(ledger:PaidLedger,env:PaidEnv,id:string,deps:
       if(!work.preparation){reason='payment_not_prepared';return;}
       const reader=deps.reader?.(work.policy)??new PaidRpcPool(env,work.record.order.network);
       if(work.record.pendingSignature){
+        if(work.signedPayment){
+          try{
+            const network=work.record.order.network;
+            const send=deps.sendPayment??((raw:string,signature:string,height:number)=>
+              new PaidRpcPool(env,network).sendSignedTransaction(raw,signature,height));
+            await send(work.signedPayment,work.record.pendingSignature,work.preparation.lastValidBlockHeight,work.policy);
+          }catch{reason='payment_send_unavailable';}
+        }
         const evidence=await reader.read(work.record.pendingSignature);
-        if(!evidence){reason='not-found';return;}
+        if(!evidence){reason??='not-found';return;}
         const payment=await validatePreparedPayment(work.record.order,evidence,reader.chain,work.preparation);
         await ledger.commit(id,payment,Date.now());
       }else{

@@ -4,6 +4,7 @@ import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { resolve } from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
+import bs58 from 'bs58';
 import { createPaidOrderFromPolicy, createPaymentPreparation, paymentMessageBytes, SOLANA_GENESIS,
   validatePaidPolicy, validateContributionPolicy, verifyPreparedPaymentSignature } from '../../../packages/checkout/paid.ts';
 import { createOrder } from '../../../packages/checkout/order.ts';
@@ -199,6 +200,29 @@ async function run(c, f, mock, env = executionEnv) { await runPaidOrder(c.paid, 
 async function test(name, callback) { await callback(); checks++; console.log(`PASS paid SQLite: ${name}`); }
 
 try {
+  await test('reserved signed payment survives restart and service retries only identical bytes', async () => {
+    let c=await context();const f=await fixture();await offer(c,f);await prepare(c,f);
+    const message=paymentMessageBytes(f.preparation.messageBase64);
+    const raw=Buffer.concat([Buffer.from([1]),Buffer.from(bs58.decode(f.signature)),Buffer.from(message)]).toString('base64');
+    const altered=Buffer.from(raw,'base64');altered[altered.length-1]^=1;
+    await assert.rejects(c.paid.reserve(owner,f.order.id,f.signature,f.preparation.preparationId,Date.now(),f.preparation.messageBase64,altered.toString('base64')),/invalid_signed_payment/);
+    assert.equal(c.paid.snapshot(f.order.id).record.pendingSignature,undefined);
+    await c.paid.reserve(owner,f.order.id,f.signature,f.preparation.preparationId,Date.now(),f.preparation.messageBase64,raw);
+    await c.paid.reserve(owner,f.order.id,f.signature,f.preparation.preparationId,Date.now(),f.preparation.messageBase64,raw);
+    assert.equal(c.rows('SELECT kind FROM paid_payloads WHERE order_id=? AND kind=?',f.order.id,'signed-payment').length,1);
+    c=reopen(c);assert.equal(c.paid.work(f.order.id).signedPayment,raw);
+    const mock=mockRunner(c,f,{noRead:true});let sends=0;
+    mock.deps.sendPayment=async(bytes,signature,height)=>{
+      sends++;assert.equal(bytes,raw);assert.equal(signature,f.signature);assert.equal(height,f.preparation.lastValidBlockHeight);
+      if(sends===1)throw Error('synthetic_lost_rpc_response');
+    };
+    await run(c,f,mock);assert.equal(c.paid.snapshot(f.order.id).record.payment,undefined);
+    assert.equal(c.paid.snapshot(f.order.id).verification.reason,'payment_send_unavailable');
+    mock.state.noRead=false;await run(c,f,mock);
+    assert.equal(sends,2);assert.equal(c.paid.snapshot(f.order.id).record.payment.signature,f.signature);
+    assert.equal(c.count('orders'),1);assert.equal(c.count('credits'),1);
+  });
+
   await test('standalone contribution creates no archive/AR hold/job and credits its single purpose once after restart', async () => {
     let c=await context();const f=await fixture({kind:'contribution',contribution:'9007199254740993'});
     const offerResult=await offer(c,f);assert.equal(offerResult.record.order.servicePayment.amount,'0');

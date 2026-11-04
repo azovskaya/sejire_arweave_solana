@@ -86,6 +86,7 @@ export async function validatePaidOperation(value: unknown): Promise<PaidOperati
         op.localCompletion !== 'pending')) throw Error();
     if (op.signature) { assertBase58(op.signature, 64); if (!op.signingStarted) throw Error(); }
     if (op.signedTransaction && (!op.signature || !op.signingStarted || op.signedTransaction.length > 4096)) throw Error();
+    if (op.signedPaymentReserved !== undefined && (typeof op.signedPaymentReserved !== 'boolean' || op.signedPaymentReserved && !op.signedTransaction)) throw Error();
     if(op.retiredSignedAttempts !== undefined){
       if(!Array.isArray(op.retiredSignedAttempts)||op.retiredSignedAttempts.length>16)throw Error();
       for(const old of op.retiredSignedAttempts){
@@ -174,6 +175,7 @@ export async function writePaidOperation(op: PaidOperation): Promise<PaidOperati
             (previous.order && canonical(previous.order) !== canonical(op.order)) ||
             (previous.signature && previous.signature !== op.signature && !fencedSignedAttempt) ||
             (previous.signedTransaction && previous.signedTransaction !== op.signedTransaction && !fencedSignedAttempt) ||
+            (previous.signedPaymentReserved && !op.signedPaymentReserved && !fencedSignedAttempt) ||
             (canonical(oldRetired)!==canonical(newRetired) && !fencedSignedAttempt) ||
             (previous.createAttempted && !op.createAttempted) ||
             (previous.cancellationRequested && !op.cancellationRequested) ||

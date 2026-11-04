@@ -63,6 +63,8 @@ export type PaidOperation = {
   signingStarted: boolean;
   signature?: string;
   signedTransaction?: string;
+  /** Server acknowledged the exact signed bytes; old journal rows retry reserve. */
+  signedPaymentReserved?: boolean;
   /** Wallet-returned bytes that failed binding checks. Never reserve or broadcast. */
   walletResponse?: { signature?: string; signedTransaction?: string; preparationMessageBase64?: string };
   /** Expired, server-fenced signatures stay in this local evidence journal. */

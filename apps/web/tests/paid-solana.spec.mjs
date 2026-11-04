@@ -6,10 +6,10 @@ import bs58 from 'bs58';
 const origin='http://127.0.0.1:5185', tx='A'.repeat(43);
 const panel=page=>page.getByRole('region',{name:'Оплата SOL',exact:true});
 const json=(route,value,status=200)=>route.fulfill({status,contentType:'application/json',body:JSON.stringify(value)});
-const networkState=()=>({ready:true,contributionReady:true,balance:'1000000000000000',requests:[],denied:[],creates:0,admissions:0,createKeys:[],bodies:[],prepares:0,reserves:0,sends:[],cancels:0,reconciles:0,
+const networkState=()=>({ready:true,contributionReady:true,balance:'1000000000000000',requests:[],denied:[],creates:0,admissions:0,createKeys:[],bodies:[],prepares:0,reserves:0,sends:[],sendAttempts:0,cancels:0,reconciles:0,
   recoveries:0,recoveryTransitions:{},lostRecovery:false,recoveryFee:'6000',recoveryError:null,recoveryGate:null,
   finish:false,paid:false,phase:'queued',createError:null,lostCreate:false,lostReserve:false,lostSend:false,lostVerify:false,lostCancel:false,
-  wrongGenesis:false,wrongOrder:false,feeNull:false,rpcUnavailable:false,legacyPreparation:false,height:50,heightCalls:0,expireOnFinalHeight:false,
+  wrongGenesis:false,wrongOrder:false,feeNull:false,rpcUnavailable:false,sendRpcError:false,legacyPreparation:false,height:50,heightCalls:0,expireOnFinalHeight:false,
   expireTimeOnBalance:false,staleNotFoundOnPrepare:false,signedRecoveryEnabled:false,snapshot:null,archive:null,key:null,unknownSignature:null,dropBeforeAdmission:false,tombstone:false});
 
 async function installNetwork(context,state=networkState()){
@@ -129,6 +129,7 @@ async function installNetwork(context,state=networkState()){
     const signedBytes=Buffer.from(stored.signedTransaction,'base64');
     const signedMessage=signedBytes.subarray(1+64*signedBytes[0]).toString('base64');
     expect(body.signedMessage).toBe(signedMessage);
+    expect(body.signedTransaction).toBe(stored.signedTransaction);
     state.reserves++;state.snapshot.record.pendingSignature=body.signature;
     state.snapshot.record.states.payment='requires-reconciliation';
     if(state.lostReserve){state.lostReserve=false;return route.abort('failed');}
@@ -166,7 +167,12 @@ async function installNetwork(context,state=networkState()){
     result=state.height;
    }
    else if(body.method==='sendTransaction'){
+    state.sendAttempts++;
     expect(state.reserves).toBeGreaterThan(0);
+    if(state.height>state.snapshot.preparation.lastValidBlockHeight)
+      return json(route,{jsonrpc:'2.0',id:body.id,error:{code:-32002,message:'Transaction simulation failed',data:{err:'BlockhashNotFound'}}});
+    if(state.sendRpcError)
+      return json(route,{jsonrpc:'2.0',id:body.id,error:{code:-32002,message:'Transaction simulation failed',data:{err:{InstructionError:[0,'Custom']}}}});
     result=bs58.encode(Buffer.from(body.params[0],'base64').subarray(1,65));
     expect(result).toBe(state.snapshot.record.pendingSignature);
     const stored=await page.evaluate(async key=>(await import('/src/lib/checkout/paidJournal.ts')).readPaidOperation(key),state.key);
@@ -734,7 +740,22 @@ test('expiry while Phantom is open keeps the late signature and does not create 
  await page.evaluate(()=>{window.paidWallet.hold=false;window.paidWallet.release();});
  await expect.poll(async()=>Boolean((await saved(page,state.key)).op.signature)).toBe(true);
  await expect.poll(()=>state.reserves).toBe(1);
+ await expect(panel(page).getByRole('alert')).toContainText('устаревший blockhash');
+ expect(state.sendAttempts).toBe(1);
  expect(state.creates).toBe(1);expect(state.sends).toHaveLength(0);
+});
+
+test('an RPC send rejection stays visible while the exact signed attempt is reconciled',async({page,context})=>{
+ const state=networkState();state.sendRpcError=true;
+ await installNetwork(context,state);await openEditor(page);await openPaid(page);
+ await panel(page).getByRole('button',{name:'Оплатить 0.03 SOL и сохранить'}).click();
+ await expect(panel(page).getByRole('alert')).toContainText('Solana отклонила отправку');
+ expect(state.sendAttempts).toBe(1);expect(state.sends).toHaveLength(0);
+ expect(state.creates).toBe(1);expect(state.reserves).toBe(1);
+ expect(await page.evaluate(()=>window.paidWallet.signCount)).toBe(1);
+ await page.waitForTimeout(6500);
+ await expect(panel(page).getByRole('alert')).toContainText('Solana отклонила отправку');
+ expect(await page.evaluate(()=>window.paidWallet.signCount)).toBe(1);
 });
 
 test('expired reserved signature is fenced before a new explicit Phantom approval on the same order',async({page,context})=>{

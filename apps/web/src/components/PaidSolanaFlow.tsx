@@ -33,6 +33,9 @@ function localizedError(error: unknown, locale: PaidLocale): string {
     insufficient_wallet_balance: 'The wallet does not have enough SOL for the order and network fee.',
     network_fee_not_ready: 'The network fee could not be verified. No signature was requested.',
     payment_preparation_expired: 'The transaction preparation expired. The same order will be checked before it is renewed.',
+    payment_blockhash_expired_after_signature: 'Phantom signed, but the network rejected the expired blockhash. This signature is saved; check the same order before approving again.',
+    payment_send_rpc_rejected: 'Solana rejected the send request. The signed attempt is saved and will be checked before another approval.',
+    payment_send_unavailable: 'Solana did not answer the send request. The signed attempt is saved and will be checked.',
     paid_unavailable: 'Solana payment is unavailable. You can use an existing promo code.',
   };
   const kk: Record<string, string> = {
@@ -43,6 +46,9 @@ function localizedError(error: unknown, locale: PaidLocale): string {
     insufficient_wallet_balance: 'Әмиянда тапсырыс пен желі комиссиясына SOL жеткіліксіз.',
     network_fee_not_ready: 'Желі комиссиясын тексеру мүмкін болмады. Қолтаңба сұралмады.',
     payment_preparation_expired: 'Транзакция дайындығы ескірді. Жаңартпас бұрын осы тапсырысты тексереміз.',
+    payment_blockhash_expired_after_signature: 'Phantom қол қойды, бірақ желі ескірген blockhash-ті қабылдамады. Қолтаңба сақталды; қайта растаудан бұрын осы тапсырысты тексеріңіз.',
+    payment_send_rpc_rejected: 'Solana жіберу сұрауын қабылдамады. Қол қойылған әрекет сақталды және қайта растаудан бұрын тексеріледі.',
+    payment_send_unavailable: 'Жіберу сұрауына Solana жауап бермеді. Қол қойылған әрекет сақталды және тексеріледі.',
     paid_unavailable: 'Solana төлемі қолжетімсіз. Қолданыстағы промокодты пайдалануға болады.',
   };
   const known = locale === 'en' ? en : kk;
@@ -70,6 +76,7 @@ function failureDetails(error: unknown): { stage: FailureStage; code: string } {
   const code = error instanceof Error ? error.message : error && typeof error === 'object' && 'code' in error && error.code === 4001 ? 'wallet_rejected' : 'unknown';
   const safe = /^[a-z][a-z0-9_-]{0,63}$/.test(code) ? code : 'unknown';
   const stage: FailureStage = error instanceof PaidApiError && error.stage === 'create' ? 'заказ' :
+    /^payment_(?:blockhash_expired_after_signature|send_)/.test(safe) ? 'отправка' :
     /wallet|context_changed/.test(safe) ? 'кошелёк' : /fee/.test(safe) ? 'комиссия' : /balance/.test(safe) ? 'баланс' :
     /solana|rpc|network/.test(safe) ? 'сеть/RPC' : /prepar|recovery|expired/.test(safe) ? 'подготовка' :
     /reserv|signature|signed/.test(safe) ? 'фиксация подписи' : /send|broadcast/.test(safe) ? 'отправка' :
@@ -94,6 +101,9 @@ function errorMessage(error: unknown): string {
     network_fee_changed: 'Комиссия сети изменилась. Проверьте условия оплаты ещё раз.',
     network_fee_not_ready: 'Не удалось проверить комиссию сети. Оплата не начинается.',
     payment_preparation_expired: 'Подготовка транзакции устарела. Проверяем прежнюю попытку и обновляем её для этого заказа.',
+    payment_blockhash_expired_after_signature: 'Phantom подписал транзакцию, но сеть отклонила устаревший blockhash. Подпись сохранена; сначала проверим этот заказ.',
+    payment_send_rpc_rejected: 'Solana отклонила отправку. Подписанная попытка сохранена; сначала проверим её результат.',
+    payment_send_unavailable: 'Solana не ответила при отправке. Подписанная попытка сохранена; проверим её без нового подтверждения.',
     solana_unavailable: 'Сеть Solana временно недоступна. Запрос сохранён; повторите действие позже.',
     solana_rpc_malformed: 'Сеть Solana вернула неверный ответ. Подпись не запрашивалась; повторите действие позже.',
     wallet_result_unknown: 'Phantom не вернул надёжный результат. Проверяем тот же заказ; новая подпись не запрашивается.',

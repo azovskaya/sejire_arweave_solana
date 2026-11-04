@@ -183,6 +183,30 @@ export class PaidRpcPool implements TrustedTransactionReader {
     this.chain = new SolanaRpcReader({ network }).chain;
     configuredUrls(env, network);
   }
+  /** Relay only already reserved, immutable signed bytes. An uncertain send
+   * never selects a second endpoint within this attempt. Later retries use
+   * the same signature and bytes, so they cannot authorize another transfer. */
+  async sendSignedTransaction(raw: string, signature: string, lastValidBlockHeight: number): Promise<void> {
+    let last: RpcEvidenceError | null = null;
+    for(const url of candidates(this.env,this.chain.network)){
+      const rpc=reader(this.chain.network,url);
+      try{
+        if(await rpc.rpc('getGenesisHash')!==this.chain.genesisHash)throw new RpcEvidenceError('wrong-network');
+        const height=await rpc.rpc('getBlockHeight',[{commitment:'finalized'}]);
+        if(typeof height!=='number'||!Number.isSafeInteger(height)||height<0)throw new RpcEvidenceError('rpc-malformed');
+        if(height>lastValidBlockHeight)return;
+      }catch(error){
+        if(!isUnavailable(error))throw error;
+        pause(url,error);last=error;continue;
+      }
+      let result:unknown;
+      try{result=await rpc.rpc('sendTransaction',[raw,{encoding:'base64',skipPreflight:false,preflightCommitment:'finalized',maxRetries:2}]);}
+      catch(error){if(isUnavailable(error))pause(url,error);throw error;}
+      if(result!==signature)throw new RpcEvidenceError('rpc-malformed');
+      return;
+    }
+    throw last??new RpcEvidenceError('rpc-unavailable');
+  }
   async read(signature: string): Promise<TransactionEvidence | null> {
     const deadline = Date.now() + 22000;
     let found: TransactionEvidence | null = null, observed = false, last: RpcEvidenceError | null = null;

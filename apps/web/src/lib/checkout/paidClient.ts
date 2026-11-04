@@ -199,7 +199,7 @@ async function accept(op: PaidOperation, raw: unknown): Promise<PaidOperation> {
     const retired=[...(op.retiredSignedAttempts??[]),{preparationId:op.preparation!.preparationId,
       signature:op.signature,signedTransaction:op.signedTransaction}];
     if(retired.length>16)throw Error('checkout_journal_full');
-    next.retiredSignedAttempts=retired;delete next.signature;delete next.signedTransaction;next.signingStarted=false;
+    next.retiredSignedAttempts=retired;delete next.signature;delete next.signedTransaction;next.signingStarted=false;next.signedPaymentReserved=false;
   }
   if (recovered || signature) delete next.recoveryRequestedFor;
   return writePaidOperation(next);
@@ -373,6 +373,12 @@ async function rpcAt(url: string, method: string, params: unknown[] = []): Promi
   if (response.status !== 200) throw new RpcUnavailable(response.status, response.retryAfter);
   if (value?.jsonrpc === '2.0' && value.id === id && value.error && typeof value.error === 'object') {
     const code = (value.error as { code?: unknown }).code;
+    if (method === 'sendTransaction') {
+      const failure = (value.error as { data?: { err?: unknown } }).data?.err;
+      if (failure === 'BlockhashNotFound' || failure && typeof failure === 'object' && 'BlockhashNotFound' in failure)
+        throw Error('payment_blockhash_expired_after_signature');
+      throw Error('payment_send_rpc_rejected');
+    }
     if (code === -32005 || code === -32603 || code === -32004) throw new RpcUnavailable(0);
   }
   if (value?.jsonrpc !== '2.0' || value.id !== id || value.error || !Object.hasOwn(value, 'result'))
@@ -416,14 +422,19 @@ async function validateSignedTransaction(op: PaidOperation): Promise<void> {
 async function broadcast(op: PaidOperation, isActive: ActiveContext): Promise<void> {
   if (!op.signature || !op.signedTransaction || !op.order || !op.preparation) throw Error('no_pending_payment');
   await validateSignedTransaction(op);
-  if (paymentExpiresAt(op.order, op.preparation) <= Date.now()) return;
+  // After Phantom returns a signature, local expiry is no longer a reason to
+  // suppress the SAME signed transaction. The RPC decides blockhash validity.
+  // Selecting an endpoint ends before send: an uncertain send never falls back
+  // to another endpoint or creates another payment message.
   requireActive(isActive);
-  const selected = await withPublicRpc(op, async call => ({ call,
-    height: await call('getBlockHeight', [{ commitment: 'finalized' }]) }));
+  const send = await withPublicRpc(op, async call => call);
   requireActive(isActive);
-  if (!Number.isSafeInteger(selected.height) || (selected.height as number) > op.preparation.lastValidBlockHeight) return;
-  // A lost send response is uncertain. This invocation never broadcasts to a second RPC.
-  const signature = await selected.call('sendTransaction', [op.signedTransaction, { encoding: 'base64', skipPreflight: false, maxRetries: 2 }]);
+  let signature: unknown;
+  try { signature = await send('sendTransaction', [op.signedTransaction, { encoding: 'base64', skipPreflight: false, maxRetries: 2 }]); }
+  catch (error) {
+    if (error instanceof RpcUnavailable) throw Error('payment_send_unavailable');
+    throw error;
+  }
   if (signature !== op.signature) throw Error('checkout_signature_mismatch');
 }
 
@@ -508,12 +519,21 @@ export async function payPaidOperation(id: string, preparationId: string, wallet
       await writePaidOperation({ ...op, walletResponse: returned });
       throw Error('wallet_return_mismatch');
     }
-    op = await writePaidOperation({ ...op, signature: returned.signature, signedTransaction: returned.signedTransaction });
+    op = await writePaidOperation({ ...op, signature: returned.signature, signedTransaction: returned.signedTransaction, signedPaymentReserved: false });
     requireActive(isActive);
     await api(`/orders/${op.order!.id}/reserve`, op.token, { signature: op.signature, preparationId,
-      signedMessage: signed.serializeMessage().toString('base64') });
+      signedMessage: signed.serializeMessage().toString('base64'), signedTransaction: op.signedTransaction });
+    op = await writePaidOperation({ ...op, signedPaymentReserved: true });
     requireActive(isActive);
-    try { await broadcast(op, isActive); } catch { requireActive(isActive); return refresh(op); }
+    // The worker owns a durable copy before this best-effort first relay. Both
+    // sides can only resend these exact bytes and signature.
+    try { await broadcast(op, isActive); }
+    catch (error) {
+      requireActive(isActive);
+      try { const checked=await refresh(op); if (checked.snapshot?.record.states.payment==='verified') return checked; }
+      catch { /* Keep the signed attempt for service-side continuation. */ }
+      throw error;
+    }
     requireActive(isActive);
     return accept(op, await api<PaidSnapshot>(`/orders/${op.order!.id}/verify`, op.token, { signature: op.signature }));
   });
@@ -619,15 +639,16 @@ export async function checkPaidOperation(id: string, isActive: ActiveContext = a
     if ((op.signingStarted || op.signature) && op.snapshot?.record.states.payment !== 'verified') {
       // A lost reserve response is retried with the same signature/preparation;
       // bytes are never broadcast until the server accepted that reservation.
-      if (op.signature && op.preparation && !op.snapshot?.record.pendingSignature) {
+      if (op.signature && op.preparation && (!op.signedPaymentReserved || !op.snapshot?.record.pendingSignature)) {
         requireActive(isActive);
-        await api(`/orders/${op.order.id}/reserve`, op.token, { signature: op.signature, preparationId: op.preparation.preparationId,
-          ...(op.signedTransaction ? { signedMessage: Transaction.from(Buffer.from(op.signedTransaction, 'base64')).serializeMessage().toString('base64') } : {}) });
+        await api(`/orders/${op.order!.id}/reserve`, op.token, { signature: op.signature, preparationId: op.preparation.preparationId,
+          ...(op.signedTransaction ? { signedMessage: Transaction.from(Buffer.from(op.signedTransaction, 'base64')).serializeMessage().toString('base64'), signedTransaction: op.signedTransaction } : {}) });
+        if (op.signedTransaction && !op.signedPaymentReserved) op = await writePaidOperation({ ...op, signedPaymentReserved: true });
       }
       requireActive(isActive);
-      op = await accept(op, await api<PaidSnapshot>(`/orders/${op.order.id}/reconcile`, op.token, {}));
+      op = await accept(op, await api<PaidSnapshot>(`/orders/${op.order!.id}/reconcile`, op.token, {}));
       if (op.snapshot?.record.states.payment !== 'verified' && op.signedTransaction && op.snapshot?.verification?.reason === 'not-found') {
-        try { await broadcast(op, isActive); } catch { requireActive(isActive); /* Keep the original uncertainty and bytes. */ }
+        try { await broadcast(op, isActive); } catch { requireActive(isActive); /* Worker retains the exact signed bytes. */ }
       }
     }
     if (op.snapshot?.record.states.payment === 'verified' && op.snapshot.execution?.status === 'queued') {

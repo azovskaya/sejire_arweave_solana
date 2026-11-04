@@ -1,5 +1,5 @@
 import { assertOrder, assertBase58, type PaidOrder } from '../../../../packages/checkout/order';
-import { validatePaidOrderPolicy, validatePaymentPreparation, validatePaidReceipt, verifyPreparedPaymentSignature,
+import { validatePaidOrderPolicy, validatePaymentPreparation, validatePaidReceipt, verifyPreparedPaymentSignature, paymentMessageBytes,
   type PaidPolicy, type CheckoutPolicy, type DurablePaymentPreparation, type PaidReceipt } from '../../../../packages/checkout/paid';
 import { canonical } from '../../../../packages/protocol/wire';
 import type { StoredOrder, CommitResult } from './store';
@@ -10,12 +10,13 @@ import { SqliteAtomicOrderStore } from './sqliteStore';
 import { TreasuryGuard, winston } from './treasuryGuard';
 import { TREASURY_ADDRESS } from '../fund/ledger';
 import { checkedPaidArchive } from './paidPolicy';
+import bs58 from 'bs58';
 
 type PaidRow = {order_id:string;policy_json:string;preparation_json:string|null;status:string;lease:string|null;lease_until:number;
   next_at:number;attempts:number;proof_json:string|null;receipt_json:string|null;paid:number;released:number;last_error:string|null;submission_ack:number};
 export type PaidStoredOrder = StoredOrder & {order:PaidOrder};
 export type PaidWork = {record:PaidStoredOrder;policy:CheckoutPolicy;input:DirectInput|null;prepared:PreparedDirectPlan|null;
-  signed:SignedDirectPlan|null;preparation:DurablePaymentPreparation|null;status:string;submitAcknowledged:boolean};
+  signed:SignedDirectPlan|null;signedPayment:string|null;preparation:DurablePaymentPreparation|null;status:string;submitAcknowledged:boolean};
 const json = <T>(value:string|null):T|null => value===null?null:JSON.parse(value) as T;
 /** v2 is additive: no legacy orders, ANS-104 plans or signed bytes are rewritten. */
 export class PaidLedger {
@@ -134,8 +135,8 @@ export class PaidLedger {
       return candidate;
     });await this.storage.sync();await this.arm();return result;
   }
-  async reserve(hash:string,id:string,signature:string,preparationId:string,now:number,signedMessage?:string){
-    this.api.ownerPaid(hash,id);return this.reserveInternal(id,signature,preparationId,now,signedMessage);
+  async reserve(hash:string,id:string,signature:string,preparationId:string,now:number,signedMessage?:string,signedTransaction?:string){
+    this.api.ownerPaid(hash,id);return this.reserveInternal(id,signature,preparationId,now,signedMessage,signedTransaction);
   }
   /** An explicit recovery only fences a preparation that this ledger never
    * authorized for broadcast. Existing V2 clients reserve before sending. */
@@ -181,6 +182,11 @@ export class PaidLedger {
       this.sql.exec('INSERT INTO paid_payment_recoveries(order_id,previous_preparation_id,previous_preparation_json,preparation_json,finalized_block_height,recovered_at,previous_signature) VALUES(?,?,?,?,?,?,?)',
         id,previousPreparationId,JSON.stringify(previous),JSON.stringify(candidate),finalizedBlockHeight,now,checkedSignature??null);
       if(checkedSignature){
+        const signedPayment=this.payload(id,'signed-payment');
+        if(signedPayment){
+          this.putPayload(id,`retired-payment:${previousPreparationId}`,signedPayment);
+          this.sql.exec('DELETE FROM paid_payloads WHERE order_id=? AND kind=?',id,'signed-payment');
+        }
         const states={payment:'awaiting-payment',preservation:current.order.kind==='preservation'?'awaiting-payment':'not-applicable',
           contribution:current.order.fundContribution.amount==='0'?'not-requested':'awaiting-payment'};
         this.sql.exec('UPDATE orders SET pending_signature=NULL,states_json=? WHERE id=? AND pending_signature=?',JSON.stringify(states),id,checkedSignature);
@@ -190,15 +196,29 @@ export class PaidLedger {
     });
     await this.storage.sync();await this.arm();return this.snapshot(id);
   }
-  async reserveInternal(id:string,signature:string,preparationId:string,now:number,signedMessage?:string){
+  async reserveInternal(id:string,signature:string,preparationId:string,now:number,signedMessage?:string,signedTransaction?:string){
     assertBase58(signature,64);const row=this.row(id),record=this.record(id),p=json<DurablePaymentPreparation>(row.preparation_json);
     if(!p||p.preparationId!==preparationId||row.released)throw Error('payment_not_prepared');
     await verifyPreparedPaymentSignature(record.order,p,signature,signedMessage);
+    if(signedTransaction!==undefined){
+      if(!signedMessage)throw Error('invalid_signed_payment');
+      try{
+        const raw=paymentMessageBytes(signedTransaction),message=paymentMessageBytes(signedMessage),signatureBytes=bs58.decode(signature);
+        if(raw.length!==1+64+message.length||raw[0]!==1||
+          !signatureBytes.every((byte,index)=>byte===raw[index+1])||
+          !message.every((byte,index)=>byte===raw[index+65]))throw Error();
+      }catch{throw Error('invalid_signed_payment');}
+    }
     // A stored preparation already locked this hold before any wallet interaction.
     // Expiry cannot make an unknown signed payment safe to replace or release.
     const result=await this.orders.beginReconciliationLinked(id,signature,()=>{
       const current=this.row(id),prepared=json<DurablePaymentPreparation>(current.preparation_json);
       if(current.released||!prepared||prepared.preparationId!==preparationId)throw Error('payment_not_prepared');
+      if(signedTransaction!==undefined){
+        const existing=this.payload(id,'signed-payment');
+        if(existing&&existing!==signedTransaction)throw Error('previous_payment_unresolved');
+        if(!existing)this.putPayload(id,'signed-payment',signedTransaction);
+      }
       if(!current.paid)this.sql.exec('UPDATE paid_orders SET next_at=? WHERE order_id=?',now,id);
     });
     await this.storage.sync();await this.arm();return result;
@@ -231,7 +251,7 @@ export class PaidLedger {
     if(record.order.kind==='preservation'&&(serialized===null||prepared===null))throw Error('paid_payload_missing');
     return {record,policy:JSON.parse(row.policy_json),input:record.order.kind==='preservation'?{orderId:id,serialized:serialized!,archive:record.order.archive}:null,
       prepared:prepared?JSON.parse(prepared):null,
-      signed:json<SignedDirectPlan>(this.payload(id,'signed')),preparation:json<DurablePaymentPreparation>(row.preparation_json),status:row.status,submitAcknowledged:row.submission_ack===1};
+      signed:json<SignedDirectPlan>(this.payload(id,'signed')),signedPayment:this.payload(id,'signed-payment'),preparation:json<DurablePaymentPreparation>(row.preparation_json),status:row.status,submitAcknowledged:row.submission_ack===1};
   }
   async claim(id:string,lease:string,now:number):Promise<PaidWork|null>{
     const acquired=this.storage.transactionSync(()=>{
