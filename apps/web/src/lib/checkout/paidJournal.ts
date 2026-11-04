@@ -156,10 +156,25 @@ export async function writePaidOperation(op: PaidOperation): Promise<PaidOperati
         const immutable = (item: PaidOperation) => canonical({ id: item.id, token: item.token, createdAt: item.createdAt,
           treeId: item.treeId, serialized: item.serialized, archive: item.archive, policy: item.policy,
           policyHash: item.policyHash, intent: item.intent });
+        const oldRetired=previous?.retiredSignedAttempts??[],newRetired=op.retiredSignedAttempts??[];
+        const lastRetired=newRetired[newRetired.length-1];
+        const oldPreparationId=previous?.preparation?.preparationId;
+        const fencedSignedAttempt=Boolean(previous?.signature && previous.signedTransaction &&
+          !op.signature && !op.signedTransaction && !op.signingStarted && !op.recoveryRequestedFor &&
+          oldPreparationId && previous.recoveryRequestedFor===oldPreparationId &&
+          op.preparation?.schema==='sejire/payment-preparation/v2' &&
+          op.preparation.previousPreparationId===oldPreparationId &&
+          op.snapshot?.preparation?.preparationId===op.preparation.preparationId &&
+          !op.snapshot?.record.pendingSignature && !op.snapshot?.record.payment && !op.snapshot?.execution &&
+          newRetired.length===oldRetired.length+1 &&
+          canonical(newRetired.slice(0,-1))===canonical(oldRetired) &&
+          lastRetired?.preparationId===oldPreparationId &&
+          lastRetired?.signature===previous.signature && lastRetired?.signedTransaction===previous.signedTransaction);
         if (previous ? previous.version !== 2 || previous.revision !== op.revision || immutable(previous) !== immutable(op) ||
             (previous.order && canonical(previous.order) !== canonical(op.order)) ||
-            (previous.signature && previous.signature !== op.signature) ||
-            (previous.signedTransaction && previous.signedTransaction !== op.signedTransaction) ||
+            (previous.signature && previous.signature !== op.signature && !fencedSignedAttempt) ||
+            (previous.signedTransaction && previous.signedTransaction !== op.signedTransaction && !fencedSignedAttempt) ||
+            (canonical(oldRetired)!==canonical(newRetired) && !fencedSignedAttempt) ||
             (previous.createAttempted && !op.createAttempted) ||
             (previous.cancellationRequested && !op.cancellationRequested) ||
             (previous.creationCancelled && !op.creationCancelled) ||
