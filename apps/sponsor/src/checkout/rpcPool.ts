@@ -163,7 +163,11 @@ export async function inspectPaymentRecoveryWithRpc(env: RpcEnv, order: PaidOrde
         if (unavailable.has(result.reason as RpcFailure)) throw new RpcEvidenceError(result.reason as RpcFailure);
         throw Error('payment_recovery_unavailable');
       }
-      if (height <= previous.lastValidBlockHeight) throw Error('payment_not_expired');
+      // An unsigned preparation can be fenced and renewed inside an explicit
+      // action even while its hash is live: no audited client may broadcast
+      // without first reserving against the exact preparation ID. A reserved
+      // signature still requires proven finalized expiry.
+      if (pendingSignature && height <= previous.lastValidBlockHeight) throw Error('payment_not_expired');
       const preparation = await new RpcPaymentPreparer(source).preparePaid(order, deadline, previous);
       if (preparation.lastValidBlockHeight <= height) throw Error('payment_recovery_unavailable');
       return { status: 'renew', preparation, finalizedBlockHeight: height,
@@ -192,7 +196,7 @@ export class PaidRpcPool implements TrustedTransactionReader {
       const rpc=reader(this.chain.network,url);
       try{
         if(await rpc.rpc('getGenesisHash')!==this.chain.genesisHash)throw new RpcEvidenceError('wrong-network');
-        const height=await rpc.rpc('getBlockHeight',[{commitment:'finalized'}]);
+        const height=await rpc.rpc('getBlockHeight',[{commitment:'confirmed'}]);
         if(typeof height!=='number'||!Number.isSafeInteger(height)||height<0)throw new RpcEvidenceError('rpc-malformed');
         if(height>lastValidBlockHeight)return;
       }catch(error){
@@ -200,7 +204,7 @@ export class PaidRpcPool implements TrustedTransactionReader {
         pause(url,error);last=error;continue;
       }
       let result:unknown;
-      try{result=await rpc.rpc('sendTransaction',[raw,{encoding:'base64',skipPreflight:false,preflightCommitment:'finalized',maxRetries:2}]);}
+      try{result=await rpc.rpc('sendTransaction',[raw,{encoding:'base64',skipPreflight:false,preflightCommitment:'confirmed',maxRetries:2}]);}
       catch(error){if(isUnavailable(error))pause(url,error);throw error;}
       if(result!==signature)throw new RpcEvidenceError('rpc-malformed');
       return;

@@ -174,7 +174,7 @@ export class PaidLedger {
       if(row.released||current.payment||row.paid||this.payload(id,'signed')||
           current.pendingSignature!==checkedSignature)throw Error('previous_payment_unresolved');
       if(!previous||previous.preparationId!==previousPreparationId)throw Error('preparation_changed');
-      if(!Number.isSafeInteger(finalizedBlockHeight)||finalizedBlockHeight<=previous.lastValidBlockHeight)throw Error('payment_not_expired');
+      if(!Number.isSafeInteger(finalizedBlockHeight)||checkedSignature&&finalizedBlockHeight<=previous.lastValidBlockHeight)throw Error('payment_not_expired');
       if(candidate.lastValidBlockHeight<=finalizedBlockHeight)throw Error('payment_recovery_unavailable');
       if(candidate.createdAt<previous.createdAt)throw Error('invalid_payment_preparation');
       // This transaction and reserveInternal's preparation check share SQLite's

@@ -242,7 +242,7 @@ function syntheticNetwork(): NetworkState {
     }
     if (path.endsWith('/prepare')) {
       state.prepares++;
-      snapshot.preparation ??= await createPaymentPreparation(snapshot.record.order, { blockhash: address(8), lastValidBlockHeight: 100, feeLamports: '5000', createdAt: Date.now() });
+      snapshot.preparation ??= await createPaymentPreparation(snapshot.record.order, { blockhash: address(8), lastValidBlockHeight: 250, feeLamports: '5000', createdAt: Date.now() });
       return json(snapshot.preparation);
     }
     if (path.endsWith('/recover')) {
@@ -465,7 +465,7 @@ assert.equal(network.recovers, 0);
   const realNow = Date.now, future = originalOrder.expiresAt + 60000;
   Date.now = () => future;
   try {
-    network.blockHeight = 200;
+    network.blockHeight = 350;
     op = await recoverPaidOperation(op.id);
     assert.deepEqual(op.order, originalOrder); assert.equal(op.serialized, serialized); assert.deepEqual(op.archive, binding);
     assert.equal(op.id, staleCallback.id); assert.equal(op.token, staleCallback.token);
@@ -506,7 +506,7 @@ for (const reloadByGet of [true, false]) {
   op = await beginPaidOperation(input, signer.publicKey.toBase58(), '0', offered);
   op = await preparePaidOperation(op.id, wallet(network));
   const previous = structuredClone(op);
-  network.blockHeight = 200; network.loseRecovery = true;
+  network.blockHeight = 350; network.loseRecovery = true;
   await assert.rejects(() => recoverPaidOperation(op.id), /lost recovery/);
   const persisted = (await readPaidOperation(op.id))!;
   assert.equal(persisted.recoveryRequestedFor, previous.preparation!.preparationId);

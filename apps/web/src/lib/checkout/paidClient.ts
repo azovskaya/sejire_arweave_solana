@@ -335,12 +335,22 @@ export async function recoverSignedPaidOperation(id:string,isActive:ActiveContex
     const orderId=op.order.id;
     if(!op.recoveryRequestedFor)op=await writePaidOperation({...op,recoveryRequestedFor:op.preparation.preparationId});
     requireActive(isActive);
-    return accept(op,await api<PaidSnapshot>(`/orders/${orderId}/recover`,op.token,
-      {preparationId:op.recoveryRequestedFor}));
+    try {
+      return accept(op,await api<PaidSnapshot>(`/orders/${orderId}/recover`,op.token,
+        {preparationId:op.recoveryRequestedFor}));
+    } catch (error) {
+      // The server has proved only that the old blockhash is still live. Keep
+      // checking the same signature; do not leave an inert recovery marker.
+      if (error instanceof PaidApiError && error.message === 'payment_not_expired') return refresh(op);
+      throw error;
+    }
   });
 }
 
 type RpcCall = (method: string, params?: unknown[]) => Promise<unknown>;
+// Leave meaningful time for the actual Phantom approval and relay. An unsigned
+// preparation with less headroom is renewed by the server under the same order.
+const MIN_BLOCKHASH_HEADROOM = 120;
 class RpcUnavailable extends Error {
   readonly status: number;
   readonly retryAfter: string | null;
@@ -452,18 +462,18 @@ export async function payPaidOperation(id: string, preparationId: string, wallet
     if (wallet.publicKey.toString() !== op.order.payer) throw Error('wallet_changed');
     requireActive(isActive);
     await withPublicRpc(op, async call => {
-      const fee = await call('getFeeForMessage', [preparation.messageBase64, { commitment: 'finalized' }]) as { value?: unknown };
+      const fee = await call('getFeeForMessage', [preparation.messageBase64, { commitment: 'confirmed' }]) as { value?: unknown };
       if (fee?.value === null || fee?.value === undefined) {
-        const height = await call('getBlockHeight', [{ commitment: 'finalized' }]);
+        const height = await call('getBlockHeight', [{ commitment: 'confirmed' }]);
         if (!Number.isSafeInteger(height)) throw Error('solana_rpc_malformed');
-        throw Error((height as number) > preparation.lastValidBlockHeight ? 'payment_preparation_expired' : 'network_fee_not_ready');
+        throw Error((height as number) + MIN_BLOCKHASH_HEADROOM > preparation.lastValidBlockHeight ? 'payment_preparation_expired' : 'network_fee_not_ready');
       }
       if (rpcU64(fee.value) !== preparation.feeLamports || BigInt(preparation.feeLamports) > 100000n) throw Error('network_fee_changed');
       const balance = await call('getBalance', [op.order!.payer, { commitment: 'finalized' }]) as { value?: unknown };
       if (BigInt(rpcU64(balance?.value)) < BigInt(op.order!.total) + BigInt(preparation.feeLamports)) throw Error('insufficient_wallet_balance');
-      const height = await call('getBlockHeight', [{ commitment: 'finalized' }]);
+      const height = await call('getBlockHeight', [{ commitment: 'confirmed' }]);
       if (!Number.isSafeInteger(height)) throw Error('solana_rpc_malformed');
-      if ((height as number) > preparation.lastValidBlockHeight) throw Error('payment_preparation_expired');
+      if ((height as number) + MIN_BLOCKHASH_HEADROOM > preparation.lastValidBlockHeight) throw Error('payment_preparation_expired');
     });
     requireActive(isActive);
     op = await writePaidOperation({ ...op, signingStarted: true });
@@ -473,9 +483,9 @@ export async function payPaidOperation(id: string, preparationId: string, wallet
       requireActive(isActive);
       if (paymentExpiresAt(op.order!, preparation) <= Date.now()) throw Error('payment_preparation_expired');
       await withPublicRpc(op, async call => {
-        const height = await call('getBlockHeight', [{ commitment: 'finalized' }]);
+        const height = await call('getBlockHeight', [{ commitment: 'confirmed' }]);
         if (!Number.isSafeInteger(height)) throw Error('solana_rpc_malformed');
-        if ((height as number) > preparation.lastValidBlockHeight) throw Error('payment_preparation_expired');
+        if ((height as number) + MIN_BLOCKHASH_HEADROOM > preparation.lastValidBlockHeight) throw Error('payment_preparation_expired');
       });
       requireActive(isActive);
       if (paymentExpiresAt(op.order!, preparation) <= Date.now()) throw Error('payment_preparation_expired');

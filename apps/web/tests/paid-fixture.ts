@@ -31,7 +31,7 @@ export async function initialSnapshot(body: { kind?: 'preservation' | 'contribut
   return { record: { order, states: { payment: 'awaiting-payment', preservation: kind === 'contribution' ? 'not-applicable' : 'awaiting-payment', contribution: order.fundContribution.amount === '0' ? 'not-requested' : 'awaiting-payment' } },
     policy, preparation: null, execution: null, verification: null, expired: false, cancelled: false };
 }
-export const preparation = (snapshot: PaidSnapshot) => createPaymentPreparation(snapshot.record.order, { blockhash: address(8), lastValidBlockHeight: 100, feeLamports: '5000', createdAt: Date.now() });
+export const preparation = (snapshot: PaidSnapshot) => createPaymentPreparation(snapshot.record.order, { blockhash: address(8), lastValidBlockHeight: 250, feeLamports: '5000', createdAt: Date.now() });
 export async function legacyPreparation(snapshot: PaidSnapshot) {
   const modern = await preparation(snapshot);
   const messageBase64 = buildLegacyPaidPaymentMessage(snapshot.record.order, modern.blockhash);
@@ -42,7 +42,7 @@ export function recoveredPreparation(snapshot: PaidSnapshot, generation: number,
   if (!snapshot.preparation) throw Error('Synthetic previous preparation missing');
   const createdAt = Date.now();
   return createPaymentPreparation(snapshot.record.order, {
-    blockhash: address(20 + generation), lastValidBlockHeight: 200 + generation,
+    blockhash: address(20 + generation), lastValidBlockHeight: 400 + generation,
     feeLamports, createdAt, previousPreparationId: snapshot.preparation.preparationId,
     expiresAt: createdAt + 15 * 60000,
   });

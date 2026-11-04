@@ -45,11 +45,13 @@ export class RpcPaymentPreparer implements PaymentPreparer {
         if (account.owner !== SYSTEM_PROGRAM || account.executable !== false) throw new Error('recipient_not_ready');
       }
     }
-    const latest = object(await this.reader.rpc('getLatestBlockhash', [{ commitment: 'finalized' }], deadline)), value = object(latest.value);
+    // A finalized hash is already roughly 32 slots old. Phantom approval must
+    // start from the freshest low-fork-risk commitment supported by Solana.
+    const latest = object(await this.reader.rpc('getLatestBlockhash', [{ commitment: 'confirmed' }], deadline)), value = object(latest.value);
     assertBase58(value.blockhash as string, 32);
     if (typeof value.lastValidBlockHeight !== 'number' || !Number.isSafeInteger(value.lastValidBlockHeight) || value.lastValidBlockHeight < 0) throw new Error('invalid_block_height');
     const messageBase64 = buildPaidPaymentMessage(order, value.blockhash as string);
-    const fee = object(await this.reader.rpc('getFeeForMessage', [messageBase64, { commitment: 'finalized' }], deadline));
+    const fee = object(await this.reader.rpc('getFeeForMessage', [messageBase64, { commitment: 'confirmed' }], deadline));
     if (typeof fee.value !== 'number' || !Number.isSafeInteger(fee.value) || fee.value <= 0 || fee.value > 100000) throw new Error('network_fee_not_ready');
     const balance = object(await this.reader.rpc('getBalance', [order.payer, { commitment: 'finalized' }], deadline));
     requireBalance(balance.value, order.total, BigInt(fee.value));

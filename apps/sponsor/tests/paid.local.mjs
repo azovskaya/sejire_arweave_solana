@@ -200,6 +200,20 @@ async function run(c, f, mock, env = executionEnv) { await runPaidOrder(c.paid, 
 async function test(name, callback) { await callback(); checks++; console.log(`PASS paid SQLite: ${name}`); }
 
 try {
+  await test('explicit unsigned renewal preserves one order before blockhash expiry',async()=>{
+    const c=await context(),f=await fixture();await offer(c,f);await prepare(c,f);
+    const hold=c.rows('SELECT * FROM paid_holds');
+    const candidate=await recoveryFor(f);
+    const result=await recover(c,f,async work=>{
+      assert.equal(work.record.pendingSignature,undefined);
+      return {...candidate,finalizedBlockHeight:900};
+    });
+    assert.equal(result.preparation.preparationId,candidate.preparation.preparationId);
+    assert.equal(result.record.order.id,f.order.id);assert.equal(result.record.pendingSignature,undefined);
+    assert.deepEqual(c.rows('SELECT * FROM paid_holds'),hold);
+    assert.equal(c.count('orders'),1);assert.equal(c.count('credits'),0);
+  });
+
   await test('reserved signed payment survives restart and service retries only identical bytes', async () => {
     let c=await context();const f=await fixture();await offer(c,f);await prepare(c,f);
     const message=paymentMessageBytes(f.preparation.messageBase64);

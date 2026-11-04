@@ -9,7 +9,7 @@ const json=(route,value,status=200)=>route.fulfill({status,contentType:'applicat
 const networkState=()=>({ready:true,contributionReady:true,balance:'1000000000000000',requests:[],denied:[],creates:0,admissions:0,createKeys:[],bodies:[],prepares:0,reserves:0,sends:[],sendAttempts:0,cancels:0,reconciles:0,
   recoveries:0,recoveryTransitions:{},lostRecovery:false,recoveryFee:'6000',recoveryError:null,recoveryGate:null,
   finish:false,paid:false,phase:'queued',createError:null,lostCreate:false,lostReserve:false,lostSend:false,lostVerify:false,lostCancel:false,
-  wrongGenesis:false,wrongOrder:false,feeNull:false,rpcUnavailable:false,sendRpcError:false,legacyPreparation:false,height:50,heightCalls:0,expireOnFinalHeight:false,
+  wrongGenesis:false,wrongOrder:false,feeNull:false,rpcUnavailable:false,sendRpcError:false,legacyPreparation:false,height:50,heightCalls:0,expireOnFinalHeight:false,expireOnSend:false,verificationReason:null,
   expireTimeOnBalance:false,staleNotFoundOnPrepare:false,signedRecoveryEnabled:false,snapshot:null,archive:null,key:null,unknownSignature:null,dropBeforeAdmission:false,tombstone:false});
 
 async function installNetwork(context,state=networkState()){
@@ -107,7 +107,8 @@ async function installNetwork(context,state=networkState()){
     if(state.recoveryError)return json(route,{error:state.recoveryError},409);
     if(!state.recoveryTransitions[body.preparationId]){
      expect(body.preparationId).toBe(state.snapshot.preparation.preparationId);
-     if(state.height<=state.snapshot.preparation.lastValidBlockHeight)return json(route,{error:'payment_not_expired'},409);
+     if(state.snapshot.record.pendingSignature&&state.height<=state.snapshot.preparation.lastValidBlockHeight)
+       return json(route,{error:'payment_not_expired'},409);
      if(state.snapshot.record.pendingSignature){
        state.snapshot.record.pendingSignature=undefined;
        state.snapshot.record.states.payment='awaiting-payment';
@@ -144,7 +145,7 @@ async function installNetwork(context,state=networkState()){
    }
    if(method==='POST'&&(path===`/orders/${order.id}/verify`||path===`/orders/${order.id}/reconcile`)){
     state.reconciles++;
-    state.snapshot.verification=state.paid?{status:'verified'}:{status:'requires-reconciliation',reason:'not-found'};
+    state.snapshot.verification=state.paid?{status:'verified'}:{status:'requires-reconciliation',reason:state.verificationReason??'not-found'};
     if(state.lostVerify){state.lostVerify=false;return route.abort('failed');}
     return json(route,await update(page));
    }
@@ -163,11 +164,12 @@ async function installNetwork(context,state=networkState()){
    else if(body.method==='getFeeForMessage')result={value:state.feeNull?null:Number(state.snapshot?.preparation?.feeLamports??'5000')};
    else if(body.method==='getBlockHeight'){
     state.heightCalls++;
-    if(state.expireOnFinalHeight&&state.heightCalls===2){state.expireOnFinalHeight=false;state.height=101;}
+    if(state.expireOnFinalHeight&&state.heightCalls===2){state.expireOnFinalHeight=false;state.height=251;}
     result=state.height;
    }
    else if(body.method==='sendTransaction'){
     state.sendAttempts++;
+    if(state.expireOnSend){state.expireOnSend=false;state.height=251;}
     expect(state.reserves).toBeGreaterThan(0);
     if(state.height>state.snapshot.preparation.lastValidBlockHeight)
       return json(route,{jsonrpc:'2.0',id:body.id,error:{code:-32002,message:'Transaction simulation failed',data:{err:'BlockhashNotFound'}}});
@@ -330,7 +332,7 @@ test('legacy Phantom fee mutation is fenced, then the same order recovers with a
  const old=await saved(page,state.key);expect(old.op.walletResponse?.signature).toBeTruthy();
  await panel(page).getByText('Подробнее',{exact:true}).click();
  await expect(panel(page)).toContainText('Код ответа Phantom: phantom_added_compute_budget');
- state.height=101;
+ state.height=251;
  await page.evaluate(()=>{const now=Date.now;Date.now=()=>now()+360000;});
  await panel(page).getByRole('button',{name:'Продолжить сохранение'}).click();
  await expect.poll(()=>state.recoveries).toBe(1);
@@ -438,7 +440,7 @@ test('old journal response is not blamed on Phantom after same-order preparation
   delete op.walletResponse.preparationMessageBase64;
   await journal.writePaidOperation(op);
  },state.key);
- state.height=101;
+ state.height=251;
  await page.evaluate(()=>{const now=Date.now;Date.now=()=>now()+360000;});
  await panel(page).getByRole('button',{name:'Продолжить сохранение'}).click();
  await expect.poll(()=>state.recoveries).toBe(1);
@@ -498,7 +500,7 @@ test('recovering an uncertain wallet result never opens another Phantom prompt i
  await continuePayment(page);
  await expect(panel(page).getByRole('alert')).toContainText('Phantom не вернул надёжный результат');
  expect(await page.evaluate(()=>window.paidWallet.signCount)).toBe(1);
- state.height=101;
+ state.height=251;
  await page.evaluate(()=>{window.paidWallet.unknown=false;const now=Date.now;Date.now=()=>now()+360000;});
  await panel(page).getByRole('button',{name:'Продолжить сохранение'}).click();
  await expect.poll(()=>state.recoveries).toBe(1);
@@ -511,7 +513,7 @@ test('lost recovery reply cannot turn a follow-up check into another Phantom pro
  await page.evaluate(()=>{window.paidWallet.unknown=true;});
  await continuePayment(page);
  await expect(panel(page).getByRole('alert')).toContainText('Phantom не вернул надёжный результат');
- state.height=101;state.lostRecovery=true;
+ state.height=251;state.lostRecovery=true;
  await page.evaluate(()=>{window.paidWallet.unknown=false;const now=Date.now;Date.now=()=>now()+360000;});
  await panel(page).getByRole('button',{name:'Продолжить сохранение'}).click();
  await expect.poll(()=>state.recoveries).toBe(1);
@@ -539,7 +541,7 @@ test('wallet return for another message is retained locally and never submitted 
  expect((await saved(page,state.key)).op.walletResponse?.signature).toBe(stored.op.walletResponse.signature);
  expect(await page.evaluate(()=>window.paidWallet?.signCount??0)).toBe(0);
  expect(state.creates).toBe(1);expect(state.reserves).toBe(0);expect(state.sends).toHaveLength(0);
- state.height=101;
+ state.height=251;
  await page.evaluate(()=>{const now=Date.now;Date.now=()=>now()+360000;});
  await panel(page).getByRole('button',{name:'Продолжить сохранение'}).click();
  await expect.poll(()=>state.recoveries).toBe(1);
@@ -600,7 +602,7 @@ test('wrong Solana genesis fails closed before signing',async({page,context})=>{
 });
 
 test('expired unsigned blockhash is renewed for the same order before one wallet request',async({page,context})=>{
- const state=await installNetwork(context);state.height=101;await openEditor(page);await openPaid(page);
+ const state=await installNetwork(context);state.height=251;await openEditor(page);await openPaid(page);
  await panel(page).getByRole('button',{name:'Оплатить 0.03 SOL и сохранить'}).click();
  await expect.poll(()=>state.recoveries).toBe(1);await expect.poll(()=>state.sends.length).toBe(1);
  expect(state.creates).toBe(1);expect(await page.evaluate(()=>window.paidWallet.signCount)).toBe(1);
@@ -610,7 +612,7 @@ test('expired unsigned preparation after a preflight refusal renews the same ord
  const state=await installNetwork(context);state.balance='100';await openEditor(page);await openPaid(page);
  await continuePayment(page);await expect(panel(page).getByRole('alert')).toContainText('недостаточно SOL');
  const before=await saved(page,state.key);expect(before.op.preparation).toBeTruthy();
- state.balance='1000000000000000';state.height=101;
+ state.balance='1000000000000000';state.height=251;
  await page.evaluate(()=>{const now=Date.now;Date.now=()=>now()+360000;});
  await continuePayment(page);
  await expect.poll(()=>state.sends.length).toBe(1);
@@ -624,7 +626,7 @@ test('expiry after a 4001 refusal permits only an explicit renewal of the origin
  await page.evaluate(()=>{window.paidWallet.reject=true;});
  await continuePayment(page);await expect(panel(page).getByRole('alert')).toContainText('Кошелёк отклонил подпись');
  const before=await saved(page,state.key);expect(before.op.signingStarted).toBe(false);
- state.height=101;
+ state.height=251;
  await page.evaluate(()=>{window.paidWallet.reject=false;const now=Date.now;Date.now=()=>now()+360000;});
  await continuePayment(page);await expect.poll(()=>state.sends.length).toBe(1);
  expect(state.recoveries).toBe(1);expect(state.creates).toBe(1);expect(state.reserves).toBe(1);
@@ -640,7 +642,7 @@ test('expiry during pre-wallet network reads never prompts Phantom for the stale
  expect(state.creates).toBe(1);expect(state.reserves).toBe(0);expect(state.sends).toHaveLength(0);
  expect(state.recoveries).toBe(1);expect(Object.keys(state.recoveryTransitions)).toHaveLength(0);
  expect((await saved(page,state.key)).op.signingStarted).toBe(false);
- state.height=101;
+ state.height=251;
  await continuePayment(page);await expect.poll(()=>state.sends.length).toBe(1);
  expect(state.creates).toBe(1);expect(state.recoveries).toBe(2);
  expect(Object.keys(state.recoveryTransitions)).toHaveLength(1);
@@ -660,7 +662,7 @@ test('a known signature never authorizes renewal or a second wallet request afte
  const state=await installNetwork(context);state.lostReserve=true;await openEditor(page);await openPaid(page);
  await continuePayment(page);await expect(panel(page).getByRole('alert')).toBeVisible();
  const before=await saved(page,state.key);expect(before.op.signature).toBeTruthy();expect(before.op.signedTransaction).toBeTruthy();
- state.height=101;
+ state.height=251;
  await page.evaluate(()=>{const now=Date.now;Date.now=()=>now()+360000;});
  await panel(page).getByRole('button',{name:'Продолжить сохранение'}).click();
  expect(state.creates).toBe(1);expect(state.recoveries).toBe(0);expect(state.sends).toHaveLength(0);
@@ -736,7 +738,7 @@ test('expiry while Phantom is open keeps the late signature and does not create 
  await page.evaluate(()=>{window.paidWallet.hold=true;});
  await panel(page).getByRole('button',{name:'Оплатить 0.03 SOL и сохранить'}).evaluate(button=>button.click());
  await expect.poll(()=>page.evaluate(()=>window.paidWallet.signCount)).toBe(1);
- state.height=101;
+ state.height=251;
  await page.evaluate(()=>{window.paidWallet.hold=false;window.paidWallet.release();});
  await expect.poll(async()=>Boolean((await saved(page,state.key)).op.signature)).toBe(true);
  await expect.poll(()=>state.reserves).toBe(1);
@@ -758,13 +760,43 @@ test('an RPC send rejection stays visible while the exact signed attempt is reco
  expect(await page.evaluate(()=>window.paidWallet.signCount)).toBe(1);
 });
 
+test('expired Phantom signature recovers the same order even when polling reports a different reason',async({page,context})=>{
+ const state=networkState();state.signedRecoveryEnabled=true;state.expireOnSend=true;
+ await installNetwork(context,state);await openEditor(page);await openPaid(page);
+ await panel(page).getByRole('button',{name:'Оплатить 0.03 SOL и сохранить'}).click();
+ await expect(panel(page).getByRole('alert')).toContainText('устаревший blockhash');
+ expect(state.reserves).toBe(1);expect(state.sends).toHaveLength(0);
+ expect(await page.evaluate(()=>window.paidWallet.signCount)).toBe(1);
+ state.verificationReason='payment_send_unavailable';
+ await continuePayment(page);
+ await expect.poll(()=>state.recoveries).toBe(1);
+ await expect.poll(async()=>Boolean((await saved(page,state.key)).op.retiredSignedAttempts?.length)).toBe(true);
+ expect(state.creates).toBe(1);expect(state.sends).toHaveLength(0);
+ expect(await page.evaluate(()=>window.paidWallet.signCount)).toBe(1);
+ await panel(page).getByRole('button',{name:'Оплатить 0.03 SOL и сохранить'}).click();
+ await expect.poll(()=>state.sends.length).toBe(1);
+ expect(state.creates).toBe(1);expect(state.reserves).toBe(2);
+ expect(await page.evaluate(()=>window.paidWallet.signCount)).toBe(2);
+});
+
+test('near-expiry unsigned preparation is fenced before Phantom opens',async({page,context})=>{
+ const state=networkState();state.height=150;
+ await installNetwork(context,state);await openEditor(page);await openPaid(page);
+ await panel(page).getByRole('button',{name:'Оплатить 0.03 SOL и сохранить'}).click();
+ await expect.poll(()=>state.recoveries).toBe(1);
+ await expect.poll(()=>state.sends.length).toBe(1);
+ expect(state.prepares).toBe(1);expect(state.creates).toBe(1);expect(state.reserves).toBe(1);
+ expect(await page.evaluate(()=>window.paidWallet.signCount)).toBe(1);
+ expect(state.snapshot.preparation.schema).toBe('sejire/payment-preparation/v2');
+});
+
 test('expired reserved signature is fenced before a new explicit Phantom approval on the same order',async({page,context})=>{
  const state=networkState();state.signedRecoveryEnabled=true;
  await installNetwork(context,state);await openEditor(page);await openPaid(page);
  await page.evaluate(()=>{window.paidWallet.hold=true;});
  await panel(page).getByRole('button',{name:'Оплатить 0.03 SOL и сохранить'}).evaluate(button=>button.click());
  await expect.poll(()=>page.evaluate(()=>window.paidWallet.signCount)).toBe(1);
- state.height=101;
+ state.height=251;
  await page.evaluate(()=>{window.paidWallet.hold=false;window.paidWallet.release();});
  await expect.poll(()=>state.reserves).toBe(1);
  expect(state.sends).toHaveLength(0);
@@ -793,7 +825,7 @@ test('lost signed recovery reply survives reload and cannot reserve or sign agai
  await page.evaluate(()=>{window.paidWallet.hold=true;});
  await panel(page).getByRole('button',{name:'Оплатить 0.03 SOL и сохранить'}).evaluate(button=>button.click());
  await expect.poll(()=>page.evaluate(()=>window.paidWallet.signCount)).toBe(1);
- state.height=101;
+ state.height=251;
  await page.evaluate(()=>{window.paidWallet.hold=false;window.paidWallet.release();});
  await expect.poll(()=>state.reserves).toBe(1);
  state.lostRecovery=true;
