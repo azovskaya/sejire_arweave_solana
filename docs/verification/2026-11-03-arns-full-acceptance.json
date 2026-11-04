@@ -1,0 +1,48 @@
+{
+  "schema": "sejire/arns-promo-full-acceptance/v1",
+  "checkedAt": "2026-11-03T11:55:14Z",
+  "timezoneNote": "Asia/Calcutta",
+  "branch": "cursor/arns-promo-cutover-5150",
+  "fundApi": "https://sejire-sponsor.azovskaya-alissa.workers.dev",
+  "arnsOrigin": "https://sejire.ar.io",
+  "commands": {
+    "arns:prepare": "PASS",
+    "arns:live": "PASS",
+    "test:arns-browser": "PASS 2/2",
+    "test:fund-browser": "PASS 25/25",
+    "test:fund": "PASS",
+    "test:fund-runtime": "PASS",
+    "security:fund": "PASS"
+  },
+  "live": {
+    "ok": true,
+    "treasury": "qgoIFw9WsusMRapWzcFg4jNW08HSWvQkpAKOz86BUuI",
+    "balanceWinston": "68982625018060"
+  },
+  "hostedBrowser": {
+    "fundCalls": [
+      {
+        "method": "POST",
+        "path": "/api/fund/validate"
+      },
+      {
+        "method": "POST",
+        "path": "/api/fund/orders"
+      }
+    ],
+    "blocked": {
+      "http": 0,
+      "websocket": 0
+    }
+  },
+  "screenshots": [
+    "docs/verification/arns-promo-screenshots/promo-complete.png",
+    "docs/verification/arns-promo-screenshots/promo-complete-mobile.png"
+  ],
+  "ownerNext": "Review checklist docs/verification/2026-11-03-arns-owner-checklist.ru.md then deploy:permaweb + ArNS Target",
+  "notRun": [
+    "Arweave upload",
+    "ArNS Target change",
+    "live promo order POST"
+  ]
+}

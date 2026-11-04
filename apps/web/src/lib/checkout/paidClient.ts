@@ -11,6 +11,7 @@ import {
   validatePaidReceipt, paymentExpiresAt, SOLANA_RPCS, SOLANA_GENESIS, type DurablePaymentPreparation,
 } from '../../../../../packages/checkout/paid';
 import { parseEnvelope, serializeEnvelope } from '../crypto/envelope';
+import { isStaticPermawebHost } from '../permawebHost';
 import { envelopeDigest } from '../solana/policy';
 import { readPaidAccess, writePaidAccess, withPaidAccessLock, readPaidOperation, writePaidOperation, findContributionAttempt } from './paidJournal';
 import { announcePreservationChange, reservePaidAttempt, withPaidOperationLock } from './vaultGuard';
@@ -24,8 +25,15 @@ export class PaidApiError extends Error {
   }
 }
 
+function configuredApiOrigin(): string {
+  const raw = import.meta.env?.VITE_CHECKOUT_API_URL || import.meta.env?.VITE_FUND_API_URL;
+  if (raw) return raw;
+  if (typeof location !== 'undefined' && isStaticPermawebHost(location.hostname)) throw Error('checkout_api_not_configured');
+  return location.origin;
+}
+
 function endpoint(): string {
-  const raw = import.meta.env?.VITE_CHECKOUT_API_URL || import.meta.env?.VITE_FUND_API_URL || location.origin;
+  const raw = configuredApiOrigin();
   const url = new URL(raw);
   if (url.origin !== raw || (url.protocol !== 'https:' && !['localhost', '127.0.0.1'].includes(url.hostname))) throw Error('invalid_checkout_endpoint');
   return url.origin + '/api/checkout';
