@@ -4,6 +4,7 @@ import { ComputeBudgetProgram, Keypair, PublicKey, SystemInstruction, SystemProg
 import { Buffer } from 'buffer';
 import { fixture } from './browser-fixture';
 import { buildLegacyPaidPaymentMessage, createPaidOrderFromPolicy, createPaymentPreparation, paidPolicyHash, paymentMessageBytes, sha256Hex, SOLANA_GENESIS, type ContributionPolicy, type PaidPolicy } from '../../../packages/checkout/paid';
+import { LIGHTHOUSE_PROGRAM } from '../../../packages/checkout/paid';
 import { parseAmount } from '../../../packages/checkout/amounts';
 import type { PaidArchiveBinding } from '../../../packages/checkout/order';
 import type { PaidSnapshot } from '../src/lib/checkout/paidTypes';
@@ -66,7 +67,7 @@ export function transfers(serialized: string) {
 export function installWallet() {
   const key = Keypair.fromSeed(new Uint8Array(32).fill(17));
   const state = { signCount: 0, connects: 0, reject: false, unknown: false, changeMessage: false,
-    changePaymentAccount: false, changePaymentData: false, extraSystemTransfer: false, extraMemo: false, extraOtherProgram: false, removePaymentInstruction: false,
+    changePaymentAccount: false, changePaymentData: false, extraSystemTransfer: false, extraMemo: false, extraOtherProgram: false, lighthouseAssertion: false, removePaymentInstruction: false,
     phantomPriorityFees: false, priorityAtEnd: false, changeBudget: false, feeInjections: 0,
     changeAccountAfterSign: false, account: key.publicKey,
     signature: '', key: '', closedDuringSign: false, hold: false, release: (() => {}) as () => void };
@@ -100,6 +101,9 @@ export function installWallet() {
       }));
       if (state.extraOtherProgram) transaction.instructions.push(new TransactionInstruction({
         programId: new PublicKey('Stake11111111111111111111111111111111111111'), keys: [], data: Buffer.alloc(0),
+      }));
+      if (state.lighthouseAssertion) transaction.instructions.push(new TransactionInstruction({
+        programId: new PublicKey(LIGHTHOUSE_PROGRAM), keys: [], data: Buffer.from([1, 2, 3]),
       }));
       if (state.removePaymentInstruction) transaction.instructions.pop();
       transaction.partialSign(key); state.signature = bs58.encode(transaction.signatures[0].signature!);

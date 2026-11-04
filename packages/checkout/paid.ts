@@ -159,21 +159,73 @@ export type LegacyCompiledMessage = {
 export function serializeLegacyPaymentMessage(message: LegacyCompiledMessage): string {
   const keys = message.accountKeys, header = message.header;
   if (!Array.isArray(keys) || keys.length < 1 || keys.length > 256 || new Set(keys).size !== keys.length ||
-      !Array.isArray(message.instructions) || message.instructions.length < 1 || message.instructions.length > 4) throw new Error('invalid_payment_message');
+      !Array.isArray(message.instructions) || message.instructions.length < 1 || message.instructions.length > 7) throw new Error('invalid_payment_message');
   const byte = (value: number) => { if (!Number.isSafeInteger(value) || value < 0 || value > 255) throw new Error('invalid_payment_message'); return value; };
   const key = (value: string) => { assertBase58(value, 32); return [...decode58(value, 32)]; };
   const out = [byte(header.numRequiredSignatures), byte(header.numReadonlySignedAccounts), byte(header.numReadonlyUnsignedAccounts),
     ...short(keys.length), ...keys.flatMap(key), ...key(message.recentBlockhash), ...short(message.instructions.length)];
   for (const instruction of message.instructions) {
     const data = typeof instruction.data === 'string' ? decode58(instruction.data, 32) : instruction.data;
-    if (!(data instanceof Uint8Array) || data.length > 32 || instruction.programIdIndex >= keys.length || !Array.isArray(instruction.accounts) ||
-        instruction.accounts.length > 5 || instruction.accounts.some((index: number) => index >= keys.length)) throw new Error('invalid_payment_message');
+    if (!(data instanceof Uint8Array) || data.length > 256 || instruction.programIdIndex >= keys.length || !Array.isArray(instruction.accounts) ||
+        instruction.accounts.length > 12 || instruction.accounts.some((index: number) => index >= keys.length)) throw new Error('invalid_payment_message');
     out.push(byte(instruction.programIdIndex), ...short(instruction.accounts.length), ...instruction.accounts.map(byte), ...short(data.length), ...data);
   }
   if (out.length > 1232) throw new Error('invalid_payment_message');
   return base64(new Uint8Array(out));
 }
 const COMPUTE_BUDGET_PROGRAM = 'ComputeBudget111111111111111111111111111111';
+export const LIGHTHOUSE_PROGRAM = 'L2TExMFKdjpN9kozasaurPirfHy9P8sbXoAN1qA3S95';
+function encode58(bytes: Uint8Array): string {
+  let n = 0n; for (const byte of bytes) n = (n << 8n) + BigInt(byte);
+  let value = ''; for (; n > 0n; n /= 58n) value = BASE58[Number(n % 58n)] + value;
+  return '1'.repeat(bytes.findIndex(byte => byte !== 0) < 0 ? bytes.length : bytes.findIndex(byte => byte !== 0)) + value;
+}
+type ParsedPaymentMessage = { header: LegacyCompiledMessage['header']; accountKeys: string[]; recentBlockhash: string;
+  instructions: { program: string; accounts: string[]; data: Uint8Array }[]; writable: Map<string, boolean> };
+function parsePaymentMessage(value: string): ParsedPaymentMessage {
+  const bytes = paymentMessageBytes(value); let offset = 0;
+  const byte = () => { if (offset >= bytes.length) throw Error('payment_preparation_mismatch'); return bytes[offset++]; };
+  const size = () => { let n = 0, shift = 0, part: number; do { part = byte(); n |= (part & 127) << shift; shift += 7; if (shift > 21) throw Error('payment_preparation_mismatch'); } while (part & 128); return n; };
+  const slice = (length: number) => { if (length < 0 || offset + length > bytes.length) throw Error('payment_preparation_mismatch'); const part = bytes.slice(offset, offset + length); offset += length; return part; };
+  const header = { numRequiredSignatures: byte(), numReadonlySignedAccounts: byte(), numReadonlyUnsignedAccounts: byte() };
+  const count = size(); if (count < 1 || count > 32 || header.numRequiredSignatures > count || header.numReadonlyUnsignedAccounts > count - header.numRequiredSignatures) throw Error('payment_preparation_mismatch');
+  const accountKeys = Array.from({ length: count }, () => encode58(slice(32)));
+  if (new Set(accountKeys).size !== count) throw Error('payment_preparation_mismatch');
+  const recentBlockhash = encode58(slice(32)); const instructionCount = size();
+  if (instructionCount < 1 || instructionCount > 7) throw Error('payment_preparation_mismatch');
+  const instructions = Array.from({ length: instructionCount }, () => {
+    const programIndex = byte(), accountCount = size(); if (programIndex >= count || accountCount > 12) throw Error('payment_preparation_mismatch');
+    const indexes = Array.from({ length: accountCount }, byte);
+    if (indexes.some(index => index >= count)) throw Error('payment_preparation_mismatch');
+    return { program: accountKeys[programIndex], accounts: indexes.map(index => accountKeys[index]), data: slice(size()) };
+  });
+  if (offset !== bytes.length) throw Error('payment_preparation_mismatch');
+  const writable = new Map(accountKeys.map((key, index) => [key, index < header.numRequiredSignatures
+    ? index < header.numRequiredSignatures - header.numReadonlySignedAccounts
+    : index < count - header.numReadonlyUnsignedAccounts]));
+  return { header, accountKeys, recentBlockhash, instructions, writable };
+}
+/** Phantom may append Lighthouse assertions after signing. The only permitted
+ * delta is up to three Lighthouse instructions with no new writable accounts.
+ * Transfer and budget instructions, existing permissions, blockhash and payer remain fixed. */
+export function validateWalletPaymentMessage(preparationMessage: string, signedMessage: string): void {
+  if (preparationMessage === signedMessage) return;
+  const before = parsePaymentMessage(preparationMessage), after = parsePaymentMessage(signedMessage);
+  if (after.header.numRequiredSignatures !== 1 || after.header.numReadonlySignedAccounts !== 0 ||
+      after.accountKeys[0] !== before.accountKeys[0] || after.recentBlockhash !== before.recentBlockhash ||
+      after.instructions.length <= before.instructions.length || after.instructions.length > before.instructions.length + 3) throw Error('payment_preparation_mismatch');
+  for (const key of before.accountKeys) if (after.writable.get(key) !== before.writable.get(key)) throw Error('payment_preparation_mismatch');
+  for (const key of after.accountKeys) if (!before.writable.has(key) && after.writable.get(key) !== false) throw Error('payment_preparation_mismatch');
+  for (let i = 0; i < before.instructions.length; i++) {
+    const old = before.instructions[i], current = after.instructions[i];
+    if (old.program !== current.program || old.accounts.join(',') !== current.accounts.join(',') ||
+        old.data.length !== current.data.length || old.data.some((byte, index) => byte !== current.data[index])) throw Error('payment_preparation_mismatch');
+  }
+  for (const guard of after.instructions.slice(before.instructions.length)) {
+    if (guard.program !== LIGHTHOUSE_PROGRAM || guard.data.length < 1 || guard.data.length > 256 ||
+        guard.accounts.length > 10) throw Error('payment_preparation_mismatch');
+  }
+}
 /** Retained for orders prepared before Phantom-safe compute instructions were added. */
 export function buildLegacyPaidPaymentMessage(order: PaidOrder, blockhash: string): string {
   assertOrder(order);
@@ -255,11 +307,12 @@ export async function validatePaymentPreparation(order: PaidOrder, value: unknow
 }
 /** Public-key check before reserving a client-supplied signature. No signing or broadcast occurs.
  * Chain inclusion/finality still requires validatePreparedPayment on trusted RPC evidence. */
-export async function verifyPreparedPaymentSignature(order: PaidOrder, preparation: DurablePaymentPreparation, signature: string): Promise<void> {
+export async function verifyPreparedPaymentSignature(order: PaidOrder, preparation: DurablePaymentPreparation, signature: string, signedMessage?: string): Promise<void> {
   const checked = await validatePaymentPreparation(order, preparation);
   assertBase58(signature, 64);
+  validateWalletPaymentMessage(checked.messageBase64, signedMessage ?? checked.messageBase64);
   const publicKey = await crypto.subtle.importKey('raw', new Uint8Array(decode58(order.payer, 32)), { name: 'Ed25519' }, false, ['verify']);
-  if (!await crypto.subtle.verify({ name: 'Ed25519' }, publicKey, new Uint8Array(decode58(signature, 64)), new Uint8Array(paymentMessageBytes(checked.messageBase64)))) throw new Error('invalid_payment_signature');
+  if (!await crypto.subtle.verify({ name: 'Ed25519' }, publicKey, new Uint8Array(decode58(signature, 64)), new Uint8Array(paymentMessageBytes(signedMessage ?? checked.messageBase64)))) throw new Error('invalid_payment_signature');
 }
 
 export type PaidReceipt = Readonly<{

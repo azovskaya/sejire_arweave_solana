@@ -5,7 +5,8 @@ import { assertOrder, createOrder, createPaidOrder, SYSTEM_PROGRAM, type PaidOrd
 import {
   SOLANA_GENESIS, SOLANA_RPCS, validatePaidPolicy, validateContributionPolicy, paidPolicyHash, createPaidOrderFromPolicy, validatePaidOrderPolicy,
   buildPaidPaymentMessage, buildLegacyPaidPaymentMessage, createPaymentPreparation, validatePaymentPreparation, validatePaidReceipt, sha256Hex,
-  paymentMessageBytes, paymentExpiresAt, PAYMENT_RECOVERY_WINDOW_MS, verifyPreparedPaymentSignature, type PaidPolicy, type DurablePaymentPreparation,
+  paymentMessageBytes, paymentExpiresAt, PAYMENT_RECOVERY_WINDOW_MS, verifyPreparedPaymentSignature,
+  validateWalletPaymentMessage, serializeLegacyPaymentMessage, LIGHTHOUSE_PROGRAM, type PaidPolicy, type DurablePaymentPreparation,
 } from '../../../../packages/checkout/paid';
 import { validatePayment, validatePreparedPayment } from './paymentValidator';
 import { RpcPaymentPreparer } from './paymentPreparation';
@@ -233,6 +234,29 @@ await test('reserve can verify the payer signature against exact saved bytes wit
   await assert.rejects(verifyPreparedPaymentSignature(checked, prepared, sig(5)), /invalid_payment_signature/);
   const other = await createPaymentPreparation(checked, { blockhash: addr(9), lastValidBlockHeight: 1001, feeLamports: '5000', createdAt: checked.createdAt + 200 });
   await assert.rejects(verifyPreparedPaymentSignature(checked, other, signature), /invalid_payment_signature/);
+});
+await test('Phantom Lighthouse suffix preserves payment and binds its actual signature', async () => {
+  const pair = generateKeyPairSync('ed25519'), publicBytes = pair.publicKey.export({ format: 'der', type: 'spki' }).subarray(-32);
+  const checked = createPaidOrder({ ...order, asset: 'SOL', payer: encode58(publicBytes) }), prepared = await preparation(checked);
+  const original = sdk.Message.from(paymentMessageBytes(prepared.messageBase64));
+  const keys = original.accountKeys.map(key => key.toBase58());
+  const guarded = serializeLegacyPaymentMessage({ accountKeys: [...keys, LIGHTHOUSE_PROGRAM], recentBlockhash: original.recentBlockhash,
+    header: { ...original.header, numReadonlyUnsignedAccounts: original.header.numReadonlyUnsignedAccounts + 1 },
+    instructions: [...original.instructions, { programIdIndex: keys.length, accounts: [1], data: new Uint8Array([1, 2, 3]) }] });
+  validateWalletPaymentMessage(prepared.messageBase64, guarded);
+  const signature = encode58(sign(null, paymentMessageBytes(guarded), pair.privateKey));
+  await verifyPreparedPaymentSignature(checked, prepared, signature, guarded);
+  await assert.rejects(verifyPreparedPaymentSignature(checked, prepared, signature), /invalid_payment_signature/);
+  const parsed = sdk.Message.from(paymentMessageBytes(guarded)), accountKeys = parsed.accountKeys.map(key => key.toBase58());
+  const raw = rawTransaction(prepared, signature);
+  raw.transaction.message = { header: parsed.header, accountKeys, recentBlockhash: parsed.recentBlockhash, instructions: parsed.instructions };
+  raw.meta.preBalances = accountKeys.map(() => 100000000); raw.meta.postBalances = accountKeys.map(() => 100000000);
+  assert.equal((await validatePreparedPayment(checked, decodeTransaction(raw, signature, chain), chain, prepared)).orderId, checked.id);
+  const changed = serializeLegacyPaymentMessage({ accountKeys: [...keys, LIGHTHOUSE_PROGRAM], recentBlockhash: original.recentBlockhash,
+    header: { ...original.header, numReadonlyUnsignedAccounts: original.header.numReadonlyUnsignedAccounts + 1 },
+    instructions: [...original.instructions.slice(0, -1), { ...original.instructions.at(-1)!, data: new Uint8Array([2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]) },
+      { programIdIndex: keys.length, accounts: [1], data: new Uint8Array([1]) }] });
+  assert.throws(() => validateWalletPaymentMessage(prepared.messageBase64, changed), /payment_preparation_mismatch/);
 });
 await test('modern validator requires the persisted preparation and exact chain message', async () => {
   const evidence = decodeTransaction(rawTransaction(prep), sig(5), chain);

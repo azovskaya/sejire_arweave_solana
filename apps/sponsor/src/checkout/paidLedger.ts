@@ -132,8 +132,8 @@ export class PaidLedger {
       return candidate;
     });await this.storage.sync();await this.arm();return result;
   }
-  async reserve(hash:string,id:string,signature:string,preparationId:string,now:number){
-    this.api.ownerPaid(hash,id);return this.reserveInternal(id,signature,preparationId,now);
+  async reserve(hash:string,id:string,signature:string,preparationId:string,now:number,signedMessage?:string){
+    this.api.ownerPaid(hash,id);return this.reserveInternal(id,signature,preparationId,now,signedMessage);
   }
   /** An explicit recovery only fences a preparation that this ledger never
    * authorized for broadcast. Existing V2 clients reserve before sending. */
@@ -182,10 +182,10 @@ export class PaidLedger {
     });
     await this.storage.sync();await this.arm();return this.snapshot(id);
   }
-  async reserveInternal(id:string,signature:string,preparationId:string,now:number){
+  async reserveInternal(id:string,signature:string,preparationId:string,now:number,signedMessage?:string){
     assertBase58(signature,64);const row=this.row(id),record=this.record(id),p=json<DurablePaymentPreparation>(row.preparation_json);
     if(!p||p.preparationId!==preparationId||row.released)throw Error('payment_not_prepared');
-    await verifyPreparedPaymentSignature(record.order,p,signature);
+    await verifyPreparedPaymentSignature(record.order,p,signature,signedMessage);
     // A stored preparation already locked this hold before any wallet interaction.
     // Expiry cannot make an unknown signed payment safe to replace or release.
     const result=await this.orders.beginReconciliationLinked(id,signature,()=>{

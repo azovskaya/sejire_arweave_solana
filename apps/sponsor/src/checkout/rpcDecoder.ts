@@ -2,7 +2,7 @@ import { assertBase58, assetFor, SYSTEM_PROGRAM, TOKEN_PROGRAM } from '../../../
 import { assertUnits } from '../../../../packages/checkout/amounts';
 import type { ChainPolicy, TransactionEvidence, Transfer } from './paymentValidator';
 import { RpcEvidenceError } from './rpcErrors';
-import { serializeLegacyPaymentMessage } from '../../../../packages/checkout/paid';
+import { LIGHTHOUSE_PROGRAM, serializeLegacyPaymentMessage } from '../../../../packages/checkout/paid';
 
 // Compiled instruction data, not parsed browser amounts or balance deltas.
 const ALPHABET = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
@@ -27,7 +27,7 @@ function address(value: unknown): string {
   return value;
 }
 function dataBytes(value: unknown): Uint8Array {
-  if (typeof value !== 'string' || value.length > 32) fail('unsupported-transaction');
+  if (typeof value !== 'string' || value.length > 360) fail('unsupported-transaction');
   let n = 0n;
   for (const char of value) { const d = ALPHABET.indexOf(char); if (d < 0) fail(); n = n * 58n + BigInt(d); }
   const tail: number[] = []; for (; n > 0n; n >>= 8n) tail.unshift(Number(n & 255n));
@@ -101,12 +101,16 @@ export function decodeTransaction(result: unknown, signature: string, chain: Cha
   }
   let tokenPre: ReturnType<typeof tokenMetadata> | undefined, tokenPost: ReturnType<typeof tokenMetadata> | undefined;
   const transfers: Transfer[] = [], computeSeen = new Set<number>();
-  const instructions = list(message.instructions, 4);
+  const instructions = list(message.instructions, 7);
   if (!instructions.length) fail('unsupported-transaction');
   for (let i = 0; i < instructions.length; i++) {
     const ix = object(instructions[i]), program = keys[keyIndex(ix.programIdIndex)];
     if (ix.stackHeight !== undefined && ix.stackHeight !== null && ix.stackHeight !== 1) fail('unsupported-transaction');
-    const accounts = list(ix.accounts, 5).map(keyIndex), bytes = dataBytes(ix.data);
+    const accounts = list(ix.accounts, 12).map(keyIndex), bytes = dataBytes(ix.data);
+    if (program === LIGHTHOUSE_PROGRAM) {
+      if (!transfers.length || accounts.length > 10 || !bytes.length || bytes.length > 256) fail('unsupported-transaction');
+      continue;
+    }
     if (program === COMPUTE_BUDGET) {
       const op = bytes[0];
       if (accounts.length || transfers.length || computeSeen.has(op)) fail('unsupported-transaction');
@@ -143,7 +147,7 @@ export function decodeTransaction(result: unknown, signature: string, chain: Cha
         header: { numRequiredSignatures: required, numReadonlySignedAccounts: readonlySigned, numReadonlyUnsignedAccounts: readonlyUnsigned },
         instructions: instructions.map(value => {
           const ix = object(value);
-          return { programIdIndex: keyIndex(ix.programIdIndex), accounts: list(ix.accounts, 5).map(keyIndex), data: dataBytes(ix.data) };
+          return { programIdIndex: keyIndex(ix.programIdIndex), accounts: list(ix.accounts, 12).map(keyIndex), data: dataBytes(ix.data) };
         }) });
     } catch { fail('unsupported-transaction'); }
   }

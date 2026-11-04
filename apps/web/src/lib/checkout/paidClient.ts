@@ -8,7 +8,7 @@ import { parseRpcJson, rpcU64 } from '../../../../../packages/checkout/rpcJson';
 import { assertBase58, assertOrder } from '../../../../../packages/checkout/order';
 import {
   paidPolicyHash, validatePaidPolicy, validateContributionPolicy, validatePaidOrderPolicy, validatePaymentPreparation,
-  validatePaidReceipt, paymentExpiresAt, SOLANA_RPCS, SOLANA_GENESIS, type DurablePaymentPreparation,
+  validatePaidReceipt, validateWalletPaymentMessage, paymentExpiresAt, SOLANA_RPCS, SOLANA_GENESIS, type DurablePaymentPreparation,
 } from '../../../../../packages/checkout/paid';
 import { parseEnvelope, serializeEnvelope } from '../crypto/envelope';
 import { envelopeDigest } from '../solana/policy';
@@ -383,8 +383,8 @@ async function validateSignedTransaction(op: PaidOperation): Promise<void> {
     const bytes = Buffer.from(op.signedTransaction, 'base64');
     if (bytes.length > 1232 || bytes.toString('base64') !== op.signedTransaction) throw Error();
     const signed = Transaction.from(bytes);
-    if (signed.serializeMessage().toString('base64') !== preparation.messageBase64 ||
-        signed.feePayer?.toBase58() !== op.order.payer || signed.signatures.length !== 1 ||
+    validateWalletPaymentMessage(preparation.messageBase64, signed.serializeMessage().toString('base64'));
+    if (signed.feePayer?.toBase58() !== op.order.payer || signed.signatures.length !== 1 ||
         !signed.verifySignatures() || !signed.signatures[0]?.signature ||
         bs58.encode(signed.signatures[0].signature) !== op.signature || signed.serialize().toString('base64') !== op.signedTransaction) throw Error();
   } catch { throw Error('checkout_signed_transaction_mismatch'); }
@@ -478,8 +478,8 @@ export async function payPaidOperation(id: string, preparationId: string, wallet
     }
     let valid = false;
     try {
-      valid = Buffer.from(signed.serializeMessage()).toString('base64') === preparation.messageBase64 &&
-        signed.signatures.length === 1 && Boolean(returned.signature) && signed.verifySignatures();
+      validateWalletPaymentMessage(preparation.messageBase64, Buffer.from(signed.serializeMessage()).toString('base64'));
+      valid = signed.signatures.length === 1 && Boolean(returned.signature) && signed.verifySignatures();
     } catch { /* Keep the returned bytes, but do not submit them. */ }
     if (!valid) {
       await writePaidOperation({ ...op, walletResponse: returned });
@@ -487,7 +487,8 @@ export async function payPaidOperation(id: string, preparationId: string, wallet
     }
     op = await writePaidOperation({ ...op, signature: returned.signature, signedTransaction: returned.signedTransaction });
     requireActive(isActive);
-    await api(`/orders/${op.order!.id}/reserve`, op.token, { signature: op.signature, preparationId });
+    await api(`/orders/${op.order!.id}/reserve`, op.token, { signature: op.signature, preparationId,
+      signedMessage: signed.serializeMessage().toString('base64') });
     requireActive(isActive);
     try { await broadcast(op, isActive); } catch { requireActive(isActive); return refresh(op); }
     requireActive(isActive);
@@ -597,7 +598,8 @@ export async function checkPaidOperation(id: string, isActive: ActiveContext = a
       // bytes are never broadcast until the server accepted that reservation.
       if (op.signature && op.preparation && !op.snapshot?.record.pendingSignature) {
         requireActive(isActive);
-        await api(`/orders/${op.order.id}/reserve`, op.token, { signature: op.signature, preparationId: op.preparation.preparationId });
+        await api(`/orders/${op.order.id}/reserve`, op.token, { signature: op.signature, preparationId: op.preparation.preparationId,
+          ...(op.signedTransaction ? { signedMessage: Transaction.from(Buffer.from(op.signedTransaction, 'base64')).serializeMessage().toString('base64') } : {}) });
       }
       requireActive(isActive);
       op = await accept(op, await api<PaidSnapshot>(`/orders/${op.order.id}/reconcile`, op.token, {}));

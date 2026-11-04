@@ -282,9 +282,11 @@ export async function checkoutApi(request: Request, env: CheckoutApiEnv,
         return reply(200,await ledger.call<DurablePaymentPreparation>({action:'paidPrepare',hash,id,preparation:candidate}));
       }
       if(match![2]==='reserve'){
-        const input=fields(await body(request),['signature','preparationId']);
-        if(typeof input.signature!=='string'||typeof input.preparationId!=='string')return bad();
-        await ledger.call({action:'paidReserve',hash,id,signature:input.signature,preparationId:input.preparationId});
+        const input=fields(await body(request),['signature','preparationId','signedMessage'],['signature','preparationId']);
+        if(typeof input.signature!=='string'||typeof input.preparationId!=='string'||
+          (input.signedMessage!==undefined&&typeof input.signedMessage!=='string'))return bad();
+        await ledger.call({action:'paidReserve',hash,id,signature:input.signature,preparationId:input.preparationId,
+          ...(input.signedMessage!==undefined?{signedMessage:input.signedMessage}:{})});
         return reply(202,await ledger.call({action:'paidGet',hash,id}));
       }
       if(match![2]==='cancel'){

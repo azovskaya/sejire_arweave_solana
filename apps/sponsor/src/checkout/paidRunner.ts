@@ -28,7 +28,7 @@ export async function recoverPaidOrder(ledger:PaidLedger,env:PaidEnv,hash:string
     const inspection=await(deps.inspect?.(work)??inspectPaymentRecoveryWithRpc(env,work.record.order,work.preparation));
     if(inspection.status==='found'){
       // A genuine lost wallet result remains the original payment, never a renewal.
-      await ledger.reserveInternal(id,inspection.signature,preparationId,Date.now());
+      await ledger.reserveInternal(id,inspection.signature,preparationId,Date.now(),inspection.evidence.messageBase64);
       await ledger.commit(id,inspection.payment,Date.now());
       return ledger.snapshot(id);
     }
@@ -60,7 +60,7 @@ export async function runPaidOrder(ledger:PaidLedger,env:PaidEnv,id:string,deps:
         if(!reader.findByReference){reason='reference_lookup_unavailable';return;}
         const found=await reader.findByReference(work.record.order,work.preparation);
         if(found.status!=='found'){reason=found.reason;return;}
-        await ledger.reserveInternal(id,found.signature,work.preparation.preparationId,Date.now());
+        await ledger.reserveInternal(id,found.signature,work.preparation.preparationId,Date.now(),found.evidence.messageBase64);
         await ledger.commit(id,found.payment,Date.now());
       }
       work=ledger.work(id);

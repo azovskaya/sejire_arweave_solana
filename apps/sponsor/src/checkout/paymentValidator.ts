@@ -1,6 +1,6 @@
 import { assertUnits } from '../../../../packages/checkout/amounts';
 import { assertBase58, assertOrder, type Order, type Network, type Asset } from '../../../../packages/checkout/order';
-import { SOLANA_GENESIS, validatePaymentPreparation, paymentExpiresAt, type DurablePaymentPreparation } from '../../../../packages/checkout/paid';
+import { SOLANA_GENESIS, validatePaymentPreparation, validateWalletPaymentMessage, paymentExpiresAt, type DurablePaymentPreparation } from '../../../../packages/checkout/paid';
 import type { PaidOrder } from '../../../../packages/checkout/order';
 /** Normalized evidence from a TRUSTED server RPC decoder, NEVER an HTTP request body.
  * SolanaRpcReader/decoder inspect raw instructions in A2.1. They must inspect
@@ -63,7 +63,8 @@ export function validatePayment(order: Order, tx: TransactionEvidence, chain: Ch
 export async function validatePreparedPayment(order: PaidOrder, tx: TransactionEvidence, chain: ChainPolicy, preparation: DurablePaymentPreparation): Promise<ValidatedPayment> {
   const checked = await validatePaymentPreparation(order, preparation);
   if (chain.genesisHash !== SOLANA_GENESIS[order.network] || chain.network !== order.network) throw new Error('wrong_network');
-  if (tx.recentBlockhash !== checked.blockhash || tx.messageBase64 !== checked.messageBase64 || tx.feeLamports !== checked.feeLamports) throw new Error('payment_preparation_mismatch');
+  if (tx.recentBlockhash !== checked.blockhash || !tx.messageBase64 || tx.feeLamports !== checked.feeLamports) throw new Error('payment_preparation_mismatch');
+  validateWalletPaymentMessage(checked.messageBase64, tx.messageBase64);
   // Only a validated, durably fenced v2 preparation may carry a renewed payment window.
   if (tx.blockTimeMs === null || tx.blockTimeMs < Math.floor(checked.createdAt / 1000) * 1000) throw new Error('payment_predates_preparation');
   return validatePaymentEvidence(order, tx, chain, paymentExpiresAt(order, checked));

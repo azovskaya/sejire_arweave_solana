@@ -72,7 +72,7 @@ export class CheckoutLedger {
       case 'paidByKey': return Response.json(this.paid.byKey(data.hash,data.key,now));
       case 'paidCancelByKey': return Response.json(await this.paid.cancelByKey(data.hash,data.key,now));
       case 'paidPrepare': return Response.json(await this.paid.prepare(data.hash,data.id,f.preparation as DurablePaymentPreparation,now));
-      case 'paidReserve': return Response.json(await this.paid.reserve(data.hash,data.id,data.signature,String(f.preparationId),now));
+      case 'paidReserve': return Response.json(await this.paid.reserve(data.hash,data.id,data.signature,String(f.preparationId),now,f.signedMessage === undefined ? undefined : String(f.signedMessage)));
       case 'paidCancel': return Response.json(await this.paid.cancel(data.hash,data.id,f.preparationId===null?null:String(f.preparationId),now));
       case 'paidRecover': return Response.json(await recoverPaidOrder(this.paid,this.env,data.hash,data.id,String(f.preparationId)));
       case 'paidRun': {

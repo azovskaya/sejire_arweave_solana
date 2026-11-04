@@ -118,6 +118,11 @@ async function installNetwork(context,state=networkState()){
     expect(state.snapshot.expired).toBe(false);expect(body.preparationId).toBe(state.snapshot.preparation.preparationId);
     const stored=await page.evaluate(async key=>(await import('/src/lib/checkout/paidJournal.ts')).readPaidOperation(key),state.key);
     expect(stored.signature).toBe(body.signature);expect(stored.signedTransaction).toBeTruthy();
+    const signedMessage=await page.evaluate(raw=>{
+      const bytes=Uint8Array.from(atob(raw),char=>char.charCodeAt(0));
+      const count=bytes[0];return btoa(String.fromCharCode(...bytes.slice(1+64*count)));
+    },stored.signedTransaction);
+    expect(body.signedMessage).toBe(signedMessage);
     state.reserves++;state.snapshot.record.pendingSignature=body.signature;
     state.snapshot.record.states.payment='requires-reconciliation';
     if(state.lostReserve){state.lostReserve=false;return route.abort('failed');}
@@ -396,6 +401,16 @@ test('read-only diagnostic reveals only the public program ID of an unmatched in
  await expect(panel(page)).toContainText('Код ответа Phantom: wallet_extra_other_program');
  await expect(panel(page)).toContainText('Публичная программа дополнительной инструкции: Stake11111111111111111111111111111111111111');
  expect(state.creates).toBe(1);expect(state.reserves).toBe(0);expect(state.sends).toHaveLength(0);
+ expect(await page.evaluate(()=>window.paidWallet.signCount)).toBe(1);
+});
+
+test('Phantom Lighthouse guard keeps one payment, reserve, send and archive version',async({page,context})=>{
+ const state=await installNetwork(context);await openEditor(page);await openPaid(page);
+ await page.evaluate(()=>{window.paidWallet.lighthouseAssertion=true;});
+ await panel(page).getByRole('button',{name:'Оплатить 0.03 SOL и сохранить'}).click();
+ await expect.poll(()=>state.reserves).toBe(1);
+ await expect.poll(()=>state.sends.length).toBe(1);
+ expect(state.creates).toBe(1);expect(state.admissions).toBe(1);
  expect(await page.evaluate(()=>window.paidWallet.signCount)).toBe(1);
 });
 
