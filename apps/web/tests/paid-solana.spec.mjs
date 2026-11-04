@@ -637,16 +637,13 @@ test('expiry after a 4001 refusal permits only an explicit renewal of the origin
 test('expiry during pre-wallet network reads never prompts Phantom for the stale preparation',async({page,context})=>{
  const state=await installNetwork(context);state.expireTimeOnBalance=true;await openEditor(page);await openPaid(page);
  await continuePayment(page);
- await expect(panel(page).getByRole('alert')).toBeVisible();
- expect(await page.evaluate(()=>window.paidWallet.signCount)).toBe(0);
- expect(state.creates).toBe(1);expect(state.reserves).toBe(0);expect(state.sends).toHaveLength(0);
- expect(state.recoveries).toBe(1);expect(Object.keys(state.recoveryTransitions)).toHaveLength(0);
- expect((await saved(page,state.key)).op.signingStarted).toBe(false);
- state.height=251;
- await continuePayment(page);await expect.poll(()=>state.sends.length).toBe(1);
- expect(state.creates).toBe(1);expect(state.recoveries).toBe(2);
+ await expect.poll(()=>state.sends.length).toBe(1);
+ expect(state.creates).toBe(1);expect(state.recoveries).toBe(1);
  expect(Object.keys(state.recoveryTransitions)).toHaveLength(1);
+ expect(state.snapshot.preparation.preparationId).not.toBe(Object.keys(state.recoveryTransitions)[0]);
+ expect(state.reserves).toBe(1);
  expect(await page.evaluate(()=>window.paidWallet.signCount)).toBe(1);
+ expect((await saved(page,state.key)).op.preparation.preparationId).toBe(state.snapshot.preparation.preparationId);
 });
 
 test('finalized expiry after journal write prevents a wallet call and renews only through the server',async({page,context})=>{
