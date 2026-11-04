@@ -509,6 +509,7 @@ try {
     c=reopen(c);
     const renewal=await recoveryFor(f);
     await assert.rejects(recover(c,f,async()=>({...renewal,checkedSignature:sig(9)})),/previous_payment_unresolved/);
+    await assert.rejects(recover(c,f,async()=>({...renewal,finalizedBlockHeight:900,checkedSignature:f.signature})),/payment_not_expired/);
     assert.equal(c.paid.snapshot(f.order.id).record.pendingSignature,f.signature);
     const next=await recover(c,f,async work=>{
       assert.equal(work.record.pendingSignature,f.signature);
