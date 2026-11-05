@@ -50,7 +50,7 @@ async function setup(browser,preparer,mode={}){
     window.phantom={solana:{connect:()=>{window.__walletCalls++;throw Error('wallet forbidden');},signAndSendTransaction:()=>{window.__walletCalls++;throw Error('wallet forbidden');}}};
     window.arweaveWallet={connect:()=>{window.__walletCalls++;throw Error('wallet forbidden');},sign:()=>{window.__walletCalls++;throw Error('wallet forbidden');}};
   },entries);
-  const counts={graphql:[],metadata:[],raw:[],data:[],rendered:0,writes:0,peers:0,blocked:0,wordsInRequests:0};
+  const counts={graphql:[],metadata:[],raw:[],direct:[],data:[],rendered:0,writes:0,peers:0,blocked:0,wordsInRequests:0};
   const firstMetadata404=new Set(),firstRaw404=new Set();
   await guardNetwork(context,()=>{counts.blocked++;});
   await context.route('https://**/*',async route=>{
@@ -91,7 +91,16 @@ async function setup(browser,preparer,mode={}){
       await route.fulfill({status:200,contentType:'text/plain',body:encoded});return;
     }
     const id=url.pathname.split('/').at(-1);const version=versions.find(v=>v.id===id);
-    if(url.pathname===`/${id}`&&version){counts.rendered++;await route.fulfill({status:200,contentType:'text/html',body:'<html>rendered</html>'});return;}
+    if(url.pathname===`/${id}`&&version){
+      counts.direct.push(host);
+      if(mode.transientGateway404){await route.fulfill({status:404,body:'not indexed yet'});return;}
+      if(mode.directMissing){await route.fulfill({status:404,body:'data unavailable'});return;}
+      if(mode.directFallback){
+        const body=mode.directFallback==='corrupt'?'corrupt':version.raw;
+        await route.fulfill({status:200,contentType:'application/octet-stream',body});return;
+      }
+      counts.rendered++;await route.fulfill({status:200,contentType:'text/html',body:'<html>rendered</html>'});return;
+    }
     if(url.pathname===`/tx/${id}`&&version){
       counts.metadata.push(host);
       if(mode.transientGateway404&&!firstMetadata404.has(host)){
@@ -104,6 +113,7 @@ async function setup(browser,preparer,mode={}){
     }
     if(url.pathname.startsWith('/raw/')&&version){
       counts.raw.push(host);
+      if(mode.directFallback||mode.directMissing){await route.fulfill({status:404,body:'raw not served'});return;}
       if(mode.transientGateway404&&!firstRaw404.has(host)){
         firstRaw404.add(host);await route.fulfill({status:404,body:'data not indexed yet'});return;
       }
@@ -188,6 +198,32 @@ test('Same-gateway base64url data repairs wrong same-length raw and restores eve
     await expectFullTree(s,{source:'network',headTxId:s.base.id});
     expect(s.counts.data.length).toBeGreaterThan(0);
     for(const host of s.counts.data)expect(s.counts.raw).toContain(host);
+  }finally{await s.context.close();}
+});
+
+test('Direct gateway URL opens the complete archive when raw is 404',async({browser,page:preparer})=>{
+  const s=await setup(browser,preparer,{directFallback:'valid'});try{
+    await runUi(s.page,s.family.words);
+    await expectFullTree(s,{source:'network',headTxId:s.base.id});
+    expect(s.counts.direct.length).toBeGreaterThan(0);
+    for(const host of s.counts.direct)expect(s.counts.raw).toContain(host);
+    readOnly(s.counts);
+  }finally{await s.context.close();}
+});
+
+test('Corrupt direct gateway bytes cannot open a tree',async({browser,page:preparer})=>{
+  const s=await setup(browser,preparer,{directFallback:'corrupt'});try{
+    const result=await runCore(s.page,s.family.words);
+    expect(result.ok).toBe(false);expect(result.code).toBe('RAW_HASH_MISMATCH');
+    expect(s.counts.direct.length).toBeGreaterThan(0);readOnly(s.counts);
+  }finally{await s.context.close();}
+});
+
+test('A confirmed header with no served bytes remains unavailable',async({browser,page:preparer})=>{
+  const s=await setup(browser,preparer,{directMissing:true});try{
+    const result=await runCore(s.page,s.family.words);
+    expect(result.ok).toBe(false);expect(result.code).toBe('DATA_UNAVAILABLE');
+    expect(s.counts.direct.length).toBeGreaterThan(0);readOnly(s.counts);
   }finally{await s.context.close();}
 });
 

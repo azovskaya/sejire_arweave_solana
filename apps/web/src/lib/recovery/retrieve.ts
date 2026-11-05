@@ -125,18 +125,24 @@ export async function fetchRaw(ctx:RecoveryContext,pool:GatewayPool,candidate:He
   const maxBytes=expectedBytes??MAX_BACKUP_BYTES;
   try{return await readWithGatewayRetry(ctx,pool,async(url,signal)=>{
     const start=performance.now();let lastError:unknown;
-    for(const nativeData of [false,true]){
+    const routes:[string,boolean][]=[[`/raw/${candidate.txId}`,false],[`/tx/${candidate.txId}/data`,true]];
+    for(let i=0;i<routes.length;i++){
       if(signal.aborted)throw Error('archive_read_aborted');
       let status='unavailable';
       try{
-        const path=nativeData?`/tx/${candidate.txId}/data`:`/raw/${candidate.txId}`;
+        const [path,nativeData]=routes[i];
         const body=await readArchiveResponse(ctx.fetcher,`${url}${path}`,nativeData?Math.ceil(maxBytes*4/3):maxBytes,signal,value=>{status=value;},nativeData);
         const bytes=nativeData?decodeNativeData(body,maxBytes):body;
         if(expectedBytes!==undefined&&bytes.length!==expectedBytes)throw new RecoveryFailure('RAW_HASH_MISMATCH');
         const digest=await crypto.subtle.digest('SHA-256',bytes as BufferSource);const hash=[...new Uint8Array(digest)].map(b=>b.toString(16).padStart(2,'0')).join('');
         if(expectedHash&&hash!==expectedHash)throw new RecoveryFailure('RAW_HASH_MISMATCH');
         pool.markSuccess(url,performance.now()-start);return bytes;
-      }catch(error){lastError=error;if(error instanceof RecoveryFailure)mismatch??=error;}
+      }catch(error){
+        lastError=error;if(error instanceof RecoveryFailure)mismatch??=error;
+        // Some gateways serve an indexed transaction at /:id while /raw/:id
+        // returns 404. Accept those bytes only after the same size/hash checks.
+        if(i===0&&status==='404')routes.splice(1,0,[`/${candidate.txId}`,false]);
+      }
       finally{diagnostics.gateways.push({host:gatewayHost(url),operation:'raw',status});}
     }
     pool.markFailure(url);throw lastError;

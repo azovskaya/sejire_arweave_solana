@@ -36,6 +36,7 @@ import { useI18n } from "../lib/i18n/I18nProvider";
 import { solanaMessages } from "../lib/solana/messages";
 import { LanguageSwitch } from "./LanguageSwitch";
 import { findPreservationAttempt, subscribePreservationChanges } from "../lib/checkout/vaultGuard";
+import { listPendingPaidAttempts } from "../lib/checkout/paidJournal";
 import { getFundedPromo } from "../lib/fund/preference";
 import { downloadJson } from "../lib/download";
 
@@ -101,12 +102,16 @@ export function Workspace({ store, guide, onStoreChange, onGuideChange, onHome }
     let live = true;
     setCheckingFundAttempt(true);
     const treeId = store.meta.id;
-    void findPreservationAttempt({ treeId, vaultId: getVaultSession()?.vaultId }).then(attempt => {
+    void (async()=>{
+      const attempt = await findPreservationAttempt({ treeId, vaultId: getVaultSession()?.vaultId });
+      const unmatchedPaid = !attempt && (await listPendingPaidAttempts()).length > 0;
+      return {attempt,unmatchedPaid};
+    })().then(({attempt,unmatchedPaid}) => {
       if (!live) return;
-      setHasPendingFund(Boolean(attempt));
+      setHasPendingFund(Boolean(attempt || unmatchedPaid));
       // A reload resumes only the existing encrypted request. Opening this
       // dialog never commits edits, reseals a vault, or creates a new order.
-      if (attempt && autoResumeTree.current !== treeId) {
+      if ((attempt || unmatchedPaid) && autoResumeTree.current !== treeId) {
         setQuickFundedCode(null);
         setPublishStore(latestStore.current);
         setShowPublish(true);
@@ -333,7 +338,10 @@ export function Workspace({ store, guide, onStoreChange, onGuideChange, onHome }
       // after the button was rendered. Pending work never commits new edits.
       let pending = hasPendingFund;
       if (fundedSavingEnabled) {
-        try { pending = Boolean(await findPreservationAttempt({ treeId, vaultId: getVaultSession()?.vaultId })); }
+        try {
+          pending = Boolean(await findPreservationAttempt({ treeId, vaultId: getVaultSession()?.vaultId })) ||
+            (await listPendingPaidAttempts()).length > 0;
+        }
         catch { pending = true; } // The modal explains an unreadable journal.
       }
       const current = latestStore.current;

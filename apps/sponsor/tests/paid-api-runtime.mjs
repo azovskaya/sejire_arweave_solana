@@ -114,9 +114,10 @@ fetchMock.get('https://arweave.net').intercept({ path: '/tx', method: 'POST' }).
   const old = wire.submissions.get(raw.id);
   if (old) { assert.deepEqual(raw, old.raw); old.posts++; }
   else wire.submissions.set(raw.id, { raw, serialized, posts: 1, chunks: new Map(), complete: Boolean(raw.data) });
-  if (raw.data) {
-    assert.equal(Buffer.from(raw.data, 'base64url').toString(), serialized);
-    if (wire.lostSingleAck) { wire.lostSingleAck = false; return { statusCode: 503, data: 'synthetic lost acknowledgement' }; }
+  assert.equal(raw.data, '');
+  if (wire.lostSingleAck && Buffer.byteLength(serialized) < 256 * 1024) {
+    wire.lostSingleAck = false;
+    return { statusCode: 503, data: 'synthetic lost acknowledgement' };
   }
   return { statusCode: 200, data: 'OK' };
 }).persist();

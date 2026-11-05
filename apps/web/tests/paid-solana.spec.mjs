@@ -890,3 +890,23 @@ test('explicit continuation nudges an unavailable paid archive without another p
  expect(state.creates).toBe(1);expect(state.sends).toHaveLength(1);
  expect(await page.evaluate(()=>window.paidWallet?.signCount??0)).toBe(0);
 });
+
+test('changed editor identity offers the earlier paid order before any new payment',async({page,context})=>{
+ const state=await installNetwork(context);await openEditor(page);await openPaid(page);
+ await panel(page).getByRole('button',{name:'Оплатить 0.03 SOL и сохранить'}).click();
+ await expect.poll(()=>state.sends.length).toBe(1);
+ state.phase='requires-reconciliation';
+ await page.evaluate(async key=>{
+  const db=await new Promise((resolve,reject)=>{const r=indexedDB.open('sejire-checkout-journal',1);r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error);});
+  await new Promise((resolve,reject)=>{const tx=db.transaction('operations','readwrite'),store=tx.objectStore('operations'),r=store.get(key);
+   r.onsuccess=()=>{store.put({...r.result,treeId:'different-local-tree'});};tx.oncomplete=resolve;tx.onerror=reject;});
+  db.close();sessionStorage.clear();
+ },state.key);
+ await page.reload();
+ await expect(page.getByRole('heading',{name:'Ранее начатое сохранение'})).toBeVisible();
+ expect(state.creates).toBe(1);expect(state.sends).toHaveLength(1);
+ await page.getByRole('button',{name:/Оплата подтверждена/}).click();
+ await expect(panel(page).getByRole('button',{name:'Продолжить сохранение'})).toBeVisible();
+ expect(state.creates).toBe(1);expect(state.sends).toHaveLength(1);
+ expect(await page.evaluate(()=>window.paidWallet?.signCount??0)).toBe(0);
+});

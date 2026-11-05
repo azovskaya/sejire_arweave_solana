@@ -53,7 +53,9 @@ for (const host of ['https://arweave.net', 'https://g8way.io']) {
 fetchMock.get('https://arweave.net').intercept({ path: '/tx', method: 'POST' }).reply(options => {
   observe('https://arweave.net', '/tx', 'POST');
   const body = typeof options.body === 'string' ? options.body : Buffer.from(options.body).toString();
-  wire.uploads.push(body); assert.equal(body, wire.signed.raw);
+  wire.uploads.push(body);
+  const expected = JSON.parse(wire.signed.raw); expected.data = '';
+  assert.deepEqual(JSON.parse(body), expected);
   return { statusCode: wire.mode === 'lost-ack' ? 503 : 200, data: wire.mode === 'lost-ack' ? 'synthetic lost acknowledgement' : 'OK' };
 }).persist();
 fetchMock.get('https://arweave.net').intercept({ path: '/chunk', method: 'POST' }).reply(options => {
@@ -109,7 +111,9 @@ try {
     wire.mode = 'good';
     const accepted = await call('submit', { signed: wire.signed }); assert.equal(accepted.status, 200);
     assert.deepEqual(accepted.body, { id: wire.signed.id, accepted: true });
-    assert.deepEqual(wire.uploads, [wire.signed.raw, wire.signed.raw]);
+    const header = JSON.parse(wire.signed.raw); header.data = '';
+    assert.deepEqual(wire.uploads.map(body => JSON.parse(body)), [header, header]);
+    assert.equal(wire.replayChunks.length, 1);
   });
   await test('confirmed metadata plus exact node-data produces complete proof', async () => {
     const result = await call('reconcile', { signed: wire.signed }); assert.equal(result.status, 200);

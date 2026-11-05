@@ -57,7 +57,7 @@ import type { FundOrderView } from "../lib/fund/client";
 import type { FundAttempt } from "../lib/fund/journal";
 import { clearGuardedFundAttempt as clearFundAttempt, findPreservationAttempt, type PreservationAttempt } from "../lib/checkout/vaultGuard";
 import { completePaidLocally, paidCompletion } from "../lib/checkout/paidClient";
-import { readPaidOperation } from "../lib/checkout/paidJournal";
+import { listPendingPaidAttempts, readPaidOperation } from "../lib/checkout/paidJournal";
 import type { PaidCompletion, PaidOperation } from "../lib/checkout/paidTypes";
 import { envelopeDigest } from "../lib/solana/policy";
 
@@ -88,6 +88,7 @@ type Mode =
   | "existing"
   | "new-version"
   | "resume-check"
+  | "resume-paid-choice"
   | "busy"
   | "fund-wait"
   | "pay"
@@ -161,6 +162,7 @@ export function PublishSeedModal({
   const [publishParentTx, setPublishParentTx] = useState<string | null>(parentTxId);
   const [resumeFunded, setResumeFunded] = useState(false);
   const [resumeCheckoutId, setResumeCheckoutId] = useState<string | null>(null);
+  const [unmatchedPaid, setUnmatchedPaid] = useState<PaidOperation[]>([]);
   const [quickFlowCode, setQuickFlowCode] = useState<string | null>(null);
   const [initialSaveMethod, setInitialSaveMethod] = useState<"choose" | "promo" | "solana">("choose");
   const [resumeCheckRevision, setResumeCheckRevision] = useState(0);
@@ -197,6 +199,14 @@ export function PublishSeedModal({
         restorePreservationAttempt(attempt, knownPhrase);
         return;
       }
+      const pendingPaid = await listPendingPaidAttempts();
+      if (!isActive()) return;
+      if (pendingPaid.length) {
+        setUnmatchedPaid(pendingPaid);
+        setMode("resume-paid-choice");
+        return;
+      }
+      setUnmatchedPaid([]);
       setMode(initialMode);
       if (quickFundedCode && knownPhrase && !quickStarted.current) {
         quickStarted.current = true;
@@ -430,6 +440,14 @@ export function PublishSeedModal({
       if (attempt) {
         if (!preservationV2) throw Error("fund_attempt_in_progress");
         restorePreservationAttempt(attempt, normalized);
+        return;
+      }
+      const pendingPaid = await listPendingPaidAttempts();
+      if (!isActive()) return;
+      if (pendingPaid.length) {
+        setUnmatchedPaid(pendingPaid);
+        setMode("resume-paid-choice");
+        setStatus("");
         return;
       }
       resumeChecked = true;
@@ -902,6 +920,25 @@ export function PublishSeedModal({
             {!error && <p className="sub" role="status">Проверяем прежнее сохранение…</p>}
             <div className="actions">
               {error && <button className="btn" type="button" onClick={() => setResumeCheckRevision(value => value + 1)}>Повторить проверку</button>}
+              <button className="btn ghost" type="button" onClick={requestClose}>{t.close}</button>
+            </div>
+          </div>
+        )}
+
+        {mode === "resume-paid-choice" && (
+          <div>
+            <h3>Ранее начатое сохранение</h3>
+            <p>В этом браузере есть незавершённый запрос. Его локальный ID не совпал с открытым деревом. Проверьте прежний запрос перед новой оплатой.</p>
+            <div className="actions" style={{ flexDirection: "column", alignItems: "stretch" }}>
+              {unmatchedPaid.map(attempt => (
+                <button className="btn" type="button" key={attempt.id} onClick={() => {
+                  try { restorePreservationAttempt({ method: "paid", attempt }, knownPhrase); }
+                  catch { setError("Не удалось открыть прежний запрос. Новая оплата не запускается."); }
+                }}>
+                  {attempt.snapshot?.record.states.payment === "verified" ? "Оплата подтверждена" : "Проверить прежний платёж"}
+                  {" · "}{new Date(attempt.createdAt).toLocaleString(locale)}
+                </button>
+              ))}
               <button className="btn ghost" type="button" onClick={requestClose}>{t.close}</button>
             </div>
           </div>
