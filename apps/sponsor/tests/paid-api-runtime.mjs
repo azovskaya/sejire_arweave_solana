@@ -34,7 +34,7 @@ const arKey = await webcrypto.subtle.exportKey('jwk', arPair.privateKey);
 const treasury = createHash('sha256').update(Buffer.from(arKey.n, 'base64url')).digest('base64url');
 const fetchMock = createFetchMock(); fetchMock.disableNetConnect();
 const wire = { calls: [], payments: new Map(), archives: new Map(), submissions: new Map(),
-  lostSingleAck: true, failChunkOnce: true, droppedChunks: 0, chunkPosts: 0, rpcRateLimited: false,
+  lostSingleAck: true, failChunkOnce: false, droppedChunks: 0, chunkPosts: 0, rpcRateLimited: false,
   rpcForbiddenDefault: false, rpcForbiddenPocket: false, referenceRows: new Map(), referenceUnavailable: false,
   blockhash: addr(8), lastValidBlockHeight: 1000, blockHeight: 100 };
 const observe = (url, method) => wire.calls.push({ url, method });
@@ -417,6 +417,7 @@ try {
     const changed = await call(`/orders/${second.id}/reserve`, b, { signature: paid.signature, preparationId: 'e'.repeat(64) }); assert.equal(changed.status, 409);
   });
   await test('accepted header with interrupted chunk resumes exact signed TX and completes without a second SOL payment', async () => {
+    wire.failChunkOnce = true;
     await arm(second.id);
     await waitFor(second.id, state => wire.droppedChunks === 1 && state.paid.lease_until === 0, 'partial chunk upload');
     const initial = [...wire.submissions.values()].find(row => row.serialized === large.serialized); assert(initial); const id = initial.raw.id;
