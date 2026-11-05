@@ -363,6 +363,30 @@ export class DirectArweavePreservation {
     } finally { op.close(); }
   }
 
+  /** Reannounce only the exact persisted data chunks after a confirmed header has
+   * no readable archive. The already mined transaction and its signature stay fixed. */
+  async replayData(input: DirectInput, signed: SignedDirectPlan, options: DirectOptions = {}): Promise<void> {
+    if (!this.#executionEnabled) throw Error('direct_execution_disabled');
+    const op = operation(options);
+    try {
+      const snapshot = { ...signed, archive: { ...signed.archive } };
+      const checked = await this.#plan(input, snapshot, true); active(op);
+      const chunks = checked.tx.chunks.chunks.length;
+      if (chunks < 1) throw Error('direct_data_replay_uncertain');
+      for (let index = 0; index < chunks; index += 2) {
+        await Promise.all(Array.from({ length: Math.min(2, chunks - index) }, async (_, offset) => {
+          active(op);
+          const response = await request(this.#transport, `${hosts[0]}/chunk`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(checked.tx.getChunk(index + offset, checked.bytes)),
+          }, 16_384, op);
+          if (![200, 202, 208].includes(response.status)) throw Error('direct_data_replay_uncertain');
+        }));
+      }
+    } catch { throw Error('direct_data_replay_uncertain'); }
+    finally { op.close(); }
+  }
+
   /** Read-only, including when signing is paused or the secret is unavailable. */
   async reconcile(input: DirectInput, signed: SignedDirectPlan, options: DirectOptions = {}): Promise<DirectCheck> {
     const op = operation(options);

@@ -20,7 +20,7 @@ const serialized = JSON.stringify({ schema: 'sejire/envelope/v1', vault_id: 'd'.
 const input = { orderId: 'e'.repeat(32), serialized, archive: { digest: createHash('sha256').update(serialized).digest('hex'),
   bytes: Buffer.byteLength(serialized), vaultId: 'd'.repeat(32), parentTxId: Buffer.alloc(32, 8).toString('base64url') } };
 const fetchMock = createFetchMock(); fetchMock.disableNetConnect();
-const wire = { mode: 'good', calls: [], uploads: [], signed: null };
+const wire = { mode: 'good', calls: [], uploads: [], replayChunks: [], signed: null };
 const observe = (host, path, method) => wire.calls.push({ url: `${host}${path}`, method });
 for (const host of ['https://arweave.net', 'https://g8way.io']) {
   const pool = fetchMock.get(host);
@@ -55,6 +55,14 @@ fetchMock.get('https://arweave.net').intercept({ path: '/tx', method: 'POST' }).
   const body = typeof options.body === 'string' ? options.body : Buffer.from(options.body).toString();
   wire.uploads.push(body); assert.equal(body, wire.signed.raw);
   return { statusCode: wire.mode === 'lost-ack' ? 503 : 200, data: wire.mode === 'lost-ack' ? 'synthetic lost acknowledgement' : 'OK' };
+}).persist();
+fetchMock.get('https://arweave.net').intercept({ path: '/chunk', method: 'POST' }).reply(options => {
+  observe('https://arweave.net', '/chunk', 'POST');
+  const body = JSON.parse(typeof options.body === 'string' ? options.body : Buffer.from(options.body).toString());
+  assert.equal(body.data_root, JSON.parse(wire.signed.raw).data_root);
+  assert.equal(body.data_size, String(Buffer.byteLength(serialized)));
+  wire.replayChunks.push(body);
+  return { statusCode: 200, data: 'OK' };
 }).persist();
 
 let runtime, passed = 0;
@@ -108,6 +116,15 @@ try {
     assert.equal(result.body.onchainConfirmed, true); assert.equal(result.body.archiveVerified, true);
     assert.equal(result.body.rewardWinston, '3000000000'); assert.equal(result.body.confirmations, 7);
     assert.ok(wire.calls.some(call => call.url.endsWith(`/tx/${wire.signed.id}/data`)));
+  });
+  await test('confirmed header can replay its identical data chunk without another transaction post or signature', async () => {
+    const uploads = wire.uploads.length, before = wire.replayChunks.length;
+    assert.equal((await call('paused-replay-data', { signed: wire.signed })).body.error, 'direct_execution_disabled');
+    const result = await call('replay-data', { signed: wire.signed });
+    assert.equal(result.status, 200);
+    assert.equal(wire.uploads.length, uploads);
+    assert.equal(wire.replayChunks.length, before + 1);
+    assert.deepEqual(Buffer.from(wire.replayChunks.at(-1).chunk, 'base64url'), Buffer.from(serialized));
   });
   await test('confirmed spend survives unavailable/corrupted archive; neither case reports archive verified', async () => {
     for (const mode of ['missing-archive', 'wrong-archive']) {

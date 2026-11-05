@@ -14,7 +14,7 @@ export function paidProvider(env:PaidEnv,policy:PaidPolicy):DirectArweavePreserv
 export type PaidRunnerDependencies={
   reader?:(policy:CheckoutPolicy)=>TrustedTransactionReader;
   sendPayment?:(raw:string,signature:string,lastValidBlockHeight:number,policy:CheckoutPolicy)=>Promise<void>;
-  provider?:(policy:PaidPolicy)=>Pick<DirectArweavePreservation,'prepare'|'sign'|'submit'|'reconcile'>;
+  provider?:(policy:PaidPolicy)=>Pick<DirectArweavePreservation,'prepare'|'sign'|'submit'|'replayData'|'reconcile'>;
 };
 export type PaidRecoveryDependencies={inspect?:(work:PaidWork)=>Promise<PaymentRecoveryInspection>};
 /** Explicit owner action; no wallet call, new order, AR hold or archive execution.
@@ -94,11 +94,17 @@ export async function runPaidOrder(ledger:PaidLedger,env:PaidEnv,id:string,deps:
       await ledger.proof(id,lease,proof,Date.now());
       if(proof.onchainConfirmed&&proof.archiveVerified)return;
     }
+    const missingConfirmedData=proof?.onchainConfirmed===true&&proof.archiveVerified===false&&proof.reason==='archive_unavailable';
     const needsUpload=newSignature||!work.submitAcknowledged||proof?.state==='not_found';
-    if(needsUpload&&env.CHECKOUT_PAID_EXECUTION_ENABLED==='true'){
+    if((needsUpload||missingConfirmedData)&&env.CHECKOUT_PAID_EXECUTION_ENABLED==='true'){
       // Header acceptance is not a complete upload. A lost chunk is replayed
       // with the SAME persisted signed TX until every submit is acknowledged.
-      try{await provider.submit(work.input,signed,options);await ledger.submitted(id,lease);}
+      // Once the header is confirmed, announce only its existing signed data
+      // chunks. A fresh archive signature or SOL charge is never requested.
+      try{
+        if(missingConfirmedData)await provider.replayData(work.input,signed,options);
+        else{await provider.submit(work.input,signed,options);await ledger.submitted(id,lease);}
+      }
       catch{reason='storage_network_unavailable';}
       proof=null;
     }

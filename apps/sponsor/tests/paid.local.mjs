@@ -159,7 +159,7 @@ async function promo(c, amount, options = {}) {
 }
 
 function mockRunner(c, f, options = {}) {
-  const calls = { prepare: 0, sign: 0, submit: [], reconcile: 0, read: 0, lookup: 0 };
+  const calls = { prepare: 0, sign: 0, submit: [], replayData: [], reconcile: 0, read: 0, lookup: 0 };
   const state = { proof: 'pending', loseSubmit: false, lookup: 'missing', noRead: false, ...options };
   const check = signed => ({ txId: signed.id, state: state.proof === 'missing' ? 'not_found' :
     state.proof === 'offline' ? 'unavailable' : ['confirmed', 'complete'].includes(state.proof) ? 'confirmed' : 'pending',
@@ -182,6 +182,12 @@ function mockRunner(c, f, options = {}) {
       calls.submit.push(structuredClone(signed));
       if (state.loseSubmit) { state.loseSubmit = false; throw Error('synthetic_header_accepted_chunk_response_lost'); }
       return { id: signed.id, accepted: true };
+    },
+    async replayData(input, signed) {
+      assert.deepEqual(input, f.input);
+      assert.deepEqual(c.paid.work(f.order.id).signed, signed, 'only persisted signed data may be replayed');
+      assert.equal(c.paid.snapshot(f.order.id).record.payment.signature, f.signature);
+      calls.replayData.push(structuredClone(signed));
     },
     async reconcile(input, signed) { calls.reconcile++; assert.deepEqual(input, f.input); return check(signed); },
   };
@@ -684,7 +690,14 @@ try {
     assert.deepEqual(snapshot.execution.verification, { transactionConfirmed: true, archiveVerified: false,
       owner: TREASURY_ADDRESS, rewardWinston: '20', archive: f.order.archive });
     assert.equal(c.paid.treasury.revision(TREASURY_ADDRESS), 1);
+    await run(c, f, mock);
+    assert.equal(mock.calls.sign, 1, 'missing data cannot create another archive signature');
+    assert.equal(mock.calls.submit.length, 1, 'confirmed header must not be reposted');
+    assert.equal(mock.calls.replayData.length, 1);
+    assert.deepEqual(mock.calls.replayData[0], saved);
+    assert.equal(c.count('credits'), 1);
     mock.state.proof = 'offline'; await run(c, f, mock);
+    assert.equal(mock.calls.replayData.length, 1, 'unknown network state cannot trigger data replay');
     assert.equal(c.paid.snapshot(f.order.id).execution.verification.transactionConfirmed, true);
     assert.equal(c.paid.treasury.revision(TREASURY_ADDRESS), 1);
     c = reopen(c); const finish = mockRunner(c, f, { proof: 'complete' }); await run(c, f, finish); await run(c, f, finish);
@@ -692,8 +705,23 @@ try {
     assert.equal(snapshot.execution.status, 'completed'); assert.equal(snapshot.record.states.preservation, 'completed');
     assert.equal(snapshot.execution.receipt.txId, saved.id); assert.equal(snapshot.execution.receipt.paymentSignature, f.signature);
     assert.deepEqual(snapshot.execution.receipt.archive, f.order.archive); assert.equal(finish.calls.submit.length, 0);
+    assert.equal(finish.calls.replayData.length, 0);
     assert.equal(c.paid.treasury.revision(TREASURY_ADDRESS), 1); assert.equal(c.paid.treasury.paidTotals().actualSpentWinston, '20');
     assert.equal(c.rows('SELECT at FROM test_alarm').length, 0);
+  });
+
+  await test('confirmed header with lost upload acknowledgement replays only the existing data chunks', async () => {
+    const c = await context(), f = await fixture(); await offer(c, f); await pay(c, f);
+    const mock = mockRunner(c, f, { proof: 'confirmed', loseSubmit: true });
+    await run(c, f, mock);
+    const signed = c.paid.work(f.order.id).signed;
+    assert(signed); assert.equal(c.paid.work(f.order.id).submitAcknowledged, false);
+    await run(c, f, mock);
+    assert.equal(mock.calls.submit.length, 1);
+    assert.equal(mock.calls.replayData.length, 1);
+    assert.deepEqual(mock.calls.replayData[0], signed);
+    assert.equal(mock.calls.sign, 1);
+    assert.equal(c.count('orders'), 1); assert.equal(c.count('credits'), 1);
   });
 
   await test('wrong TX/reward or archive-without-chain proof cannot spend or complete', async () => {
