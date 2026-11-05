@@ -195,16 +195,17 @@ async function mockArchiveReads(context,versions,{staleIndex=false,nodeDataOnly=
    return json(route,{data:{transactions:{pageInfo:{hasNextPage:false},edges}}});
   }
   const match=/^\/(tx|raw)\/([A-Za-z0-9_-]{43})(\/data)?$/.exec(url.pathname);
-  const version=match&&available.find(v=>v.id===match[2]);
+  const direct=/^\/([A-Za-z0-9_-]{43})$/.exec(url.pathname);
+  const version=available.find(v=>v.id===(match?.[2]??direct?.[1]));
   if(version){
    expect(req.method()).toBe('GET');
    // A stale index and temporarily unavailable latest TX must not replace the
    // exact confirmed local HEAD with a smaller, older network vault.
    if(staleIndex&&version!==available[0])return json(route,{error:'not_propagated'},404);
-   if(match[3]){
+   if(match?.[3]){
     counts.data++;return route.fulfill({status:200,contentType:'text/plain',body:Buffer.from(version.archive).toString('base64url')});
    }
-   if(match[1]==='raw'){
+   if(match?.[1]==='raw'||direct){
     counts.raw++;return route.fulfill({status:nodeDataOnly?404:200,contentType:'application/octet-stream',body:nodeDataOnly?'missing':version.archive});
    }
    counts.metadata++;
