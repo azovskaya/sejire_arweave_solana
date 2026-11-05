@@ -899,8 +899,8 @@ test('changed editor identity offers the earlier paid order before any new payme
  await page.evaluate(async key=>{
   const db=await new Promise((resolve,reject)=>{const r=indexedDB.open('sejire-checkout-journal',1);r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error);});
   await new Promise((resolve,reject)=>{const tx=db.transaction('operations','readwrite'),store=tx.objectStore('operations'),r=store.get(key);
-   r.onsuccess=()=>{store.put({...r.result,treeId:'different-local-tree'});};tx.oncomplete=resolve;tx.onerror=reject;});
-  db.close();sessionStorage.clear();
+   r.onsuccess=()=>{store.put({...r.result,treeId:'different.local.tree'});};tx.oncomplete=resolve;tx.onerror=reject;});
+  db.close();sessionStorage.removeItem('sejire.vaultSession.v1');
  },state.key);
  await page.reload();
  await expect(page.getByRole('heading',{name:'Ранее начатое сохранение'})).toBeVisible();
