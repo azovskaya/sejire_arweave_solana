@@ -366,6 +366,7 @@ export function RestoreSeed({ onRestored, onBack }: Props) {
             </button>
           </div>
           {error && <p className="form-error">{error}</p>}
+          {error && diagnostics && <details><summary>Диагностика восстановления</summary><pre>{JSON.stringify(diagnostics,null,2)}</pre></details>}
         </div>
       </section>
     );
@@ -439,7 +440,7 @@ export function RestoreSeed({ onRestored, onBack }: Props) {
         ) : null}
         {status && !busy && <p className="sub">{status}</p>}
         {error && <p className="form-error" role="alert">{error}</p>}
-        {showDiagnostics&&diagnostics&&<details><summary>Диагностика восстановления</summary><pre>{JSON.stringify(diagnostics,null,2)}</pre></details>}
+        {(showDiagnostics||error)&&diagnostics&&<details><summary>Диагностика восстановления</summary><pre>{JSON.stringify(diagnostics,null,2)}</pre></details>}
       </form>
     </section>
   );

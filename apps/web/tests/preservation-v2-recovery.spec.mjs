@@ -231,6 +231,23 @@ test('One local fallback is described as a browser copy and opens the complete t
   }finally{await s.context.close();}
 });
 
+test('Unavailable paid archive shows safe diagnostics beside the local-copy fallback',async({browser,page:preparer})=>{
+  const s=await setup(browser,preparer,{allRawDown:true});try{
+    await localCopy(s);
+    await runUi(s.page,s.family.words);
+    await expect(s.page.getByText(/Архив найден, но пока не удалось загрузить его данные/)).toBeVisible();
+    const details=s.page.getByText('Диагностика восстановления',{exact:true});
+    await expect(details).toBeVisible();
+    await details.click();
+    const output=s.page.locator('details pre');
+    await expect(output).toContainText('DATA_UNAVAILABLE');
+    await expect(output).toContainText('raw');
+    expect(await output.textContent()).not.toContain(s.family.words);
+    expect(await s.page.evaluate(()=>window.__walletCalls)).toBe(0);
+    readOnly(s.counts);
+  }finally{await s.context.close();}
+});
+
 test('Verified network forks remain a real version choice and honor the selected branch',async({browser,page:preparer},testInfo)=>{
   const s=await setup(browser,preparer);try{
     s.versions.push({...s.base,id:tx(1),height:101,parent:tx(0)},{...s.base,id:tx(2),height:102,parent:tx(0)});
