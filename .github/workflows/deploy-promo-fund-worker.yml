@@ -32,7 +32,7 @@ concurrency:
 
 jobs:
   deploy:
-    if: ${{ github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/feat/promo-funded-preservation' && inputs.confirm == 'DEPLOY') }}
+    if: ${{ github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && (github.ref == 'refs/heads/feat/promo-funded-preservation' || github.ref == 'refs/heads/fix/restore-direct-data') && inputs.confirm == 'DEPLOY') }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -76,7 +76,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          latest="$(git ls-remote origin refs/heads/feat/promo-funded-preservation | awk '{print $1}')"
+          latest="$(git ls-remote origin "refs/heads/${GITHUB_REF_NAME}" | awk '{print $1}')"
           if [ "$latest" = "$GITHUB_SHA" ]; then
             echo "current=true" >> "$GITHUB_OUTPUT"
           else
