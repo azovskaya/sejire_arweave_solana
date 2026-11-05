@@ -5,6 +5,20 @@ import {gatewayHost} from './diagnostics';
 import type {GatewayPool,HeadCandidate,RecoveryContext,SafeRecoveryDiagnostics} from './types';
 
 export type TxMetadata={id:string;tags:{name:string;value:string}[];blockHeight:number|null;blockTimestamp:number|null;owner?:string;rewardWinston?:string};
+// A newly confirmed archive can return 404 from one gateway edge and 200 from
+// the next. Retry reads only; every returned byte still passes the same checks.
+async function readWithGatewayRetry<T>(ctx:RecoveryContext,pool:GatewayPool,
+  read:(url:string,signal:AbortSignal)=>Promise<T>,integrityFailed:()=>boolean):Promise<T>{
+  for(let attempt=0;attempt<3;attempt++){
+    if(ctx.signal.aborted)throw Error('archive_read_aborted');
+    try{return await firstUsable(await pool.candidates(ctx),(target,signal)=>read(target.url,signal),ctx.signal);}
+    catch(error){
+      if(ctx.signal.aborted||integrityFailed()||attempt===2)throw error;
+      await new Promise(resolve=>setTimeout(resolve,500*(attempt+1)));
+    }
+  }
+  throw Error('all_gateways_failed');
+}
 const HISTORICAL_FUND_TAGS=new Set(['App-Name','Type','Schema','Vault-Id','Archive-SHA256','Archive-Bytes','Preservation-Id','Promo-Funded']);
 function decodeBase64Url(value:string):string {
   const base=value.replace(/-/g,'+').replace(/_/g,'/');
@@ -43,17 +57,17 @@ export function validateMetadata(meta:TxMetadata,candidate:HeadCandidate,vaultId
   if(candidate.archiveSha256!==undefined&&digest!==null&&digest!==candidate.archiveSha256)throw new RecoveryFailure('METADATA_MISMATCH');
 }
 export async function fetchMetadata(ctx:RecoveryContext,pool:GatewayPool,candidate:HeadCandidate,diagnostics:SafeRecoveryDiagnostics):Promise<TxMetadata>{
-  const targets=await pool.candidates(ctx);let mismatch:RecoveryFailure|undefined;
-  try{return await firstUsable(targets,async(target,signal)=>{
+  let mismatch:RecoveryFailure|undefined;
+  try{return await readWithGatewayRetry(ctx,pool,async(url,signal)=>{
     const start=performance.now();let status='unavailable';
     try {
-      const response=await timedFetch(ctx.fetcher,`${target.url}/tx/${candidate.txId}`,{},4500,signal);status=String(response.status);
+      const response=await timedFetch(ctx.fetcher,`${url}/tx/${candidate.txId}`,{cache:'no-store'},4500,signal);status=String(response.status);
       if(!response.ok)throw Error('metadata_unavailable');
       const meta=parseMetadata(await response.json());validateMetadata(meta,candidate,ctx.vaultId);
-      pool.markSuccess(target.url,performance.now()-start);return meta;
-    }catch(error){pool.markFailure(target.url);if(error instanceof RecoveryFailure)mismatch??=error;throw error;}
-    finally{diagnostics.gateways.push({host:gatewayHost(target.url),operation:'metadata',status});}
-  },ctx.signal);}catch{throw mismatch??new RecoveryFailure('DATA_UNAVAILABLE');}
+      pool.markSuccess(url,performance.now()-start);return meta;
+    }catch(error){pool.markFailure(url);if(error instanceof RecoveryFailure)mismatch??=error;throw error;}
+    finally{diagnostics.gateways.push({host:gatewayHost(url),operation:'metadata',status});}
+  },()=>Boolean(mismatch));}catch{throw mismatch??new RecoveryFailure('DATA_UNAVAILABLE');}
 }
 
 // The node data API returns plain base64url, whereas /raw returns archive bytes.
@@ -65,7 +79,7 @@ async function readArchiveResponse(fetcher:typeof fetch,url:string,maxBytes:numb
   try{
     if(signal.aborted)abort();
     if(controller.signal.aborted)throw Error('archive_read_aborted');
-    const response=await fetcher(url,{signal:controller.signal,credentials:'omit',referrerPolicy:'no-referrer',...(nativeData?{redirect:'error' as const}:{})});
+    const response=await fetcher(url,{signal:controller.signal,credentials:'omit',referrerPolicy:'no-referrer',cache:'no-store',...(nativeData?{redirect:'error' as const}:{})});
     onStatus(String(response.status));
     if(!response.ok)throw Error('archive_unavailable');
     if(nativeData&&response.url&&response.url!==url)throw Error('archive_redirect_rejected');
@@ -104,27 +118,27 @@ function decodeNativeData(encodedBytes:Uint8Array,maxBytes:number):Uint8Array{
 }
 
 export async function fetchRaw(ctx:RecoveryContext,pool:GatewayPool,candidate:HeadCandidate,meta:TxMetadata,diagnostics:SafeRecoveryDiagnostics):Promise<Uint8Array>{
-  const targets=await pool.candidates(ctx);let mismatch:RecoveryFailure|undefined;
+  let mismatch:RecoveryFailure|undefined;
   const expectedBytes=tagValue(meta,'Archive-Bytes')?Number(tagValue(meta,'Archive-Bytes')):candidate.archiveBytes;
   const expectedHash=tagValue(meta,'Archive-SHA256')??candidate.archiveSha256;
   if(expectedBytes!==undefined&&(!Number.isSafeInteger(expectedBytes)||expectedBytes<=0||expectedBytes>MAX_BACKUP_BYTES))throw new RecoveryFailure('RAW_HASH_MISMATCH');
   const maxBytes=expectedBytes??MAX_BACKUP_BYTES;
-  try{return await firstUsable(targets,async(target,signal)=>{
+  try{return await readWithGatewayRetry(ctx,pool,async(url,signal)=>{
     const start=performance.now();let lastError:unknown;
     for(const nativeData of [false,true]){
       if(signal.aborted)throw Error('archive_read_aborted');
       let status='unavailable';
       try{
         const path=nativeData?`/tx/${candidate.txId}/data`:`/raw/${candidate.txId}`;
-        const body=await readArchiveResponse(ctx.fetcher,`${target.url}${path}`,nativeData?Math.ceil(maxBytes*4/3):maxBytes,signal,value=>{status=value;},nativeData);
+        const body=await readArchiveResponse(ctx.fetcher,`${url}${path}`,nativeData?Math.ceil(maxBytes*4/3):maxBytes,signal,value=>{status=value;},nativeData);
         const bytes=nativeData?decodeNativeData(body,maxBytes):body;
         if(expectedBytes!==undefined&&bytes.length!==expectedBytes)throw new RecoveryFailure('RAW_HASH_MISMATCH');
         const digest=await crypto.subtle.digest('SHA-256',bytes as BufferSource);const hash=[...new Uint8Array(digest)].map(b=>b.toString(16).padStart(2,'0')).join('');
         if(expectedHash&&hash!==expectedHash)throw new RecoveryFailure('RAW_HASH_MISMATCH');
-        pool.markSuccess(target.url,performance.now()-start);return bytes;
+        pool.markSuccess(url,performance.now()-start);return bytes;
       }catch(error){lastError=error;if(error instanceof RecoveryFailure)mismatch??=error;}
-      finally{diagnostics.gateways.push({host:gatewayHost(target.url),operation:'raw',status});}
+      finally{diagnostics.gateways.push({host:gatewayHost(url),operation:'raw',status});}
     }
-    pool.markFailure(target.url);throw lastError;
-  },ctx.signal);}catch{throw mismatch??new RecoveryFailure('DATA_UNAVAILABLE');}
+    pool.markFailure(url);throw lastError;
+  },()=>Boolean(mismatch));}catch{throw mismatch??new RecoveryFailure('DATA_UNAVAILABLE');}
 }

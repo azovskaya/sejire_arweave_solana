@@ -51,6 +51,7 @@ async function setup(browser,preparer,mode={}){
     window.arweaveWallet={connect:()=>{window.__walletCalls++;throw Error('wallet forbidden');},sign:()=>{window.__walletCalls++;throw Error('wallet forbidden');}};
   },entries);
   const counts={graphql:[],metadata:[],raw:[],data:[],rendered:0,writes:0,peers:0,blocked:0,wordsInRequests:0};
+  const firstMetadata404=new Set(),firstRaw404=new Set();
   await guardNetwork(context,()=>{counts.blocked++;});
   await context.route('https://**/*',async route=>{
     const req=route.request(),url=new URL(req.url()),host=url.hostname;
@@ -93,6 +94,9 @@ async function setup(browser,preparer,mode={}){
     if(url.pathname===`/${id}`&&version){counts.rendered++;await route.fulfill({status:200,contentType:'text/html',body:'<html>rendered</html>'});return;}
     if(url.pathname===`/tx/${id}`&&version){
       counts.metadata.push(host);
+      if(mode.transientGateway404&&!firstMetadata404.has(host)){
+        firstMetadata404.add(host);await route.fulfill({status:404,body:'not indexed yet'});return;
+      }
       if(mode.metadataDown?.includes(host)){await route.fulfill({status:503,body:'down'});return;}
       const record=meta(version,{legacy,noVault:legacy,funded:mode.funded,missingProtocol:mode.missingProtocol});
       if(mode.mismatchedTag)record.tags=record.tags.map(t=>t.name===b64('Vault-Id')?tag('Vault-Id','f'.repeat(32)):t);
@@ -100,6 +104,9 @@ async function setup(browser,preparer,mode={}){
     }
     if(url.pathname.startsWith('/raw/')&&version){
       counts.raw.push(host);
+      if(mode.transientGateway404&&!firstRaw404.has(host)){
+        firstRaw404.add(host);await route.fulfill({status:404,body:'data not indexed yet'});return;
+      }
       if(mode.rawDown?.includes(host)||mode.allRawDown){await route.fulfill({status:503,body:'down'});return;}
       const raw=mode.wrongSameLengthRaw
         ?version.raw.replace(/("ciphertext":")([^"])/,(_,prefix,char)=>prefix+(char==='A'?'B':'A'))
@@ -274,6 +281,16 @@ test('UI clean browser opens family tree from legacy locator without GraphQL',as
     await expect(s.page.getByRole('button',{name:'Сохранить',exact:true}).first()).toBeVisible();
     const opened=await s.page.evaluate(async words=>(await import('/tests/browser-fixture.ts')).recovered(words),s.family.words);
     expect(opened.trees).toEqual(s.family.vault.trees);readOnly(s.counts);
+  }finally{await s.context.close();}
+});
+
+test('Newly indexed archive opens after transient gateway 404 without another payment or wallet call',async({browser,page:preparer})=>{
+  const s=await setup(browser,preparer,{transientGateway404:true});try{
+    await runUi(s.page,s.family.words);
+    await expectFullTree(s,{source:'network',headTxId:s.base.id});
+    expect(s.counts.metadata.length).toBeGreaterThan(4);
+    expect(s.counts.raw.length).toBeGreaterThan(4);
+    expect(s.counts.data.length).toBeGreaterThan(0);
   }finally{await s.context.close();}
 });
 

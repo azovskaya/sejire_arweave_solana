@@ -93,6 +93,32 @@ async function metadataFor(rawText:string):Promise<TxMetadata>{
     'Archive-Bytes',String(new TextEncoder().encode(rawText).length));
 }
 const validFundMetadata=await metadataFor(raw);
+// A gateway edge can briefly return 404 after the index has found a new
+// transaction. Reads retry the same ID and still verify the original bytes.
+const transientGateway='https://transient-gateway.example';
+const transientPool:GatewayPool={candidates:async()=>[{url:transientGateway,source:'synthetic'}],markSuccess:()=>{},markFailure:()=>{}};
+const encodedTransientMetadata={...validFundMetadata,tags:validFundMetadata.tags.map(tag=>({
+  name:Buffer.from(tag.name).toString('base64url'),value:Buffer.from(tag.value).toString('base64url'),
+}))};
+let metadataReads=0,rawReads=0,dataReads=0;
+const transientFetcher:typeof fetch=async(url,init)=>{
+  assert.equal(init?.method??'GET','GET','recovery retries never submit an archive');
+  assert.equal(init?.cache,'no-store','stale negative browser responses cannot hide a newly available archive');
+  if(String(url)===`${transientGateway}/tx/${id}`){
+    metadataReads++;return metadataReads===1?new Response('',{status:404}):new Response(JSON.stringify(encodedTransientMetadata));
+  }
+  if(String(url)===`${transientGateway}/raw/${id}`){
+    rawReads++;return rawReads===1?new Response('',{status:404}):new Response(raw);
+  }
+  if(String(url)===`${transientGateway}/tx/${id}/data`){dataReads++;return new Response('',{status:404});}
+  throw Error('unexpected synthetic recovery request');
+};
+const transientContext:RecoveryContext={vaultId:keys.vaultId,fetcher:transientFetcher,signal:new AbortController().signal};
+const transientDiagnostics=newDiagnostics();
+const retriedMetadata=await fetchMetadata(transientContext,transientPool,candidate,transientDiagnostics);
+const retriedRaw=await fetchRaw(transientContext,transientPool,candidate,retriedMetadata,transientDiagnostics);
+assert.equal(metadataReads,2);assert.equal(rawReads,2);assert.equal(dataReads,1);
+assert.deepEqual((await verifyCandidate(retriedRaw,retriedMetadata,candidate,keys)).vault,testVault);
 const requests:{url:string;method:string}[]=[];
 async function readFundedArchive(rawText:string,metadata:TxMetadata,openKeys=keys,options:{rawStatus?:number;nativeData?:string|(()=>Response)}={}){
   const gateway='https://synthetic-gateway.example';
@@ -155,6 +181,7 @@ assert.equal((await readFundedArchive(raw,{...validFundMetadata,tags:[...validFu
 
 const beforeMismatch=requests.length;
 await assert.rejects(()=>readFundedArchive(raw,{...validFundMetadata,tags:[...validFundMetadata.tags,{name:'Protocol-Version',value:'sejire/v9'}]}),isFailure('METADATA_MISMATCH'));
+assert.equal(requests.length-beforeMismatch,2,'invalid metadata is never retried as a transient gateway error');
 assert.equal(requests.slice(beforeMismatch).some(request=>request.url.includes('/raw/')),false,'wrong explicit metadata fails before raw/decryption');
 await assert.rejects(()=>readFundedArchive(raw.slice(0,-1),validFundMetadata),isFailure('RAW_HASH_MISMATCH'),'raw size remains enforced');
 const changedCipher=envelope.ciphertext.startsWith('A')?'B':'A';
