@@ -875,6 +875,7 @@ test('explicit continuation nudges an unavailable paid archive without another p
  const state=await installNetwork(context);await openEditor(page);await openPaid(page);
  await panel(page).getByRole('button',{name:'Оплатить 0.03 SOL и сохранить'}).click();
  await expect.poll(()=>state.sends.length).toBe(1);
+ expect(await page.evaluate(()=>window.paidWallet.signCount)).toBe(1);
  state.phase='requires-reconciliation';
  await page.reload();await resumePaid(page);
  await expect(panel(page).getByRole('button',{name:'Продолжить сохранение'})).toBeVisible();
@@ -883,9 +884,9 @@ test('explicit continuation nudges an unavailable paid archive without another p
  await panel(page).getByRole('button',{name:'Продолжить сохранение'}).click();
  await expect.poll(()=>state.executes).toBe(before+1);
  expect(state.creates).toBe(1);expect(state.reserves).toBe(1);expect(state.sends).toHaveLength(1);
- expect(await page.evaluate(()=>window.paidWallet.signCount)).toBe(1);
+ expect(await page.evaluate(()=>window.paidWallet?.signCount??0)).toBe(0);
  state.finish=true;
  await expect.poll(async()=>(await saved(page,state.key)).op.localCompletion,{timeout:30000}).toBe('done');
  expect(state.creates).toBe(1);expect(state.sends).toHaveLength(1);
- expect(await page.evaluate(()=>window.paidWallet.signCount)).toBe(1);
+ expect(await page.evaluate(()=>window.paidWallet?.signCount??0)).toBe(0);
 });
