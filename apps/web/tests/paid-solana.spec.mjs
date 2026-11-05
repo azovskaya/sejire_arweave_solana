@@ -6,7 +6,7 @@ import bs58 from 'bs58';
 const origin='http://127.0.0.1:5185', tx='A'.repeat(43);
 const panel=page=>page.getByRole('region',{name:'Оплата SOL',exact:true});
 const json=(route,value,status=200)=>route.fulfill({status,contentType:'application/json',body:JSON.stringify(value)});
-const networkState=()=>({ready:true,contributionReady:true,balance:'1000000000000000',requests:[],denied:[],creates:0,admissions:0,createKeys:[],bodies:[],prepares:0,reserves:0,sends:[],sendAttempts:0,cancels:0,reconciles:0,
+const networkState=()=>({ready:true,contributionReady:true,balance:'1000000000000000',requests:[],denied:[],creates:0,admissions:0,createKeys:[],bodies:[],prepares:0,reserves:0,sends:[],sendAttempts:0,cancels:0,reconciles:0,executes:0,
   recoveries:0,recoveryTransitions:{},lostRecovery:false,recoveryFee:'6000',recoveryError:null,recoveryGate:null,
   finish:false,paid:false,phase:'queued',createError:null,lostCreate:false,lostReserve:false,lostSend:false,lostVerify:false,lostCancel:false,
   wrongGenesis:false,wrongOrder:false,feeNull:false,rpcUnavailable:false,sendRpcError:false,legacyPreparation:false,height:50,heightCalls:0,expireOnFinalHeight:false,expireOnSend:false,verificationReason:null,
@@ -26,7 +26,8 @@ async function installNetwork(context,state=networkState()){
    s.record.states.payment='verified';s.record.states.preservation=s.record.order.kind==='contribution'?'not-applicable':'ready';
    s.record.states.contribution=s.record.order.fundContribution.amount==='0'?'not-requested':'received';
    s.verification={status:'verified'};
-   s.execution=s.record.order.kind==='contribution'?null:{kind:'arweave-direct',txId:state.phase==='queued'?null:tx,status:state.phase,verification:null};
+   s.execution=s.record.order.kind==='contribution'?null:{kind:'arweave-direct',txId:state.phase==='queued'?null:tx,status:state.phase,verification:null,
+    ...(state.phase==='requires-reconciliation'?{reason:'network_unavailable'}:{})};
    if(state.finish&&s.record.order.kind==='preservation')state.snapshot=await page.evaluate(async s=>(await import('/tests/paid-fixture.ts')).completedSnapshot(s),s);
   }
   const result=structuredClone(state.snapshot);
@@ -150,7 +151,7 @@ async function installNetwork(context,state=networkState()){
     return json(route,await update(page));
    }
    if(method==='POST'&&path===`/orders/${order.id}/execute`){
-    expect(body).toEqual({});expect(state.paid).toBe(true);expect(order.kind).toBe('preservation');state.phase='confirming';return json(route,await update(page));
+    expect(body).toEqual({});expect(state.paid).toBe(true);expect(order.kind).toBe('preservation');state.executes++;state.phase='confirming';return json(route,await update(page));
    }
   }
   if(url.origin==='https://api.devnet.solana.com'&&req.method()==='POST'){
@@ -868,4 +869,22 @@ test('confirmed payment continues one Arweave archive after reload without anoth
  expect(state.creates).toBe(1);expect(state.sends).toHaveLength(1);
  state.finish=true;await expect.poll(async()=>(await saved(page,state.key)).op.localCompletion,{timeout:30000}).toBe('done');
  expect(state.creates).toBe(1);expect(state.sends).toHaveLength(1);
+});
+
+test('explicit continuation nudges an unavailable paid archive without another payment or signature',async({page,context})=>{
+ const state=await installNetwork(context);await openEditor(page);await openPaid(page);
+ await panel(page).getByRole('button',{name:'Оплатить 0.03 SOL и сохранить'}).click();
+ await expect.poll(()=>state.sends.length).toBe(1);
+ state.phase='requires-reconciliation';
+ await expect(panel(page).getByRole('button',{name:'Продолжить сохранение'})).toBeVisible();
+ await expect(panel(page).getByText('Шлюз Arweave пока не подтвердил доступность архива.',{exact:false})).toBeVisible();
+ const before=state.executes;
+ await panel(page).getByRole('button',{name:'Продолжить сохранение'}).click();
+ await expect.poll(()=>state.executes).toBe(before+1);
+ expect(state.creates).toBe(1);expect(state.reserves).toBe(1);expect(state.sends).toHaveLength(1);
+ expect(await page.evaluate(()=>window.paidWallet.signCount)).toBe(1);
+ state.finish=true;
+ await expect.poll(async()=>(await saved(page,state.key)).op.localCompletion,{timeout:30000}).toBe('done');
+ expect(state.creates).toBe(1);expect(state.sends).toHaveLength(1);
+ expect(await page.evaluate(()=>window.paidWallet.signCount)).toBe(1);
 });

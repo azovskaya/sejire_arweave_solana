@@ -669,6 +669,19 @@ export async function checkPaidOperation(id: string, isActive: ActiveContext = a
   });
 }
 
+/** An explicit continuation nudges the already paid storage job. The server
+ * retains the original signed Arweave transaction and archive binding. */
+export async function continuePaidStorageOperation(id: string, isActive: ActiveContext = alwaysActive): Promise<PaidOperation> {
+  return withPaidOperationLock(id, async () => {
+    requireActive(isActive);
+    const op = await refresh(await requireOperation(id));
+    if (!op.order || op.snapshot?.record.states.payment !== 'verified' || op.intent.kind !== 'preservation' ||
+        op.snapshot.record.states.preservation === 'completed') return op;
+    requireActive(isActive);
+    return accept(op, await api<PaidSnapshot>(`/orders/${op.order.id}/execute`, op.token, {}));
+  });
+}
+
 /** Only a never-started wallet action or explicit 4001 can reach this branch. */
 export async function cancelPaidOperation(id: string): Promise<PaidOperation> {
   return withPaidOperationLock(id, async () => {

@@ -9,7 +9,7 @@ import { readPaidOperation } from '../lib/checkout/paidJournal';
 import { findPreservationAttempt } from '../lib/checkout/vaultGuard';
 import { finalizeStandalonePaid } from '../lib/checkout/paidFinalize';
 import {
-  beginPaidOperation, checkPaidOperation, paidCompletion, payPaidOperation,
+  beginPaidOperation, checkPaidOperation, continuePaidStorageOperation, paidCompletion, payPaidOperation,
   preparePaidOperation, readPaidPolicy, readPaidStatus, PaidApiError, cancelPaidOperation, resolveReleasedPaidOperation, retryPaidCreation, cancelPaidCreation,
   findContributionAttempt, completeContributionLocally, contributionReceipt, recoverPaidOperation, recoverSignedPaidOperation, paidWalletResponseCode, paidWalletExtraProgramId,
 } from '../lib/checkout/paidClient';
@@ -22,6 +22,11 @@ const paidUi = {
   en: { title: 'Save with Solana', doneTitle: 'Family history saved', preparing: 'Preparing payment', signing: 'Confirm in Phantom', walletSlow: 'Waiting for Phantom', walletSlowHint: 'If you already approved, do not pay again. Once the Phantom window is closed, refresh the page if no response arrives: this order will be checked without a new signature.', checking: 'Checking payment', saving: 'Saving', saved: 'Saved', continue: 'Continue saving', finish: 'Finish saving', retry: 'Retry check', return: 'Return to saving', pay: (price: string) => `Pay ${price} SOL and save`, cost: (price: string) => `Save price: ${price} SOL.`, feeEstimate: (fee: string) => `Solana network fee separately: estimated ${fee} SOL.`, feeUnknown: 'Solana network fee separately: calculated before Phantom confirmation.', networks: (network: string) => `Payment: ${network}. Encrypted storage: Arweave Mainnet.`, connectHint: 'Phantom may ask for connection permission separately the first time.', details: 'Details', donation: 'Optional contribution', donationAmount: 'Optional contribution, SOL', total: (value: string) => `Total before network fee: ${value}`, paidPending: 'Payment confirmed. The archive is finishing automatically and this order continues if you close the window.', uncertain: 'Checking the previous attempt. No new signature will be requested until its result is known.', orderPending: 'Order saved in this browser. Continuing the same request without creating another.', success: 'Family history saved. Keep your 12 SEJIRE words.', back: 'Back' },
 } as const;
 type PaidLocale = keyof typeof paidUi;
+const arweaveGatewayPending = {
+  ru: 'Оплата подтверждена. Шлюз Arweave пока не подтвердил доступность архива. Продолжаем проверку этого заказа без новой оплаты.',
+  kk: 'Төлем расталды. Arweave шлюзі мұрағаттың қолжетімділігін әлі растаған жоқ. Осы тапсырысты жаңа төлемсіз тексеруді жалғастырамыз.',
+  en: 'Payment confirmed. The Arweave gateway has not yet confirmed that the archive is available. We are checking this order without another payment.',
+} as const;
 function localizedError(error: unknown, locale: PaidLocale): string {
   if (locale === 'ru') return errorMessage(error);
   const { code, stage } = failureDetails(error);
@@ -304,6 +309,11 @@ export function PaidSolanaFlow({ input, onBack, onBusy, onComplete, onAdoptAttem
       let operation=latest.current;
       if (operation?.snapshot?.record.states.payment === 'verified' || operation?.signingStarted || operation?.signature || operation?.recoveryRequestedFor) {
         setPhase(operation.snapshot?.record.states.payment === 'verified' ? 'saving' : 'checking');
+        if (operation.snapshot?.record.states.payment === 'verified') {
+          operation = await continuePaidStorageOperation(operation.id, () => current.active);
+          if (current.active) remember(operation);
+          return;
+        }
         const uncertainWalletAtClick = Boolean(operation.signingStarted && !operation.signature);
         let renewedUncertainWallet = false;
         if (operation.recoveryRequestedFor) {
@@ -325,6 +335,11 @@ export function PaidSolanaFlow({ input, onBack, onBusy, onComplete, onAdoptAttem
           }
         }
         if (current.active) remember(operation);
+        if (operation.snapshot?.record.states.payment === 'verified') {
+          operation = await continuePaidStorageOperation(operation.id, () => current.active);
+          if (current.active) remember(operation);
+          return;
+        }
         // A prior wallet window has an uncertain result. Server recovery may
         // fence its old preparation, but this click must never also ask Phantom
         // for another signature. The owner can choose a later explicit action.
@@ -497,7 +512,8 @@ export function PaidSolanaFlow({ input, onBack, onBusy, onComplete, onAdoptAttem
     </>}
     {status && <p role="status">{status}</p>}
     {signing && walletSlow && <p role="alert">{ui.walletSlowHint}</p>}
-    {paid && !completed && <p>{ui.paidPending}</p>}
+    {paid && !completed && <p>{op?.snapshot?.execution?.reason === 'network_unavailable'
+      ? arweaveGatewayPending[locale] : ui.paidPending}</p>}
     {pendingPayment && !paid && !signing && <p>{ui.uncertain}</p>}
     {op && !order && !released && <p>{ui.orderPending}</p>}
     {released && <p>Сервер подтвердил завершение неоплаченного запроса. Зашифрованная копия доступна в подробностях.</p>}
