@@ -93,7 +93,9 @@ for (const host of ['https://arweave.net', 'https://g8way.io']) {
   pool.intercept({ path: /^\/price\/\d+$/, method: 'GET' }).reply(options => { observe(host + options.path, 'GET'); return { statusCode: 200, data: reward }; }).persist();
   pool.intercept({ path: /^\/tx\/[A-Za-z0-9_-]{43}\/status$/, method: 'GET' }).reply(options => {
     observe(host + options.path, 'GET'); const stored = wire.submissions.get(options.path.split('/')[2]);
-    return stored?.complete ? { statusCode: 200, data: JSON.stringify({ number_of_confirmations: 8 }) } : { statusCode: stored ? 202 : 404, data: '' };
+    // A confirmed header can precede data availability. Keep those states
+    // separate so the runner must replay the original chunk after a lost ack.
+    return stored ? { statusCode: 200, data: JSON.stringify({ number_of_confirmations: 8 }) } : { statusCode: 404, data: '' };
   }).persist();
   pool.intercept({ path: /^\/tx\/[A-Za-z0-9_-]{43}$/, method: 'GET' }).reply(options => {
     observe(host + options.path, 'GET'); const stored = wire.submissions.get(options.path.split('/')[2]);
