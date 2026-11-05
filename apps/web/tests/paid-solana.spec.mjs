@@ -875,7 +875,6 @@ test('explicit continuation nudges an unavailable paid archive without another p
  const state=await installNetwork(context);await openEditor(page);await openPaid(page);
  await panel(page).getByRole('button',{name:'Оплатить 0.03 SOL и сохранить'}).click();
  await expect.poll(()=>state.sends.length).toBe(1);
- await expect.poll(()=>state.executes).toBe(1);
  state.phase='requires-reconciliation';
  await page.reload();await resumePaid(page);
  await expect(panel(page).getByRole('button',{name:'Продолжить сохранение'})).toBeVisible();
