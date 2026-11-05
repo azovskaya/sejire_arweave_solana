@@ -424,7 +424,7 @@ try {
     await arm(second.id);
     const done = await waitFor(second.id, state => state.paid.status === 'completed', 'resumed chunk upload');
     assert.equal(JSON.parse(done.paid.receipt_json).txId, id); assert.equal(done.credits.length, 1); assert.equal(done.hold.actual, reward);
-    assert.equal(wire.submissions.size, 2); assert.equal(wire.submissions.get(id).posts, 2);
+    assert.equal(wire.submissions.size, 2); assert.equal(wire.submissions.get(id).posts, 1);
     assert(wire.chunkPosts >= 4); assert.deepEqual(JSON.parse(done.paid.receipt_json).archive, large.archive);
   });
   await start(false, false, false);
