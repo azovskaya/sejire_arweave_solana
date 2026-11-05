@@ -387,6 +387,11 @@ try {
     assert.equal((await call(`/orders/${first.id}`, null)).status, 401);
     assert.equal((await call(`/orders/${first.id}`, b)).status, 404);
     await arm(first.id);
+    const headerOnly = await waitFor(first.id, value => value.paid.status === 'confirming' &&
+      value.paid.lease_until === 0, 'confirmed header awaiting original data');
+    assert.equal(headerOnly.paid.last_error, 'archive_unavailable');
+    assert.equal(wire.submissions.size, 1);
+    await arm(first.id);
     const done = await waitFor(first.id, value => value.paid.status === 'completed', 'alarm completion after session expiry');
     const receipt = JSON.parse(done.paid.receipt_json);
     assert.equal(receipt.paymentSignature, payment.signature); assert.deepEqual(receipt.archive, tiny.archive);
