@@ -50,6 +50,9 @@ jobs:
       - run: npm run solana:build
       - run: npm run checkout:build
       - run: npm exec --prefix apps/web -- playwright install --with-deps chromium
+      - name: Editor safety regressions (synthetic data, no wallets or external writes)
+        working-directory: apps/web
+        run: npx --no-install playwright test --config playwright.editor.config.ts
       - run: npm run test:checkout-browser
       - run: npm run test:protocol-browser
       - run: VITE_FUND_API_URL=https://sejire-sponsor.azovskaya-alissa.workers.dev npm run native:build
