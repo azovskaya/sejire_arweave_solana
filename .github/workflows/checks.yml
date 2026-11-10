@@ -18,6 +18,8 @@ jobs:
           cache-dependency-path: |
             apps/web/package-lock.json
             apps/sponsor/package-lock.json
+      - name: Worker release gate regressions (offline, no deployment)
+        run: node --test scripts/worker-release-gate.test.mjs
       - run: npm ci --prefix apps/web
       - run: npm ci --prefix apps/sponsor
       - run: npm test
