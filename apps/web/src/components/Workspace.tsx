@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { flushSync } from "react-dom";
 import type { Person, TreeStore } from "../lib/types";
 import { saveDraftTree } from "../lib/draftStorage";
 import { type GuideState, defaultGuide, saveGuide } from "../lib/guide";
@@ -127,8 +128,16 @@ export function Workspace({ store, guide, onStoreChange, onGuideChange, onHome }
     if (moreRef.current) moreRef.current.open = false;
   }
 
+  /** Only called from explicit UI events, never render/effects. Capture the
+   * profile before navigation or an external export snapshots the tree. */
+  function captureEditorStore(): TreeStore {
+    flushSync(() => panelRef.current?.flush());
+    return latestStore.current;
+  }
+
   function confirmReplaceDraft(action: string) {
-    const count = Object.keys(store.draft.persons).length;
+    const current = captureEditorStore();
+    const count = Object.keys(current.draft.persons).length;
     if (count === 0) return true;
     return window.confirm(t.workspace.replaceDraft(count, action));
   }
@@ -221,6 +230,7 @@ export function Workspace({ store, guide, onStoreChange, onGuideChange, onHome }
   }
 
   function openProfile(id: string) {
+    captureEditorStore();
     setSelectedId(id);
     setProfileOpen(true);
     const showAncestors = Boolean(focusId && id !== focusId);
@@ -239,7 +249,7 @@ export function Workspace({ store, guide, onStoreChange, onGuideChange, onHome }
   }
 
   function closeProfile() {
-    panelRef.current?.flush();
+    captureEditorStore();
     setProfileOpen(false);
     setSelectedId(null);
     setAncestorsHint(false);
@@ -271,6 +281,7 @@ export function Workspace({ store, guide, onStoreChange, onGuideChange, onHome }
 
   function completeAdd(data: AddPersonPayload) {
     if (!pending) return;
+    const current = captureEditorStore();
     const id = uid();
     const person: Person = {
       id,
@@ -290,11 +301,11 @@ export function Workspace({ store, guide, onStoreChange, onGuideChange, onHome }
       tombstone: false,
     };
 
-    let next = store;
+    let next = current;
     let nextGuide = { ...guide };
 
     if (pending.type === "self") {
-      next = setDraftPerson(store, person);
+      next = setDraftPerson(current, person);
       nextGuide = { ...guide, selfId: id, step: "mother" };
       setFocusId(id);
       setSelectedId(id);
@@ -302,7 +313,7 @@ export function Workspace({ store, guide, onStoreChange, onGuideChange, onHome }
       flash(t.workspace.flashAddParents);
     } else if (pending.type === "parent") {
       person.sex = pending.role === "father" ? "M" : "F";
-      next = setDraftPerson(store, person);
+      next = setDraftPerson(current, person);
       const child = next.draft.persons[pending.childId];
       if (child) {
         const parents = [...child.parents];
@@ -336,7 +347,7 @@ export function Workspace({ store, guide, onStoreChange, onGuideChange, onHome }
         try { pending = Boolean(await findPreservationAttempt({ treeId, vaultId: getVaultSession()?.vaultId })); }
         catch { pending = true; } // The modal explains an unreadable journal.
       }
-      const current = latestStore.current;
+      const current = captureEditorStore();
       if (current.meta.id !== treeId) return;
       setHasPendingFund(pending);
       if (pending) {
@@ -363,27 +374,28 @@ export function Workspace({ store, guide, onStoreChange, onGuideChange, onHome }
   }
 
   function setFocus(id: string) {
-    panelRef.current?.flush();
+    const current = captureEditorStore();
     setFocusId(id);
     setSelectedId(id);
     setProfileOpen(false);
     setAncestorsHint(false);
-    const name = store.draft.persons[id]?.name;
+    const name = current.draft.persons[id]?.name;
     flash(name ? t.workspace.flashFocus(name) : t.workspace.flashReflow);
   }
 
   async function exportClassicPdf() {
+    const current = captureEditorStore();
     const id = pickPdfRootId({ selectedId: selectedId, focusId, homeId: homeFocusId });
-    if (!id || !people.length) {
+    if (!id || !activePersons(current.draft).length) {
       flash(t.workspace.flashNeedPerson);
       return;
     }
     try {
       const { downloadClassicTreePdf } = await import("../lib/pdf/classicTreePdf");
       const paper = await downloadClassicTreePdf({
-        snapshot: store.draft,
+        snapshot: current.draft,
         focusId: id,
-        meta: store.meta,
+        meta: current.meta,
         locale: pdfLocale,
       });
       flash(t.workspace.flashPdfTree(paper));
@@ -393,8 +405,9 @@ export function Workspace({ store, guide, onStoreChange, onGuideChange, onHome }
   }
 
   function openShezhirePdfPicker() {
+    const current = captureEditorStore();
     const id = pickPdfRootId({ selectedId: selectedId, focusId, homeId: homeFocusId });
-    if (!id || !people.length) {
+    if (!id || !activePersons(current.draft).length) {
       flash(t.workspace.flashNeedPerson);
       return;
     }
@@ -402,8 +415,9 @@ export function Workspace({ store, guide, onStoreChange, onGuideChange, onHome }
   }
 
   async function exportShezhirePdf(template: ShezhireTemplateId) {
+    const current = captureEditorStore();
     const id = pickPdfRootId({ selectedId: selectedId, focusId, homeId: homeFocusId });
-    if (!id || !people.length) {
+    if (!id || !activePersons(current.draft).length) {
       flash(t.workspace.flashNeedPerson);
       return;
     }
@@ -411,9 +425,9 @@ export function Workspace({ store, guide, onStoreChange, onGuideChange, onHome }
     try {
       const { downloadShezhirePdf } = await import("../lib/pdf/shezhirePdf");
       await downloadShezhirePdf({
-        snapshot: store.draft,
+        snapshot: current.draft,
         startId: id,
-        meta: store.meta,
+        meta: current.meta,
         locale: pdfLocale,
         maxGenerations: SHEZHIRE_MAX_GENERATIONS,
         template,
@@ -426,7 +440,7 @@ export function Workspace({ store, guide, onStoreChange, onGuideChange, onHome }
 
   function exportJson() {
     try {
-      downloadTreeJson(store, guide);
+      downloadTreeJson(captureEditorStore(), guide);
       flash(t.workspace.flashJson);
     } catch (e) {
       flash(e instanceof Error ? e.message : String(e));
@@ -455,6 +469,7 @@ export function Workspace({ store, guide, onStoreChange, onGuideChange, onHome }
   }
 
   function goHome() {
+    captureEditorStore();
     onHome();
   }
 
@@ -637,9 +652,10 @@ export function Workspace({ store, guide, onStoreChange, onGuideChange, onHome }
           onSelect={openProfile}
           onSetFocus={setFocus}
           onEmptyStart={() => setPending({ type: "self" })}
-          onAddRelative={(slot: AddMeSlot) =>
-            setPending({ type: "parent", childId: slot.childId, role: slot.role })
-          }
+          onAddRelative={(slot: AddMeSlot) => {
+            captureEditorStore();
+            setPending({ type: "parent", childId: slot.childId, role: slot.role });
+          }}
         />
 
         {selected && profileOpen ? (
@@ -672,10 +688,12 @@ export function Workspace({ store, guide, onStoreChange, onGuideChange, onHome }
           onSelectRelative={(id) => openProfile(id)}
           onDelete={() => {
             if (!selected) return;
+            const current = captureEditorStore();
             const removedId = selected.id;
-            const removedName = selected.name;
+            const removedName = current.draft.persons[removedId]?.name ?? selected.name;
+            const removedTreeId = current.meta.id;
             const wasFocus = focusId === removedId;
-            const afterRemove = removeDraftPerson(store, removedId);
+            const afterRemove = removeDraftPerson(current, removedId);
             persist(afterRemove);
             setSelectedId(null);
             setProfileOpen(false);
@@ -683,8 +701,12 @@ export function Workspace({ store, guide, onStoreChange, onGuideChange, onHome }
               setFocusId(pickDefaultFocus(afterRemove.draft, homeFocusId));
             }
             flash(t.workspace.flashRemoved(removedName), () => {
-              const restored = restoreDraftPerson(afterRemove, removedId);
-              persist(restored);
+              const current = captureEditorStore();
+              if (current.meta.id !== removedTreeId || !current.draft.persons[removedId]?.tombstone) return;
+              // Undo only this deletion against the latest state. Never restore
+              // afterRemove wholesale: other profiles may have changed since.
+              onStoreChange((prev) => prev.meta.id === removedTreeId
+                ? restoreDraftPerson(prev, removedId) : prev);
               setSelectedId(removedId);
               setProfileOpen(true);
               if (wasFocus) setFocusId(removedId);
@@ -693,6 +715,7 @@ export function Workspace({ store, guide, onStoreChange, onGuideChange, onHome }
           }}
           onAdd={(role) => {
             if (!selected) return;
+            captureEditorStore();
             setPending({ type: "parent", childId: selected.id, role });
           }}
         />
