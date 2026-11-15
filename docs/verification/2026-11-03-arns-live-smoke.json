@@ -1,6 +1,6 @@
 {
   "schema": "sejire/arns-live-smoke/v1",
-  "checkedAt": "2026-11-03T11:52:56.244Z",
+  "checkedAt": "2026-11-15T16:21:21.626Z",
   "fundApi": "https://sejire-sponsor.azovskaya-alissa.workers.dev",
   "arnsOrigin": "https://sejire.ar.io",
   "dist": "apps/web/dist",
@@ -28,8 +28,8 @@
       "allowMethods": "GET, POST, PUT, OPTIONS",
       "body": {
         "treasuryAddress": "qgoIFw9WsusMRapWzcFg4jNW08HSWvQkpAKOz86BUuI",
-        "walletBalanceWinston": "68982625018060",
-        "lastBalanceCheck": 1793706770534
+        "walletBalanceWinston": "68978862558975",
+        "lastBalanceCheck": 1794759677246
       }
     },
     {
