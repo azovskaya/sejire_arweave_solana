@@ -168,8 +168,17 @@ try {
     const accepted = await enabled({ secret: undefined }).submit(input, copy(stored!));
     assert.deepEqual(accepted, { id: stored!.id, accepted: true });
     const replay = calls.slice(before);
-    assert.equal(replay.length, 2); assert.ok(replay.every(call => call.url === 'https://arweave.net/tx' && call.method === 'POST'));
-    assert.equal(replay[0].body, stored!.raw); assert.equal(replay[1].body, stored!.raw);
+    assert.equal(replay.length, 3);
+    assert.equal(replay[0].url, 'https://arweave.net/tx');
+    assert.equal(replay[1].url, 'https://arweave.net/tx');
+    const expectedHeader = JSON.parse(stored!.raw); expectedHeader.data = '';
+    assert.deepEqual(JSON.parse(replay[0].body!), expectedHeader);
+    assert.deepEqual(JSON.parse(replay[1].body!), expectedHeader);
+    assert.equal(replay[2].url, 'https://arweave.net/chunk');
+    const chunk = JSON.parse(replay[2].body!);
+    assert.equal(Buffer.from(chunk.chunk, 'base64url').toString(), input.serialized);
+    assert.equal(chunk.data_root, expectedHeader.data_root);
+    assert.equal(chunk.data_size, String(input.archive.bytes));
   });
 
   await test('altered signed data or parent never reaches POST, even with a valid signature over old root', async () => {
@@ -178,6 +187,18 @@ try {
     await assert.rejects(enabled().submit(input, { ...stored!, raw: JSON.stringify(raw) }), /direct_plan_mismatch/);
     await assert.rejects(enabled().submit({ ...input, archive: { ...input.archive, parentTxId: null } }, stored!), /direct_plan_mismatch/);
     assert.equal(calls.length, before);
+  });
+
+  await test('confirmed small transaction can replay its original data without another header or signature', async () => {
+    const before = calls.length;
+    await enabled({ secret: undefined }).replayData(input, copy(stored!));
+    const replay = calls.slice(before).filter(call => call.method === 'POST');
+    assert.equal(replay.length, 1);
+    assert.equal(replay[0].url, 'https://arweave.net/chunk');
+    const chunk = JSON.parse(replay[0].body!);
+    assert.equal(Buffer.from(chunk.chunk, 'base64url').toString(), input.serialized);
+    assert.equal(chunk.data_root, JSON.parse(stored!.raw).data_root);
+    assert.equal(chunk.data_size, String(input.archive.bytes));
   });
 
   await test('read-only reconciliation survives restart without signer and verifies node-data fallback', async () => {
