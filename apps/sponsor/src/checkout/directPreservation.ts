@@ -350,10 +350,12 @@ export class DirectArweavePreservation {
       };
       try {
         const chunks = checked.tx.chunks.chunks.length;
-        // Same SDK wire format: one-chunk archives travel in /tx. Larger ones
-        // retain the exact signed header, then upload deterministic Merkle chunks.
-        await post('/tx', chunks <= 1 ? snapshot.raw : JSON.stringify({ ...checked.raw, data: '' }));
-        for (let index = 0; index < chunks && chunks > 1; index += 2) {
+        if (chunks < 1) throw Error('direct_submit_uncertain');
+        // Always send the signed header and its Merkle data chunks separately.
+        // A successful /tx response proves only header acceptance, including for
+        // archives smaller than one chunk. Keep the signed ID and data root fixed.
+        await post('/tx', JSON.stringify({ ...checked.raw, data: '' }));
+        for (let index = 0; index < chunks; index += 2) {
           await Promise.all(Array.from({ length: Math.min(2, chunks - index) }, (_, offset) =>
             post('/chunk', JSON.stringify(checked.tx.getChunk(index + offset, checked.bytes)))));
         }

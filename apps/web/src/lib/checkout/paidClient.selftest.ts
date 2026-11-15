@@ -15,7 +15,7 @@ import { emptyVault, openEnvelope, putTree } from '../crypto/vault';
 import { createTree } from '../treeEngine';
 import { envelopeDigest } from '../solana/policy';
 import { parsePortableBackup } from '../crypto/backup';
-import { readPaidAccess, writePaidAccess, readPaidOperation, writePaidOperation, findPaidAttempt, findContributionAttempt } from './paidJournal';
+import { readPaidAccess, writePaidAccess, readPaidOperation, writePaidOperation, findPaidAttempt, listPendingPaidAttempts, findContributionAttempt } from './paidJournal';
 import { findPreservationAttempt, reservePaidAttempt, saveGuardedFundAttempt, clearGuardedFundAttempt } from './vaultGuard';
 import { beginPaidOperation, readPaidStatus, preparePaidOperation, payPaidOperation, checkPaidOperation,
   readPaidPolicy, validatePaidSnapshot, paidCompletion, cancelPaidOperation, resolveReleasedPaidOperation, PaidApiError } from './paidClient';
@@ -102,6 +102,9 @@ reset();
 const [one, two] = await Promise.all([reservePaidAttempt(candidate('1'.repeat(32))), reservePaidAttempt(candidate('2'.repeat(32)))]);
 assert.equal(one.id, two.id); assert.equal(two.serialized, serialized);
 assert.equal((await findPreservationAttempt({ treeId: second.meta.id }))?.method, 'paid');
+assert.equal(await findPaidAttempt({ vaultId: 'a'.repeat(32), treeId: first.meta.id }), null);
+assert.deepEqual((await listPendingPaidAttempts()).map(op => op.id), [one.id],
+  'an unmatched paid request is offered explicitly, not replaced by a new payment');
 await assert.rejects(() => saveGuardedFundAttempt({ orderId: '3'.repeat(32), envelope, parentTxId: binding.parentTxId, treeId: second.meta.id }), /preservation_attempt_in_progress/);
 await assert.rejects(() => writePaidOperation({ ...one, token: 'a'.repeat(64) }), /paid_attempt_changed/);
 const revised = await writePaidOperation({ ...one, createAttempted: true });

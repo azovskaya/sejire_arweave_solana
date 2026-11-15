@@ -1,5 +1,6 @@
 import type { EnvelopeV1 } from '../crypto/encrypt';
 import { serializeEnvelope } from '../crypto/envelope';
+import { isStaticPermawebHost } from '../permawebHost';
 import { envelopeDigest } from '../solana/policy';
 import type { SolanaRecipientAdminView, SolanaRecipients } from '../../../../../packages/checkout/recipients';
 export type FundOrderView={preservationId:string;orderId:string;promoRevision:number;archiveSizeBytes:number;archiveDigest:string;vaultId:string;parentTxId?:string|null;estimatedRewardWinston:string;reservedRewardWinston:string;actualRewardWinston:string|null;arweaveTxId:string|null;status:string;createdAt:number;uploadedAt:number|null;verifiedAt:number|null};
@@ -11,7 +12,14 @@ export class FundApiError extends Error {
 }
 export type FundDashboard={promo:{enabled:boolean;displayHint:string;revision:number;createdAt:number;updatedAt:number};treasuryAddress:string;signerVerified:boolean;limitWinston:string;actualSpentWinston:string;reservedWinston:string;budgetRemainingWinston:string;walletBalanceWinston:string|null;lastBalanceCheck:number|null;currentQuoteWinston:string|null;currentQuoteBytes:number;effectiveAvailableWinston:string|null;estimatedTreesRemaining:string|null;fundStatus:string;successfulTrees:number;today:number;last7Days:number;failedAttempts:number;pending:number;totalEncryptedBytes:number;averageArchiveBytes:number|null;largestArchiveBytes:number|null;smallestArchiveBytes:number|null;averageActualWinston:string|null;minActualWinston:string|null;maxActualWinston:string|null;latestActualWinston:string|null;currentRevisionTrees:number;currentRevisionSpentWinston:string;lastReconciliation:number|null;history:FundOrderView[]};
 export function formatAr(value:string|null|undefined,places=6){if(value==null)return '—';const raw=BigInt(value),negative=raw<0n,n=negative?-raw:raw,whole=n/1000000000000n,frac=(n%1000000000000n).toString().padStart(12,'0');return `${negative?'-':''}${whole}.${frac.slice(0,places)}`;}
-function endpoint(){const raw=import.meta.env.VITE_FUND_API_URL||import.meta.env.VITE_CHECKOUT_API_URL||location.origin;const url=new URL(raw);
+function configuredApiOrigin():string{
+  const raw=import.meta.env.VITE_FUND_API_URL||import.meta.env.VITE_CHECKOUT_API_URL;
+  if(raw)return raw;
+  // Static ArNS hosts have no /api/* — never fall back to location.origin there.
+  if(typeof location!=='undefined'&&isStaticPermawebHost(location.hostname))throw Error('fund_api_not_configured');
+  return location.origin;
+}
+function endpoint(){const raw=configuredApiOrigin();const url=new URL(raw);
   if(url.origin!==raw||(url.protocol!=='https:'&&!['localhost','127.0.0.1'].includes(url.hostname)))throw Error('invalid_fund_endpoint');return url.origin+'/api/fund';}
 async function call<T>(path:string,method:'GET'|'POST'='GET',value?:unknown,adminPassword?:string,signal?:AbortSignal):Promise<T>{
   const controller=new AbortController();

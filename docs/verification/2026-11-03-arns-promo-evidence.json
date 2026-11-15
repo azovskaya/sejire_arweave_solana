@@ -1,0 +1,37 @@
+{
+  "schema": "sejire/arns-promo-cutover-evidence/v1",
+  "date": "2026-11-03",
+  "timezoneNote": "Asia/Calcutta",
+  "sourceRepo": "azovskaya/sejire_arweave_solana",
+  "branch": "cursor/arns-promo-cutover-5150",
+  "sourceCommit": "741bb4b0bafcae738c3839249fa845103403c428",
+  "legacyArnsRepo": "azovskaya/Sejire_arweave",
+  "legacyArnsHead": "22084ac99b69bf3971c3ed75626074ba9a04d078",
+  "legacyArnsWriteAccess": false,
+  "fundApi": "https://sejire-sponsor.azovskaya-alissa.workers.dev",
+  "staticRelease": {
+    "schema": "sejire/static-release/v1",
+    "fileCount": 33,
+    "totalBytes": 4100165,
+    "entry": "index.html",
+    "fallback": "404.html"
+  },
+  "commands": {
+    "arns:build": "PASS",
+    "arns:prepare": "PASS",
+    "test:fund": "PASS",
+    "test:fund-runtime": "PASS",
+    "test:fund-browser": "PASS 25/25",
+    "security:fund": "PASS",
+    "test:permaweb-prepare": "PASS",
+    "test:paid-client": "PASS",
+    "test:permawebHost": "PASS"
+  },
+  "notRun": [
+    "Arweave upload",
+    "ArNS Target ID change",
+    "live promo order POST",
+    "Worker redeploy",
+    "push to azovskaya/Sejire_arweave"
+  ]
+}

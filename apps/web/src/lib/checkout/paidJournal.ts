@@ -219,6 +219,20 @@ export async function findPaidAttempt(lookup: AttemptLookup): Promise<PaidOperat
   return matches[0] ?? null;
 }
 
+/** Show unresolved preservation attempts even when the editor's local tree ID
+ * changed. This is read-only and never selects an unrelated order implicitly. */
+export async function listPendingPaidAttempts(): Promise<PaidOperation[]> {
+  const rows = await read<unknown[]>('operations');
+  if (rows.length > 1000) throw Error('checkout_journal_unavailable');
+  const pending: PaidOperation[] = [];
+  for (const row of rows) {
+    if (!row || typeof row !== 'object' || !('version' in row) || row.version !== 2) continue;
+    const op = await validatePaidOperation(row);
+    if (op.intent.kind === 'preservation' && op.localCompletion === 'pending') pending.push(op);
+  }
+  return pending.sort((a,b) => b.createdAt - a.createdAt);
+}
+
 export async function findContributionAttempt():Promise<PaidOperation|null>{
   const [legacy, standalone] = await Promise.all([
     read<unknown[]>('operations'), read<unknown[]>('operations', undefined, CONTRIBUTION_DATABASE),

@@ -34,7 +34,7 @@ const arKey = await webcrypto.subtle.exportKey('jwk', arPair.privateKey);
 const treasury = createHash('sha256').update(Buffer.from(arKey.n, 'base64url')).digest('base64url');
 const fetchMock = createFetchMock(); fetchMock.disableNetConnect();
 const wire = { calls: [], payments: new Map(), archives: new Map(), submissions: new Map(),
-  lostSingleAck: true, failChunkOnce: true, droppedChunks: 0, chunkPosts: 0, rpcRateLimited: false,
+  lostSingleAck: true, failChunkOnce: false, droppedChunks: 0, chunkPosts: 0, rpcRateLimited: false,
   rpcForbiddenDefault: false, rpcForbiddenPocket: false, referenceRows: new Map(), referenceUnavailable: false,
   blockhash: addr(8), lastValidBlockHeight: 1000, blockHeight: 100 };
 const observe = (url, method) => wire.calls.push({ url, method });
@@ -93,7 +93,9 @@ for (const host of ['https://arweave.net', 'https://g8way.io']) {
   pool.intercept({ path: /^\/price\/\d+$/, method: 'GET' }).reply(options => { observe(host + options.path, 'GET'); return { statusCode: 200, data: reward }; }).persist();
   pool.intercept({ path: /^\/tx\/[A-Za-z0-9_-]{43}\/status$/, method: 'GET' }).reply(options => {
     observe(host + options.path, 'GET'); const stored = wire.submissions.get(options.path.split('/')[2]);
-    return stored?.complete ? { statusCode: 200, data: JSON.stringify({ number_of_confirmations: 8 }) } : { statusCode: stored ? 202 : 404, data: '' };
+    // A confirmed header can precede data availability. Keep those states
+    // separate so the runner must replay the original chunk after a lost ack.
+    return stored ? { statusCode: 200, data: JSON.stringify({ number_of_confirmations: 8 }) } : { statusCode: 404, data: '' };
   }).persist();
   pool.intercept({ path: /^\/tx\/[A-Za-z0-9_-]{43}$/, method: 'GET' }).reply(options => {
     observe(host + options.path, 'GET'); const stored = wire.submissions.get(options.path.split('/')[2]);
@@ -114,9 +116,10 @@ fetchMock.get('https://arweave.net').intercept({ path: '/tx', method: 'POST' }).
   const old = wire.submissions.get(raw.id);
   if (old) { assert.deepEqual(raw, old.raw); old.posts++; }
   else wire.submissions.set(raw.id, { raw, serialized, posts: 1, chunks: new Map(), complete: Boolean(raw.data) });
-  if (raw.data) {
-    assert.equal(Buffer.from(raw.data, 'base64url').toString(), serialized);
-    if (wire.lostSingleAck) { wire.lostSingleAck = false; return { statusCode: 503, data: 'synthetic lost acknowledgement' }; }
+  assert.equal(raw.data, '');
+  if (wire.lostSingleAck && Buffer.byteLength(serialized) < 256 * 1024) {
+    wire.lostSingleAck = false;
+    return { statusCode: 503, data: 'synthetic lost acknowledgement' };
   }
   return { statusCode: 200, data: 'OK' };
 }).persist();
@@ -384,6 +387,11 @@ try {
     assert.equal((await call(`/orders/${first.id}`, null)).status, 401);
     assert.equal((await call(`/orders/${first.id}`, b)).status, 404);
     await arm(first.id);
+    const headerOnly = await waitFor(first.id, value => value.paid.status === 'confirming' &&
+      value.paid.lease_until === 0, 'confirmed header awaiting original data');
+    assert.equal(headerOnly.paid.last_error, 'archive_unavailable');
+    assert.equal(wire.submissions.size, 1);
+    await arm(first.id);
     const done = await waitFor(first.id, value => value.paid.status === 'completed', 'alarm completion after session expiry');
     const receipt = JSON.parse(done.paid.receipt_json);
     assert.equal(receipt.paymentSignature, payment.signature); assert.deepEqual(receipt.archive, tiny.archive);
@@ -409,13 +417,14 @@ try {
     const changed = await call(`/orders/${second.id}/reserve`, b, { signature: paid.signature, preparationId: 'e'.repeat(64) }); assert.equal(changed.status, 409);
   });
   await test('accepted header with interrupted chunk resumes exact signed TX and completes without a second SOL payment', async () => {
+    wire.failChunkOnce = true;
     await arm(second.id);
     await waitFor(second.id, state => wire.droppedChunks === 1 && state.paid.lease_until === 0, 'partial chunk upload');
     const initial = [...wire.submissions.values()].find(row => row.serialized === large.serialized); assert(initial); const id = initial.raw.id;
     await arm(second.id);
     const done = await waitFor(second.id, state => state.paid.status === 'completed', 'resumed chunk upload');
     assert.equal(JSON.parse(done.paid.receipt_json).txId, id); assert.equal(done.credits.length, 1); assert.equal(done.hold.actual, reward);
-    assert.equal(wire.submissions.size, 2); assert.equal(wire.submissions.get(id).posts, 2);
+    assert.equal(wire.submissions.size, 2); assert.equal(wire.submissions.get(id).posts, 1);
     assert(wire.chunkPosts >= 4); assert.deepEqual(JSON.parse(done.paid.receipt_json).archive, large.archive);
   });
   await start(false, false, false);
