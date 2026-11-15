@@ -27,6 +27,8 @@
 
 Свежий smoke: `docs/verification/2026-11-03-arns-live-smoke.json` (`checkedAt` 15.11.2026 ~21:21 Екатеринбург / 16:21 UTC). Treasury `qgoIFw9WsusMRapWzcFg4jNW08HSWvQkpAKOz86BUuI`.
 
+GitHub CI для `593dfbf`: [SEJIRE checks `43735513189`](https://github.com/azovskaya/sejire_arweave_solana/actions/runs/43735513189) success; [SOL recipient admin checks `43735513269`](https://github.com/azovskaya/sejire_arweave_solana/actions/runs/43735513269) success.
+
 ## Что это даёт для переезда
 
 1. Статический пакет для `sejire.ar.io` собирается с тем же Fund/Checkout Worker, что на Pages.
