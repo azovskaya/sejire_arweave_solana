@@ -1,8 +1,8 @@
 {
   "artifact": "native-admin-build",
-  "run": 42043325561,
-  "artifactId": 13424237198,
-  "sourceCommit": "02983df5488d289e7206281b1af2490ee6e45449",
-  "zipSha256": "7d253948430706c042db6aed89444a51c64dfc4d3bbcaf20223260e4a3629053",
-  "publishedByCommit": "02983df5488d289e7206281b1af2490ee6e45449"
+  "run": 43854395821,
+  "artifactId": 14219388035,
+  "sourceCommit": "8b07f9f5a3dae939f7d519f4e3c65ac9d49dfa09",
+  "zipSha256": "7ef7e301c750cdfa1962ab98e02e7789bfed38a051e5b38b462ba8e6c42f46c6",
+  "publishedByCommit": "8b07f9f5a3dae939f7d519f4e3c65ac9d49dfa09"
 }
