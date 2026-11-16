@@ -23,6 +23,13 @@ const tx = 'B'.repeat(43);
 const json = (route, value, status = 200) =>
   route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(value) });
 
+test.afterEach(async ({ page, context }) => {
+  // Keep late requests blocked while existing context-level fetch/fulfill handlers
+  // finish, before Playwright disposes the context's request client and page.
+  await page.route('**/*', route => route.abort('blockedbyclient'));
+  await context.unrouteAll({ behavior: 'wait' });
+});
+
 function fundOrder(orderId, status = 'COMPLETED') {
   return {
     order: {
