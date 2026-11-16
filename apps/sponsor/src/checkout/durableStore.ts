@@ -31,7 +31,11 @@ export class CheckoutLedger {
     this.paid = new PaidLedger(ctx.storage,this.store,this.api);
     this.recipients = new RecipientSettings(ctx.storage);
     // Re-arm durable obligations after an isolate restart, without a browser token.
-    ctx.blockConcurrencyWhile(()=>this.paid.arm());
+    ctx.blockConcurrencyWhile(async()=>{
+      // A cold alarm invokes the constructor first. Replacing an already due
+      // alarm here cancels that invocation in workerd; preserve it verbatim.
+      if(await ctx.storage.getAlarm()===null)await this.paid.arm();
+    });
   }
   async alarm():Promise<void>{
     try{for(const id of this.paid.due(Date.now(),3))await runPaidOrder(this.paid,this.env,id);}
@@ -76,6 +80,11 @@ export class CheckoutLedger {
         f.signedMessage === undefined ? undefined : String(f.signedMessage),f.signedTransaction === undefined ? undefined : String(f.signedTransaction)));
       case 'paidCancel': return Response.json(await this.paid.cancel(data.hash,data.id,f.preparationId===null?null:String(f.preparationId),now));
       case 'paidRecover': return Response.json(await recoverPaidOrder(this.paid,this.env,data.hash,data.id,String(f.preparationId)));
+      case 'paidRepair': {
+        const result=await this.paid.requestArchiveRepair(data.hash,data.id,now);
+        if(result.queued)this.ctx.waitUntil(runPaidOrder(this.paid,this.env,data.id));
+        return Response.json(result.snapshot);
+      }
       case 'paidRun': {
         const snapshot=await this.paid.nudge(data.hash,data.id,now);
         this.ctx.waitUntil(runPaidOrder(this.paid,this.env,data.id));
@@ -118,7 +127,7 @@ export class CheckoutLedger {
       const known = ['order_or_reference_exists', 'order_not_found', 'previous_payment_unresolved', 'order_already_paid',
         'invalid_solana_recipient','solana_recipient_roles_overlap','solana_test_recipient_forbidden','invalid_solana_recipient_settings','solana_recipient_revision_conflict','payment_settings_changed',
         'payment_conflict', 'payment_not_reserved', 'credit_allocation_mismatch', 'payment_already_used',
-        'paid_budget_exhausted','balance_observation_stale','paid_hold_not_releasable','paid_request_cancelled','invalid_idempotency_key','order_expired','payment_not_prepared','preparation_changed',
+        'paid_budget_exhausted','balance_observation_stale','paid_hold_not_releasable','paid_request_cancelled','repair_not_available','invalid_idempotency_key','order_expired','payment_not_prepared','preparation_changed',
         'invalid_payment_signature','invalid_payment_preparation','payment_not_expired','payment_recovery_busy','payment_recovery_unavailable','invalid_paid_archive','archive_mismatch','archive_not_canonical','invalid_envelope','envelope_too_large',
         'promo_invalid','promo_disabled','promo_missing','fund_exhausted','archive_changed','limit_below_spent','limit_below_reserved','fund_ledger_inconsistent','wallet_low','invalid_ar_amount','invalid_winston','invalid_reward','invalid_signed_tx','tx_conflict','invalid_actual_reward','signed_tx_must_reconcile','order_not_found','unauthorized', 'idempotency_conflict', 'rate_limited', 'preservation_not_paid', 'execution_not_reserved', 'upload_receipt_mismatch'];
       const code = error instanceof Error && known.includes(error.message) ? error.message : 'ledger_operation_failed';

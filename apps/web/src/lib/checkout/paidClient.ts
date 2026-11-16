@@ -180,9 +180,18 @@ export async function validatePaidSnapshot(op: PaidOperation, value: unknown): P
       const receipt = validatePaidReceipt(execution.receipt, order);
       if (receipt.txId !== execution.txId || receipt.paymentSignature !== snapshot.record.payment?.signature ||
           receipt.rewardWinston !== proof?.rewardWinston) throw Error('checkout_receipt_mismatch');
+      if (op.snapshot?.execution?.status === 'completed' && op.snapshot.execution.receipt &&
+          canonical(op.snapshot.execution.receipt) !== canonical(execution.receipt)) throw Error('checkout_receipt_mismatch');
     }
     if (execution.status === 'completed' && (states.preservation !== 'completed' || states.payment !== 'verified' ||
         !proof?.transactionConfirmed || !proof.archiveVerified || !execution.receipt)) throw Error('checkout_completion_mismatch');
+    const repair = execution.repair;
+    if (repair !== undefined && (!repair || execution.status !== 'completed' ||
+        !['queued', 'checking', 'waiting', 'verified'].includes(repair.status) ||
+        !Number.isSafeInteger(repair.requestedAt) || repair.requestedAt <= 0 ||
+        (repair.checkedAt !== null && (!Number.isSafeInteger(repair.checkedAt) || repair.checkedAt < repair.requestedAt)) ||
+        (repair.reason !== undefined && (typeof repair.reason !== 'string' || !/^[a-z0-9_-]{1,100}$/.test(repair.reason))) ||
+        (repair.status === 'verified' && (repair.checkedAt === null || repair.reason !== undefined)))) throw Error('checkout_repair_mismatch');
   }
   if (states.preservation === 'completed' && execution?.status !== 'completed') throw Error('checkout_completion_mismatch');
   return structuredClone(snapshot);
@@ -687,6 +696,31 @@ export async function continuePaidStorageOperation(id: string, isActive: ActiveC
         op.snapshot.record.states.preservation === 'completed') return op;
     requireActive(isActive);
     return accept(op, await api<PaidSnapshot>(`/orders/${op.order.id}/execute`, op.token, {}));
+  });
+}
+
+/** Explicit owner repair of the existing archive. No order creation, payment,
+ * wallet call or local completion transition can occur through this action. */
+export async function repairPaidStorageOperation(id: string, isActive: ActiveContext = alwaysActive): Promise<PaidOperation> {
+  return withPaidOperationLock(id, async () => {
+    requireActive(isActive);
+    const op = await refresh(await requireOperation(id));
+    if (!op.order || op.intent.kind !== 'preservation' || op.snapshot?.record.states.payment !== 'verified' ||
+        op.snapshot.execution?.status !== 'completed' || !op.snapshot.execution.receipt) throw Error('repair_not_available');
+    requireActive(isActive);
+    let snapshot: PaidSnapshot;
+    try { snapshot = await api<PaidSnapshot>(`/orders/${op.order.id}/repair`, op.token, {}); }
+    catch (error) {
+      if (error instanceof PaidApiError) throw error;
+      requireActive(isActive);
+      // A lost reply may already have queued a repair. Recover with GET only;
+      // never turn a transport retry into a new payment or another POST.
+      const recovered = await refresh(op);
+      const repair = recovered.snapshot?.execution?.repair;
+      if (repair && (repair.status !== 'verified' || repair.requestedAt !== op.snapshot.execution.repair?.requestedAt)) return recovered;
+      throw error;
+    }
+    return accept(op, snapshot);
   });
 }
 

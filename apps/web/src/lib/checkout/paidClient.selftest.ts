@@ -15,10 +15,10 @@ import { emptyVault, openEnvelope, putTree } from '../crypto/vault';
 import { createTree } from '../treeEngine';
 import { envelopeDigest } from '../solana/policy';
 import { parsePortableBackup } from '../crypto/backup';
-import { readPaidAccess, writePaidAccess, readPaidOperation, writePaidOperation, findPaidAttempt, listPendingPaidAttempts, findContributionAttempt } from './paidJournal';
+import { readPaidAccess, writePaidAccess, readPaidOperation, writePaidOperation, findPaidAttempt, listPendingPaidAttempts, listPaidPreservationAttempts, findContributionAttempt } from './paidJournal';
 import { findPreservationAttempt, reservePaidAttempt, saveGuardedFundAttempt, clearGuardedFundAttempt } from './vaultGuard';
 import { beginPaidOperation, readPaidStatus, preparePaidOperation, payPaidOperation, checkPaidOperation,
-  readPaidPolicy, validatePaidSnapshot, paidCompletion, cancelPaidOperation, resolveReleasedPaidOperation, PaidApiError } from './paidClient';
+  readPaidPolicy, validatePaidSnapshot, paidCompletion, cancelPaidOperation, resolveReleasedPaidOperation, repairPaidStorageOperation, PaidApiError } from './paidClient';
 import { cancelPaidCreation, retryPaidCreation, contributionReceipt, completeContributionLocally, recoverPaidOperation } from './paidClient';
 import { retrievePaidReceipt } from './paidReceipt';
 import { finalizeStandalonePaid } from './paidFinalize';
@@ -163,7 +163,7 @@ for (const source of ['{9007199254740993:1}', '[01]', '{"x":9007199254740993e}',
   assert.throws(() => parseRpcJson(source), SyntaxError, 'lossless transformation must preserve JSON syntax rejection');
 }
 
-type NetworkState = { snapshot?: PaidSnapshot; key?: string; creates: number; prepares: number; reserves: number; sends: string[]; sessions: number;
+type NetworkState = { snapshot?: PaidSnapshot; key?: string; creates: number; prepares: number; reserves: number; sends: string[]; sessions: number; repairs?: number; loseRepair?: boolean;
   recovers: number; reconciles: number; recoveries: Map<string, DurablePaymentPreparation>; blockHeight?: number; loseRecovery?: boolean; recoveryError?: string;
   loseCreate?: boolean; loseReserve?: boolean; loseCancel?: boolean; rejectWallet?: boolean; unknownWallet?: boolean;
   signature?: string; wrongGenesis?: boolean; paid: boolean; executed: boolean; onSigned?: () => void;
@@ -241,6 +241,16 @@ function syntheticNetwork(): NetworkState {
     const snapshot = state.snapshot; assert.ok(snapshot, 'existing order required');
     if (method === 'GET') {
       assert.ok(path === `/orders/${snapshot.record.order.id}` || path === `/orders/by-key/${state.key}`);
+      return json(snapshot);
+    }
+    if (path.endsWith('/repair')) {
+      assert.equal(method, 'POST'); assert.deepEqual(body, {});
+      assert.equal(new Headers(init?.headers).get('Authorization'), `Bearer ${(await readPaidOperation(state.key!))!.token}`);
+      assert.equal(snapshot.execution?.status, 'completed'); assert.ok(snapshot.execution?.receipt);
+      state.repairs = (state.repairs ?? 0) + 1;
+      if (!snapshot.execution.repair || snapshot.execution.repair.status === 'verified')
+        snapshot.execution.repair = { status: 'queued', requestedAt: Date.now(), checkedAt: null };
+      if (state.loseRepair) { state.loseRepair = false; throw TypeError('synthetic lost repair response'); }
       return json(snapshot);
     }
     if (path.endsWith('/prepare')) {
@@ -377,10 +387,52 @@ assert.equal(getLocalVaultVersion(keys.vaultId, completed.txId)?.parentId, bindi
 assert.equal(getVaultSession()?.headTxId, completed.txId);
 assert.equal(await findPaidAttempt({ vaultId: keys.vaultId }), null);
 
+// Repair is an explicit action on the same completed record. Lost responses,
+// reload-style reads and duplicate clicks must not reopen payment or completion.
+const beforeRepair = (await readPaidOperation(op.id))!;
+const paymentCounts = { creates: network.creates, prepares: network.prepares, reserves: network.reserves,
+  sends: network.sends.length, wallets: walletCalls, reconciles: network.reconciles };
+assert.equal((await listPaidPreservationAttempts())[0].id, op.id);
+assert.deepEqual(await listPendingPaidAttempts(), []);
+await assert.rejects(() => repairPaidStorageOperation(op.id, () => false), /checkout_context_changed/);
+assert.equal(network.repairs, undefined);
+network.loseRepair = true;
+op = await repairPaidStorageOperation(op.id);
+assert.equal(network.repairs, 1, 'a lost reply is recovered by GET, without another repair POST');
+assert.equal(op.localCompletion, 'done'); assert.equal(op.snapshot?.execution?.repair?.status, 'queued');
+const requestedAt = op.snapshot!.execution!.repair!.requestedAt;
+op = await repairPaidStorageOperation(op.id);
+assert.equal(op.snapshot!.execution!.repair!.requestedAt, requestedAt);
+network.snapshot!.execution!.repair = { status: 'waiting', requestedAt, checkedAt: requestedAt, reason: 'storage_data_unavailable' };
+op = await checkPaidOperation(op.id);
+assert.equal(op.snapshot!.execution!.repair!.status, 'waiting');
+network.snapshot!.execution!.repair = { status: 'verified', requestedAt, checkedAt: requestedAt + 1 };
+op = await checkPaidOperation(op.id);
+assert.equal(op.snapshot!.execution!.repair!.status, 'verified');
+assert.equal(op.localCompletion, 'done'); assert.equal(op.signature, beforeRepair.signature);
+assert.equal(op.signedTransaction, beforeRepair.signedTransaction); assert.equal(op.serialized, beforeRepair.serialized);
+assert.deepEqual(op.snapshot!.execution!.receipt, beforeRepair.snapshot!.execution!.receipt);
+assert.deepEqual({ creates: network.creates, prepares: network.prepares, reserves: network.reserves,
+  sends: network.sends.length, wallets: walletCalls, reconciles: network.reconciles }, paymentCounts);
+for (const repair of [
+  { status: 'unknown', requestedAt, checkedAt: null }, { status: 'queued', requestedAt: 0, checkedAt: null },
+  { status: 'waiting', requestedAt, checkedAt: requestedAt - 1 }, { status: 'verified', requestedAt, checkedAt: null },
+  { status: 'verified', requestedAt, checkedAt: requestedAt, reason: 'unexpected' },
+  { status: 'waiting', requestedAt, checkedAt: requestedAt, reason: { secret: 'synthetic' } },
+]) {
+  const invalid = structuredClone(op.snapshot!); (invalid.execution as unknown as { repair: unknown }).repair = repair;
+  await assert.rejects(() => validatePaidSnapshot(op, invalid), /checkout_repair_mismatch/);
+}
+const changedReceipt = structuredClone(op.snapshot!);
+changedReceipt.execution!.receipt = { ...changedReceipt.execution!.receipt!, verifiedAt: changedReceipt.execution!.receipt!.verifiedAt + 1 };
+await assert.rejects(() => validatePaidSnapshot(op, changedReceipt), /checkout_receipt_mismatch/);
+
 // A Phantom account switch after approval must not discard a valid signature
 // for the prepared payer. No second wallet request or payment is needed.
 reset(); network = syntheticNetwork(); walletCalls = 0;
 op = await beginPaidOperation(input, signer.publicKey.toBase58(), '0', offered);
+await assert.rejects(() => repairPaidStorageOperation(op.id), /repair_not_available/);
+assert.equal(network.repairs, undefined); assert.equal(network.creates, 1); assert.equal(walletCalls, 0);
 op = await preparePaidOperation(op.id, wallet(network));
 const switchedWallet = wallet(network);
 const signedByOriginalPayer = switchedWallet.signTransaction;

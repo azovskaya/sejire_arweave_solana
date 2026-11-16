@@ -7,6 +7,7 @@ const origin='http://127.0.0.1:5185', tx='A'.repeat(43);
 const panel=page=>page.getByRole('region',{name:'Оплата SOL',exact:true});
 const json=(route,value,status=200)=>route.fulfill({status,contentType:'application/json',body:JSON.stringify(value)});
 const networkState=()=>({ready:true,contributionReady:true,balance:'1000000000000000',requests:[],denied:[],creates:0,admissions:0,createKeys:[],bodies:[],prepares:0,reserves:0,sends:[],sendAttempts:0,cancels:0,reconciles:0,executes:0,
+  repairs:0,repair:null,lostRepair:false,
   recoveries:0,recoveryTransitions:{},lostRecovery:false,recoveryFee:'6000',recoveryError:null,recoveryGate:null,
   finish:false,paid:false,phase:'queued',createError:null,lostCreate:false,lostReserve:false,lostSend:false,lostVerify:false,lostCancel:false,
   wrongGenesis:false,wrongOrder:false,feeNull:false,rpcUnavailable:false,sendRpcError:false,legacyPreparation:false,height:50,heightCalls:0,expireOnFinalHeight:false,expireOnSend:false,verificationReason:null,
@@ -20,7 +21,7 @@ async function installNetwork(context,state=networkState()){
  });
  const update=async page=>{
   if(state.paid&&state.snapshot){
-   const s=state.snapshot,signature=s.record.pendingSignature??state.unknownSignature;
+   const s=state.snapshot,signature=s.record.pendingSignature??state.unknownSignature,previousExecution=s.execution;
    expect(signature).toBeTruthy();
    s.record.pendingSignature=signature;s.record.payment={signature,feeLamports:s.preparation?.feeLamports??'5000'};
    s.record.states.payment='verified';s.record.states.preservation=s.record.order.kind==='contribution'?'not-applicable':'ready';
@@ -28,7 +29,12 @@ async function installNetwork(context,state=networkState()){
    s.verification={status:'verified'};
    s.execution=s.record.order.kind==='contribution'?null:{kind:'arweave-direct',txId:state.phase==='queued'?null:tx,status:state.phase,verification:null,
     ...(state.phase==='requires-reconciliation'?{reason:'network_unavailable'}:{})};
-   if(state.finish&&s.record.order.kind==='preservation')state.snapshot=await page.evaluate(async s=>(await import('/tests/paid-fixture.ts')).completedSnapshot(s),s);
+   if(state.finish&&s.record.order.kind==='preservation'){
+    s.record.states.preservation='completed';
+    if(previousExecution?.status==='completed')s.execution=previousExecution;
+    else state.snapshot=await page.evaluate(async s=>(await import('/tests/paid-fixture.ts')).completedSnapshot(s),s);
+    if(state.repair)state.snapshot.execution.repair=structuredClone(state.repair);
+   }
   }
   const result=structuredClone(state.snapshot);
   if(state.wrongOrder&&result?.record.order.kind==='preservation')result.record.order.archive.parentTxId='Z'.repeat(43);
@@ -68,7 +74,7 @@ async function installNetwork(context,state=networkState()){
     if(state.createError)return json(route,{error:state.createError},503);
     if(state.tombstone)return json(route,{error:'paid_request_cancelled'},409);
     if(state.dropBeforeAdmission){state.dropBeforeAdmission=false;return route.abort('failed');}
-    state.admissions++;state.paid=false;state.finish=false;state.phase='queued';
+    state.admissions++;state.paid=false;state.finish=false;state.phase='queued';state.repair=null;
     state.snapshot=await page.evaluate(async({body,index})=>(await import('/tests/paid-fixture.ts')).initialSnapshot(body,index),{body,index:state.admissions});
     if(state.lostCreate){state.lostCreate=false;return route.abort('failed');}
     return json(route,await update(page));
@@ -152,6 +158,16 @@ async function installNetwork(context,state=networkState()){
    }
    if(method==='POST'&&path===`/orders/${order.id}/execute`){
     expect(body).toEqual({});expect(state.paid).toBe(true);expect(order.kind).toBe('preservation');state.executes++;state.phase='confirming';return json(route,await update(page));
+   }
+   if(method==='POST'&&path===`/orders/${order.id}/repair`){
+    expect(body).toEqual({});expect(state.paid&&state.finish).toBe(true);expect(order.kind).toBe('preservation');
+    const stored=await page.evaluate(async key=>(await import('/src/lib/checkout/paidJournal.ts')).readPaidOperation(key),state.key);
+    expect(req.headers().authorization).toBe(`Bearer ${stored.token}`);
+    state.repairs++;
+    if(!state.repair||state.repair.status==='verified')state.repair={status:'queued',requestedAt:Date.now(),checkedAt:null};
+    const snapshot=await update(page);
+    if(state.lostRepair){state.lostRepair=false;return route.abort('failed');}
+    return json(route,snapshot,202);
    }
   }
   if(url.origin==='https://api.devnet.solana.com'&&req.method()==='POST'){
@@ -309,6 +325,46 @@ test('one click connects Phantom, signs once, completes one archive and restores
  const result=await saved(page,state.key);expect(result.archive).toBe(state.archive);expect(result.op.localCompletion).toBe('done');
  await cleanRestore(browser,state,await page.evaluate(()=>window.paidFamily.words),result.op.snapshot.execution.receipt);
  expect(state.sends).toHaveLength(1);expect(state.creates).toBe(1);
+});
+
+for(const lostReply of [false,true])test(`completed order repairs availability from local history without another payment${lostReply?' after a lost reply':''}`,async({page,context})=>{
+ const state=await installNetwork(context);await openEditor(page);await openPaid(page);
+ await panel(page).getByRole('button',{name:'Оплатить 0.03 SOL и сохранить'}).click();
+ await expect.poll(()=>state.sends.length).toBe(1);state.finish=true;
+ await expect.poll(async()=>(await saved(page,state.key)).op.localCompletion,{timeout:30000}).toBe('done');
+ const original=await saved(page,state.key);
+ const counts={creates:state.creates,prepares:state.prepares,reserves:state.reserves,sends:state.sends.length,executes:state.executes};
+ await page.goto(origin);
+ await page.evaluate(async()=>(await import('/tests/paid-fixture.ts')).installWallet());
+ const requestCount=state.requests.length;
+ await page.getByRole('button',{name:'Сохранения на этом устройстве',exact:true}).click();
+ await expect(page.getByRole('region',{name:'Ваши сохранения на этом устройстве',exact:true})).toContainText(original.op.order.id);
+ expect(state.requests.length).toBe(requestCount);
+ await page.getByRole('button',{name:'Открыть заказ',exact:true}).click();
+ const repair=panel(page).getByRole('button',{name:'Проверить и восстановить доступность архива',exact:true});
+ await expect(repair).toBeEnabled();
+ expect(state.repairs).toBe(0);
+ state.lostRepair=lostReply;await repair.click();
+ await expect.poll(()=>state.repairs).toBe(1);
+ await expect(panel(page).getByRole('heading',{name:'Проверяем доступность архива',exact:true})).toBeVisible();
+ await expect(panel(page)).toContainText('Новая оплата не требуется');
+ await expect(panel(page).getByRole('button',{name:/^Оплатить/})).toHaveCount(0);
+ await expect(repair).toBeDisabled();
+ state.repair={...state.repair,status:'waiting',checkedAt:state.repair.requestedAt,reason:'storage_data_unavailable'};
+ await page.reload();
+ await page.getByRole('button',{name:'Сохранения на этом устройстве',exact:true}).click();
+ await page.getByRole('button',{name:'Открыть заказ',exact:true}).click();
+ await expect(panel(page)).toContainText('Новая оплата не требуется');
+ state.repair={status:'verified',requestedAt:state.repair.requestedAt,checkedAt:state.repair.requestedAt+1};
+ await expect(panel(page)).toContainText('Архив доступен и совпадает с исходной квитанцией.',{timeout:20000});
+ const result=await saved(page,state.key);
+ expect(result.op.localCompletion).toBe('done');expect(result.op.order).toEqual(original.op.order);
+ expect(result.op.snapshot.execution.receipt).toEqual(original.op.snapshot.execution.receipt);
+ expect(result.op.signature).toBe(original.op.signature);expect(result.op.signedTransaction).toBe(original.op.signedTransaction);
+ expect(result.op.serialized).toBe(original.op.serialized);expect(result.archive).toBe(original.archive);expect(result.session).toEqual(original.session);
+ expect({creates:state.creates,prepares:state.prepares,reserves:state.reserves,sends:state.sends.length,executes:state.executes}).toEqual(counts);
+ expect(state.repairs).toBe(1);expect(state.denied).toEqual([]);
+ expect(await page.evaluate(()=>Boolean(window.phantom))).toBe(false);
 });
 
 test('Phantom priority fee behavior leaves the prepared payment unchanged',async({page,context})=>{

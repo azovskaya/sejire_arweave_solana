@@ -9,12 +9,14 @@ import { readPaidOperation } from '../lib/checkout/paidJournal';
 import { findPreservationAttempt } from '../lib/checkout/vaultGuard';
 import { finalizeStandalonePaid } from '../lib/checkout/paidFinalize';
 import {
-  beginPaidOperation, checkPaidOperation, continuePaidStorageOperation, paidCompletion, payPaidOperation,
+  beginPaidOperation, checkPaidOperation, continuePaidStorageOperation, repairPaidStorageOperation, paidCompletion, payPaidOperation,
   preparePaidOperation, readPaidPolicy, readPaidStatus, PaidApiError, cancelPaidOperation, resolveReleasedPaidOperation, retryPaidCreation, cancelPaidCreation,
   findContributionAttempt, completeContributionLocally, contributionReceipt, recoverPaidOperation, recoverSignedPaidOperation, paidWalletResponseCode, paidWalletExtraProgramId,
 } from '../lib/checkout/paidClient';
 import type { PaidCompletion, PaidInput, PaidOperation, PaidPolicyResponse } from '../lib/checkout/paidTypes';
 import { useI18n } from '../lib/i18n/I18nProvider';
+import { paidAvailabilityUi } from '../lib/checkout/paidAvailabilityMessages';
+import { PermawebMigrationNotice } from './PermawebMigrationNotice';
 
 const paidUi = {
   ru: { title: 'Через Solana', doneTitle: 'Семейная история сохранена', preparing: 'Готовим оплату', signing: 'Подтвердите в Phantom', walletSlow: 'Ждём ответа Phantom', walletSlowHint: 'Если вы уже подтвердили, не оплачивайте повторно. Когда окно Phantom закрыто, а ответ так и не появился, обновите страницу: тот же заказ будет сверен без новой подписи.', checking: 'Проверяем оплату', saving: 'Сохраняем', saved: 'Сохранено', continue: 'Продолжить сохранение', finish: 'Завершить сохранение', retry: 'Повторить проверку', return: 'Вернуться к сохранению', pay: (price: string) => `Оплатить ${price} SOL и сохранить`, cost: (price: string) => `Стоимость сохранения: ${price} SOL.`, feeEstimate: (fee: string) => `Комиссия Solana отдельно: оценка ${fee} SOL.`, feeUnknown: 'Комиссия Solana отдельно: уточняется перед подтверждением в Phantom.', networks: (network: string) => `Оплата: ${network}. Зашифрованное хранение: Arweave Mainnet.`, connectHint: 'При первом использовании Phantom может сначала запросить разрешение на подключение.', details: 'Подробнее', donation: 'Добровольный взнос (необязательно)', donationAmount: 'Добровольный взнос, SOL', total: (value: string) => `Итого без комиссии сети: ${value}`, paidPending: 'Оплата подтверждена. Архив завершается автоматически; этот заказ продолжится после закрытия окна.', uncertain: 'Сверяем прежнюю попытку. Новая подпись не запрашивается, пока результат не определён.', orderPending: 'Заказ сохранён в браузере. Продолжаем тот же запрос без создания нового.', success: 'Семейная история сохранена. Храните ваши 12 слов SEJIRE.', back: 'Назад' },
@@ -28,6 +30,7 @@ const arweaveGatewayPending = {
   en: 'Payment confirmed. The Arweave gateway has not yet confirmed that the archive is available. We are checking this order without another payment.',
 } as const;
 function localizedError(error: unknown, locale: PaidLocale): string {
+  if (error instanceof Error && error.message === 'repair_not_available') return paidAvailabilityUi[locale].repairUnavailable;
   if (locale === 'ru') return errorMessage(error);
   const { code, stage } = failureDetails(error);
   const en: Record<string, string> = {
@@ -85,7 +88,7 @@ function failureDetails(error: unknown): { stage: FailureStage; code: string } {
     /wallet|context_changed/.test(safe) ? 'кошелёк' : /fee/.test(safe) ? 'комиссия' : /balance/.test(safe) ? 'баланс' :
     /solana|rpc|network/.test(safe) ? 'сеть/RPC' : /prepar|recovery|expired/.test(safe) ? 'подготовка' :
     /reserv|signature|signed/.test(safe) ? 'фиксация подписи' : /send|broadcast/.test(safe) ? 'отправка' :
-    /storage|archive|execution|preservation|completion/.test(safe) ? 'хранение' : 'проверка оплаты';
+    /storage|archive|execution|preservation|completion|repair/.test(safe) ? 'хранение' : 'проверка оплаты';
   return { stage, code: safe };
 }
 
@@ -143,6 +146,7 @@ function errorMessage(error: unknown): string {
 export function PaidSolanaFlow({ input, onBack, onBusy, onComplete, onAdoptAttempt }: Props) {
   const { locale } = useI18n();
   const ui = paidUi[locale];
+  const availability = paidAvailabilityUi[locale];
   const inputIdentity = input.mode === 'resume' ? `resume:${input.operationId}` : input.mode === 'contribution'
     ? 'contribution' : `create:${serializeEnvelope(input.envelope)}:${input.parentTxId}:${input.treeId}`;
   const emptyDraft = { source: inputIdentity, amount: '0', donationOnly: input.mode === 'contribution', helpOpen: input.mode === 'contribution' };
@@ -238,6 +242,8 @@ export function PaidSolanaFlow({ input, onBack, onBusy, onComplete, onAdoptAttem
   }, [remember, locale]);
 
   const completed = op?.intent.kind==='contribution' ? op?.snapshot?.record.states.payment==='verified' : op?.snapshot?.record.states.preservation === 'completed';
+  const repair = op?.snapshot?.execution?.repair;
+  const repairPending = Boolean(repair && repair.status !== 'verified');
   useEffect(() => {
     if (!signing) { setWalletSlow(false); return; }
     const timer = setTimeout(() => setWalletSlow(true), 60000);
@@ -245,12 +251,12 @@ export function PaidSolanaFlow({ input, onBack, onBusy, onComplete, onAdoptAttem
   }, [signing]);
   const released = op?.snapshot?.expired === true || op?.creationCancelled === true;
   useEffect(() => {
-    if (!op?.id || initializing || completed || released || op.localCompletion !== 'pending') return;
+    if (!op?.id || initializing || released || !repairPending && (completed || op.localCompletion !== 'pending')) return;
     let live = true, timer: ReturnType<typeof setTimeout>;
     const tick = async () => { await check(); if (live) timer = setTimeout(() => void tick(), 6000); };
     timer = setTimeout(() => void tick(), 6000);
     return () => { live = false; clearTimeout(timer); };
-  }, [op?.id, op?.localCompletion, initializing, completed, released, check]);
+  }, [op?.id, op?.localCompletion, initializing, completed, released, repairPending, check]);
 
   async function run(action: () => Promise<void>, kind: 'other' | 'recovery' = 'other') {
     if (running.current || initializing) return;
@@ -393,6 +399,15 @@ export function PaidSolanaFlow({ input, onBack, onBusy, onComplete, onAdoptAttem
     }, 'recovery');
   }
 
+  async function repairArchive() {
+    await run(async () => {
+      const current = context.current, previous = latest.current;
+      if (!previous) return;
+      const next = await repairPaidStorageOperation(previous.id, () => current.active);
+      if (current.active) remember(next);
+    });
+  }
+
   const finish = useCallback(async () => {
     const previous = latest.current, current = context.current, callback = callbacks.current.onComplete;
     if (!previous || completing.current || !current.active) return;
@@ -466,7 +481,8 @@ export function PaidSolanaFlow({ input, onBack, onBusy, onComplete, onAdoptAttem
   }
 
   let title = contributionOnly ? 'Помощь другим семьям' : ui.title;
-  if (completed) title = contributionOnly ? 'Спасибо! Ваш взнос поступил в фонд' : ui.doneTitle;
+  if (repairPending) title = availability.repairBusy;
+  else if (completed) title = contributionOnly ? 'Спасибо! Ваш взнос поступил в фонд' : ui.doneTitle;
   else if (released) title = op?.snapshot?.cancelled || op?.creationCancelled ? 'Запрос оплаты отменён' : 'Срок предложения оплаты истёк';
   else if (paid) title = locale === 'ru' ? executionStatus === 'requires-reconciliation' ? 'Проверяем состояние сохранения'
     : executionStatus === 'confirming' || executionStatus === 'submitted' ? 'Ждём подтверждения Arweave' : 'Оплата получена. Сохраняем дерево' : ui.saving;
@@ -478,13 +494,14 @@ export function PaidSolanaFlow({ input, onBack, onBusy, onComplete, onAdoptAttem
   else if (op && !order) title = 'Проверяем созданный запрос';
 
   const price = order?.servicePayment.amount ?? offeredPolicy?.serviceLamports;
-  const status = completed ? ui.saved : signing ? walletSlow ? ui.walletSlow : ui.signing : paid || finishing || phase === 'saving' && busy ? ui.saving :
+  const status = repairPending ? availability.repairBusy : completed ? ui.saved : signing ? walletSlow ? ui.walletSlow : ui.signing : paid || finishing || phase === 'saving' && busy ? ui.saving :
     pendingPayment || checking || phase === 'checking' && busy ? ui.checking : busy ? ui.preparing : '';
   const primaryText = unavailable ? ui.retry : completionError ? ui.finish : released ? ui.return :
     paid || pendingPayment || recoveryPending || op && !order ? ui.continue :
     contributionOnly ? 'Подтвердить взнос в Phantom' : ui.pay(price ? formatAmount(price, 9) : '…');
   return <section className="checkout-panel" aria-label="Оплата SOL">
     <h1>{title}</h1>
+    {!op && !contributionOnly && <PermawebMigrationNotice />}
     {initializing && <p role="status">Проверяем прежнее сохранение и условия оплаты…</p>}
     {unavailable && <p>{contributionOnly ? 'Помощь фонду через Solana пока недоступна.' : 'Оплата через Solana пока недоступна. Вы можете сохранить дерево по промокоду.'}</p>}
     {(offerReady || order) && !completed && <>
@@ -517,7 +534,9 @@ export function PaidSolanaFlow({ input, onBack, onBusy, onComplete, onAdoptAttem
     {pendingPayment && !paid && !signing && <p>{ui.uncertain}</p>}
     {op && !order && !released && <p>{ui.orderPending}</p>}
     {released && <p>Сервер подтвердил завершение неоплаченного запроса. Зашифрованная копия доступна в подробностях.</p>}
-    {completed && <p role="status">{contributionOnly ? 'Взнос подтверждён.' : ui.success}</p>}
+    {completed && !repairPending && <p role="status">{contributionOnly ? 'Взнос подтверждён.' : ui.success}</p>}
+    {repairPending && <p>{availability.repairRecorded}</p>}
+    {repair && <p role="status">{repair.status === 'verified' ? availability.repairVerified : availability.repairPending}</p>}
     {error && <p role="alert">{error}</p>}
     {recoveryFailure && !error && <p role="alert">{recoveryFailure.message}</p>}
     {completionError && <p role="alert">Архив сохранён, но запись локальной истории не завершилась. Повторная оплата не требуется.</p>}
@@ -544,6 +563,7 @@ export function PaidSolanaFlow({ input, onBack, onBusy, onComplete, onAdoptAttem
       {signature && order && <p><a href={`https://explorer.solana.com/tx/${signature}${order.network === 'devnet' ? '?cluster=devnet' : ''}`} target="_blank" rel="noopener noreferrer">Транзакция Solana</a></p>}
       {op?.snapshot?.execution?.txId && <p><a href={`https://arweave.net/tx/${op.snapshot.execution.txId}`} target="_blank" rel="noopener noreferrer">Архив Arweave</a></p>}
       {op?.snapshot?.execution?.reason && <p>Диагностика хранения: {op.snapshot.execution.reason}</p>}
+      {repair?.reason && <p>Диагностика доступности: {repair.reason}</p>}
       {op?.snapshot?.verification?.reason && !(signing && !signature) && <p>Диагностика оплаты: {op.snapshot.verification.reason === 'not-found'
         ? 'Транзакция пока не найдена; это не подтверждает отсутствие оплаты.' : op.snapshot.verification.reason}</p>}
       {envelope && <button className="btn ghost" type="button" onClick={() => downloadEnvelope(envelope)}>Скачать зашифрованную копию</button>}
@@ -555,6 +575,11 @@ export function PaidSolanaFlow({ input, onBack, onBusy, onComplete, onAdoptAttem
       {completed && contributionOnly && <button className="btn ghost" type="button" onClick={() => void downloadContributionReceipt()}>Скачать квитанцию</button>}
       {completed && op?.snapshot?.execution?.receipt && <button className="btn ghost" type="button" onClick={() => downloadJson(op.snapshot!.execution!.receipt, `sejire-paid-receipt-${op.order!.id}.json`)}>Скачать квитанцию</button>}
     </details>
+    {completed && !contributionOnly && <div className="paid-archive-repair">
+      <p>{availability.repairExplain}</p>
+      <button className="btn ghost" type="button" disabled={busy || checking || finishing || repair?.status === 'queued' || repair?.status === 'checking'}
+        onClick={() => void repairArchive()}>{availability.repairAction}</button>
+    </div>}
     <button className="btn ghost" type="button" disabled={busy || finishing} onClick={() => onBack(Boolean(op))}>{ui.back}</button>
   </section>;
 }

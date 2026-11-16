@@ -136,3 +136,49 @@ test('static pack does not call Fund on github-style relative shell without open
   await page.waitForTimeout(1500);
   expect(fundCalls).toEqual([]);
 });
+
+test('ArNS origin explains how to continue previous-origin orders without transferring credentials', async ({ page, context }) => {
+  const requests=[];
+  await context.addInitScript(()=>localStorage.setItem('sejire.locale','ru'));
+  await context.route('**/*', async route => {
+    const url=new URL(route.request().url());
+    if(url.origin==='https://sejire.ar.io'){
+      const response=await route.fetch({url:ORIGIN+url.pathname+url.search});
+      return route.fulfill({response});
+    }
+    requests.push(url.origin+url.pathname);
+    return route.abort('blockedbyclient');
+  });
+  await page.goto('https://sejire.ar.io/');
+  const notice=page.getByRole('complementary',{name:'Пользовались Sejire на GitHub Pages?',exact:true});
+  await expect(notice).toContainText('завершите её там в том же браузере');
+  const link=notice.getByRole('link',{name:'Открыть прежний сайт',exact:true});
+  await expect(link).toHaveAttribute('href','https://azovskaya.github.io/sejire_arweave_solana/');
+  await expect(link).toHaveAttribute('rel','noopener noreferrer');
+  await page.getByRole('button',{name:'Сохранения на этом устройстве',exact:true}).click();
+  await expect(page.getByRole('region',{name:'Ваши сохранения на этом устройстве',exact:true})).toContainText('нет сохранённых заказов');
+  expect(requests).toEqual([]);
+  await expect(page).toHaveURL('https://sejire.ar.io/');
+});
+
+for(const pathGateway of [false,true])test(`manifest fallback loads the application and assets below a deep path (${pathGateway?'gateway transaction path':'ArNS name'})`, async ({page,context})=>{
+  const host=pathGateway?'https://arweave.net':'https://sejire.ar.io';
+  const prefix=pathGateway?'/'+'C'.repeat(43):'';
+  const path=prefix+'/unknown/deep/route';
+  const assets=[],denied=[];
+  await context.addInitScript(()=>localStorage.setItem('sejire.locale','ru'));
+  await context.route('**/*',async route=>{
+    const url=new URL(route.request().url());
+    if(url.origin!==host){denied.push(url.origin+url.pathname);return route.abort('blockedbyclient');}
+    const localPath=url.pathname===path?'/404.html':url.pathname.slice(prefix.length);
+    if(localPath.startsWith('/assets/'))assets.push(localPath);
+    const response=await route.fetch({url:ORIGIN+localPath});
+    return route.fulfill({response});
+  });
+  await page.goto(host+path+'#/restore');
+  await expect(page.getByRole('textbox',{name:'12 слов восстановления SEJIRE',exact:true})).toBeVisible();
+  expect(assets.some(value=>value.endsWith('.js'))).toBe(true);
+  expect(assets.some(value=>value.endsWith('.css'))).toBe(true);
+  expect(denied).toEqual([]);
+  await expect(page.locator('base')).toHaveAttribute('href',prefix+'/');
+});

@@ -38,6 +38,13 @@ export type PaidSnapshot = {
       archive: PaidArchiveBinding;
     };
     receipt?: PaidReceipt;
+    /** A later availability check never rewrites the original completion. */
+    repair?: {
+      status: 'queued' | 'checking' | 'waiting' | 'verified';
+      requestedAt: number;
+      checkedAt: number | null;
+      reason?: string;
+    };
   };
 };
 

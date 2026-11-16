@@ -3,6 +3,10 @@ import { isStaticPermawebHost } from './permawebHost';
 
 assert.equal(isStaticPermawebHost('sejire.ar.io'), true);
 assert.equal(isStaticPermawebHost('xyz.ar.io'), true);
+assert.equal(isStaticPermawebHost('arweave.net'), true);
+assert.equal(isStaticPermawebHost('sejire.arweave.io'), true);
+assert.equal(isStaticPermawebHost('arweave.dev'), true);
+assert.equal(isStaticPermawebHost('sejire.ar.io.example.com'), false);
 assert.equal(isStaticPermawebHost('abcd.arweave.net'), true);
 assert.equal(isStaticPermawebHost('abcd.arweave.dev'), true);
 assert.equal(isStaticPermawebHost('azovskaya.github.io'), false);

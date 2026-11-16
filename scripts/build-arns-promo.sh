@@ -9,13 +9,15 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
 FUND_API_URL="${VITE_FUND_API_URL:-https://sejire-sponsor.azovskaya-alissa.workers.dev}"
-case "$FUND_API_URL" in
-  https://*) ;;
-  *)
-    echo "VITE_FUND_API_URL must be https://… (got: $FUND_API_URL)" >&2
-    exit 1
-    ;;
-esac
+CHECKOUT_API_URL="${VITE_CHECKOUT_API_URL:-$FUND_API_URL}"
+# Both clients require exact HTTPS origins: a trailing slash/path passes a loose
+# shell prefix test but causes invalid_*_endpoint in the browser.
+node --input-type=module - "$FUND_API_URL" "$CHECKOUT_API_URL" <<'JS'
+for (const raw of process.argv.slice(2)) {
+  const url = new URL(raw);
+  if (url.protocol !== 'https:' || url.origin !== raw || url.username || url.password) throw Error('ArNS API configuration must be an exact HTTPS origin');
+}
+JS
 
 if [[ ! -d "$ROOT/apps/web/node_modules/vite" ]]; then
   echo "Installing apps/web dependencies…"
@@ -25,7 +27,7 @@ fi
 echo "Building ArNS promo SPA with Fund API: $FUND_API_URL"
 # Match CI native:build + baked Worker origin used by accepted Pages artifacts.
 export VITE_FUND_API_URL="$FUND_API_URL"
-export VITE_CHECKOUT_API_URL="${VITE_CHECKOUT_API_URL:-$FUND_API_URL}"
+export VITE_CHECKOUT_API_URL="$CHECKOUT_API_URL"
 export VITE_PRESERVATION_V2_TEST=0
 export VITE_PRESERVATION_V2_ENABLED=1
 export VITE_NATIVE_AR_PILOT=1

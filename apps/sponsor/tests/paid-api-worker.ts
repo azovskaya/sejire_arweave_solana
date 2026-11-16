@@ -7,7 +7,7 @@ import { CheckoutLedger as ActualCheckoutLedger } from '../src/checkout/durableS
 export class CheckoutLedger extends ActualCheckoutLedger {
   constructor(private readonly testContext: DurableObjectState, env: Env & { CHECKOUT_LEDGER: DurableObjectNamespace }) { super(testContext, env); }
   override async fetch(request: Request): Promise<Response> {
-    const input = await request.clone().json() as { action?: string; id?: string; hash?: string };
+    const input = await request.clone().json() as { action?: string; id?: string; hash?: string; at?: number };
     if (input.action === '__testPaidCounts') {
       const counts: Record<string, number> = {};
       for (const table of ['orders', 'api_orders', 'paid_orders', 'paid_payloads', 'paid_holds', 'credits', 'paid_cancelled_keys']) {
@@ -22,16 +22,24 @@ export class CheckoutLedger extends ActualCheckoutLedger {
       const paid = sql.exec<{ status: string; receipt_json: string | null; proof_json: string | null; lease_until: number; last_error: string | null }>(
         'SELECT status,receipt_json,proof_json,lease_until,last_error FROM paid_orders WHERE order_id=?', input.id!).toArray()[0];
       return Response.json({ row, paid, credits: sql.exec('SELECT purpose,amount,signature FROM credits WHERE order_id=?', input.id!).toArray(),
+        repair: sql.exec('SELECT status,requested_at,checked_at,reason FROM paid_archive_repairs WHERE order_id=?', input.id!).toArray()[0]??null,
         hold: sql.exec('SELECT reward,actual,released FROM paid_holds WHERE order_id=?', input.id!).toArray()[0],
         recoveries: sql.exec('SELECT previous_preparation_id,previous_preparation_json,preparation_json FROM paid_payment_recoveries WHERE order_id=?', input.id!).toArray(),
         legacyExecution: sql.exec('SELECT order_id FROM api_execution WHERE order_id=?', input.id!).toArray(),
         payloadKinds: sql.exec('SELECT kind FROM paid_payloads WHERE order_id=?', input.id!).toArray() });
     }
     if (input.action === '__testArmPaidNow') {
-      this.testContext.storage.sql.exec('UPDATE paid_orders SET next_at=? WHERE order_id=? AND status<>?', Date.now() - 1, input.id!, 'completed');
+      this.testContext.storage.sql.exec('UPDATE paid_orders SET next_at=? WHERE order_id=? AND (status<>? OR EXISTS(SELECT 1 FROM paid_archive_repairs r WHERE r.order_id=paid_orders.order_id AND r.status<>\'verified\'))', Date.now() - 1, input.id!, 'completed');
       await this.testContext.storage.setAlarm(Date.now() + 1);
       await this.testContext.storage.sync();
       return Response.json(null);
+    }
+    if (input.action === '__testScheduleRepairAt') {
+      if(!Number.isSafeInteger(input.at)||input.at!<=Date.now())throw Error('invalid_test_alarm');
+      this.testContext.storage.sql.exec('UPDATE paid_orders SET next_at=?,lease=NULL,lease_until=0 WHERE order_id=? AND EXISTS(SELECT 1 FROM paid_archive_repairs r WHERE r.order_id=paid_orders.order_id AND r.status<>\'verified\')', input.at!, input.id!);
+      await this.testContext.storage.setAlarm(input.at!);
+      await this.testContext.storage.sync();
+      return Response.json({alarmAt:await this.testContext.storage.getAlarm()});
     }
     if (input.action === '__testExpireSession') {
       this.testContext.storage.sql.exec('UPDATE api_sessions SET expires_at=? WHERE hash=?', Date.now() - 1, input.hash!);

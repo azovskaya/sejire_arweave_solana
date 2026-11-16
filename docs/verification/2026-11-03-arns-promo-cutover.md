@@ -1,5 +1,7 @@
 # ArNS cutover: promo-funded SPA для sejire.ar.io
 
+> Исторический отчёт. Текущая процедура публикации описана в [ArNS cutover от 16 ноября](2026-11-16-ario-cutover.md); прежняя команда с локальным `wallet.json` ниже заменена проверяемым CI artifact и отдельными режимами prepare/upload.
+
 Дата: **3 ноября 2026** (Asia/Calcutta). Источник продукта: `sejire_arweave_solana` ветка cutover. Репозиторий `azovskaya/Sejire_arweave` проанализирован; **запись в него у этого агента запрещена (GitHub 403)** — готовый пакет живёт здесь.
 
 ## Что взято из Sejire_arweave

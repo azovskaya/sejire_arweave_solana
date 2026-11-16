@@ -9,9 +9,8 @@ if (!dist || !expectedFund) {
   console.error('usage: node scripts/verify-arns-dist.mjs <distDir> <https://fund-origin>');
   process.exit(2);
 }
-if (!/^https:\/\/[^/]+$/i.test(expectedFund) && !/^https:\/\/[^/]+\//i.test(expectedFund)) {
-  // Accept origin with or without path; normalize to origin string presence in bundle.
-}
+const origin = new URL(expectedFund);
+if (origin.protocol !== 'https:' || origin.origin !== expectedFund || origin.username || origin.password) throw Error('invalid_fund_origin');
 
 async function listFiles(root, dir = root, out = []) {
   for (const item of await readdir(dir, { withFileTypes: true })) {
@@ -35,15 +34,10 @@ if (!jsNames.length) throw Error('missing_js_assets');
 
 let fundHits = 0;
 let qaHits = 0;
-let originFallbackHits = 0;
 for (const name of jsNames) {
   const body = await readFile(join(dist, name), 'utf8');
   if (body.includes(expectedFund.replace(/\/$/, ''))) fundHits += 1;
   if (body.includes('VITE_QA_TOOLS') && /\b1\b/.test(body) && body.includes('Пример: 13')) qaHits += 1;
-  // Crude guard: production ArNS bundle must not rely only on location.origin for Fund.
-  if (body.includes('/api/fund') && !body.includes(expectedFund.replace(/\/$/, ''))) {
-    // Still OK if fund URL is in another chunk; counted via fundHits across all chunks.
-  }
   void (await stat(join(dist, name)));
 }
 
@@ -59,5 +53,5 @@ console.log(JSON.stringify({
   jsAssets: jsNames.length,
   fundUrlChunks: fundHits,
   qaSuspicious: qaHits,
-  originFallbackHits,
+  note: 'URL presence is a static check; the built-browser test verifies actual request routing.',
 }, null, 2));

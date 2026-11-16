@@ -22,7 +22,12 @@
     "deploy:pages": "bash scripts/deploy-pages.sh",
     "deploy:permaweb": "bash scripts/deploy-permaweb.sh",
     "permaweb:prepare": "node scripts/prepare-permaweb.mjs",
-    "test:permaweb-prepare": "node scripts/prepare-permaweb.selftest.mjs",
+    "permaweb:release:prepare": "node scripts/permaweb-release.mjs",
+    "permaweb:plan": "node scripts/upload-permaweb.mjs --plan",
+    "permaweb:quote": "node scripts/upload-permaweb.mjs --quote",
+    "permaweb:verify": "node scripts/verify-arns-published.mjs",
+    "permaweb:verify-target": "node scripts/verify-arns-published.mjs --target",
+    "test:permaweb-prepare": "node scripts/prepare-permaweb.selftest.mjs && node --test scripts/permaweb-release.test.mjs",
     "arns:build": "bash scripts/build-arns-promo.sh",
     "arns:prepare": "npm run arns:build && npm run permaweb:prepare",
     "arns:verify": "node scripts/verify-arns-dist.mjs apps/web/dist https://sejire-sponsor.azovskaya-alissa.workers.dev",
@@ -60,7 +65,6 @@
     "test:native-browser": "npm run test:native-browser --prefix apps/web"
   },
   "devDependencies": {
-    "permaweb-deploy": "^5.0.0",
     "pptxgenjs": "^4.0.1"
   }
 }

@@ -12,6 +12,7 @@ import { SqliteAtomicOrderStore } from '../src/checkout/sqliteStore.ts';
 import { ApiLedger } from '../src/checkout/apiLedger.ts';
 import { PaidLedger } from '../src/checkout/paidLedger.ts';
 import { runPaidOrder, recoverPaidOrder } from '../src/checkout/paidRunner.ts';
+import { CheckoutLedger, LEDGER_OBJECT_NAME } from '../src/checkout/durableStore.ts';
 import { validatePreparedPayment } from '../src/checkout/paymentValidator.ts';
 import { addr, encode58, sig } from '../src/checkout/rpcFixtures.ts';
 import { FundLedger, TREASURY_ADDRESS } from '../src/fund/ledger.ts';
@@ -205,6 +206,23 @@ function mockRunner(c, f, options = {}) {
 
 async function run(c, f, mock, env = executionEnv) { await runPaidOrder(c.paid, env, f.order.id, mock.deps); }
 async function test(name, callback) { await callback(); checks++; console.log(`PASS paid SQLite: ${name}`); }
+function repairEvidence(c, id) {
+  return {
+    order: c.rows('SELECT order_json,states_json,pending_signature,payment_json FROM orders WHERE id=?', id),
+    paid: c.rows('SELECT policy_json,preparation_json,status,proof_json,receipt_json,paid,released,last_error,submission_ack FROM paid_orders WHERE order_id=?', id),
+    payloads: c.rows('SELECT kind,payload FROM paid_payloads WHERE order_id=? ORDER BY kind', id),
+    credits: c.rows('SELECT * FROM credits WHERE order_id=?', id),
+    holds: c.rows('SELECT * FROM paid_holds WHERE order_id=?', id),
+    treasuryRevision: c.paid.treasury.revision(TREASURY_ADDRESS),
+    totals: c.paid.treasury.paidTotals(),
+  };
+}
+async function completedFixture() {
+  const c = await context(), f = await fixture(); await offer(c, f); await pay(c, f);
+  await run(c, f, mockRunner(c, f, { proof: 'complete' }));
+  assert.equal(c.paid.snapshot(f.order.id).execution.status, 'completed');
+  return { c, f };
+}
 
 try {
   await test('explicit unsigned renewal preserves one order before blockhash expiry',async()=>{
@@ -785,6 +803,154 @@ try {
     assert.deepEqual(c.rows('SELECT * FROM paid_payloads WHERE order_id=? ORDER BY kind', f.order.id), preserved);
     assert.equal(c.count('orders'), 1); assert.equal(c.count('credits'), 1);
     assert.equal(c.count('used_transactions'), 1); assert.equal(c.count('paid_holds'), 1);
+  });
+
+  await test('explicit completed repair replays the exact ciphertext after restart without changing receipt, payment or spend', async () => {
+    let { c, f } = await completedFixture();
+    const before = repairEvidence(c, f.order.id), originalSigned = c.paid.work(f.order.id).signed;
+    const admitted = await c.paid.requestArchiveRepair(owner, f.order.id, Date.now());
+    assert.equal(admitted.queued, true); assert.equal(admitted.snapshot.execution.status, 'completed');
+    assert.equal(admitted.snapshot.execution.repair.status, 'queued');
+    c = reopen(c);
+    const mock = mockRunner(c, f, { proof: 'confirmed' }), provider = mock.deps.provider(f.policy);
+    const replay = provider.replayData;
+    provider.replayData = async (...args) => { await replay(...args); mock.state.proof = 'complete'; };
+    await run(c, f, mock);
+    const snapshot = c.paid.snapshot(f.order.id), repair = snapshot.execution.repair;
+    assert.equal(repair.status, 'verified'); assert(repair.checkedAt >= repair.requestedAt);
+    assert.equal(repair.reason, undefined); assert.equal(mock.calls.replayData.length, 1);
+    assert.deepEqual(mock.calls.replayData[0], originalSigned);
+    assert.equal(mock.calls.prepare, 0); assert.equal(mock.calls.sign, 0); assert.equal(mock.calls.submit.length, 0);
+    assert.equal(mock.calls.read, 0); assert.equal(mock.calls.lookup, 0);
+    assert.deepEqual(repairEvidence(c, f.order.id), before);
+    assert.equal(c.count('paid_archive_repairs'), 1); assert.equal(c.rows('SELECT at FROM test_alarm').length, 0);
+  });
+
+  await test('repair uses fresh proof, preserves active backoff and never treats a historical receipt as current availability', async () => {
+    const { c, f } = await completedFixture(), before = repairEvidence(c, f.order.id);
+    const admitted = await c.paid.requestArchiveRepair(owner, f.order.id, Date.now());
+    const mock = mockRunner(c, f, { proof: 'offline' }); await run(c, f, mock);
+    const waiting = c.paid.snapshot(f.order.id).execution.repair;
+    assert.equal(waiting.status, 'waiting'); assert.equal(waiting.reason, 'network_unavailable');
+    const scheduled = c.rows('SELECT next_at,attempts FROM paid_orders WHERE order_id=?', f.order.id);
+    const duplicate = await c.paid.requestArchiveRepair(owner, f.order.id, Date.now());
+    assert.equal(duplicate.queued, false); assert.equal(duplicate.snapshot.execution.repair.requestedAt, admitted.snapshot.execution.repair.requestedAt);
+    assert.deepEqual(c.rows('SELECT next_at,attempts FROM paid_orders WHERE order_id=?', f.order.id), scheduled);
+    await c.paid.nudge(owner, f.order.id, Date.now()); await run(c, f, mock);
+    assert.equal(mock.calls.reconcile, 1, 'duplicate/execute cannot bypass the active repair backoff');
+    assert.equal(mock.calls.replayData.length, 0); assert.deepEqual(repairEvidence(c, f.order.id), before);
+    assert.equal(c.rows('SELECT at FROM test_alarm').length, 1);
+    mock.state.proof = 'complete'; c.storage.sql.exec('UPDATE paid_orders SET next_at=0 WHERE order_id=?', f.order.id);
+    await run(c, f, mock);
+    assert.equal(c.paid.snapshot(f.order.id).execution.repair.status, 'verified');
+    assert.equal(mock.calls.replayData.length, 0); assert.deepEqual(repairEvidence(c, f.order.id), before);
+  });
+
+  await test('repair failures, execution pause and integrity errors preserve immutable completion and exact retry data', async () => {
+    let { c, f } = await completedFixture();
+    const before = repairEvidence(c, f.order.id);
+    await c.paid.requestArchiveRepair(owner, f.order.id, Date.now());
+    const paused = mockRunner(c, f, { proof: 'confirmed' });
+    await run(c, f, paused, { CHECKOUT_PAID_EXECUTION_ENABLED: 'false' });
+    assert.equal(paused.calls.replayData.length, 0);
+    assert.equal(c.paid.snapshot(f.order.id).execution.repair.reason, 'executor_paused');
+    c = reopen(c); c.storage.sql.exec('UPDATE paid_orders SET next_at=0 WHERE order_id=?', f.order.id);
+    const failed = mockRunner(c, f, { proof: 'confirmed', replayError: 'synthetic-private-provider-response' });
+    await run(c, f, failed);
+    assert.equal(c.paid.snapshot(f.order.id).execution.repair.reason, 'storage_data_replay_unavailable');
+    assert(!JSON.stringify(c.paid.snapshot(f.order.id)).includes('synthetic-private-provider-response'));
+    for (const patch of [{ txId: 'X'.repeat(43) }, { rewardWinston: '21' }, { reason: 'archive_verification_failed' }]) {
+      c.storage.sql.exec('UPDATE paid_orders SET next_at=0 WHERE order_id=?', f.order.id);
+      const invalid = mockRunner(c, f, { proof: 'confirmed' });
+      invalid.deps.provider(f.policy).reconcile = async (_input, signed) => ({ ...invalid.check(signed), ...patch });
+      await run(c, f, invalid);
+      assert.equal(c.paid.snapshot(f.order.id).execution.repair.status, 'waiting');
+      assert.equal(invalid.calls.replayData.length, 0);
+    }
+    assert.equal(c.paid.snapshot(f.order.id).execution.repair.reason, 'archive_verification_failed');
+    assert.deepEqual(repairEvidence(c, f.order.id), before);
+  });
+
+  await test('repair does not require old preparation bytes; missing archive releases lease and keeps retry durable', async () => {
+    let { c, f } = await completedFixture();
+    c.storage.sql.exec('DELETE FROM paid_payloads WHERE order_id=? AND kind=?', f.order.id, 'prepared');
+    const before = repairEvidence(c, f.order.id);
+    await c.paid.requestArchiveRepair(owner, f.order.id, Date.now());
+    const complete = mockRunner(c, f, { proof: 'complete' }); await run(c, f, complete);
+    assert.equal(c.paid.snapshot(f.order.id).execution.repair.status, 'verified');
+    assert.deepEqual(repairEvidence(c, f.order.id), before);
+    await c.paid.requestArchiveRepair(owner, f.order.id, Date.now());
+    c.storage.sql.exec('DELETE FROM paid_payloads WHERE order_id=? AND kind=?', f.order.id, 'archive');
+    const damaged = repairEvidence(c, f.order.id); c = reopen(c);
+    const blocked = mockRunner(c, f, { proof: 'confirmed' }); await run(c, f, blocked);
+    const row = c.rows('SELECT lease,lease_until FROM paid_orders WHERE order_id=?', f.order.id)[0];
+    assert.equal(row.lease, null); assert.equal(row.lease_until, 0);
+    assert.equal(c.paid.snapshot(f.order.id).execution.repair.reason, 'paid_payload_missing');
+    assert.equal(blocked.calls.replayData.length, 0); assert.equal(blocked.calls.sign, 0);
+    assert.deepEqual(repairEvidence(c, f.order.id), damaged);
+    assert.equal(c.rows('SELECT at FROM test_alarm').length, 1);
+  });
+
+  await test('repair ownership and completed receipt admission do not widen old capability or create new obligations', async () => {
+    const { c, f } = await completedFixture();
+    await assert.rejects(c.paid.requestArchiveRepair(otherOwner, f.order.id, Date.now()), /order_not_found/);
+    assert.equal(c.count('paid_archive_repairs'), 0);
+    const unpaid = await fixture(); await offer(c, unpaid);
+    await assert.rejects(c.paid.requestArchiveRepair(owner, unpaid.order.id, Date.now()), /repair_not_available/);
+    await pay(c, unpaid);
+    await assert.rejects(c.paid.requestArchiveRepair(owner, unpaid.order.id, Date.now()), /repair_not_available/);
+    const contribution = await fixture({ kind: 'contribution', contribution: '1000' });
+    await offer(c, contribution); await pay(c, contribution);
+    await assert.rejects(c.paid.requestArchiveRepair(owner, contribution.order.id, Date.now()), /repair_not_available/);
+    const before = repairEvidence(c, f.order.id);
+    c.storage.sql.exec('UPDATE api_sessions SET expires_at=? WHERE hash=?', Date.now() - 1, owner);
+    const admitted = await c.paid.requestArchiveRepair(owner, f.order.id, Date.now());
+    assert.equal(admitted.queued, true); assert.equal(c.count('paid_archive_repairs'), 1);
+    assert.deepEqual(repairEvidence(c, f.order.id), before);
+  });
+
+  await test('repair lease fences simultaneous runners and a new generation until the previous finalizer finishes', async () => {
+    const { c, f } = await completedFixture(), before = repairEvidence(c, f.order.id);
+    const queued = await Promise.all([c.paid.requestArchiveRepair(owner, f.order.id, Date.now()), c.paid.requestArchiveRepair(owner, f.order.id, Date.now())]);
+    assert.equal(queued.filter(result => result.queued).length, 1);
+    const requestedAt = queued[0].snapshot.execution.repair.requestedAt;
+    const work = await c.paid.claim(f.order.id, 'repair-one', Date.now()); assert(work?.repair);
+    const blocked = mockRunner(c, f, { proof: 'complete' }); await run(c, f, blocked);
+    assert.equal(blocked.calls.reconcile, 0);
+    await c.paid.archiveRepairProof(f.order.id, 'repair-one', blocked.check(work.signed), Date.now());
+    const tooSoon = await c.paid.requestArchiveRepair(owner, f.order.id, Date.now());
+    assert.equal(tooSoon.queued, false); assert.equal(tooSoon.snapshot.execution.repair.requestedAt, requestedAt);
+    await c.paid.releaseLease(f.order.id, 'repair-one', null, Date.now());
+    const again = await c.paid.requestArchiveRepair(owner, f.order.id, Date.now());
+    assert.equal(again.queued, true); assert(again.snapshot.execution.repair.requestedAt > requestedAt);
+    await assert.rejects(c.paid.archiveRepairProof(f.order.id, 'repair-one', blocked.check(work.signed), Date.now()), /execution_lease_lost/);
+    await c.paid.releaseLease(f.order.id, 'repair-one', 'network_unavailable', Date.now());
+    assert.equal(c.paid.snapshot(f.order.id).execution.repair.status, 'queued');
+    const second = await c.paid.claim(f.order.id, 'repair-two', Date.now()); assert(second?.repair);
+    await c.paid.archiveRepairProof(f.order.id, 'repair-two', blocked.check(second.signed), Date.now());
+    c.storage.sql.exec('UPDATE paid_orders SET lease_until=0 WHERE order_id=?', f.order.id);
+    const afterExpiredLease = await c.paid.requestArchiveRepair(owner, f.order.id, Date.now());
+    assert.equal(afterExpiredLease.queued, true);
+    await assert.rejects(c.paid.archiveRepairProof(f.order.id, 'repair-two', blocked.check(second.signed), Date.now()), /execution_lease_lost/);
+    await c.paid.releaseLease(f.order.id, 'repair-two', 'network_unavailable', Date.now());
+    assert.equal(c.paid.snapshot(f.order.id).execution.repair.status, 'queued');
+    assert.deepEqual(repairEvidence(c, f.order.id), before);
+    assert.equal(c.count('paid_archive_repairs'), 1);
+  });
+
+  await test('cold constructor preserves an already scheduled alarm instead of cancelling its due invocation', async () => {
+    const { c, f } = await completedFixture();
+    await c.paid.requestArchiveRepair(owner, f.order.id, Date.now());
+    const existingAlarm = Date.now() - 1000, callbacks = [], identity = {};
+    let replacements = 0;
+    c.storage.getAlarm = async () => existingAlarm;
+    c.storage.setAlarm = async () => { replacements++; };
+    new CheckoutLedger({ storage: c.storage, id: { equals: value => value === identity },
+      blockConcurrencyWhile(callback) { const promise = callback(); callbacks.push(promise); return promise; } },
+    { CHECKOUT_LEDGER: { idFromName(name) { assert.equal(name, LEDGER_OBJECT_NAME); return identity; } } });
+    await Promise.all(callbacks);
+    assert.equal(replacements, 0);
+    assert.equal(c.paid.snapshot(f.order.id).execution.repair.status, 'queued');
   });
 
   await test('wrong TX/reward or archive-without-chain proof cannot spend or complete', async () => {

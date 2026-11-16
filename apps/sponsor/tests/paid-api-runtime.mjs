@@ -34,7 +34,7 @@ const arKey = await webcrypto.subtle.exportKey('jwk', arPair.privateKey);
 const treasury = createHash('sha256').update(Buffer.from(arKey.n, 'base64url')).digest('base64url');
 const fetchMock = createFetchMock(); fetchMock.disableNetConnect();
 const wire = { calls: [], payments: new Map(), archives: new Map(), submissions: new Map(),
-  lostSingleAck: true, failChunkOnce: false, droppedChunks: 0, chunkPosts: 0, rpcRateLimited: false,
+  lostSingleAck: true, failChunkOnce: false, failChunkPersistent: false, droppedChunks: 0, chunkPosts: 0, rpcRateLimited: false,
   rpcForbiddenDefault: false, rpcForbiddenPocket: false, referenceRows: new Map(), referenceUnavailable: false,
   blockhash: addr(8), lastValidBlockHeight: 1000, blockHeight: 100 };
 const observe = (url, method) => wire.calls.push({ url, method });
@@ -130,6 +130,7 @@ fetchMock.get('https://arweave.net').intercept({ path: '/chunk', method: 'POST' 
   const bytes = Buffer.from(chunk.chunk, 'base64url'), end = Number(chunk.offset) + 1;
   assert.deepEqual(bytes, Buffer.from(stored.serialized).subarray(end - bytes.length, end));
   if (wire.failChunkOnce) { wire.failChunkOnce = false; wire.droppedChunks++; return { statusCode: 503, data: 'synthetic interrupted chunk' }; }
+  if (wire.failChunkPersistent) return { statusCode: 503, data: 'synthetic private chunk denial' };
   stored.chunks.set(chunk.offset, bytes.length);
   stored.complete = [...stored.chunks.values()].reduce((total, size) => total + size, 0) === Buffer.byteLength(stored.serialized);
   return { statusCode: 200, data: 'OK' };
@@ -434,6 +435,55 @@ try {
     assert.equal(result.body.execution.receipt.paymentSignature, result.body.record.payment.signature);
     assert.equal(wire.calls.length, before); assert.equal((await inspect(second.id)).credits.length, 1);
     for (const path of ['/commit', '/paidRun', '/__testInspectPaid', '/__testPaidCounts']) assert.equal((await call(path, b, {})).status, 404);
+  });
+  await start(false, true, false);
+  let repairBefore, repairTx, repairRequestedAt;
+  await test('owner-only completed repair preserves receipt and retries original chunks without signer or another payment', async () => {
+    repairBefore = await inspect(first.id);
+    const receipt = JSON.parse(repairBefore.paid.receipt_json);
+    repairTx = wire.submissions.get(receipt.txId); assert(repairTx);
+    assert.equal((await call(`/orders/${first.id}/repair`, null, {})).status, 401);
+    assert.equal((await call(`/orders/${first.id}/repair`, b, {})).status, 404);
+    assert.equal((await call(`/orders/${first.id}/repair`, a, { serialized: 'unexpected client data' })).status, 400);
+    assert.equal((await inspect(first.id)).repair, null);
+    repairTx.complete = false; wire.failChunkPersistent = true;
+    const beforeCalls = wire.calls.length, beforeChunks = wire.chunkPosts, beforePosts = repairTx.posts;
+    const requested = await call(`/orders/${first.id}/repair`, a, {});
+    assert.equal(requested.status, 202); assert.equal(requested.body.execution.status, 'completed');
+    assert.deepEqual(requested.body.execution.receipt, receipt);
+    repairRequestedAt = requested.body.execution.repair.requestedAt;
+    const waiting = await waitFor(first.id, state => state.repair?.status === 'waiting' && state.paid.lease_until === 0, 'repair retry after lost chunk acknowledgement');
+    assert.equal(waiting.repair.reason, 'storage_data_replay_unavailable');
+    assert.equal(waiting.repair.requested_at, repairRequestedAt);
+    assert.equal(wire.chunkPosts, beforeChunks + 1); assert.equal(repairTx.posts, beforePosts);
+    assert.deepEqual(waiting.row, repairBefore.row); assert.deepEqual(waiting.credits, repairBefore.credits);
+    assert.deepEqual(waiting.hold, repairBefore.hold);
+    assert.equal(waiting.paid.receipt_json, repairBefore.paid.receipt_json);
+    assert.equal(waiting.paid.proof_json, repairBefore.paid.proof_json);
+    assert.equal(waiting.paid.last_error, repairBefore.paid.last_error);
+    assert(wire.calls.slice(beforeCalls).every(call => /^https:\/\/(arweave\.net|g8way\.io)\//.test(call.url)), 'repair makes no Solana request');
+    assert(!JSON.stringify(requested.body).includes('synthetic private chunk denial'));
+    const duplicate = await call(`/orders/${first.id}/repair`, a, {});
+    assert.equal(duplicate.status, 202); assert.equal(duplicate.body.execution.repair.requestedAt, repairRequestedAt);
+    assert.equal(wire.chunkPosts, beforeChunks + 1, 'duplicate cannot bypass backoff');
+  });
+  await test('cold durable alarm resumes a queued completed repair without a browser request or a signer', async () => {
+    const alarmAt = Date.now() + 1800;
+    assert.deepEqual(await internal({ action: '__testScheduleRepairAt', id: first.id, at: alarmAt }), { alarmAt });
+    const beforeChunks = wire.chunkPosts; wire.failChunkPersistent = false;
+    await start(false, true, false);
+    // Deliberately no GET/inspect/nudge after restart: the persisted alarm alone
+    // must wake the production constructor and reuse the old signed ciphertext.
+    const deadline = Date.now() + 15000;
+    while (wire.chunkPosts === beforeChunks && Date.now() < deadline) await new Promise(resolve => setTimeout(resolve, 25));
+    assert.equal(wire.chunkPosts, beforeChunks + 1, 'cold durable alarm must replay the existing chunk');
+    const done = await waitFor(first.id, state => state.repair?.status === 'verified' && state.paid.lease_until === 0, 'cold repair verification');
+    assert.equal(done.repair.requested_at, repairRequestedAt); assert(done.repair.checked_at >= repairRequestedAt);
+    assert.equal(done.repair.reason, null); assert.equal(done.paid.status, 'completed');
+    assert.deepEqual(done.row, repairBefore.row); assert.deepEqual(done.credits, repairBefore.credits);
+    assert.deepEqual(done.hold, repairBefore.hold); assert.equal(done.paid.receipt_json, repairBefore.paid.receipt_json);
+    assert.equal(done.paid.proof_json, repairBefore.paid.proof_json); assert.equal(wire.submissions.size, 2);
+    assert.equal(repairTx.posts, 1);
   });
   const contributionOptions={db:'contributions',contribution:true,storage:false};
   wire.storageUnavailable=true;

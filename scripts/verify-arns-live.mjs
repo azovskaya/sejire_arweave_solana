@@ -5,12 +5,13 @@
  */
 import { writeFile, mkdir, readFile, readdir } from 'node:fs/promises';
 import { join, relative } from 'node:path';
+import { assessArnsLiveChecks } from './arns-live-policy.mjs';
 
 const FUND = (process.env.VITE_FUND_API_URL || 'https://sejire-sponsor.azovskaya-alissa.workers.dev').replace(/\/$/, '');
 const ORIGIN = 'https://sejire.ar.io';
 const DENIED = 'https://evil.example';
 const DIST = process.argv[2] || 'apps/web/dist';
-const OUT = process.argv[3] || 'docs/verification/2026-11-03-arns-live-smoke.json';
+const OUT = process.argv[3] || '.cache/arns-live-smoke.json';
 
 async function listJs(root, dir = root, out = []) {
   for (const item of await readdir(dir, { withFileTypes: true })) {
@@ -21,25 +22,18 @@ async function listJs(root, dir = root, out = []) {
   return out;
 }
 
-function headersOf(res) {
-  const o = {};
-  res.headers.forEach((v, k) => { o[k] = v; });
-  return o;
-}
-
-async function probe(path, method = 'GET', origin = ORIGIN, body) {
+async function probe(path, method = 'GET', origin = ORIGIN, checkout = false) {
   const init = {
     method,
     headers: {
       Origin: origin,
-      ...(body ? { 'Content-Type': 'application/json' } : {}),
       ...(method === 'OPTIONS' ? {
-        'Access-Control-Request-Method': body ? 'POST' : 'GET',
-        'Access-Control-Request-Headers': 'content-type',
+        'Access-Control-Request-Method': checkout ? 'POST' : 'GET',
+        'Access-Control-Request-Headers': checkout ? 'authorization, content-type, idempotency-key' : 'content-type',
       } : {}),
     },
     redirect: 'error',
-    ...(body ? { body } : {}),
+    signal: AbortSignal.timeout(15000),
   };
   const res = await fetch(`${FUND}${path}`, init);
   const text = await res.text();
@@ -50,6 +44,7 @@ async function probe(path, method = 'GET', origin = ORIGIN, body) {
     status: res.status,
     allowOrigin: res.headers.get('access-control-allow-origin'),
     allowMethods: res.headers.get('access-control-allow-methods'),
+    allowHeaders: res.headers.get('access-control-allow-headers'),
     body: json ?? (text.slice(0, 200) || null),
   };
 }
@@ -67,29 +62,14 @@ checks.push(await probe('/api/fund/balance', 'OPTIONS'));
 checks.push(await probe('/api/fund/balance', 'GET'));
 checks.push(await probe('/api/checkout/policy', 'OPTIONS'));
 checks.push(await probe('/api/checkout/policy', 'GET'));
+checks.push(await probe('/api/checkout/orders', 'OPTIONS', ORIGIN, true));
 checks.push(await probe('/api/fund/balance', 'OPTIONS', DENIED));
 checks.push(await probe('/api/fund/balance', 'GET', DENIED));
 
 const balance = checks.find((c) => c.path === '/api/fund/balance' && c.method === 'GET' && c.origin === ORIGIN);
-const deniedGet = checks.find((c) => c.path === '/api/fund/balance' && c.method === 'GET' && c.origin === DENIED);
-const policy = checks.find((c) => c.path === '/api/checkout/policy' && c.method === 'GET' && c.origin === ORIGIN);
-
-const failures = [];
+const failures = assessArnsLiveChecks(checks, ORIGIN);
 if (!html.includes('./assets/')) failures.push('index_not_relative');
 if (fundHits < 1) failures.push('fund_url_not_baked');
-if (!balance || balance.status !== 200 || balance.allowOrigin !== ORIGIN) failures.push('balance_cors_or_status');
-if (!balance?.body?.treasuryAddress) failures.push('balance_missing_treasury');
-if (!policy || !(policy.status === 200 || policy.status === 503) || policy.allowOrigin !== ORIGIN) {
-  // 503 may mean checkout not ready; CORS must still allow ArNS origin.
-  if (!policy || policy.allowOrigin !== ORIGIN) failures.push('policy_cors');
-}
-if (!deniedGet || deniedGet.allowOrigin === DENIED || deniedGet.status === 200 && deniedGet.allowOrigin === DENIED) {
-  // Worker should not reflect evil origin. Status may still be 200/403; allow-origin must not be evil.
-  if (deniedGet?.allowOrigin === DENIED) failures.push('cors_reflects_denied_origin');
-}
-for (const c of checks.filter((x) => x.method === 'OPTIONS' && x.origin === ORIGIN)) {
-  if (c.status !== 204 || c.allowOrigin !== ORIGIN) failures.push(`options_failed:${c.path}`);
-}
 
 const report = {
   schema: 'sejire/arns-live-smoke/v1',

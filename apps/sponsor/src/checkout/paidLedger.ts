@@ -15,8 +15,10 @@ import bs58 from 'bs58';
 type PaidRow = {order_id:string;policy_json:string;preparation_json:string|null;status:string;lease:string|null;lease_until:number;
   next_at:number;attempts:number;proof_json:string|null;receipt_json:string|null;paid:number;released:number;last_error:string|null;submission_ack:number};
 export type PaidStoredOrder = StoredOrder & {order:PaidOrder};
+export type PaidArchiveRepair = {status:'queued'|'checking'|'waiting'|'verified';requestedAt:number;checkedAt:number|null;reason?:string};
+type PaidArchiveRepairRow = {order_id:string;status:PaidArchiveRepair['status'];requested_at:number;checked_at:number|null;reason:string|null};
 export type PaidWork = {record:PaidStoredOrder;policy:CheckoutPolicy;input:DirectInput|null;prepared:PreparedDirectPlan|null;
-  signed:SignedDirectPlan|null;signedPayment:string|null;preparation:DurablePaymentPreparation|null;status:string;submitAcknowledged:boolean};
+  signed:SignedDirectPlan|null;signedPayment:string|null;preparation:DurablePaymentPreparation|null;status:string;submitAcknowledged:boolean;repair:PaidArchiveRepair|null};
 const json = <T>(value:string|null):T|null => value===null?null:JSON.parse(value) as T;
 /** v2 is additive: no legacy orders, ANS-104 plans or signed bytes are rewritten. */
 export class PaidLedger {
@@ -31,6 +33,8 @@ export class PaidLedger {
         paid INTEGER NOT NULL DEFAULT 0,released INTEGER NOT NULL DEFAULT 0,last_error TEXT,submission_ack INTEGER NOT NULL DEFAULT 0);
       CREATE TABLE IF NOT EXISTS paid_payloads(order_id TEXT NOT NULL REFERENCES paid_orders(order_id),kind TEXT NOT NULL,
         payload TEXT NOT NULL,PRIMARY KEY(order_id,kind));
+      CREATE TABLE IF NOT EXISTS paid_archive_repairs(order_id TEXT PRIMARY KEY REFERENCES paid_orders(order_id),
+        status TEXT NOT NULL,requested_at INTEGER NOT NULL,checked_at INTEGER,reason TEXT);
       CREATE TABLE IF NOT EXISTS paid_payment_recoveries(order_id TEXT NOT NULL REFERENCES paid_orders(order_id),
         previous_preparation_id TEXT NOT NULL,previous_preparation_json TEXT NOT NULL,preparation_json TEXT NOT NULL,
         finalized_block_height INTEGER NOT NULL,recovered_at INTEGER NOT NULL,previous_signature TEXT,PRIMARY KEY(order_id,previous_preparation_id));`);
@@ -60,9 +64,15 @@ export class PaidLedger {
     if(new TextEncoder().encode(value).length>1500000)throw Error('paid_payload_too_large');
     this.sql.exec('INSERT INTO paid_payloads(order_id,kind,payload) VALUES(?,?,?)',id,kind,value);
   }
+  private archiveRepair(id:string):PaidArchiveRepairRow|null{
+    return this.sql.exec<PaidArchiveRepairRow>('SELECT order_id,status,requested_at,checked_at,reason FROM paid_archive_repairs WHERE order_id=?',id).toArray()[0]??null;
+  }
+  private repairSnapshot(repair:PaidArchiveRepairRow):PaidArchiveRepair{
+    return {status:repair.status,requestedAt:repair.requested_at,checkedAt:repair.checked_at,...(repair.reason?{reason:repair.reason}:{})};
+  }
   snapshot(id:string) {
     const row=this.row(id),record=this.record(id),signed=json<SignedDirectPlan>(this.payload(id,'signed'));
-    const proof=json<DirectCheck>(row.proof_json),receipt=json<PaidReceipt>(row.receipt_json);
+    const proof=json<DirectCheck>(row.proof_json),receipt=json<PaidReceipt>(row.receipt_json),repair=this.archiveRepair(id);
     return {record,policy:JSON.parse(row.policy_json) as CheckoutPolicy,preparation:json<DurablePaymentPreparation>(row.preparation_json),
       verification:record.payment?{status:'verified'}:row.preparation_json&&!row.released?{status:'requires-reconciliation',reason:row.last_error??'not-found'}:null,
       expired:row.released===1,cancelled:row.status==='cancelled',
@@ -70,6 +80,7 @@ export class PaidLedger {
         verification:proof?.rewardWinston&&signed&&proof.rewardWinston===signed.rewardWinston?{transactionConfirmed:proof.onchainConfirmed,archiveVerified:proof.archiveVerified,
           owner:record.order.storage.treasuryAddress,rewardWinston:proof.rewardWinston,archive:record.order.archive}:null,
         ...(row.last_error?{reason:row.last_error}:{}),
+        ...(repair?{repair:this.repairSnapshot(repair)}:{}),
         ...(receipt?{receipt}:{})}:null};
   }
   get(hash:string,id:string,_now:number){this.api.ownerPaid(hash,id);return this.snapshot(id);}
@@ -248,20 +259,24 @@ export class PaidLedger {
   }
   work(id:string):PaidWork{
     const row=this.row(id),record=this.record(id),serialized=this.payload(id,'archive'),prepared=this.payload(id,'prepared');
-    if(record.order.kind==='preservation'&&(serialized===null||prepared===null))throw Error('paid_payload_missing');
+    const repair=this.archiveRepair(id),activeRepair=row.status==='completed'&&repair&&repair.status!=='verified'?this.repairSnapshot(repair):null;
+    if(record.order.kind==='preservation'&&(serialized===null||!activeRepair&&prepared===null))throw Error('paid_payload_missing');
     return {record,policy:JSON.parse(row.policy_json),input:record.order.kind==='preservation'?{orderId:id,serialized:serialized!,archive:record.order.archive}:null,
-      prepared:prepared?JSON.parse(prepared):null,
-      signed:json<SignedDirectPlan>(this.payload(id,'signed')),signedPayment:this.payload(id,'signed-payment'),preparation:json<DurablePaymentPreparation>(row.preparation_json),status:row.status,submitAcknowledged:row.submission_ack===1};
+      prepared:activeRepair?null:prepared?JSON.parse(prepared):null,
+      signed:json<SignedDirectPlan>(this.payload(id,'signed')),signedPayment:activeRepair?null:this.payload(id,'signed-payment'),preparation:activeRepair?null:json<DurablePaymentPreparation>(row.preparation_json),status:row.status,submitAcknowledged:row.submission_ack===1,repair:activeRepair};
   }
   async claim(id:string,lease:string,now:number):Promise<PaidWork|null>{
     const acquired=this.storage.transactionSync(()=>{
-      const row=this.row(id),record=this.record(id);
-      if(row.released||row.status==='completed'||row.lease_until>now)return false;
+      const row=this.row(id),record=this.record(id),repair=this.archiveRepair(id);
+      const repairing=row.status==='completed'&&repair&&repair.status!=='verified';
+      if(row.released||row.status==='completed'&&!repairing||row.lease_until>now||repairing&&row.next_at>now)return false;
       if(!row.preparation_json&&!row.paid){
         if(record.order.expiresAt<=now){if(record.order.kind==='preservation')this.treasury.releaseUnpaid(id);this.sql.exec('UPDATE paid_orders SET released=1,status=? WHERE order_id=?','expired',id);}
         return false;
       }
-      this.sql.exec('UPDATE paid_orders SET lease=?,lease_until=? WHERE order_id=?',lease,now+120000,id);return true;
+      this.sql.exec('UPDATE paid_orders SET lease=?,lease_until=? WHERE order_id=?',lease,now+120000,id);
+      if(repairing)this.sql.exec('UPDATE paid_archive_repairs SET status=? WHERE order_id=?','checking',id);
+      return true;
     });await this.storage.sync();
     if(!acquired)return null;
     try{return this.work(id);}
@@ -323,11 +338,56 @@ export class PaidLedger {
       this.sql.exec('UPDATE orders SET states_json=? WHERE id=?',JSON.stringify({...record.states,preservation:receipt?'completed':'requires-reconciliation'}),id);
     });await this.storage.sync();
   }
+  /** Explicit same-owner request. The historical receipt/proof and paid order
+   * stay immutable; a separate durable job rechecks and repairs only its bytes. */
+  async requestArchiveRepair(hash:string,id:string,now:number){
+    this.api.ownerPaid(hash,id);
+    const queued=this.storage.transactionSync(()=>{
+      const row=this.row(id),record=this.record(id),signed=json<SignedDirectPlan>(this.payload(id,'signed'));
+      if(row.released||row.status!=='completed'||!row.paid||!record.payment||record.order.kind!=='preservation'||!row.receipt_json||!signed)
+        throw Error('repair_not_available');
+      const receipt=validatePaidReceipt(JSON.parse(row.receipt_json),record.order);
+      if(receipt.txId!==signed.id||receipt.paymentSignature!==record.payment.signature||receipt.rewardWinston!==signed.rewardWinston)
+        throw Error('repair_not_available');
+      const prior=this.archiveRepair(id);
+      // Repeated requests never shorten active backoff. A just-verified runner
+      // must release its lease before a new generation may be admitted.
+      if(prior&&(prior.status!=='verified'||row.lease_until>now))return false;
+      const requestedAt=Math.max(now,(prior?.requested_at??-1)+1);
+      this.sql.exec('INSERT INTO paid_archive_repairs(order_id,status,requested_at,checked_at,reason) VALUES(?,?,?,NULL,NULL) ON CONFLICT(order_id) DO UPDATE SET status=excluded.status,requested_at=excluded.requested_at,checked_at=NULL,reason=NULL',
+        id,'queued',requestedAt);
+      if(row.lease_until<=now)this.sql.exec('UPDATE paid_orders SET next_at=?,attempts=0,lease=NULL,lease_until=0 WHERE order_id=?',now,id);
+      else this.sql.exec('UPDATE paid_orders SET next_at=?,attempts=0 WHERE order_id=?',now,id);
+      return true;
+    });
+    await this.storage.sync();await this.arm();return {queued,snapshot:this.snapshot(id)};
+  }
+  async archiveRepairProof(id:string,lease:string,proof:DirectCheck,now:number):Promise<void>{
+    this.storage.transactionSync(()=>{
+      const row=this.leased(id,lease),record=this.record(id),repair=this.archiveRepair(id),signed=json<SignedDirectPlan>(this.payload(id,'signed'));
+      if(row.status!=='completed'||!repair||repair.status==='verified'||!record.payment||!signed||!row.receipt_json)
+        throw Error('repair_not_available');
+      if(proof.txId!==signed.id||proof.archiveVerified&&!proof.onchainConfirmed||proof.onchainConfirmed&&proof.rewardWinston!==signed.rewardWinston)
+        throw Error('storage_proof_mismatch');
+      const verified=proof.onchainConfirmed&&proof.archiveVerified;
+      this.sql.exec('UPDATE paid_archive_repairs SET status=?,checked_at=?,reason=? WHERE order_id=?',
+        verified?'verified':'waiting',Math.max(now,repair.requested_at),verified?null:proof.reason??'network_unavailable',id);
+    });await this.storage.sync();
+  }
   async releaseLease(id:string,lease:string,reason:string|null,now:number):Promise<void>{
     this.storage.transactionSync(()=>{
       const row=this.row(id);if(row.lease!==lease)return;
       const delay=Math.min(300000,15000*Math.pow(2,Math.min(row.attempts,5)));
       const safeReason=reason&&/^[a-z][a-z0-9_-]{0,63}$/.test(reason)?reason:reason?'requires-reconciliation':null;
+      const repair=this.archiveRepair(id);
+      if(row.status==='completed'&&repair){
+        // No completion, receipt, spend accounting or historical failure fields
+        // are changed by a storage repair. A newly queued job may have arrived
+        // just before the original runner finished its ordinary paid work.
+        if(repair.status!=='verified'&&repair.status!=='queued')this.sql.exec('UPDATE paid_archive_repairs SET status=?,reason=? WHERE order_id=?','waiting',safeReason??repair.reason,id);
+        this.sql.exec('UPDATE paid_orders SET lease=NULL,lease_until=0,next_at=?,attempts=attempts+1 WHERE order_id=?',repair.status==='queued'?Math.min(row.next_at,now):now+delay,id);
+        return;
+      }
       const status=row.paid&&safeReason&&row.status!=='completed'&&row.status!=='confirming'?'requires-reconciliation':row.status;
       this.sql.exec('UPDATE paid_orders SET lease=NULL,lease_until=0,next_at=?,attempts=attempts+1,last_error=?,status=? WHERE order_id=?',now+delay,safeReason,status,id);
     });await this.storage.sync();await this.arm();
@@ -338,11 +398,11 @@ export class PaidLedger {
     await this.storage.sync();await this.arm();return this.snapshot(id);
   }
   due(now:number,limit=5):string[]{
-    return this.sql.exec<{order_id:string}>('SELECT order_id FROM paid_orders WHERE released=0 AND status<>? AND next_at<=? AND lease_until<=? ORDER BY next_at LIMIT ?',
+    return this.sql.exec<{order_id:string}>('SELECT order_id FROM paid_orders WHERE released=0 AND (status<>? OR EXISTS(SELECT 1 FROM paid_archive_repairs r WHERE r.order_id=paid_orders.order_id AND r.status<>\'verified\')) AND next_at<=? AND lease_until<=? ORDER BY next_at LIMIT ?',
       'completed',now,now,limit).toArray().map(r=>r.order_id);
   }
   async arm():Promise<void>{
-    const rows=this.sql.exec<{next_at:number;lease_until:number}>('SELECT next_at,lease_until FROM paid_orders WHERE released=0 AND status<>?','completed').toArray();
+    const rows=this.sql.exec<{next_at:number;lease_until:number}>('SELECT next_at,lease_until FROM paid_orders WHERE released=0 AND (status<>? OR EXISTS(SELECT 1 FROM paid_archive_repairs r WHERE r.order_id=paid_orders.order_id AND r.status<>\'verified\'))','completed').toArray();
     if(!rows.length){if(this.storage.deleteAlarm)await this.storage.deleteAlarm();return;}
     const next=Math.max(Date.now()+1000,Math.min(...rows.map(r=>Math.max(r.next_at,r.lease_until))));
     // No token/session is needed by the alarm; its obligation survives browser close.

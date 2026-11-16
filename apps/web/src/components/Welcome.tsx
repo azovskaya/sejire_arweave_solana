@@ -9,6 +9,9 @@ import { LanguageSwitch } from './LanguageSwitch';
 import { clearVaultSession, getSessionMnemonic, getVaultSession } from '../lib/vaultSession/session';
 import { forgetFundedPromo } from '../lib/fund/preference';
 import { PaidSolanaFlow } from './PaidSolanaFlow';
+import { PaidSaveHistory } from './PaidSaveHistory';
+import { PermawebMigrationNotice } from './PermawebMigrationNotice';
+import { paidAvailabilityUi } from '../lib/checkout/paidAvailabilityMessages';
 
 type Props = {
   onStartNew: (title: string) => void;
@@ -19,6 +22,7 @@ type Props = {
 
 export function Welcome({ onStartNew, onContinueDraft, onRestoreSeed, onCashier }: Props) {
   const [supportOpen, setSupportOpen] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
   const [openVaultId, setOpenVaultId] = useState(() => getSessionMnemonic() ? getVaultSession()?.vaultId ?? null : null);
   const [archiveClosed, setArchiveClosed] = useState(false);
   const hasDraft = Boolean(loadDraftTree());
@@ -38,6 +42,7 @@ export function Welcome({ onStartNew, onContinueDraft, onRestoreSeed, onCashier 
   if (supportOpen && contributionCheckout) return <main className="landing"><PaidSolanaFlow input={{ mode: 'contribution' }} onBack={() => setSupportOpen(false)} /></main>;
   if (supportOpen && import.meta.env.VITE_NATIVE_AR_ENABLED === "1") return <main className="landing"><NativeCheckoutPanel onBack={() => setSupportOpen(false)} /></main>;
   if (supportOpen) return <main className="landing"><CheckoutPublishPanel onBack={() => setSupportOpen(false)} /></main>;
+  if (historyOpen && contributionCheckout) return <main className="landing"><PaidSaveHistory onBack={() => setHistoryOpen(false)} /></main>;
   return <main className="landing">
     <header className="landing-header">
       <span className="landing-brand">SEJIRE<span aria-hidden="true">.</span></span>
@@ -55,6 +60,7 @@ export function Welcome({ onStartNew, onContinueDraft, onRestoreSeed, onCashier 
         {hasDraft && <button type="button" className="welcome-link-quiet" onClick={startFresh}>{t.welcome.newTree}</button>}
       </div>
       <p className="sub">{copy.free}</p>
+      <PermawebMigrationNotice />
       {openVaultId && <div>
         <p className="sub" role="status">{copy.openArchive}</p>
         <button type="button" className="welcome-link-quiet" onClick={closeArchive}>{copy.closeArchive}</button>
@@ -68,6 +74,7 @@ export function Welcome({ onStartNew, onContinueDraft, onRestoreSeed, onCashier 
       </li>)}
     </ol>
     <footer className="landing-footer">
+      {contributionCheckout && <button type="button" className="welcome-link-quiet" onClick={() => setHistoryOpen(true)}>{paidAvailabilityUi[locale].historyOpen}</button>}
       {contributionCheckout
         ? <button type="button" className="welcome-link-quiet" onClick={() => setSupportOpen(true)}>Помочь другим сохранить их истории</button>
         : import.meta.env.VITE_CHECKOUT_ENABLED === "1" && <button type="button" className="btn ghost" onClick={() => setSupportOpen(true)}>{checkoutMessages[locale].support}</button>}

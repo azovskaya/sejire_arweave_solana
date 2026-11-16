@@ -2,6 +2,20 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <script>
+      // A path-manifest fallback may serve this page below an unknown path.
+      // Resolve its relative assets from the ArNS root or original manifest,
+      // while leaving GitHub Pages and local deployment subdirectories intact.
+      (() => {
+        const host = location.hostname.toLowerCase();
+        const gateways = ['ar.io', 'arweave.net', 'arweave.io', 'arweave.dev'];
+        if (!gateways.some(gateway => host === gateway || host.endsWith('.' + gateway))) return;
+        const manifest = gateways.includes(host) && /^\/([A-Za-z0-9_-]{43})(?:\/|$)/.exec(location.pathname);
+        const base = document.createElement('base');
+        base.setAttribute('href', manifest ? '/' + manifest[1] + '/' : '/');
+        document.head.appendChild(base);
+      })();
+    </script>
     <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
     <link rel="icon" href="./favicon.ico" sizes="any" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />

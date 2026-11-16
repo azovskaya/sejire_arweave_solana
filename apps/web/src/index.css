@@ -1984,6 +1984,13 @@ a {
 }
 
 .checkout-panel { min-width: 0; overflow-wrap: anywhere; }
+.permaweb-migration-note { margin-block: 1.5rem; padding: 1rem 1.25rem; border: 1px solid #d7dfd5; border-radius: 12px; background: #fffefa; font-size: .95rem; line-height: 1.5; }
+.permaweb-migration-note p { margin: .4rem 0; }
+.paid-save-history { list-style: none; margin: 1.5rem 0; padding: 0; display: grid; gap: 1rem; }
+.paid-save-history li { border: 1px solid #d7dfd5; padding: 1rem 1.25rem; border-radius: 12px; }
+.paid-save-history p { margin: .4rem 0; }
+.paid-save-history button { margin-top: .5rem; }
+.paid-archive-repair { margin-block: 1.5rem; }
 
 /* The pilot has two roles, one consistent visual hierarchy, and no trade-terminal styling. */
 .admin-center,.saving-screen { font-size:16px; line-height:1.55; color:#23392d; }

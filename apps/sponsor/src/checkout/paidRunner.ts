@@ -50,6 +50,29 @@ export async function runPaidOrder(ledger:PaidLedger,env:PaidEnv,id:string,deps:
   let acquired=false,reason:string|null=null,dataReplayFailed=false;
   try{
     let work=await ledger.claim(id,lease,Date.now());if(!work)return;acquired=true;
+    if(work.repair){
+      // A completed order has a separate, owner-requested storage obligation.
+      // Never enter payment recovery, signing, header submit or treasury/proof
+      // completion again. The original receipt remains historical evidence.
+      if(!work.record.payment||!work.input||!work.signed){reason='paid_payload_missing';return;}
+      if(work.policy.schema!=='sejire/checkout-policy/v1'){reason='paid_policy_mismatch';return;}
+      const provider=deps.provider?.(work.policy)??paidProvider(env,work.policy),options={deadline};
+      let proof=await provider.reconcile(work.input,work.signed,options);
+      await ledger.archiveRepairProof(id,lease,proof,Date.now());
+      if(proof.onchainConfirmed&&proof.archiveVerified)return;
+      const missingData=proof.onchainConfirmed&&!proof.archiveVerified&&proof.reason==='archive_unavailable';
+      if(missingData){
+        if(env.CHECKOUT_PAID_EXECUTION_ENABLED!=='true'){reason='executor_paused';return;}
+        try{await provider.replayData(work.input,work.signed,options);}
+        catch{dataReplayFailed=true;reason='storage_data_replay_unavailable';}
+        proof=await provider.reconcile(work.input,work.signed,options);
+        await ledger.archiveRepairProof(id,lease,proof,Date.now());
+      }
+      const integrityFailure=proof.reason==='transaction_mismatch'||proof.reason==='archive_verification_failed';
+      reason=proof.archiveVerified?null:integrityFailure?proof.reason:
+        dataReplayFailed?'storage_data_replay_unavailable':proof.reason??reason;
+      return;
+    }
     if(!work.record.payment){
       if(!work.preparation){reason='payment_not_prepared';return;}
       const reader=deps.reader?.(work.policy)??new PaidRpcPool(env,work.record.order.network);
