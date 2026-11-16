@@ -47,7 +47,7 @@ export async function recoverPaidOrder(ledger:PaidLedger,env:PaidEnv,hash:string
  * Fixtures can inject ports from a local test entry, never HTTP fields or env URLs. */
 export async function runPaidOrder(ledger:PaidLedger,env:PaidEnv,id:string,deps:PaidRunnerDependencies={}):Promise<void>{
   const lease=crypto.randomUUID().replace(/-/g,''),deadline=Date.now()+55000;
-  let acquired=false,reason:string|null=null;
+  let acquired=false,reason:string|null=null,dataReplayFailed=false;
   try{
     let work=await ledger.claim(id,lease,Date.now());if(!work)return;acquired=true;
     if(!work.record.payment){
@@ -105,15 +105,23 @@ export async function runPaidOrder(ledger:PaidLedger,env:PaidEnv,id:string,deps:
         if(missingConfirmedData)await provider.replayData(work.input,signed,options);
         else{await provider.submit(work.input,signed,options);await ledger.submitted(id,lease);}
       }
-      catch{reason='storage_network_unavailable';}
+      catch{
+        dataReplayFailed=missingConfirmedData;
+        reason=missingConfirmedData?'storage_data_replay_unavailable':'storage_network_unavailable';
+      }
       proof=null;
     }
     if(!proof){proof=await provider.reconcile(work.input,signed,options);await ledger.proof(id,lease,proof,Date.now());}
-    reason=proof.archiveVerified?null:proof.reason??reason;
+    // A missing gateway copy cannot tell us whether the data POST succeeded.
+    // Preserve that safe distinction until verification succeeds; integrity
+    // failures still take precedence. Never surface a provider response body.
+    const integrityFailure=proof.reason==='transaction_mismatch'||proof.reason==='archive_verification_failed';
+    reason=proof.archiveVerified?null:integrityFailure?proof.reason:
+      dataReplayFailed?'storage_data_replay_unavailable':proof.reason??reason;
   }catch{
     // Unknown outcomes retain the exact order, hold, message and signed bytes.
     // Do not expose RPC/provider/secret details or declare the payment unpaid.
-    reason='requires-reconciliation';
+    reason=dataReplayFailed?'storage_data_replay_unavailable':'requires-reconciliation';
   }finally{
     if(acquired)await ledger.releaseLease(id,lease,reason,Date.now());
     else await ledger.arm();

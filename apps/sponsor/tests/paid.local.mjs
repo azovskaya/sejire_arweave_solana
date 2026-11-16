@@ -188,6 +188,7 @@ function mockRunner(c, f, options = {}) {
       assert.deepEqual(c.paid.work(f.order.id).signed, signed, 'only persisted signed data may be replayed');
       assert.equal(c.paid.snapshot(f.order.id).record.payment.signature, f.signature);
       calls.replayData.push(structuredClone(signed));
+      if (state.replayError) throw Error(state.replayError);
     },
     async reconcile(input, signed) { calls.reconcile++; assert.deepEqual(input, f.input); return check(signed); },
   };
@@ -722,6 +723,68 @@ try {
     assert.deepEqual(mock.calls.replayData[0], signed);
     assert.equal(mock.calls.sign, 1);
     assert.equal(c.count('orders'), 1); assert.equal(c.count('credits'), 1);
+  });
+
+  await test('failed chunk replay stays distinguishable from successful replay awaiting gateway data across restart', async () => {
+    let c = await context(); const f = await fixture(); await offer(c, f); await pay(c, f);
+    const initial = mockRunner(c, f, { proof: 'confirmed' }); await run(c, f, initial);
+    const signed = c.paid.work(f.order.id).signed;
+    c = reopen(c);
+    const failed = mockRunner(c, f, { proof: 'confirmed', replayError: 'synthetic-provider-private-response' });
+    await run(c, f, failed);
+    let snapshot = c.paid.snapshot(f.order.id);
+    assert.equal(snapshot.execution.reason, 'storage_data_replay_unavailable');
+    assert.equal(snapshot.execution.status, 'confirming');
+    assert.equal(snapshot.execution.verification.transactionConfirmed, true);
+    assert.equal(snapshot.execution.verification.archiveVerified, false);
+    assert.equal(snapshot.execution.receipt, undefined);
+    assert.equal(failed.calls.replayData.length, 1);
+    assert.deepEqual(failed.calls.replayData[0], signed);
+    assert.equal(failed.calls.prepare, 0); assert.equal(failed.calls.sign, 0);
+    assert.equal(failed.calls.submit.length, 0); assert.equal(failed.calls.read, 0);
+    assert(!JSON.stringify(snapshot).includes('synthetic-provider-private-response'));
+    c = reopen(c);
+    const resumed = mockRunner(c, f, { proof: 'confirmed' }); await run(c, f, resumed);
+    snapshot = c.paid.snapshot(f.order.id);
+    assert.equal(snapshot.execution.reason, 'archive_unavailable');
+    assert.equal(snapshot.execution.receipt, undefined);
+    assert.deepEqual(resumed.calls.replayData[0], signed);
+    resumed.state.proof = 'complete'; await run(c, f, resumed);
+    snapshot = c.paid.snapshot(f.order.id);
+    assert.equal(snapshot.execution.status, 'completed'); assert.equal(snapshot.execution.reason, undefined);
+    assert.equal(snapshot.execution.receipt.txId, signed.id);
+    assert.equal(snapshot.execution.receipt.paymentSignature, f.signature);
+    assert.equal(resumed.calls.replayData.length, 1); assert.equal(resumed.calls.sign, 0);
+    assert.equal(resumed.calls.submit.length, 0); assert.equal(resumed.calls.read, 0);
+    assert.equal(c.count('orders'), 1); assert.equal(c.count('credits'), 1);
+    assert.equal(c.count('used_transactions'), 1); assert.equal(c.count('paid_holds'), 1);
+    assert.equal(c.paid.work(f.order.id).input.serialized, f.serialized);
+  });
+
+  await test('missing paid payload releases its own lease, records safe backoff and preserves the signed obligation', async () => {
+    let c = await context(); const f = await fixture(); await offer(c, f); await pay(c, f);
+    const initial = mockRunner(c, f, { proof: 'confirmed' }); await run(c, f, initial);
+    const signed = c.paid.work(f.order.id).signed;
+    c.storage.sql.exec('DELETE FROM paid_payloads WHERE order_id=? AND kind=?', f.order.id, 'archive');
+    const preserved = c.rows('SELECT * FROM paid_payloads WHERE order_id=? ORDER BY kind', f.order.id);
+    const before = c.rows('SELECT * FROM paid_orders WHERE order_id=?', f.order.id)[0];
+    c = reopen(c);
+    const retry = mockRunner(c, f, { proof: 'confirmed' }); await run(c, f, retry);
+    const after = c.rows('SELECT * FROM paid_orders WHERE order_id=?', f.order.id)[0];
+    assert.equal(after.lease, null); assert.equal(after.lease_until, 0);
+    assert.equal(after.last_error, 'paid_payload_missing');
+    assert.equal(after.attempts, before.attempts + 1);
+    assert(after.next_at >= Date.now() + 10000, 'missing payload uses the existing backoff instead of an immediate retry');
+    const snapshot = c.paid.snapshot(f.order.id);
+    assert.equal(snapshot.execution.txId, signed.id);
+    assert.equal(snapshot.execution.reason, 'paid_payload_missing');
+    assert.equal(snapshot.execution.receipt, undefined);
+    assert.equal(snapshot.record.payment.signature, f.signature);
+    assert.equal(retry.calls.prepare, 0); assert.equal(retry.calls.sign, 0);
+    assert.equal(retry.calls.replayData.length, 0); assert.equal(retry.calls.submit.length, 0);
+    assert.deepEqual(c.rows('SELECT * FROM paid_payloads WHERE order_id=? ORDER BY kind', f.order.id), preserved);
+    assert.equal(c.count('orders'), 1); assert.equal(c.count('credits'), 1);
+    assert.equal(c.count('used_transactions'), 1); assert.equal(c.count('paid_holds'), 1);
   });
 
   await test('wrong TX/reward or archive-without-chain proof cannot spend or complete', async () => {

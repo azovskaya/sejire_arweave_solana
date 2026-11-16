@@ -262,7 +262,17 @@ export class PaidLedger {
         return false;
       }
       this.sql.exec('UPDATE paid_orders SET lease=?,lease_until=? WHERE order_id=?',lease,now+120000,id);return true;
-    });await this.storage.sync();return acquired?this.work(id):null;
+    });await this.storage.sync();
+    if(!acquired)return null;
+    try{return this.work(id);}
+    catch(error){
+      // The caller has not received the work yet, so it cannot release this
+      // lease. Retain the paid obligation and use its normal retry backoff;
+      // expose only a fixed code, never malformed payload or parser details.
+      const reason=error instanceof Error&&error.message==='paid_payload_missing'?'paid_payload_missing':'paid_payload_unavailable';
+      await this.releaseLease(id,lease,reason,Date.now());
+      throw error;
+    }
   }
   private leased(id:string,lease:string):PaidRow{
     const row=this.row(id);if(row.lease!==lease)throw Error('execution_lease_lost');return row;

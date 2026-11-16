@@ -1,5 +1,6 @@
 // Offline regression coverage: synthetic data, fake IndexedDB, injected fetchers; no payments or network requests.
 import assert from "node:assert/strict";
+import { createRequire } from "node:module";
 import "fake-indexeddb/auto";
 import { solToLamports, formatSol, quoteCap, assertQuote, envelopeDigest, networkConfig } from "./policy";
 import { parsePortableBackup } from "../crypto/backup";
@@ -9,6 +10,61 @@ import { parsePreservationReceipt, receiptDataUrl, retrieveReceiptEnvelope, type
 import { createUploadJournal, withUploadLock } from "./journal";
 
 const checks: Record<string, number> = {};
+// Exercise the converter actually resolved by SPL, including its browser JS
+// fallback. This protects byte compatibility when replacing the vulnerable
+// bigint-buffer C binding (CVE-2025-3194), not just its package advisory name.
+type IntegerConverter = {
+  toBigIntLE(bytes: Uint8Array): bigint;
+  toBigIntBE(bytes: Uint8Array): bigint;
+  toBufferLE(value: bigint, width: number): Uint8Array;
+  toBufferBE(value: bigint, width: number): Uint8Array;
+};
+type IntegerLayout = {
+  encode(value: bigint, bytes: Uint8Array, offset?: number): number;
+  decode(bytes: Uint8Array, offset?: number): bigint;
+};
+const dependencyRequire = createRequire(import.meta.url);
+const layoutRequire = createRequire(dependencyRequire.resolve("@solana/buffer-layout-utils"));
+const converter = layoutRequire("bigint-buffer") as IntegerConverter & { fallback: IntegerConverter };
+const layouts = dependencyRequire("@solana/buffer-layout-utils") as Record<string, () => IntegerLayout>;
+let serializationCases = 0;
+for (const [name, width] of [["u64", 8], ["u128", 16], ["u192", 24], ["u256", 32]] as const) {
+  const max = (1n << BigInt(width * 8)) - 1n;
+  for (const bigEndian of [false, true]) {
+    const layout = layouts[name + (bigEndian ? "be" : "")]();
+    for (const value of [0n, 1n, 0x0102030405060708n, max]) {
+      const expected = Buffer.from(value.toString(16).padStart(width * 2, "0"), "hex");
+      if (!bigEndian) expected.reverse();
+      const destination = Buffer.alloc(width + 6, 0xa5);
+      assert.equal(layout.encode(value, destination, 3), width);
+      assert.deepEqual(destination, Buffer.concat([Buffer.alloc(3, 0xa5), expected, Buffer.alloc(3, 0xa5)]));
+      assert.equal(layout.decode(destination, 3), value);
+      serializationCases++;
+    }
+    assert.throws(() => layout.encode(1 as unknown as bigint, Buffer.alloc(width)), /BigInt/);
+  }
+}
+// Unaligned widths beyond the old fixed stack buffer must remain bounded,
+// including small values padded to 257 bytes and values wider than the output.
+for (const implementation of [converter, converter.fallback]) {
+  for (const width of [0, 1, 7, 8, 9, 31, 32, 33, 65, 129, 257]) {
+    for (const value of [0n, 1n, (1n << 4096n) | 0x0102030405060708n]) {
+      const bounded = BigInt.asUintN(width * 8, value);
+      const expectedBE = width ? Buffer.from(bounded.toString(16).padStart(width * 2, "0"), "hex") : Buffer.alloc(0);
+      const expectedLE = Buffer.from(expectedBE).reverse();
+      assert.deepEqual(Buffer.from(implementation.toBufferBE(value, width)), expectedBE);
+      assert.deepEqual(Buffer.from(implementation.toBufferLE(value, width)), expectedLE);
+      assert.equal(implementation.toBigIntBE(expectedBE), bounded);
+      assert.equal(implementation.toBigIntLE(expectedLE), bounded);
+      assert.deepEqual(expectedLE, Buffer.from(expectedBE).reverse(), "reading must not mutate the input");
+      serializationCases++;
+    }
+  }
+  assert.throws(() => implementation.toBigIntLE(null as unknown as Uint8Array));
+  assert.throws(() => implementation.toBigIntBE(null as unknown as Uint8Array));
+}
+checks.splIntegerSerializationAndBoundsCases = serializationCases;
+
 let seed = 20260929;
 for (let i = 0; i < 10_000; i++) {
   seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;

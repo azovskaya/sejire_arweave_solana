@@ -16,7 +16,7 @@
   <a href="https://github.com/azovskaya/sejire_arweave_solana/actions/workflows/checks.yml">
     <img alt="SEJIRE checks" src="https://github.com/azovskaya/sejire_arweave_solana/actions/workflows/checks.yml/badge.svg">
   </a>
-  <img alt="Solana Devnet" src="https://img.shields.io/badge/Solana-Devnet-7B61FF">
+  <img alt="Solana Mainnet acceptance pending" src="https://img.shields.io/badge/Solana-Mainnet%20acceptance%20pending-D99A24">
   <img alt="Arweave Mainnet" src="https://img.shields.io/badge/Arweave-Mainnet-222222">
   <img alt="License MIT" src="https://img.shields.io/badge/license-MIT-C57A45">
 </p>
@@ -31,9 +31,17 @@ A family can build a tree without an account or wallet. When it chooses permanen
 
 Rooted in the Kazakh tradition of *shezhire*. Built for families everywhere.
 
-## Working proof
+## Pilot release status — 16 November 2026
 
-The current pilot completed the full flow:
+The release branch is `feat/promo-funded-preservation`. The service is configured for a **0.03 SOL service payment on Solana Mainnet**, with the network fee shown separately, and encrypted storage on Arweave Mainnet. Promo-funded preservation uses the same archive/recovery format. Contributions are optional and separate from the service payment.
+
+The prepared release includes reliable single-chunk delivery, continuation of the original paid order, editor safety fixes and a static build for `sejire.ar.io`. Automated checks use synthetic data and mocked wallets/networks. **Real-user pilot acceptance remains pending until the previously paid archive can be retrieved, verified and restored in a clean browser.** A confirmed Arweave transaction header alone is not a completed save.
+
+Release evidence and outstanding owner actions: [16 November pilot release](docs/verification/2026-11-16-pilot-release.md). The public [build provenance](https://azovskaya.github.io/sejire_arweave_solana/build-provenance.json) identifies the deployed version; a branch or green PR is not itself a deployment.
+
+## Earlier verified Devnet reference run
+
+An earlier owner-run technical pilot completed the following flow:
 
 1. Create a family tree in the browser.
 2. Encrypt the family vault locally with AES-GCM.
@@ -79,7 +87,7 @@ The archive is encrypted before upload. The 12 recovery words remain with the fa
 flowchart LR
     A[Family tree] --> B[AES-GCM encryption]
     B --> C[Encrypted vault]
-    C --> D[Solana Devnet payment]
+    C --> D[Solana payment]
     D --> E[Payment verification]
     E --> F[Arweave Mainnet]
     F --> G[Raw archive verification]
@@ -199,9 +207,10 @@ Technical documentation:
 - The encrypted payload and limited technical metadata are public on Arweave.
 - Solana wallet activity is public; SEJIRE does not claim payment anonymity.
 - Losing the 12 recovery words can make the archive impossible to decrypt.
-- The current payment uses Solana Devnet and is not production revenue.
-- One owner-run pilot proves the technical path, not external demand.
-- Shared family access, inheritance recovery, and mainnet settlement remain future work.
+- The earlier verified end-to-end reference used Solana Devnet; it is not evidence of current Mainnet acceptance or production revenue.
+- Mainnet pilot readiness requires verified archive bytes and clean-browser recovery after the accepted release is deployed.
+- One owner-run technical pilot does not establish external demand.
+- Shared family access and inheritance recovery remain future work.
 - The static admin password gate protects the interface only; wallet signatures remain required for critical wallet operations.
 
 ## Repository map
@@ -209,7 +218,7 @@ Technical documentation:
 | Path | Purpose |
 |---|---|
 | `apps/web` | React/TypeScript family-tree client, encryption, payment, preservation, and recovery |
-| `apps/sponsor` | Earlier service and checkout components retained for protocol development |
+| `apps/sponsor` | Cloudflare Worker, paid/promo checkout, durable continuation and Arweave delivery |
 | `packages/checkout` | Payment amounts, orders, and state models |
 | `packages/schema` | Family-tree and archive schemas |
 | `ao` | Earlier AO protocol experiments |

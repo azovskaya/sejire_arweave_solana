@@ -57,6 +57,8 @@ jobs:
       - run: npm run test:protocol-browser
       - run: VITE_FUND_API_URL=https://sejire-sponsor.azovskaya-alissa.workers.dev npm run native:build
       - run: npm run security:fund
+      - name: Verify built static ArNS client and mocked promo completion
+        run: npm run arns:verify && npm run test:arns-browser
       - name: Portable admin verifier is copied into the static build
         run: cmp apps/web/public/admin-lock.json apps/web/dist/admin-lock.json
       - name: Pages root publisher and smoke syntax
