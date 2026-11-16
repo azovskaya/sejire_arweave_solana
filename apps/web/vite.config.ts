@@ -25,7 +25,13 @@ export default defineConfig({
   plugins: [react(), nodePolyfills({ globals: { Buffer: true, global: true, process: true } }), spaFallback404()],
   resolve: {
     // Prefer browser build; node entry breaks Vite CJS default interop (.init).
-    alias: [{ find: "@sejire/payment-panels", replacement: resolve(__dirname, process.env.VITE_NATIVE_AR_ENABLED === "1" ? "src/components/paymentPanels.native.ts" : "src/components/paymentPanels.legacy.ts") }, { find: /^arweave$/, replacement: resolve(__dirname, "node_modules/arweave/web/index.js") }],
+    alias: [
+      { find: '@sejire/app', replacement: resolve(__dirname, process.env.VITE_DECENTRALIZED_MODE === 'true' ? 'src/App.independent.tsx' : 'src/App.tsx') },
+      { find: '@sejire/publish', replacement: resolve(__dirname, process.env.VITE_DECENTRALIZED_MODE === 'true' ? 'src/components/PublishSeedModal.independent.tsx' : 'src/components/PublishSeedModal.tsx') },
+      { find: '@sejire/preservation-context', replacement: resolve(__dirname, process.env.VITE_DECENTRALIZED_MODE === 'true' ? 'src/lib/preservationContext.independent.ts' : 'src/lib/preservationContext.legacy.ts') },
+      { find: "@sejire/payment-panels", replacement: resolve(__dirname, process.env.VITE_NATIVE_AR_ENABLED === "1" ? "src/components/paymentPanels.native.ts" : "src/components/paymentPanels.legacy.ts") },
+      { find: /^arweave$/, replacement: resolve(__dirname, "node_modules/arweave/web/index.js") },
+    ],
   },
   optimizeDeps: {
     // Dev-only fixture discovery must finish before the first browser imports its software signer.

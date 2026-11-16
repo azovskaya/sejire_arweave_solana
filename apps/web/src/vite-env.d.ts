@@ -1,6 +1,7 @@
 /// <reference types="vite/client" />
 
 interface ImportMetaEnv {
+  readonly VITE_DECENTRALIZED_MODE?: string;
   readonly VITE_NATIVE_AR_PILOT?: string;
   readonly VITE_NATIVE_AR_ENABLED?: string;
   readonly VITE_NATIVE_AR_BROADCAST?: string;

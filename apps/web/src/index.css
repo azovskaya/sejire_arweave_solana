@@ -1315,6 +1315,24 @@ a {
   border-radius: 3px;
 }
 
+.independent-publish { width: min(660px, 100%); }
+.independent-restore { max-width: 680px; margin: 0 auto; padding: 1.5rem 0; }
+.independent-restore form, .direct-save { display: grid; gap: .8rem; }
+.independent-restore label, .direct-save label { display: grid; gap: .4rem; }
+.independent-restore input, .independent-restore textarea, .direct-save input {
+  box-sizing: border-box; width: 100%; max-width: 100%; padding: .7rem;
+  border: 1px solid var(--line); border-radius: 3px; font: inherit; background: white; color: inherit;
+}
+.independent-notice { margin: 1rem 0; padding: .9rem; border: 1px solid var(--line); background: var(--paper, #faf9f5); text-align: left; }
+.independent-notice p { margin: .5rem 0; }
+.independent-notice a { text-decoration: underline; }
+.direct-quote { padding: .8rem; border: 1px solid var(--line); }
+.direct-history-list { display: grid; gap: .8rem; padding: 0; list-style: none; }
+.direct-history-list li { display: grid; gap: .5rem; padding: .8rem; border: 1px solid var(--line); }
+.break-anywhere { overflow-wrap: anywhere; word-break: break-word; }
+.direct-save .actions, .independent-restore .actions { display: flex; flex-wrap: wrap; gap: .6rem; }
+.direct-save .actions > button, .independent-restore .actions > button { max-width: 100%; white-space: normal; }
+.direct-node summary, .independent-restore summary { cursor: pointer; }
 .modal h2 {
   font-family: var(--font-display);
   margin: 0 0 0.4rem;

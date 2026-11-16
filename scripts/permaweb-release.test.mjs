@@ -7,9 +7,11 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { Readable } from 'node:stream';
 import { preparePermaweb } from './prepare-permaweb.mjs';
-import { BRANCH, REPOSITORY } from './worker-release-gate.mjs';
-import { ARTIFACT_NAME, FUND_ORIGIN, acceptedArtifact, boundedBytes, buildProvenance, checkPermawebRelease,
+import { REPOSITORY } from './worker-release-gate.mjs';
+import { ARTIFACT_NAME, BRANCH, FUND_ORIGIN, acceptedArtifact, boundedBytes, buildProvenance, checkPermawebRelease,
   digest, extractAcceptedZip, permawebRequest, recoverPermawebRelease, verifyAcceptedRelease, verifyRelease } from './permaweb-release.mjs';
+import { BOUNDARY_FILE, FUNDED_PROFILE, INDEPENDENT_PROFILE, INDEPENDENT_PROFILE_DOCUMENT,
+  PROFILE_FILE, RECOVERY_FILES, finalizeIndependentBoundary, verifyIndependentBuild } from './static-release-profile.mjs';
 import { checkFunding, loadTurboSdk, quoteUpload, turboServiceConfig, uploadAcceptedRelease, uploadPlan, winc } from './upload-permaweb.mjs';
 import { publicBase, readPublicManifest, verifyPathManifest, verifyPublishedRelease } from './verify-arns-published.mjs';
 import { assessArnsLiveChecks } from './arns-live-policy.mjs';
@@ -40,17 +42,27 @@ function apiFetch(overrides = {}, calls = []) {
     throw Error('unexpected synthetic request');
   };
 }
-async function fixture(t) {
+async function fixture(t, profile = INDEPENDENT_PROFILE) {
   const root = await mkdtemp(join(tmpdir(), 'sejire-permaweb-test-'));
   t.after(() => rm(root, { recursive: true, force: true }));
   const source = join(root, 'source'), output = join(root, 'release');
   await mkdir(join(source, 'assets'), { recursive: true });
   await writeFile(join(source, 'index.html'), '<!doctype html><script type="module" src="./assets/app.js"></script>');
-  await writeFile(join(source, 'assets/app.js'), `export const origin=${JSON.stringify(FUND_ORIGIN)};`);
+  const code = profile === FUNDED_PROFILE ? `export const origin=${JSON.stringify(FUND_ORIGIN)};` : 'export const storage="arweave.N.1";';
+  await writeFile(join(source, 'assets/app.js'), code);
   await writeFile(join(source, 'favicon.svg'), '<svg xmlns="http://www.w3.org/2000/svg"/>');
   await writeFile(join(source, 'favicon.ico'), 'synthetic-icon');
-  // This is the public verifier copied into every accepted site, never the owner's password.
-  await writeFile(join(source, 'admin-lock.json'), await readFile('apps/web/public/admin-lock.json'));
+  if (profile === FUNDED_PROFILE) {
+    // Legacy source/profile is preserved, but cannot pass the new release gate.
+    await writeFile(join(source, 'admin-lock.json'), await readFile('apps/web/public/admin-lock.json'));
+  } else {
+    await writeFile(join(source, PROFILE_FILE), JSON.stringify(INDEPENDENT_PROFILE_DOCUMENT));
+    await writeFile(join(source, BOUNDARY_FILE), JSON.stringify({ schema: 'sejire/browser-boundary/v1', profile,
+      chunks: [{ file: 'assets/app.js', sha256: digest(code), imports: [], dynamicImports: [],
+        modules: ['apps/web/src/lib/directArweave/client.ts'] }] }));
+    await mkdir(join(source, 'recovery'));
+    for (const name of RECOVERY_FILES) await writeFile(join(source, 'recovery', name), 'Public synthetic offline recovery fixture\n');
+  }
   await preparePermaweb(source, output, sha);
   const release = await verifyRelease(output, sha);
   return { root, source, output, release };
@@ -74,7 +86,7 @@ sys.stdout.buffer.write(buf.getvalue())`;
 
 test('manual feature-branch request is mandatory; malformed release inputs fail closed', () => {
   assert.deepEqual(request, { sha, runId: 42, attempt: 1 });
-  for (const changes of [{ GITHUB_EVENT_NAME: 'push' }, { GITHUB_REF: 'refs/heads/main' }, { PERMAWEB_CONFIRM: 'DEPLOY' },
+  for (const changes of [{ GITHUB_EVENT_NAME: 'push' }, { GITHUB_REF: 'refs/heads/main' }, { GITHUB_REF: 'refs/heads/feat/promo-funded-preservation' }, { PERMAWEB_CONFIRM: 'DEPLOY' },
     { PERMAWEB_MODE: 'automatic' }, { GITHUB_SHA: 'short' }, { PERMAWEB_CI_RUN_ID: '42x' }, { PERMAWEB_CI_ATTEMPT: '0' }, { GITHUB_REPOSITORY: 'attacker/repo' }]) {
     assert.throws(() => permawebRequest({ ...env, ...changes }), /permaweb_/);
   }
@@ -134,7 +146,7 @@ test('ZIP traversal, unlisted credentials, symlinks, duplicates and digest misma
   await assert.rejects(() => recoverPermawebRelease(env, { fetcher, directory: join(f.root, 'never'), evidenceDirectory: join(f.root, 'evidence') }), /zip_digest_mismatch/);
 });
 
-test('release verification binds all bytes, source SHA, fallback, file set and public admin verifier', async t => {
+test('release verification binds all bytes, source SHA, fallback, file set and independent profile', async t => {
   const f = await fixture(t);
   await assert.rejects(() => verifyRelease(f.output, 'c'.repeat(40)), /manifest_mismatch/);
   await writeFile(join(f.output, 'unexpected.json'), '{}');
@@ -149,6 +161,55 @@ test('release verification binds all bytes, source SHA, fallback, file set and p
   const altered = JSON.parse(await readFile(provenancePath, 'utf8')); altered.run = 43;
   await writeFile(provenancePath, JSON.stringify(altered));
   await assert.rejects(() => verifyAcceptedRelease({ request, artifact }, f.output), /provenance_mismatch/);
+});
+
+test('legacy funded profile remains verifiable but cannot become the independent release', async t => {
+  const f = await fixture(t, FUNDED_PROFILE);
+  assert.equal((await verifyRelease(f.output, sha)).manifest.profile, FUNDED_PROFILE);
+  await assert.rejects(() => verifyRelease(f.output, sha, { expectedProfile: INDEPENDENT_PROFILE }), /release_profile_mismatch/);
+  await assert.rejects(() => withProvenance(f), /release_profile_mismatch/);
+});
+
+test('a Worker endpoint or legacy lazy module cannot hide behind an independent manifest', async t => {
+  const f = await fixture(t), auditPath = join(f.output, BOUNDARY_FILE);
+  const report = JSON.parse(await readFile(auditPath, 'utf8'));
+  report.chunks[0].modules.push('apps/web/src/lib/checkout/paidClient.ts');
+  await writeFile(auditPath, JSON.stringify(report));
+  await assert.rejects(() => verifyIndependentBuild(f.output), /backend_module_in_bundle/);
+  report.chunks[0].modules.pop();
+  const code = `export const executor=${JSON.stringify(FUND_ORIGIN)};`;
+  report.chunks[0].sha256 = digest(code);
+  await writeFile(auditPath, JSON.stringify(report));
+  await writeFile(join(f.output, 'assets/app.js'), code);
+  await assert.rejects(() => verifyIndependentBuild(f.output), /worker_endpoint_in_bundle/);
+});
+
+test('independent package requires offline recovery and exact evidence for every dynamic chunk', async t => {
+  const f = await fixture(t), auditPath = join(f.output, BOUNDARY_FILE);
+  await writeFile(join(f.output, 'assets/late.js'), 'export const late=true;');
+  await assert.rejects(() => verifyIndependentBuild(f.output), /boundary_chunk_mismatch/);
+  await rm(join(f.output, 'assets/late.js'));
+  const report = JSON.parse(await readFile(auditPath, 'utf8'));
+  report.chunks[0].dynamicImports.push('https://example.invalid/remote.js');
+  await writeFile(auditPath, JSON.stringify(report));
+  await assert.rejects(() => verifyIndependentBuild(f.output), /external_chunk_dependency/);
+  report.chunks[0].dynamicImports = [];
+  await writeFile(auditPath, JSON.stringify(report));
+  await rm(join(f.output, 'recovery/recover.mjs'));
+  await assert.rejects(() => verifyIndependentBuild(f.output), /required_file_missing/);
+});
+
+test('boundary hashes final emitted bytes after a late bundler transform while preserving the module map', async t => {
+  const f = await fixture(t);
+  const captured = JSON.parse(await readFile(join(f.output, BOUNDARY_FILE), 'utf8')).chunks;
+  const finalCode = 'export const storage="arweave.N.1";/* final bundled output */';
+  await writeFile(join(f.output, 'assets/app.js'), finalCode);
+  await assert.rejects(() => verifyIndependentBuild(f.output), /boundary_digest_mismatch/);
+  await finalizeIndependentBoundary(f.output, captured);
+  const actual = JSON.parse(await readFile(join(f.output, BOUNDARY_FILE), 'utf8'));
+  assert.equal(actual.chunks[0].sha256, digest(finalCode));
+  assert.deepEqual(actual.chunks[0].modules, captured[0].modules);
+  assert.equal((await verifyIndependentBuild(f.output)).profile, INDEPENDENT_PROFILE);
 });
 
 test('bounded reads reject overlong streams and dishonest Content-Length', async () => {

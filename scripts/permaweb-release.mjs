@@ -4,8 +4,11 @@ import { execFileSync } from 'node:child_process';
 import { lstat, mkdir, readFile, readdir, writeFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { BRANCH, REPOSITORY, validateReleaseEvidence } from './worker-release-gate.mjs';
+import { REPOSITORY, validateReleaseEvidence } from './worker-release-gate.mjs';
+import { BOUNDARY_FILE, FUNDED_PROFILE, INDEPENDENT_PROFILE, INDEPENDENT_ROOT_FILES,
+  PROFILE_FILE, RECOVERY_FILES, verifyIndependentBuild } from './static-release-profile.mjs';
 
+export const BRANCH = 'feat/decentralized-arweave-20261116';
 export const ARTIFACT_NAME = 'permaweb-static-release';
 export const ACCEPTED_DIR = '.cache/permaweb-accepted';
 export const EVIDENCE_DIR = '.cache/permaweb-upload-evidence';
@@ -15,10 +18,12 @@ export const FUND_ORIGIN = 'https://sejire-sponsor.azovskaya-alissa.workers.dev'
 const SHA = /^[a-f0-9]{40}$/;
 const HASH = /^[a-f0-9]{64}$/;
 const ROOT_FILES = new Set(['index.html', '404.html', 'admin-lock.json', 'favicon.ico', 'favicon.svg']);
+const EXTRA_ROOT_FILES = new Set([PROFILE_FILE, BOUNDARY_FILE]);
 export const digest = bytes => createHash('sha256').update(bytes).digest('hex');
 export function requireValue(ok, code) { if (!ok) throw Error(code); }
 export function staticPath(name) {
-  return ROOT_FILES.has(name) || /^assets\/[A-Za-z0-9_-][A-Za-z0-9_.-]*\.(?:js|css|svg|png|jpg|jpeg|gif|webp|avif|ico|woff2?|ttf)$/.test(name);
+  return ROOT_FILES.has(name) || EXTRA_ROOT_FILES.has(name) || RECOVERY_FILES.some(file => name === `recovery/${file}`) ||
+    /^assets\/[A-Za-z0-9_-][A-Za-z0-9_.-]*\.(?:js|css|svg|png|jpg|jpeg|gif|webp|avif|ico|woff2?|ttf)$/.test(name);
 }
 
 export function permawebRequest(env) {
@@ -85,7 +90,7 @@ export async function checkPermawebRelease(env, fetcher = fetch) {
     }
     requireValue(target.length === total && new Set(target.map(item => item.id)).size === total, 'permaweb_evidence_incomplete');
   }
-  validateReleaseEvidence(request, run, ref, jobs);
+  validateReleaseEvidence(request, run, ref, jobs, { branch: BRANCH });
   return { request, artifact: acceptedArtifact(request, artifacts, jobs) };
 }
 
@@ -118,8 +123,8 @@ with zipfile.ZipFile(io.BytesIO(sys.stdin.buffer.read())) as z:
   names.add(f.filename)
   if stat.S_ISLNK(f.external_attr>>16) or f.flag_bits&1: raise RuntimeError('permaweb_unsafe_zip_entry')
   if f.is_dir():
-   if f.filename!='assets/': raise RuntimeError('permaweb_unexpected_zip_directory')
-  elif f.filename not in ['index.html','404.html','admin-lock.json','favicon.ico','favicon.svg','release-manifest.json'] and not re.fullmatch(r'assets/[A-Za-z0-9_-][A-Za-z0-9_.-]*\\.(?:js|css|svg|png|jpg|jpeg|gif|webp|avif|ico|woff2?|ttf)',f.filename): raise RuntimeError('permaweb_unexpected_zip_file')
+   if f.filename not in ['assets/','recovery/']: raise RuntimeError('permaweb_unexpected_zip_directory')
+  elif f.filename not in ${JSON.stringify([...ROOT_FILES, ...EXTRA_ROOT_FILES, 'release-manifest.json', ...RECOVERY_FILES.map(file => `recovery/${file}`)])} and not re.fullmatch(r'assets/[A-Za-z0-9_-][A-Za-z0-9_.-]*\\.(?:js|css|svg|png|jpg|jpeg|gif|webp|avif|ico|woff2?|ttf)',f.filename): raise RuntimeError('permaweb_unexpected_zip_file')
   total+=f.file_size
  if total>${MAX_RELEASE_BYTES}: raise RuntimeError('permaweb_zip_too_large')
  root.mkdir(parents=True,exist_ok=False)
@@ -144,7 +149,7 @@ async function releaseFiles(root, dir = root) {
   return files.sort();
 }
 
-export async function verifyRelease(directory, sourceCommit, { provenance = false } = {}) {
+export async function verifyRelease(directory, sourceCommit, { provenance = false, expectedProfile } = {}) {
   requireValue(SHA.test(sourceCommit ?? ''), 'permaweb_invalid_sha');
   const root = resolve(directory), names = await releaseFiles(root);
   requireValue(names.length > 0 && names.length <= MAX_RELEASE_FILES, 'permaweb_file_count');
@@ -155,8 +160,13 @@ export async function verifyRelease(directory, sourceCommit, { provenance = fals
     manifest.entry === 'index.html' && manifest.fallback === '404.html' && manifest.files &&
     typeof manifest.files === 'object' && !Array.isArray(manifest.files), 'permaweb_release_manifest_mismatch');
   const paths = Object.keys(manifest.files).sort();
+  const profile = manifest.profile ?? FUNDED_PROFILE;
+  requireValue([FUNDED_PROFILE, INDEPENDENT_PROFILE].includes(profile) &&
+    (expectedProfile === undefined || profile === expectedProfile), 'permaweb_release_profile_mismatch');
+  const requiredPaths = profile === INDEPENDENT_PROFILE
+    ? [...INDEPENDENT_ROOT_FILES, ...RECOVERY_FILES.map(file => `recovery/${file}`)] : [...ROOT_FILES];
   requireValue(paths.every(staticPath) && paths.length === manifest.fileCount &&
-    [...ROOT_FILES].every(name => paths.includes(name)), 'permaweb_release_paths_mismatch');
+    requiredPaths.every(name => paths.includes(name)), 'permaweb_release_paths_mismatch');
   const expected = [...paths, 'release-manifest.json', ...(provenance ? ['build-provenance.json'] : [])].sort();
   requireValue(JSON.stringify(expected) === JSON.stringify(names), 'permaweb_unlisted_release_file');
   let sourceBytes = 0; const files = [];
@@ -175,22 +185,26 @@ export async function verifyRelease(directory, sourceCommit, { provenance = fals
   requireValue(html.includes('./assets/') && !/<(?:script|link)[^>]+(?:src|href)=["'](?:https?:|\/\/|\/)/i.test(html), 'permaweb_nonportable_entry');
   for (const [, path] of html.matchAll(/(?:src|href)=["']\.\/(assets\/[^"']+)["']/g)) requireValue(paths.includes(path), 'permaweb_missing_entry_asset');
   requireValue(html === await readFile(join(root, '404.html'), 'utf8'), 'permaweb_fallback_mismatch');
-  const lock = JSON.parse(await readFile(join(root, 'admin-lock.json'), 'utf8'));
-  requireValue(lock.schema === 'sejire/admin-lock/v1' && lock.configured === true && lock.algorithm === 'PBKDF2-SHA256' && lock.iterations === 600000, 'permaweb_admin_lock_missing');
-  const js = await Promise.all(paths.filter(path => path.startsWith('assets/') && path.endsWith('.js')).map(path => readFile(join(root, path), 'utf8')));
-  requireValue(js.some(body => body.includes(FUND_ORIGIN)), 'permaweb_worker_origin_missing');
+  if (profile === INDEPENDENT_PROFILE) await verifyIndependentBuild(root);
+  else {
+    requireValue(!paths.some(path => EXTRA_ROOT_FILES.has(path) || path.startsWith('recovery/')), 'permaweb_mixed_release_profile');
+    const lock = JSON.parse(await readFile(join(root, 'admin-lock.json'), 'utf8'));
+    requireValue(lock.schema === 'sejire/admin-lock/v1' && lock.configured === true && lock.algorithm === 'PBKDF2-SHA256' && lock.iterations === 600000, 'permaweb_admin_lock_missing');
+    const js = await Promise.all(paths.filter(path => path.startsWith('assets/') && path.endsWith('.js')).map(path => readFile(join(root, path), 'utf8')));
+    requireValue(js.some(body => body.includes(FUND_ORIGIN)), 'permaweb_worker_origin_missing');
+  }
   return { root, manifest, manifestSha256: digest(manifestBytes), files };
 }
 
 export function buildProvenance(evidence, release) {
   return { schema: 'sejire/permaweb-provenance/v1', artifact: ARTIFACT_NAME,
     run: evidence.request.runId, attempt: evidence.request.attempt, artifactId: evidence.artifact.id,
-    sourceCommit: evidence.request.sha, publishedByCommit: evidence.request.sha,
+    sourceCommit: evidence.request.sha, publishedByCommit: evidence.request.sha, profile: release.manifest.profile ?? FUNDED_PROFILE,
     zipSha256: evidence.artifact.digest.slice(7), releaseManifestSha256: release.manifestSha256 };
 }
 
 export async function verifyAcceptedRelease(evidence, directory = ACCEPTED_DIR) {
-  const release = await verifyRelease(directory, evidence.request.sha, { provenance: true });
+  const release = await verifyRelease(directory, evidence.request.sha, { provenance: true, expectedProfile: INDEPENDENT_PROFILE });
   const actual = JSON.parse(await readFile(join(release.root, 'build-provenance.json'), 'utf8'));
   requireValue(JSON.stringify(actual) === JSON.stringify(buildProvenance(evidence, release)), 'permaweb_provenance_mismatch');
   return release;
@@ -210,8 +224,7 @@ export async function recoverPermawebRelease(env, { fetcher = fetch, directory =
   const bytes = await boundedBytes(downloaded, MAX_RELEASE_BYTES);
   requireValue(digest(bytes) === evidence.artifact.digest.slice(7), 'permaweb_zip_digest_mismatch');
   extractAcceptedZip(bytes, directory);
-  const release = await verifyRelease(directory, evidence.request.sha);
-  requireValue((await readFile(join(release.root, 'admin-lock.json'))).equals(await readFile('apps/web/public/admin-lock.json')), 'permaweb_admin_source_mismatch');
+  const release = await verifyRelease(directory, evidence.request.sha, { expectedProfile: INDEPENDENT_PROFILE });
   await writeFile(join(release.root, 'build-provenance.json'), JSON.stringify(buildProvenance(evidence, release), null, 2) + '\n', { flag: 'wx' });
   await mkdir(evidenceDirectory, { recursive: true });
   await writeFile(join(evidenceDirectory, 'accepted-build.json'), JSON.stringify(buildProvenance(evidence, release), null, 2) + '\n');
@@ -225,5 +238,5 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
       : await recoverPermawebRelease(process.env);
     console.log(JSON.stringify({ status: 'PASS', sourceCommit: release.manifest.sourceCommit,
       files: release.files.length, bytes: release.files.reduce((sum, file) => sum + file.bytes, 0), directory: ACCEPTED_DIR }));
-  } catch (error) { console.error(error instanceof Error && /^permaweb_|^release_/.test(error.message) ? error.message : 'permaweb_release_failed'); process.exitCode = 1; }
+  } catch (error) { console.error(error instanceof Error && /^(?:permaweb_|release_|independent_)[a-z_]+$/.test(error.message) ? error.message : 'permaweb_release_failed'); process.exitCode = 1; }
 }

@@ -46,7 +46,11 @@
     "test:recovery": "tsx src/lib/recovery/recovery.selftest.ts",
     "test:admin-browser": "playwright test --config playwright.admin-password.config.ts",
     "test:fund-browser": "playwright test --config playwright.fund.config.ts",
-    "test:arns-browser": "playwright test --config playwright.arns.config.ts"
+    "test:arns-browser": "playwright test --config playwright.arns.config.ts",
+    "test:direct": "tsx src/lib/directArweave/direct.selftest.ts",
+    "test:independent-browser": "playwright test --config playwright.independent.config.ts",
+    "test:independent-unit": "tsx src/lib/independentBackup.selftest.ts",
+    "test:historical-native": "node --import tsx src/lib/recovery/historicalNative.selftest.ts"
   },
   "dependencies": {
     "@ardrive/turbo-sdk": "2.1.0",

@@ -10,7 +10,12 @@
 
     /* Bundler mode */
     "moduleResolution": "bundler",
-    "paths": { "@sejire/payment-panels": ["./src/components/paymentPanels.legacy.ts"] },
+    "paths": {
+      "@sejire/app": ["./src/App.tsx"],
+      "@sejire/publish": ["./src/components/PublishSeedModal.tsx"],
+      "@sejire/preservation-context": ["./src/lib/preservationContext.legacy.ts"],
+      "@sejire/payment-panels": ["./src/components/paymentPanels.legacy.ts"]
+    },
     "allowImportingTsExtensions": true,
     "verbatimModuleSyntax": true,
     "moduleDetection": "force",

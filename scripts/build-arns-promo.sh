@@ -28,6 +28,7 @@ echo "Building ArNS promo SPA with Fund API: $FUND_API_URL"
 # Match CI native:build + baked Worker origin used by accepted Pages artifacts.
 export VITE_FUND_API_URL="$FUND_API_URL"
 export VITE_CHECKOUT_API_URL="$CHECKOUT_API_URL"
+export VITE_DECENTRALIZED_MODE=false
 export VITE_PRESERVATION_V2_TEST=0
 export VITE_PRESERVATION_V2_ENABLED=1
 export VITE_NATIVE_AR_PILOT=1

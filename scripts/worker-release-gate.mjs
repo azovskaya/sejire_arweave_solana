@@ -22,16 +22,16 @@ export function releaseRequest(env) {
   return { sha: env.GITHUB_SHA, runId: Number(env.RELEASE_CI_RUN_ID), attempt: Number(env.RELEASE_CI_ATTEMPT) };
 }
 
-export function validateReleaseEvidence(request, run, ref, jobs) {
+export function validateReleaseEvidence(request, run, ref, jobs, { branch = BRANCH } = {}) {
   requireCondition(run?.id === request.runId, 'release_run_mismatch');
   requireCondition(run?.repository?.full_name === REPOSITORY &&
     run?.head_repository?.full_name === REPOSITORY, 'release_repository_mismatch');
   requireCondition(run.path === WORKFLOW_PATH && run.name === 'SEJIRE checks', 'release_workflow_mismatch');
   requireCondition(['push', 'workflow_dispatch'].includes(run.event), 'release_ci_event_mismatch');
-  requireCondition(run.head_branch === BRANCH && run.head_sha === request.sha, 'release_ci_sha_mismatch');
+  requireCondition(run.head_branch === branch && run.head_sha === request.sha, 'release_ci_sha_mismatch');
   requireCondition(run.run_attempt === request.attempt, 'release_attempt_changed');
   requireCondition(run.status === 'completed' && run.conclusion === 'success', 'release_ci_not_successful');
-  requireCondition(ref?.ref === `refs/heads/${BRANCH}` && ref?.object?.type === 'commit' &&
+  requireCondition(ref?.ref === `refs/heads/${branch}` && ref?.object?.type === 'commit' &&
     ref.object.sha === request.sha, 'release_head_changed');
   requireCondition(Array.isArray(jobs) && jobs.length > 0, 'release_jobs_missing');
   const verify = jobs.filter(job => job.name === 'verify');
@@ -49,7 +49,7 @@ export function validateReleaseEvidence(request, run, ref, jobs) {
     requireCondition(step.status === 'completed' && step.conclusion === 'success', 'release_step_not_successful');
   }
   return { schema: 'sejire/worker-release-gate/v1', sourceCommit: request.sha,
-    ciRunId: request.runId, ciAttempt: request.attempt, repository: REPOSITORY, branch: BRANCH };
+    ciRunId: request.runId, ciAttempt: request.attempt, repository: REPOSITORY, branch };
 }
 
 export async function checkWorkerRelease(env, fetcher = fetch) {

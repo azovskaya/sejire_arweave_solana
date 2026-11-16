@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
   pull_request:
   push:
-    branches: [main, feat/solana-preservation, feat/preservation-v2-simple, feat/promo-funded-preservation, fix/restore-direct-data]
+    branches: [main, feat/solana-preservation, feat/preservation-v2-simple, feat/promo-funded-preservation, fix/restore-direct-data, feat/decentralized-arweave-20261116]
 permissions:
   contents: read
 jobs:
@@ -58,7 +58,7 @@ jobs:
       - run: VITE_FUND_API_URL=https://sejire-sponsor.azovskaya-alissa.workers.dev npm run native:build
       - run: npm run security:fund
       - name: Verify built static ArNS client and mocked promo completion
-        run: npm run arns:verify && npm run test:arns-browser
+        run: npm run arns:verify:funded && npm run test:arns-browser
       - name: Portable admin verifier is copied into the static build
         run: cmp apps/web/public/admin-lock.json apps/web/dist/admin-lock.json
       - name: Pages root publisher and smoke syntax
@@ -76,12 +76,6 @@ jobs:
           path: apps/web/dist/
           retention-days: 14
       - run: npm run test:permaweb-prepare
-      - run: npm run permaweb:prepare
-      - uses: actions/upload-artifact@v4
-        with:
-          name: permaweb-static-release
-          path: .cache/permaweb-release/
-          retention-days: 14
       - name: Wallet history timeout regression (read-only, balance preserved)
         run: npm run test:native-browser --prefix apps/web -- --grep 'public balances never wait for history'
       - run: npm run test:native-browser
@@ -140,6 +134,27 @@ jobs:
       - name: Sponsor test-tool dependency audit (non-blocking; release review required)
         continue-on-error: true
         run: npm audit --prefix apps/sponsor
+      - name: Offline recovery format, standalone decoder and current-envelope compatibility
+        run: npm run test:offline-recovery
+      - name: Standalone recovery HTML in an offline browser (synthetic data)
+        run: npm run test:offline-recovery-browser
+      - name: Direct Arweave signing, exact resume and chunk delivery (synthetic network)
+        run: npm run test:direct --prefix apps/web
+      - name: Historical native archives retain signature, Merkle and encryption verification
+        run: npm run test:historical-native --prefix apps/web
+      - name: Independent recovery kit, complete local vault and legacy journal boundary
+        run: npm run test:independent-unit --prefix apps/web
+      - name: Build independent direct-Arweave application and every emitted chunk boundary
+        run: npm run arns:build && npm run arns:verify
+      - name: Independent static app, self-custody save and offline recovery (synthetic network)
+        run: npm run test:independent-browser
+      - name: Prepare independent static pack without upload or payment
+        run: npm run permaweb:prepare
+      - uses: actions/upload-artifact@v4
+        with:
+          name: permaweb-static-release
+          path: .cache/permaweb-release/
+          retention-days: 14
       - name: Preserve checkout failure diagnostics
         if: failure()
         uses: actions/upload-artifact@v4

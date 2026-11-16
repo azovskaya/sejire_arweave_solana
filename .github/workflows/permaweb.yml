@@ -1,6 +1,8 @@
-name: Upload accepted SEJIRE site to Arweave (manual)
+name: Upload independent SEJIRE site to Arweave (manual)
 
-# Upload only. ArNS Target remains a separate owner action after public byte verification.
+# An independent direct-Arweave runtime only. Turbo is an optional release-time
+# transport for this static pack, not an application or archive dependency.
+# ArNS Target remains a separate owner action after public byte verification.
 
 on:
   workflow_dispatch:
@@ -18,7 +20,7 @@ on:
         required: true
         type: string
       ci_run_id:
-        description: "Successful SEJIRE checks run for the current feature branch SHA"
+        description: "Successful SEJIRE checks run for the current decentralized branch SHA"
         required: true
         type: string
       ci_attempt:
@@ -41,7 +43,7 @@ concurrency:
 
 jobs:
   permaweb:
-    if: github.event.inputs.confirm == 'pack-ready' && github.ref == 'refs/heads/feat/promo-funded-preservation'
+    if: github.event.inputs.confirm == 'pack-ready' && github.ref == 'refs/heads/feat/decentralized-arweave-20261116'
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     env:

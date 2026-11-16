@@ -7,7 +7,7 @@ import { pickDefaultFocus, pickHomeFocus, splitParents, type AddMeSlot } from ".
 import { PedigreeView } from "./PedigreeView";
 import { PersonPanel, type PersonPanelHandle } from "./PersonPanel";
 import { AddPersonModal, type AddPersonPayload } from "./AddPersonModal";
-import { PublishSeedModal } from "./PublishSeedModal";
+import { PublishSeedModal } from "@sejire/publish";
 import { VaultVersionsModal, vaultPersonCount } from "./VaultVersionsModal";
 import {
   activePersons,
@@ -36,9 +36,8 @@ import {
 import { useI18n } from "../lib/i18n/I18nProvider";
 import { solanaMessages } from "../lib/solana/messages";
 import { LanguageSwitch } from "./LanguageSwitch";
-import { findPreservationAttempt, subscribePreservationChanges } from "../lib/checkout/vaultGuard";
-import { listPendingPaidAttempts } from "../lib/checkout/paidJournal";
-import { getFundedPromo } from "../lib/fund/preference";
+import { hasPendingPreservation, subscribePreservationChanges, getFundedPromo } from "@sejire/preservation-context";
+import { DECENTRALIZED_MODE } from '../lib/deploymentMode';
 import { downloadJson } from "../lib/download";
 
 function uid() {
@@ -92,27 +91,23 @@ export function Workspace({ store, guide, onStoreChange, onGuideChange, onHome }
   const [protocolView, setProtocolView] = useState<PersonProtocolView | null>(null);
   const [protocolLoading, setProtocolLoading] = useState(false);
   const vaultSession = getVaultSession();
-  const fundedSavingEnabled = import.meta.env.VITE_PRESERVATION_V2_ENABLED === '1';
+  const fundedSavingEnabled = !DECENTRALIZED_MODE && import.meta.env.VITE_PRESERVATION_V2_ENABLED === '1';
   const acceptedFundCode = fundedSavingEnabled && getSessionMnemonic() ? getFundedPromo(vaultSession?.vaultId) : null;
 
   useEffect(() => subscribePreservationChanges(() => setAttemptRevision(value => value + 1)), []);
 
   useEffect(() => {
-    if (!fundedSavingEnabled) { setCheckingFundAttempt(false); return; }
+    if (!fundedSavingEnabled && !DECENTRALIZED_MODE) { setCheckingFundAttempt(false); return; }
     if (showPublish) return;
     let live = true;
     setCheckingFundAttempt(true);
     const treeId = store.meta.id;
-    void (async()=>{
-      const attempt = await findPreservationAttempt({ treeId, vaultId: getVaultSession()?.vaultId });
-      const unmatchedPaid = !attempt && (await listPendingPaidAttempts()).length > 0;
-      return {attempt,unmatchedPaid};
-    })().then(({attempt,unmatchedPaid}) => {
+    void hasPendingPreservation({ treeId, vaultId: getVaultSession()?.vaultId }).then(hasPending => {
       if (!live) return;
-      setHasPendingFund(Boolean(attempt || unmatchedPaid));
+      setHasPendingFund(hasPending);
       // A reload resumes only the existing encrypted request. Opening this
       // dialog never commits edits, reseals a vault, or creates a new order.
-      if ((attempt || unmatchedPaid) && autoResumeTree.current !== treeId) {
+      if (hasPending && autoResumeTree.current !== treeId) {
         setQuickFundedCode(null);
         setPublishStore(latestStore.current);
         setShowPublish(true);
@@ -348,10 +343,9 @@ export function Workspace({ store, guide, onStoreChange, onGuideChange, onHome }
       // Recheck under the shared guard: another tab can create an attempt
       // after the button was rendered. Pending work never commits new edits.
       let pending = hasPendingFund;
-      if (fundedSavingEnabled) {
+      if (fundedSavingEnabled || DECENTRALIZED_MODE) {
         try {
-          pending = Boolean(await findPreservationAttempt({ treeId, vaultId: getVaultSession()?.vaultId })) ||
-            (await listPendingPaidAttempts()).length > 0;
+          pending = await hasPendingPreservation({ treeId, vaultId: getVaultSession()?.vaultId });
         }
         catch { pending = true; } // The modal explains an unreadable journal.
       }

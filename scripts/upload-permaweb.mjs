@@ -33,7 +33,7 @@ export function uploadPlan(release) {
   const placeholder = 'x'.repeat(43), paths = Object.fromEntries(release.files.map(file => [file.path, { id: placeholder }]));
   const manifest = { manifest: 'arweave/paths', version: '0.2.0', index: { path: 'index.html' }, paths, fallback: { id: placeholder } };
   const manifestBytes = Buffer.byteLength(JSON.stringify(manifest));
-  return { schema: 'sejire/permaweb-upload-plan/v1', sourceCommit: release.manifest.sourceCommit,
+  return { schema: 'sejire/permaweb-upload-plan/v1', sourceCommit: release.manifest.sourceCommit, profile: release.manifest.profile,
     files: release.files, totalFileBytes: release.files.reduce((sum, file) => sum + file.bytes, 0), manifestBytes,
     quotedItemBytes: [...release.files.map(file => file.bytes + ITEM_OVERHEAD_ALLOWANCE), manifestBytes + ITEM_OVERHEAD_ALLOWANCE],
     sdk: `@ardrive/turbo-sdk@${TURBO_VERSION}`, uploadOrigin: UPLOAD_ORIGIN, paymentOrigin: PAYMENT_ORIGIN,
@@ -170,7 +170,7 @@ async function main(env) {
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   main(process.env).catch(error => {
     // SDK/HTTP errors can contain request configuration. Only our fixed diagnostic codes reach logs.
-    console.error(error instanceof Error && /^(?:permaweb_|release_)[a-z_]+$/.test(error.message) ? error.message : 'permaweb_upload_failed_review_evidence_before_retry');
+    console.error(error instanceof Error && /^(?:permaweb_|release_|independent_)[a-z_]+$/.test(error.message) ? error.message : 'permaweb_upload_failed_review_evidence_before_retry');
     process.exitCode = 1;
   });
 }
