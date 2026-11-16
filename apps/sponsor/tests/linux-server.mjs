@@ -2,7 +2,9 @@ import assert from 'node:assert/strict';
 import {mkdtemp,rm} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
-import {startLinuxCheckout} from '../linux-server.mjs';
+import {DatabaseSync} from 'node:sqlite';
+import {startLinuxCheckout,sqliteStorage} from '../linux-server.mjs';
+import {CheckoutLedger,LEDGER_OBJECT_NAME} from '../src/checkout/durableStore.ts';
 import {SOLANA_GENESIS} from '../../../packages/checkout/paid.ts';
 import {addr} from '../src/checkout/rpcFixtures.ts';
 
@@ -26,7 +28,51 @@ globalThis.fetch=async(input,init)=>{
 const bindings={CHECKOUT_ALLOWED_ORIGINS:origin,CHECKOUT_PAID_NETWORK:'mainnet-beta',
   CHECKOUT_PAID_POLICY_VERSION:'synthetic-linux-v1',CHECKOUT_SERVICE_RECIPIENT:addr(2),CHECKOUT_FUND_RECIPIENT:addr(3),
   CHECKOUT_CONTRIBUTION_ENABLED:'true',MAX_ENVELOPE_BYTES:'524288'};
+async function storageContract(){
+  const file=join(temp,'alarm-contract.sqlite');
+  let db=new DatabaseSync(file),storage=sqliteStorage(db);
+  try{
+    assert.equal(await storage.getAlarm(),null,'an empty adapter has no alarm');
+    const future=Date.now()+3_600_000;
+    await storage.setAlarm(new Date(future));
+    assert.equal(await storage.getAlarm(),future,'Date alarms use integer milliseconds');
+    for(const at of [future,Date.now()-1_000]){
+      await storage.setAlarm(at);await storage.sync();db.close();
+      db=new DatabaseSync(file);storage=sqliteStorage(db);
+      assert.equal(await storage.getAlarm(),at,'the alarm survives closing the SQLite connection');
+      const initializations=[],id={equals(other){return other===id;}};
+      new CheckoutLedger({id,storage,blockConcurrencyWhile(work){
+        const pending=Promise.resolve().then(work);initializations.push(pending);return pending;
+      },waitUntil(){throw Error('unexpected_background_work');}},
+      {CHECKOUT_LEDGER:{idFromName(name){assert.equal(name,LEDGER_OBJECT_NAME);return id;}}});
+      await Promise.all(initializations);
+      assert.equal(await storage.getAlarm(),at,'the real ledger constructor preserves an existing future or due alarm');
+      assert.equal(storage.alarmAt(),at,'the adapter scheduler observes the same durable timestamp');
+    }
+    await assert.rejects(()=>storage.setAlarm(new Date(NaN)),/invalid_alarm_time/);
+    await storage.deleteAlarm();assert.equal(await storage.getAlarm(),null);
+    db.close();db=new DatabaseSync(file);storage=sqliteStorage(db);
+    assert.equal(await storage.getAlarm(),null,'alarm deletion survives reopening');
+    console.log('PASS Linux storage: async alarm contract, Date input, replacement, durable reopen, cold constructor preserves future/due alarm');
+  }finally{db.close();}
+}
+function storedAlarm(file){
+  const db=new DatabaseSync(file,{readOnly:true});
+  try{return db.prepare('SELECT at FROM sejire_alarm WHERE id=1').get()?.at??null;}finally{db.close();}
+}
+async function startupAlarms(){
+  const file=join(temp,'alarm-startup.sqlite');
+  for(const at of [Date.now()+3_600_000,Date.now()-1_000]){
+    const db=new DatabaseSync(file);try{await sqliteStorage(db).setAlarm(at);}finally{db.close();}
+    const server=await startLinuxCheckout({dbPath:file});
+    try{assert.equal(storedAlarm(file),at>Date.now()?at:null,'startup preserves a future alarm and runs a due one');}
+    finally{await server.close();}
+  }
+  console.log('PASS Linux startup: initialization awaited, future alarm preserved, due alarm processed');
+}
 try{
+  await storageContract();
+  await startupAlarms();
   backend=await startLinuxCheckout({dbPath,bindings});
   const base=`http://127.0.0.1:${backend.address.port}/api/checkout`;
   const call=async(path,{method='GET',token,key,body}={})=>{

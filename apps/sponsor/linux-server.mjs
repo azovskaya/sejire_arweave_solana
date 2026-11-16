@@ -12,7 +12,7 @@ import {fundApi} from './src/fund/api.ts';
 import {RecipientSettings,withRecipientSettings} from './src/checkout/recipientSettings.ts';
 import {recipientAdminApi,RECIPIENT_ADMIN_PATH} from './src/checkout/recipientAdmin.ts';
 
-function sqliteStorage(db){
+export function sqliteStorage(db){
   db.exec('PRAGMA foreign_keys=ON');db.exec('PRAGMA journal_mode=WAL');
   db.exec('CREATE TABLE IF NOT EXISTS sejire_alarm(id INTEGER PRIMARY KEY CHECK(id=1),at INTEGER NOT NULL)');
   return {
@@ -23,7 +23,10 @@ function sqliteStorage(db){
     transactionSync(callback){db.exec('BEGIN IMMEDIATE');try{const value=callback();db.exec('COMMIT');return value;}
       catch(error){db.exec('ROLLBACK');throw error;}},
     async sync(){},
-    async setAlarm(at){db.prepare('INSERT INTO sejire_alarm(id,at) VALUES(1,?) ON CONFLICT(id) DO UPDATE SET at=excluded.at').run(at);},
+    async getAlarm(){return db.prepare('SELECT at FROM sejire_alarm WHERE id=1').get()?.at??null;},
+    async setAlarm(at){const timestamp=at instanceof Date?at.getTime():at;
+      if(!Number.isSafeInteger(timestamp))throw Error('invalid_alarm_time');
+      db.prepare('INSERT INTO sejire_alarm(id,at) VALUES(1,?) ON CONFLICT(id) DO UPDATE SET at=excluded.at').run(timestamp);},
     async deleteAlarm(){db.exec('DELETE FROM sejire_alarm');},
     alarmAt(){return db.prepare('SELECT at FROM sejire_alarm WHERE id=1').get()?.at??null;},
   };
@@ -45,11 +48,20 @@ export async function startLinuxCheckout({dbPath,host='127.0.0.1',port=0,binding
         await initial;return ledger.fetch(new Request(input,init));})};}};
     const env={CHECKOUT_API_ENABLED:'false',CHECKOUT_PAID_ENABLED:'false',CHECKOUT_CONTRIBUTION_ENABLED:'false',
       FUND_API_ENABLED:'false',...bindings,CHECKOUT_LEDGER:namespace};
-    const ctx={id:objectId,storage,blockConcurrencyWhile(work){return work();},waitUntil(promise){
+    const ctx={id:objectId,storage,blockConcurrencyWhile(work){
+      const pending=Promise.resolve().then(work);
+      if(!ledger)initial=Promise.all([initial,pending]).then(()=>{});
+      return pending;
+    },waitUntil(promise){
       const job=Promise.resolve(promise).catch(()=>{});background.add(job);void job.finally(()=>background.delete(job));}};
     ledger=new CheckoutLedger(ctx,env);
-    initial=serial(()=>ledger.alarm());
-    interval=setInterval(()=>{if((storage.alarmAt()??Infinity)<=Date.now())void serial(()=>ledger.alarm());},1000);
+    // Honour the constructor's initialization gate before serving any request.
+    await initial;
+    // Opening a process must not execute or replace an alarm scheduled for later.
+    // Recheck inside the queue so an earlier job can move or delete the alarm.
+    const runDueAlarm=()=>serial(async()=>{if((storage.alarmAt()??Infinity)<=Date.now())await ledger.alarm();});
+    initial=runDueAlarm();
+    interval=setInterval(()=>{void runDueAlarm();},1000);
     interval.unref();
     const max=Math.min(20*1024*1024,Math.max(8192,(Number(env.MAX_ENVELOPE_BYTES)||524288)*2+8192));
     server=createServer(async(req,res)=>{

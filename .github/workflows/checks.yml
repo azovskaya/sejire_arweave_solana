@@ -148,6 +148,13 @@ jobs:
         run: npm run arns:build && npm run arns:verify
       - name: Independent static app, self-custody save and offline recovery (synthetic network)
         run: npm run test:independent-browser
+      - name: Preserve independent desktop and mobile screens (synthetic family, no recovery words)
+        uses: actions/upload-artifact@v4
+        with:
+          name: independent-static-screens
+          path: apps/web/test-results/**/independent-*.png
+          if-no-files-found: error
+          retention-days: 14
       - name: Prepare independent static pack without upload or payment
         run: npm run permaweb:prepare
       - uses: actions/upload-artifact@v4
