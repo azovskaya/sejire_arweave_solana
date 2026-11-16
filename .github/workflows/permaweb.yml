@@ -1,41 +1,95 @@
-name: Upload SEJIRE SPA to Arweave (manual)
+name: Upload independent SEJIRE site to Arweave (manual)
 
-# Never runs on push. Does not change ArNS / Phantom Target ID.
-# Owner: GitHub → Actions → this workflow → Run → confirm = pack-ready
-# Secret: PERMAWEB_JWK = Wander/ArConnect keyfile JSON (treasury, not user 12 words)
+# An independent direct-Arweave runtime only. Turbo is an optional release-time
+# transport for this static pack, not an application or archive dependency.
+# ArNS Target remains a separate owner action after public byte verification.
 
 on:
   workflow_dispatch:
     inputs:
+      mode:
+        description: "prepare creates a reviewable pack and public quote without a key; upload spends existing credits"
+        required: true
+        default: prepare
+        type: choice
+        options:
+          - prepare
+          - upload
       confirm:
-        description: "Type pack-ready to upload (does not bind sejire.ar.io)"
+        description: "Type pack-ready; only explicit upload mode signs and spends existing Turbo credits"
         required: true
         type: string
+      ci_run_id:
+        description: "Successful SEJIRE checks run for the current decentralized branch SHA"
+        required: true
+        type: string
+      ci_attempt:
+        description: "Exact successful CI attempt"
+        required: true
+        default: "1"
+        type: string
+      max_quote_winc:
+        description: "Maximum preflight quote in Winston Credits (not a provider hard cap); no automatic top-up"
+        required: true
+        default: "0"
+        type: string
+
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: sejire-permaweb-upload
+  cancel-in-progress: false
 
 jobs:
   permaweb:
-    if: github.event.inputs.confirm == 'pack-ready'
-    runs-on: ubuntu-latest
+    if: github.event.inputs.confirm == 'pack-ready' && github.ref == 'refs/heads/feat/decentralized-arweave-20261116'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      PERMAWEB_MODE: ${{ inputs.mode }}
+      PERMAWEB_CONFIRM: ${{ inputs.confirm }}
+      PERMAWEB_CI_RUN_ID: ${{ inputs.ci_run_id }}
+      PERMAWEB_CI_ATTEMPT: ${{ inputs.ci_attempt }}
+      PERMAWEB_MAX_QUOTE_WINC: ${{ inputs.max_quote_winc }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
           cache: npm
-      - name: Require treasury wallet secret
+          cache-dependency-path: apps/web/package-lock.json
+      - name: Verify exact CI and recover accepted static release
         env:
-          PERMAWEB_JWK: ${{ secrets.PERMAWEB_JWK }}
-        run: |
-          if [ -z "$PERMAWEB_JWK" ]; then
-            echo "::error::Add GitHub Actions secret PERMAWEB_JWK (Wander keyfile JSON). Never commit wallet.json."
-            exit 1
-          fi
-      - name: Install root tooling
-        run: npm ci
-      - name: Upload SPA via Turbo
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/permaweb-release.mjs
+      - name: Install the accepted lockfile's Turbo SDK
+        run: npm ci --prefix apps/web
+      - name: Blocking production dependency audit
+        run: npm audit --prefix apps/web --omit=dev --audit-level=high
+      - name: Validate static release and print upload plan (no key)
+        run: node scripts/upload-permaweb.mjs --plan
+      - name: Price every file and manifest (read-only, no key)
+        run: node scripts/upload-permaweb.mjs --quote
+      - name: Recheck exact CI, upload with existing credits, verify public bytes
+        if: inputs.mode == 'upload'
         env:
+          GH_TOKEN: ${{ github.token }}
           PERMAWEB_JWK: ${{ secrets.PERMAWEB_JWK }}
         run: npm run deploy:permaweb
-      - name: Wipe wallet file if present
+      - name: Preserve accepted pack for verification and owner cutover
         if: always()
-        run: rm -f wallet.json
+        uses: actions/upload-artifact@v4
+        with:
+          name: permaweb-accepted-pack
+          path: .cache/permaweb-accepted/
+          include-hidden-files: true
+          retention-days: 30
+      - name: Preserve upload receipts and partial progress
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: permaweb-upload-evidence
+          path: .cache/permaweb-upload-evidence/
+          include-hidden-files: true
+          retention-days: 30
