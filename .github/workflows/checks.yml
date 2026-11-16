@@ -50,6 +50,34 @@ jobs:
       - run: npm run solana:build
       - run: npm run checkout:build
       - run: npm exec --prefix apps/web -- playwright install --with-deps chromium
+      - name: Offline recovery format, standalone decoder and current-envelope compatibility
+        run: npm run test:offline-recovery
+      - name: Standalone recovery HTML in an offline browser (synthetic data)
+        run: npm run test:offline-recovery-browser
+      - name: Direct Arweave signing, exact resume and chunk delivery (synthetic network)
+        run: npm run test:direct --prefix apps/web
+      - name: Historical native archives retain signature, Merkle and encryption verification
+        run: npm run test:historical-native --prefix apps/web
+      - name: Independent recovery kit, complete local vault and legacy journal boundary
+        run: npm run test:independent-unit --prefix apps/web
+      - name: Build independent direct-Arweave application and every emitted chunk boundary
+        run: npm run arns:build && npm run arns:verify
+      - name: Independent static app, self-custody save and offline recovery (synthetic network)
+        run: npm run test:independent-browser
+      - name: Preserve independent desktop and mobile screens (synthetic family, no recovery words)
+        uses: actions/upload-artifact@v4
+        with:
+          name: independent-static-screens
+          path: apps/web/test-results/**/independent-*.png
+          if-no-files-found: error
+          retention-days: 14
+      - name: Prepare independent static pack without upload or payment
+        run: npm run permaweb:prepare
+      - uses: actions/upload-artifact@v4
+        with:
+          name: permaweb-static-release
+          path: .cache/permaweb-release/
+          retention-days: 14
       - name: Editor safety regressions (synthetic data, no wallets or external writes)
         working-directory: apps/web
         run: npx --no-install playwright test --config playwright.editor.config.ts
@@ -134,34 +162,6 @@ jobs:
       - name: Sponsor test-tool dependency audit (non-blocking; release review required)
         continue-on-error: true
         run: npm audit --prefix apps/sponsor
-      - name: Offline recovery format, standalone decoder and current-envelope compatibility
-        run: npm run test:offline-recovery
-      - name: Standalone recovery HTML in an offline browser (synthetic data)
-        run: npm run test:offline-recovery-browser
-      - name: Direct Arweave signing, exact resume and chunk delivery (synthetic network)
-        run: npm run test:direct --prefix apps/web
-      - name: Historical native archives retain signature, Merkle and encryption verification
-        run: npm run test:historical-native --prefix apps/web
-      - name: Independent recovery kit, complete local vault and legacy journal boundary
-        run: npm run test:independent-unit --prefix apps/web
-      - name: Build independent direct-Arweave application and every emitted chunk boundary
-        run: npm run arns:build && npm run arns:verify
-      - name: Independent static app, self-custody save and offline recovery (synthetic network)
-        run: npm run test:independent-browser
-      - name: Preserve independent desktop and mobile screens (synthetic family, no recovery words)
-        uses: actions/upload-artifact@v4
-        with:
-          name: independent-static-screens
-          path: apps/web/test-results/**/independent-*.png
-          if-no-files-found: error
-          retention-days: 14
-      - name: Prepare independent static pack without upload or payment
-        run: npm run permaweb:prepare
-      - uses: actions/upload-artifact@v4
-        with:
-          name: permaweb-static-release
-          path: .cache/permaweb-release/
-          retention-days: 14
       - name: Preserve checkout failure diagnostics
         if: failure()
         uses: actions/upload-artifact@v4

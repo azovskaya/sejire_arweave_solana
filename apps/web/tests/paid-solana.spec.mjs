@@ -336,6 +336,9 @@ for(const lostReply of [false,true])test(`completed order repairs availability f
  const counts={creates:state.creates,prepares:state.prepares,reserves:state.reserves,sends:state.sends.length,executes:state.executes};
  await page.goto(origin);
  await page.evaluate(async()=>(await import('/tests/paid-fixture.ts')).installWallet());
+ // Reload intentionally resumes the draft; reach its history through the same home navigation as the owner.
+ await page.locator('summary[aria-label="Ещё"]').click();
+ await page.getByRole('button',{name:'На главную',exact:true}).click();
  const requestCount=state.requests.length;
  await page.getByRole('button',{name:'Сохранения на этом устройстве',exact:true}).click();
  await expect(page.getByRole('region',{name:'Ваши сохранения на этом устройстве',exact:true})).toContainText(original.op.order.id);
