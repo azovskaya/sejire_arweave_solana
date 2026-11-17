@@ -5,10 +5,11 @@ import { MAX_BACKUP_BYTES, parseEnvelope, serializeEnvelope } from '../lib/crypt
 import { openEnvelope, openLocalVault, type VaultV1 } from '../lib/crypto/vault';
 import type { EnvelopeV1 } from '../lib/crypto/encrypt';
 import { parseIndependentBackup, type IndependentBackup } from '../lib/independentBackup';
-import { retrieveDirectReceipt, retrieveDirectTransaction, directNode } from '../lib/directArweave';
+import { retrieveDirectReceipt, retrieveDirectTransaction } from '../lib/directArweave';
 import { recoverVaultFromWords } from '../lib/recovery/recover';
-import { retrieveHistoricalNative } from '../lib/recovery/historicalNative';
-import { WayfinderGatewayPool } from '../lib/recovery/gateways';
+import { retrieveHistoricalNative, retrieveNativeVault } from '../lib/recovery/historicalNative';
+import { active, scoped } from '../lib/directArweave/network';
+import { listIndependentVaultVersions } from '../lib/independentDiscovery';
 import type { VerifiedVersion } from '../lib/recovery/types';
 import type { TreeStore } from '../lib/types';
 import { coerceTreeStore } from '../lib/treeJson';
@@ -20,21 +21,30 @@ import { acceptVaultVersion } from '../lib/vaultSession/selection';
 import { archiveLocalVaultVersion, getLocalVaultVersion } from '../lib/vaultSession/localArchive';
 import { useI18n } from '../lib/i18n/I18nProvider';
 import { independentMessages } from '../lib/independentMessages';
+import { readDirectNodePreference, saveDirectNodePreference } from '../lib/directArweave/nodePreference';
 
 type Props = { onRestored: (store?: TreeStore) => void; onBack: () => void };
 export function RestoreSeed({ onRestored, onBack }: Props) {
   const { locale, t } = useI18n(), copy = independentMessages[locale];
+  const nodeError = locale === 'ru' ? 'Адрес узла недействителен. Укажите HTTPS-адрес или очистите поле узла и повторите действие.' : locale === 'kk' ? 'Түйін мекенжайы жарамсыз. HTTPS мекенжайын көрсетіңіз немесе өрісті тазалап, әрекетті қайталаңыз.' : 'The node address is invalid. Enter an HTTPS origin or clear the node field and retry the action.';
+  const [initialNode] = useState(() => {
+    try { return { value: readDirectNodePreference() ?? '', error: '' }; }
+    catch (error) { return { value: '', error: error instanceof Error ? error.message : 'storage_unavailable' }; }
+  });
   const [words, setWords] = useState('');
   const [txId, setTxId] = useState('');
-  const [gateway, setGateway] = useState('');
+  const [gateway, setGateway] = useState(initialNode.value);
   const [file, setFile] = useState<{ name: string; backup: Exclude<IndependentBackup, { kind: 'words' }> } | null>(null);
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState(initialNode.error ? /storage/.test(initialNode.error) ? copy.localQuota : nodeError : '');
   const [status, setStatus] = useState('');
   const [versions, setVersions] = useState<VerifiedVersion[]>([]);
   const [local, setLocal] = useState<VaultV1 | null>(null);
   const running = useRef(false);
-  function options() { return gateway.trim() ? { nodes: [directNode(gateway.trim())] } : {}; }
+  function options() {
+    const selected = saveDirectNodePreference(gateway);
+    return selected ? { nodes: [selected] } : {};
+  }
 
   async function finish(vault: VaultV1, envelope: EnvelopeV1 | null, head: string | null, parent: string | null, phrase: string) {
     const keys = deriveKeysFromMnemonic(phrase);
@@ -73,10 +83,11 @@ export function RestoreSeed({ onRestored, onBack }: Props) {
   }
   async function openId(id: string, phrase: string) {
     if (!/^[A-Za-z0-9_-]{43}$/.test(id)) throw Error('invalid_transaction');
+    const selectedOptions = options();
     // The signed native header and original data root bind this ID to these
     // exact bytes. A gateway response alone is not a confirmation proof.
     try {
-      const result = await retrieveDirectTransaction(id, options());
+      const result = await retrieveDirectTransaction(id, selectedOptions);
       const keys = deriveKeysFromMnemonic(phrase);
       const vault = await openEnvelope(keys, result.envelope);
       await finish(vault, result.envelope, id, result.receipt.parentTxId, phrase);
@@ -85,7 +96,7 @@ export function RestoreSeed({ onRestored, onBack }: Props) {
       // Historical native saves have their own signed tag contract. Their
       // reader retains signature/data-root/AES checks without relaxing the
       // modern writer or pretending that an old receipt is a new one.
-      const result = await retrieveHistoricalNative(id, phrase, options());
+      const result = await retrieveHistoricalNative(id, phrase, selectedOptions);
       await finish(result.vault, result.envelope, id, result.parentTxId, phrase);
     }
   }
@@ -95,7 +106,7 @@ export function RestoreSeed({ onRestored, onBack }: Props) {
     try { await action(); }
     catch (e) {
       const code = e instanceof Error ? e.message : '';
-      setError(/storage/.test(code) ? copy.localQuota : /network|unavailable|confirmation|receipt/.test(code) ? copy.noArchive : copy.badFile);
+      setError(code === 'invalid_node' ? nodeError : /storage/.test(code) ? copy.localQuota : /network|unavailable|confirmation|receipt/.test(code) ? copy.noArchive : copy.badFile);
     } finally { running.current = false; setBusy(false); setStatus(''); }
   }
   async function choose(selected?: File) {
@@ -131,10 +142,28 @@ export function RestoreSeed({ onRestored, onBack }: Props) {
       const known = backup?.kind === 'legacyLocator' ? backup.txId : txId.trim();
       if (known) { setStatus(copy.search); await openId(known, phrase); return; }
       setStatus(copy.search);
-      const pool = gateway.trim() ? new WayfinderGatewayPool([directNode(gateway.trim())]) : undefined;
-      const found = await recoverVaultFromWords(phrase, { pool });
+      const selectedOptions = options(), selected = selectedOptions.nodes?.[0];
       const localVault = await openLocalVault(keys);
       setLocal(localVault);
+      if (selected) {
+        const verified: VerifiedVersion[] = [];
+        await scoped(selectedOptions, async scopedOptions => {
+          const listed = await listIndependentVaultVersions(keys.vaultId, { node: selected, limit: 15, signal: scopedOptions.signal });
+          for (const candidate of listed) {
+            active(scopedOptions.signal);
+            try {
+              const version = await retrieveNativeVault(candidate.txId, keys, scopedOptions);
+              verified.push({ ...version, txId: candidate.txId, blockHeight: null,
+                blockTimestamp: candidate.blockTimestamp, sources: [selected] });
+            } catch { active(scopedOptions.signal); }
+          }
+        }).catch(() => { /* Keep any verified versions and the separately selectable local file. */ });
+        if (verified.length) { setVersions(verified); setStatus(copy.partial); }
+        else if (!localVault) throw Error('archive_unavailable');
+        else setError(copy.noArchive);
+        return;
+      }
+      const found = await recoverVaultFromWords(phrase);
       if (found.ok) {
         // Searching can be incomplete or contain forks. The owner chooses the
         // version; openId verifies its signed header before adopting its HEAD.
@@ -151,7 +180,9 @@ export function RestoreSeed({ onRestored, onBack }: Props) {
       {file && <div><p className="break-anywhere">{file.name}</p>{file.backup.kind === 'vault' && <p className="sub">{copy.localRecovery}</p>}
         <button type="button" className="welcome-link-quiet" disabled={busy} onClick={() => setFile(null)}>{copy.clearFile}</button></div>}
       {!file && <label>{copy.transaction}<input value={txId} onChange={e => setTxId(e.target.value)} disabled={busy} autoComplete="off" spellCheck={false} maxLength={43} /></label>}
-      {file?.backup.kind !== 'vault' && <details><summary>{copy.node}</summary><label>{copy.node}<input value={gateway} type="url" placeholder="https://node.example.org" onChange={e => setGateway(e.target.value)} disabled={busy} autoComplete="off" /></label><p className="sub">{copy.nodeHint}</p></details>}
+      {file?.backup.kind !== 'vault' && <details><summary>{copy.node}</summary><label>{copy.node}<input value={gateway} type="url" placeholder="https://node.example.org" onChange={e => setGateway(e.target.value)} disabled={busy} autoComplete="off" /></label><p className="sub">{copy.nodeHint}</p>
+        <p className="sub">{locale === 'ru' ? `Адрес применяется после нажатия «${copy.recover}» и сохраняется для этой вкладки, включая перезагрузку. Пустое поле возвращает узлы по умолчанию. Если узел не поддерживает поиск, укажите ID транзакции или откройте файл.` : locale === 'kk' ? 'Мекенжай қалпына келтіруді бастағанда қолданылып, осы қойындыда, қайта жүктегенде де сақталады. Бос өріс әдепкі түйіндерді қайтарады. Түйін іздеуді қолдамаса, транзакция ID-сін көрсетіңіз немесе файлды ашыңыз.' : 'The address is applied when you restore and is kept for this tab, including reloads. An empty field restores the default nodes. If the node has no search index, enter a transaction ID or open a file.'}</p>
+      </details>}
       <div className="actions"><button type="submit" className="btn" disabled={busy}>{copy.recover}</button><button type="button" className="btn ghost" disabled={busy} onClick={onBack}>{copy.back}</button></div>
     </form>
     {status && <p role="status">{status}</p>}{error && <p role="alert">{error}</p>}

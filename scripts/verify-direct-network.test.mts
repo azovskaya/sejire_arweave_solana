@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { DEFAULT_DIRECT_NODES } from '../apps/web/src/lib/directArweave/network.ts';
-import { PROBE_BYTES, PROBE_ORIGIN, verifyDirectNetwork } from './verify-direct-network.mts';
+import { PROBE_BYTES, PROBE_ORIGIN, REQUIRED_READY_NODES, verifyDirectNetwork } from './verify-direct-network.mts';
 
 function healthy(url: URL, method: string, headers: HeadersInit = { 'access-control-allow-origin': '*' }) {
   if (method === 'OPTIONS') return new Response(null, { status: 204,
@@ -29,16 +29,17 @@ test('only one bounded GET/OPTIONS request per configured endpoint is made, with
   }) as typeof fetch });
   assert.equal(calls.length, DEFAULT_DIRECT_NODES.length * 5); assert.equal(new Set(calls).size, calls.length);
   assert.equal(report.status, 'PASS'); assert.equal(report.readyNodes, DEFAULT_DIRECT_NODES.length);
+  assert.equal(report.requiredReadyNodes, REQUIRED_READY_NODES); assert.equal(REQUIRED_READY_NODES, 2);
   assert.equal(report.readOnly, true); assert.equal(report.uploadAttempted, false); assert.equal(report.walletChecked, false);
 });
 
-test('one healthy default is sufficient but does not claim redundant availability', async () => {
+test('one healthy default fails release readiness and does not claim redundant availability', async () => {
   const report = await verifyDirectNetwork({ fetcher: (async (input, init) => {
     const url = new URL(String(input));
     if (url.origin === DEFAULT_DIRECT_NODES[0]) return healthy(url, init?.method ?? '', { 'access-control-allow-origin': PROBE_ORIGIN });
     return new Response('<html>not a native node</html>', { headers: { 'access-control-allow-origin': '*' } });
   }) as typeof fetch });
-  assert.equal(report.status, 'PASS'); assert.equal(report.readyNodes, 1); assert.equal(report.redundancy, 'redundancyNotConfirmed');
+  assert.equal(report.status, 'FAIL'); assert.equal(report.readyNodes, 1); assert.equal(report.redundancy, 'redundancyNotConfirmed');
   assert(report.nodes.slice(1).every(node => node.readiness === 'unavailable'));
 });
 

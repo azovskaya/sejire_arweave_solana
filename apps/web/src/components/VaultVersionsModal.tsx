@@ -18,6 +18,7 @@ import {
 import type { VaultVersionSelection } from "../lib/vaultSession/selection";
 import { retrieveNativeVault } from "../lib/recovery/historicalNative";
 import { DECENTRALIZED_MODE } from "../lib/deploymentMode";
+import { listIndependentVaultVersions } from "../lib/independentDiscovery";
 import {
   getLocalVaultVersion,
   listLocalVaultVersions,
@@ -101,7 +102,7 @@ export function VaultVersionsModal({ onClose, onOpenVersion }: Props) {
         let network: VaultVersionMeta[] = [];
         let networkError: string | null = null;
         try {
-          network = await listVaultVersions(session.vaultId, { signal: controller.signal });
+          network = await (DECENTRALIZED_MODE ? listIndependentVaultVersions : listVaultVersions)(session.vaultId, { signal: controller.signal });
         } catch (e) {
           network = [];
           networkError = isGatewayUnavailable(e)

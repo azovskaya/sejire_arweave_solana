@@ -7,6 +7,7 @@ import { downloadJson, downloadText } from '../lib/download';
 import { useI18n } from '../lib/i18n/I18nProvider';
 import { independentMessages } from '../lib/independentMessages';
 import { LegacyPreservationNotice } from './LegacyPreservationNotice';
+import { readDirectNodePreference, saveDirectNodePreference } from '../lib/directArweave/nodePreference';
 
 type Props = { operationId: string; onBack: () => void; onBusy?: (busy: boolean) => void; onComplete?: (operation: DirectOperation) => Promise<void> };
 function formatAr(value: string): string {
@@ -25,12 +26,19 @@ async function finalizeVerified(operation: DirectOperation | null): Promise<Dire
 export function DirectArweaveFlow({ operationId, onBack, onBusy, onComplete }: Props) {
   const { locale } = useI18n();
   const copy = independentMessages[locale];
+  const [initialNode] = useState(() => {
+    try { return { value: readDirectNodePreference() ?? '', error: '' }; }
+    catch (error) { return { value: '', error: error instanceof Error ? error.message : 'storage_unavailable' }; }
+  });
   const [operation, setOperation] = useState<DirectOperation | null>(null);
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState('');
-  const [node, setNode] = useState('');
+  const [error, setError] = useState(initialNode.error);
+  const [node, setNode] = useState(initialNode.value);
   const alive = useRef(false), running = useRef(false);
-  const options = () => node.trim() ? { nodes: [node.trim()] } : {};
+  const options = () => {
+    const selected = saveDirectNodePreference(node);
+    return selected ? { nodes: [selected] } : {};
+  };
   useEffect(() => {
     alive.current = true;
     void readDirectOperation(operationId).then(finalizeVerified).then(value => { if (alive.current) { setOperation(value ?? null); if (!value) setError('operation_missing'); } })
@@ -43,13 +51,13 @@ export function DirectArweaveFlow({ operationId, onBack, onBusy, onComplete }: P
     if (!operation?.txId || operation.state === 'complete' || busy) return;
     const controller = new AbortController();
     const timer = setTimeout(() => {
-      void checkDirectOperation(operationId, { ...(node.trim() ? { nodes: [node.trim()] } : {}), signal: controller.signal })
+      void checkDirectOperation(operationId, { signal: controller.signal })
         .then(finalizeVerified)
         .then(next => { if (!controller.signal.aborted && alive.current) setOperation(next); })
         .catch(() => { /* The explicit check shows actionable errors. */ });
     }, 8_000);
     return () => { clearTimeout(timer); controller.abort(); };
-  }, [operation?.updatedAt, operation?.txId, operation?.state, operationId, busy, node]);
+  }, [operation?.updatedAt, operation?.txId, operation?.state, operationId, busy]);
 
   useEffect(() => {
     if (operation?.state !== 'signing') return;
@@ -77,20 +85,22 @@ export function DirectArweaveFlow({ operationId, onBack, onBusy, onComplete }: P
     }
   }
   async function getQuote() {
+    const selectedOptions = options();
     const connected = directWallet();
     let timer: ReturnType<typeof setTimeout> | undefined;
     const address = await Promise.race([
       (async () => { await connected.connect(['ACCESS_ADDRESS', 'ACCESS_PUBLIC_KEY', 'SIGN_TRANSACTION'], { name: 'SEJIRE' }); return connected.getActiveAddress(); })(),
       new Promise<never>((_resolve, reject) => { timer = setTimeout(() => reject(Error('wallet_unavailable')), 25_000); }),
     ]).finally(() => { if (timer !== undefined) clearTimeout(timer); });
-    return quoteDirectOperation(operationId, address, options());
+    return quoteDirectOperation(operationId, address, selectedOptions);
   }
   async function signAndSend() {
     if (!operation?.quote) return;
-    const signed = await signDirectOperation(operationId, directWallet(), operation.quote.rewardWinston, options());
+    const selectedOptions = options();
+    const signed = await signDirectOperation(operationId, directWallet(), operation.quote.rewardWinston, selectedOptions);
     if (alive.current) setOperation(signed);
     if (!signed.signedTx || !signed.txId) return signed;
-    return resumeDirectOperation(operationId, options());
+    return resumeDirectOperation(operationId, selectedOptions);
   }
   async function kit() {
     if (!operation) return;
@@ -106,7 +116,7 @@ export function DirectArweaveFlow({ operationId, onBack, onBusy, onComplete }: P
     if (code === 'insufficient_ar') return locale === 'ru' ? 'На выбранном кошельке недостаточно AR для указанной комиссии.' : locale === 'kk' ? 'Таңдалған әмиянда комиссияға AR жеткіліксіз.' : 'The selected wallet has insufficient AR for this fee.';
     if (/quote_(changed|expired|required)/.test(code)) return locale === 'ru' ? 'Цена изменилась или устарела. Обновите её перед подписью.' : locale === 'kk' ? 'Баға өзгерді немесе ескірді. Қол қою алдында жаңартыңыз.' : 'The price changed or expired. Refresh it before signing.';
     if (/wallet_(rejected|changed)/.test(code)) return locale === 'ru' ? 'Кошелёк отклонил запрос или выбран другой адрес. Проверьте операцию перед продолжением.' : locale === 'kk' ? 'Әмиян сұрауды қабылдамады немесе басқа мекенжай таңдалды. Операцияны тексеріңіз.' : 'The wallet declined or its address changed. Review the operation before continuing.';
-    if (/invalid_node/.test(code)) return locale === 'ru' ? 'Нужен HTTPS-адрес узла без пароля, пути и параметров.' : locale === 'kk' ? 'Құпиясөзсіз, жолсыз және параметрсіз HTTPS мекенжайы қажет.' : 'Use an HTTPS node origin without credentials, path or query.';
+    if (/invalid_node/.test(code)) return locale === 'ru' ? 'Укажите HTTPS-адрес узла без пароля, пути и параметров или очистите поле и повторите действие для узлов по умолчанию.' : locale === 'kk' ? 'Құпиясөзсіз, жолсыз және параметрсіз HTTPS мекенжайын көрсетіңіз немесе әдепкі түйіндер үшін өрісті тазалап, әрекетті қайталаңыз.' : 'Enter an HTTPS node origin without credentials, path or query, or clear the field and retry the action to use the default nodes.';
     if (/archive_integrity/.test(code)) return copy.badFile;
     return copy.genericError;
   }
@@ -121,6 +131,7 @@ export function DirectArweaveFlow({ operationId, onBack, onBusy, onComplete }: P
       <details className="direct-node"><summary>{copy.node}</summary>
         <label>{copy.node}<input type="url" value={node} disabled={busy || operation.state === 'signing'} placeholder="https://node.example.org" autoComplete="off" onChange={e => setNode(e.target.value)} /></label>
         <p className="sub">{copy.nodeHint}</p>
+        <p className="sub">{locale === 'ru' ? 'Адрес применяется после нажатия действия и сохраняется для этой вкладки, включая перезагрузку. Пустое поле возвращает узлы по умолчанию.' : locale === 'kk' ? 'Мекенжай әрекет батырмасын басқаннан кейін қолданылып, осы қойындыда, қайта жүктегенде де сақталады. Бос өріс әдепкі түйіндерді қайтарады.' : 'The address is applied when you choose an action and is kept for this tab, including reloads. An empty field restores the default nodes.'}</p>
       </details>
       {operation.state === 'prepared' && <>
         {operation.quote && <div className="direct-quote"><p>{copy.wallet}: <code className="break-anywhere">{operation.quote.ownerAddress}</code></p>

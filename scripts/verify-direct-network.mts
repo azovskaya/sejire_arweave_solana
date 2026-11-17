@@ -6,6 +6,7 @@ import { DEFAULT_DIRECT_NODES, directNode } from '../apps/web/src/lib/directArwe
 
 export const PROBE_ORIGIN = 'https://sejire.ar.io';
 export const PROBE_BYTES = 25_269;
+export const REQUIRED_READY_NODES = 2;
 const TIMEOUT_MS = 8_000;
 const OUTPUT = '.cache/direct-network/readiness.json';
 const endpoints = [
@@ -109,7 +110,8 @@ export async function verifyDirectNetwork({ fetcher = fetch, checkedAt = new Dat
   const readyNodes = results.filter(node => node.readiness === 'ready').length;
   return {
     schema: 'sejire/direct-network-readiness/v1', checkedAt, origin: PROBE_ORIGIN, archiveBytes: PROBE_BYTES,
-    status: readyNodes >= 1 ? 'PASS' : 'FAIL', readyNodes, configuredNodes: nodes.length,
+    status: readyNodes >= REQUIRED_READY_NODES ? 'PASS' : 'FAIL', readyNodes, configuredNodes: nodes.length,
+    requiredReadyNodes: REQUIRED_READY_NODES,
     redundancy: readyNodes >= 2 ? 'atLeastTwoConfiguredEndpointsReady' : 'redundancyNotConfirmed',
     readOnly: true, walletChecked: false, uploadAttempted: false,
     scope: 'Native API and CORS preflight snapshot; actual upload, archive readback, settlement and distinct operator ownership are not tested.',

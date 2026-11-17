@@ -40,8 +40,9 @@ export function forbiddenIndependentModule(id) {
 }
 
 export function assertIndependentCode(code) {
-  // A read-only Arweave gateway is allowed. Sponsor/executor/payment API origins
-  // and routes are not, even in an unvisited dynamic chunk.
+  // Replaceable native Arweave gateways are allowed for reads and signed L1
+  // delivery. Sponsor/executor/payment API origins and routes are not, even in
+  // an unvisited dynamic chunk.
   fail(!/(?:[A-Za-z0-9-]+\.)?(?:workers\.dev|pages\.dev|cloudflareaccess\.com)\b/i.test(code), 'independent_worker_endpoint_in_bundle');
   fail(!/\b(?:[A-Za-z0-9-]+\.)*(?:cloudflare\.com|cloudflareinsights\.com)\b/i.test(code), 'independent_cloudflare_endpoint_in_bundle');
   fail(!/\/(?:api\/)?(?:checkout|fund)\/(?:policy|orders|status|admin|quote|contribution|balance|promo)\b|\/api\/(?:checkout|fund)(?:["'`/]|$)/i.test(code), 'independent_service_route_in_bundle');

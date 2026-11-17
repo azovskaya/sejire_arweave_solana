@@ -1,19 +1,17 @@
 import { DirectError, directErrorCode, requireDirect } from './errors';
 import { ID, MAX_BACKUP_BYTES, sha256, winston } from './format';
 import type { DirectOptions, DirectQuote } from './types';
+import { directNode, readDirectNodePreference } from './nodePreference';
+export { directNode } from './nodePreference';
 
-export const DEFAULT_DIRECT_NODES = ['https://arweave.net', 'https://ar-io.net', 'https://g8way.io'] as const;
+// Both expose the native Arweave API. This is not the optional Turbo bundler API.
+// Defaults are replaceable; readiness and independent operators are separate facts.
+export const DEFAULT_DIRECT_NODES = ['https://arweave.net', 'https://turbo-gateway.com'] as const;
 const RATE_LIMIT = new Map<string, number>();
 const REQUEST_TIMEOUT_MS = 8_000;
-export function directNode(value: string): string {
-  let url: URL;
-  try { url = new URL(value); } catch { throw new DirectError('invalid_node'); }
-  requireDirect(url.protocol === 'https:' && !url.username && !url.password && !url.search && !url.hash &&
-    url.pathname === '/' && Boolean(url.hostname), 'invalid_node');
-  return url.origin;
-}
 export function directNodes(options: DirectOptions = {}): string[] {
-  const supplied = options.nodes ?? DEFAULT_DIRECT_NODES;
+  const preference = options.nodes === undefined ? readDirectNodePreference() : null;
+  const supplied = options.nodes ?? (preference ? [preference] : DEFAULT_DIRECT_NODES);
   requireDirect(Array.isArray(supplied) && supplied.length > 0 && supplied.length <= 6, 'invalid_node');
   return [...new Set(supplied.map(directNode))];
 }
@@ -26,10 +24,11 @@ export async function scoped<T>(options: DirectOptions, action: (options: Direct
   try { return await action({ ...options, signal: controller.signal }); }
   finally { clearTimeout(timer); options.signal?.removeEventListener('abort', abort); }
 }
-export async function nodeRequest(node: string, path: string, options: { signal?: AbortSignal; body?: string; maxBytes?: number } = {}) {
+export async function nodeRequest(node: string, path: string, options: { signal?: AbortSignal; body?: string; maxBytes?: number; readOnlyQuery?: boolean } = {}) {
   node = directNode(node); active(options.signal);
   requireDirect((RATE_LIMIT.get(node) ?? 0) <= Date.now(), 'network_rate_limited');
   requireDirect(path.startsWith('/') && !path.startsWith('//'), 'invalid_node');
+  requireDirect(!options.readOnlyQuery || path === '/graphql' && options.body !== undefined, 'invalid_node');
   const controller = new AbortController(); let reader: ReadableStreamDefaultReader<Uint8Array> | undefined;
   let rejectAborted: (error: DirectError) => void = () => {};
   const aborted = new Promise<never>((_resolve, reject) => { rejectAborted = reject; });
@@ -50,7 +49,7 @@ export async function nodeRequest(node: string, path: string, options: { signal?
     }
     // Error pages and write acknowledgements are not archive bytes. In particular,
     // a large HTML 404 must remain "unavailable", not a false integrity failure.
-    if (options.body !== undefined || response.status !== 200) {
+    if (options.body !== undefined && !options.readOnlyQuery || response.status !== 200) {
       void response.body?.cancel().catch(() => {});
       return { status: response.status, bytes: new Uint8Array(), text: '' };
     }

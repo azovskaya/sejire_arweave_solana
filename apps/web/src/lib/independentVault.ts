@@ -3,7 +3,7 @@ import { emptyVault, openEnvelope, openLocalVault, type VaultV1 } from './crypto
 import { parseEnvelope } from './crypto/envelope';
 import { coerceTreeStore } from './treeJson';
 import { getVaultSession } from './vaultSession/session';
-import { isGatewayUnavailable, listVaultVersions } from './arweave/fetch';
+import { isGatewayUnavailable } from './arweave/fetch';
 import { reconcileIndependentCompletions } from './independentFinalization';
 import { retrieveNativeVault } from './recovery/historicalNative';
 import { LegacyLocatorProvider } from './recovery/providers/legacyLocatorProvider';
@@ -13,6 +13,8 @@ import { listDirectOperations } from './directArweave/journal';
 import { verifyDirectSigned } from './directArweave/transaction';
 import { sha256, verifyArchiveBinding } from './directArweave/format';
 import type { DirectOperation } from './directArweave/types';
+import { readDirectNodePreference } from './directArweave/nodePreference';
+import { listIndependentVaultVersions } from './independentDiscovery';
 
 function validVault(vault: VaultV1 | null, vaultId: string, allowEmpty = false): vault is VaultV1 {
   return Boolean(vault && vault.schema === 'sejire/vault/v1' && vault.vault_id === vaultId &&
@@ -100,9 +102,10 @@ export async function loadIndependentVaultForPublish(keys: SejireKeys, options: 
   }
   return scoped({}, async readOptions => {
     const signal = readOptions.signal!;
-    const legacy = (await new LegacyLocatorProvider().discover({ vaultId: keys.vaultId, signal, fetcher: fetch })).candidates;
+    const selected = readDirectNodePreference();
+    const legacy = selected ? [] : (await new LegacyLocatorProvider().discover({ vaultId: keys.vaultId, signal, fetcher: fetch })).candidates;
     let versions;
-    try { versions = await listVaultVersions(keys.vaultId, { limit: 15, signal }); }
+    try { versions = await listIndependentVaultVersions(keys.vaultId, { limit: 15, signal, ...(selected ? { node: selected } : {}) }); }
     catch (error) {
       active(signal);
       if (isGatewayUnavailable(error) && local) return { vault: local, parentTxId: null };

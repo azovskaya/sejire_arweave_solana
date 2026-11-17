@@ -21,7 +21,7 @@ const json = (route, value, status = 200) => route.fulfill({ status, contentType
 const text = (route, body, status = 200) => route.fulfill({ status, contentType: 'text/plain', body });
 
 async function install(context, page, { draft = false, wallet = false, unavailable = false } = {}) {
-  const state = { signs: 0, posts: [], external: [], denied: [], header: null, raw: null, bytesVisible: !unavailable, chunks: 0, reject: false, versions: [] };
+  const state = { signs: 0, posts: [], external: [], denied: [], header: null, raw: null, bytesVisible: !unavailable, chunks: 0, reject: false, versions: [], onlyNode: null };
   await context.addInitScript(({ tree, draft }) => {
     localStorage.setItem('sejire.locale', 'ru');
     if (draft) { localStorage.setItem('sejire.draft.tree.v1', JSON.stringify(tree)); sessionStorage.setItem('sejire.lastScreen', 'work'); }
@@ -53,6 +53,10 @@ async function install(context, page, { draft = false, wallet = false, unavailab
     const req = route.request(), url = new URL(req.url());
     if (url.origin === ORIGIN) return route.continue();
     state.external.push(req.method() + ' ' + url.origin + url.pathname);
+    if (state.onlyNode && url.origin !== state.onlyNode) {
+      state.denied.push('unexpected default gateway ' + url.origin + url.pathname);
+      return route.abort('blockedbyclient');
+    }
     const allowed = ['arweave.net', 'ar-io.net', 'g8way.io', 'node.test.example'];
     if (!allowed.includes(url.hostname)) { state.denied.push(url.origin + url.pathname); return route.abort('blockedbyclient'); }
     if (url.pathname === '/info') return json(route, { network: 'arweave.N.1' });
@@ -144,7 +148,7 @@ async function selectionState(page) {
 }
 
 async function openVersions(page) {
-  await page.getByText('Ещё', { exact: true }).click();
+  await page.locator('summary[aria-label="Ещё"]').click();
   await page.getByRole('button', { name: 'Версии сейфа', exact: true }).click();
   await expect(page.locator('.vault-version-item').first()).toBeVisible();
 }
@@ -392,7 +396,7 @@ test('both PDF downloads work with every external service blocked', async ({ pag
   page.on('pageerror', error => errors.push(error.message));
   await restoreFile(page);
   for (const type of ['classic', 'shezhire']) {
-    await page.getByText('Ещё', { exact: true }).click();
+    await page.locator('summary[aria-label="Ещё"]').click();
     const event = page.waitForEvent('download');
     if (type === 'classic') await page.getByRole('button', { name: 'Древо в PDF', exact: true }).click();
     else {
@@ -408,7 +412,22 @@ test('both PDF downloads work with every external service blocked', async ({ pag
   expect(state.external).toEqual([]); expect(state.denied).toEqual([]); expect(state.signs).toBe(0); expect(state.posts).toEqual([]); expect(errors).toEqual([]);
 });
 
-test('a sandboxed manifest fallback loads independent assets and downloads the offline decoder under its manifest path', async ({ page, context }) => {
+test('the offline decoder link downloads the exact standalone HTML from the real static server', async ({ page, context }) => {
+  const state = await install(context, page);
+  await page.goto('/#/restore');
+  const recovery = page.getByRole('link', { name: 'Скачать автономный расшифровщик', exact: true });
+  expect(await recovery.evaluate(link => link.href)).toBe(ORIGIN + '/recovery/recovery.html');
+  const event = page.waitForEvent('download');
+  await recovery.click();
+  const download = await event;
+  expect(await download.failure()).toBeNull();
+  expect(download.suggestedFilename()).toBe('sejire-recovery.html');
+  const downloaded = await readFile(await download.path());
+  expect(downloaded.equals(await readFile(new URL('../../../tools/recovery/recovery.html', import.meta.url)))).toBe(true);
+  expect(state.external).toEqual([]); expect(state.denied).toEqual([]); expect(state.signs).toBe(0); expect(state.posts).toEqual([]);
+});
+
+test('a sandboxed manifest fallback loads independent assets and the exact offline decoder under its manifest path', async ({ page, context }) => {
   const host = `https://${'a'.repeat(52)}.arweave.net`, prefix = '/' + 'M'.repeat(43);
   const requested = [], denied = [], errors = [];
   await context.addInitScript(() => localStorage.setItem('sejire.locale', 'ru'));
@@ -427,9 +446,16 @@ test('a sandboxed manifest fallback loads independent assets and downloads the o
     await expect(page.locator('base')).toHaveAttribute('href', prefix + '/');
     const recovery = page.getByRole('link', { name: 'Скачать автономный расшифровщик', exact: true });
     expect(await recovery.evaluate(link => link.href)).toBe(host + prefix + '/recovery/recovery.html');
-    const event = page.waitForEvent('download'); await recovery.click();
-    const downloaded = await readFile(await (await event).path());
-    expect(downloaded.equals(await readFile(new URL('../../../tools/recovery/recovery.html', import.meta.url)))).toBe(true);
+    // Chromium cancels downloads answered by route.fulfill (Playwright #28253).
+    // Check this virtual gateway's actual resolved response bytes here, and
+    // keep the native browser download assertion in the real-server test above.
+    const decoder = await recovery.evaluate(async link => {
+      const response = await fetch(link.href, { credentials: 'omit' });
+      return { status: response.status, url: response.url, text: await response.text() };
+    });
+    expect(decoder.status).toBe(200);
+    expect(decoder.url).toBe(host + prefix + '/recovery/recovery.html');
+    expect(Buffer.from(decoder.text).equals(await readFile(new URL('../../../tools/recovery/recovery.html', import.meta.url)))).toBe(true);
     await page.getByLabel('12 слов SEJIRE', { exact: true }).fill(vector.words);
     await page.getByLabel('Зашифрованный архив, комплект или квитанция', { exact: true }).setInputFiles({
       name: 'synthetic-vault.json', mimeType: 'application/json', buffer: Buffer.from(vector.archiveText),
@@ -443,4 +469,44 @@ test('a sandboxed manifest fallback loads independent assets and downloads the o
     await page.route('**/*', route => route.abort('blockedbyclient'));
     await context.unrouteAll({ behavior: 'wait' });
   }
+});
+
+test('a chosen custom node remains usable through restore, versions, preparation and reload with default gateways blocked', async ({ page, context }) => {
+  const state = await install(context, page, { wallet: true });
+  const custom = 'https://node.test.example', remote = await syntheticNativeVersion(vault);
+  state.onlyNode = custom; state.header = remote.header; state.raw = remote.raw; state.versions = [remote.listed];
+  await page.goto('/#/restore');
+  await page.getByLabel('12 слов SEJIRE', { exact: true }).fill(vector.words);
+  await page.getByLabel('ID транзакции Arweave (необязательно)', { exact: true }).fill(remote.header.id);
+  await page.locator('.independent-restore details > summary').click();
+  await page.locator('.independent-restore input[type="url"]').fill(custom);
+  await page.getByRole('button', { name: 'Открыть архив', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Сохранить', exact: true })).toBeVisible();
+  await openVersions(page);
+  const confirmation = page.waitForEvent('dialog');
+  const opening = page.locator('.vault-version-item').first().click();
+  await (await confirmation).accept(); await opening;
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await page.getByRole('button', { name: 'Сохранить', exact: true }).click();
+  await page.getByRole('button', { name: 'Подготовить зашифрованную копию', exact: true }).click();
+  await expect(page.getByText('Подготовлено локально', { exact: true })).toBeVisible();
+  await expect(page.locator('.direct-node input[type="url"]')).toHaveValue(custom);
+  await page.getByRole('button', { name: 'Подключить кошелёк и узнать цену', exact: true }).click();
+  await expect(page.getByRole('button', { name: /Подписать и отправить/ })).toBeVisible();
+  const before = (await journal(page))[0];
+  expect(before.parentTxId).toBe(remote.header.id); expect(before.quote.node).toBe(custom);
+  const next = JSON.parse(new TextDecoder().decode((await recoverText(before.archiveText, vector.words)).plaintext));
+  expect(Object.keys(next.trees).sort()).toEqual(Object.keys(vault.trees).sort());
+  for (const [id, original] of Object.entries(vault.trees)) if (id !== vault.active_tree_id) expect(next.trees[id]).toEqual(original);
+  await page.reload();
+  await page.getByRole('button', { name: 'Открыть', exact: true }).click();
+  await expect(page.locator('.direct-node input[type="url"]')).toHaveValue(custom);
+  await page.getByRole('button', { name: 'Обновить цену', exact: true }).click();
+  await expect.poll(async () => (await journal(page))[0].revision).toBeGreaterThan(before.revision);
+  await expect(page.getByRole('button', { name: 'Обновить цену', exact: true })).toBeEnabled();
+  const after = (await journal(page))[0];
+  expect(after.id).toBe(before.id); expect(after.archiveText).toBe(before.archiveText); expect(after.quote.node).toBe(custom);
+  expect(state.external.length).toBeGreaterThan(0);
+  expect(state.external.every(request => request.split(' ')[1].startsWith(custom + '/'))).toBe(true);
+  expect(state.denied).toEqual([]); expect(state.signs).toBe(0); expect(state.posts).toEqual([]);
 });
