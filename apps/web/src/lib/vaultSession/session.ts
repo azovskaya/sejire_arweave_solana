@@ -10,13 +10,13 @@ export type VaultSessionMeta = {
   source: "network" | "local" | "file" | "publish";
 };
 
-const META_KEY = "sejire.vaultSession.v1";
+export const VAULT_SESSION_META_KEY = "sejire.vaultSession.v1";
 
 let memoryMnemonic: string | null = null;
 
 export function setVaultSession(meta: VaultSessionMeta, mnemonic?: string | null) {
   try {
-    sessionStorage.setItem(META_KEY, JSON.stringify(meta));
+    sessionStorage.setItem(VAULT_SESSION_META_KEY, JSON.stringify(meta));
   } catch {
     /* private mode / quota */
   }
@@ -25,9 +25,29 @@ export function setVaultSession(meta: VaultSessionMeta, mnemonic?: string | null
   }
 }
 
+/** Independent flows must not claim a restored/prepared vault while retaining
+ * an older session after a denied or exhausted sessionStorage write. */
+export function setVaultSessionChecked(meta: VaultSessionMeta, mnemonic?: string | null) {
+  let previous: string | null;
+  try { previous = sessionStorage.getItem(VAULT_SESSION_META_KEY); }
+  catch { throw Error('storage_unavailable'); }
+  const serialized = JSON.stringify(meta);
+  try {
+    sessionStorage.setItem(VAULT_SESSION_META_KEY, serialized);
+    if (sessionStorage.getItem(VAULT_SESSION_META_KEY) !== serialized) throw Error('storage_unavailable');
+  } catch {
+    try {
+      if (previous === null) sessionStorage.removeItem(VAULT_SESSION_META_KEY);
+      else sessionStorage.setItem(VAULT_SESSION_META_KEY, previous);
+    } catch { /* the caller still receives the persistence failure */ }
+    throw Error('storage_unavailable');
+  }
+  if (mnemonic !== undefined) memoryMnemonic = mnemonic;
+}
+
 export function getVaultSession(): VaultSessionMeta | null {
   try {
-    const raw = sessionStorage.getItem(META_KEY);
+    const raw = sessionStorage.getItem(VAULT_SESSION_META_KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw) as VaultSessionMeta;
     if (!parsed?.vaultId || typeof parsed.vaultId !== "string") return null;
@@ -54,7 +74,7 @@ export function updateVaultHead(txId: string) {
 export function clearVaultSession() {
   memoryMnemonic = null;
   try {
-    sessionStorage.removeItem(META_KEY);
+    sessionStorage.removeItem(VAULT_SESSION_META_KEY);
   } catch {
     /* ignore */
   }

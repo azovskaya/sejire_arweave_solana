@@ -12,13 +12,12 @@ import { WayfinderGatewayPool } from '../lib/recovery/gateways';
 import type { VerifiedVersion } from '../lib/recovery/types';
 import type { TreeStore } from '../lib/types';
 import { coerceTreeStore } from '../lib/treeJson';
-import { loadDraftTree, saveDraftTree } from '../lib/draftStorage';
+import { loadDraftTree } from '../lib/draftStorage';
 import { activePersons } from '../lib/treeEngine';
 import { defaultGuide, saveGuide } from '../lib/guide';
 import { pickHomeFocus } from '../lib/pedigree';
-import { setVaultSession } from '../lib/vaultSession/session';
+import { acceptVaultVersion } from '../lib/vaultSession/selection';
 import { archiveLocalVaultVersion, getLocalVaultVersion } from '../lib/vaultSession/localArchive';
-import { setLocalJson } from '../lib/storageQuota';
 import { useI18n } from '../lib/i18n/I18nProvider';
 import { independentMessages } from '../lib/independentMessages';
 
@@ -39,6 +38,15 @@ export function RestoreSeed({ onRestored, onBack }: Props) {
 
   async function finish(vault: VaultV1, envelope: EnvelopeV1 | null, head: string | null, parent: string | null, phrase: string) {
     const keys = deriveKeysFromMnemonic(phrase);
+    if (!envelope) {
+      // The button opens the current local copy. Read and decrypt the same
+      // envelope together, rather than pairing a stale React vault with a
+      // cache that another tab could have replaced since discovery.
+      const cached = localStorage.getItem('sejire.envelope.' + keys.vaultId);
+      if (!cached) throw Error('storage_unavailable');
+      envelope = parseEnvelope(JSON.parse(cached));
+      vault = await openEnvelope(keys, envelope);
+    }
     if (!vault || vault.schema !== 'sejire/vault/v1' || vault.vault_id !== keys.vaultId ||
       !vault.trees || typeof vault.trees !== 'object' || Array.isArray(vault.trees) ||
       Object.entries(vault.trees).some(([id, tree]) => id === '__proto__' || id === 'constructor' || !coerceTreeStore(tree)) ||
@@ -55,12 +63,13 @@ export function RestoreSeed({ onRestored, onBack }: Props) {
         const saved = getLocalVaultVersion(keys.vaultId, head);
         if (!saved || saved.parentId !== parent || serializeEnvelope(saved.envelope) !== serializeEnvelope(envelope)) throw Error('storage_unavailable');
       }
-      if (!setLocalJson('sejire.envelope.' + keys.vaultId, envelope)) throw Error('storage_unavailable');
     }
-    if (!saveDraftTree(tree)) throw Error('storage_unavailable');
+    const accepted = acceptVaultVersion({ vault, envelope, mnemonic: phrase, session: {
+      vaultId: keys.vaultId, headTxId: head, source: head ? 'network' : file ? 'file' : 'local',
+    } }, () => true);
+    if (!accepted) return;
     saveGuide({ ...defaultGuide(), step: 'done', selfId: pickHomeFocus(tree.draft, null) });
-    setVaultSession({ vaultId: keys.vaultId, headTxId: head, source: head ? 'network' : file ? 'file' : 'local' }, phrase);
-    onRestored(tree);
+    onRestored(accepted);
   }
   async function openId(id: string, phrase: string) {
     if (!/^[A-Za-z0-9_-]{43}$/.test(id)) throw Error('invalid_transaction');

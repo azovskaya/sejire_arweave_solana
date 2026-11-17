@@ -1,43 +1,27 @@
-<p align="center">
-  <img src="docs/colosseum/assets/sejire-cover.svg" alt="SEJIRE — Pay with Solana. Preserve on Arweave. Recover with 12 words." width="100%">
-</p>
-
-<p align="center">
-  <a href="https://azovskaya.github.io/sejire_arweave_solana/"><strong>Live Protocol</strong></a>
-  ·
-  <a href="https://azovskaya.github.io/sejire_arweave_solana/#/restore"><strong>Recovery</strong></a>
-  ·
-  <a href="docs/colosseum/COLOSSEUM_SUBMISSION.md"><strong>Colosseum Submission</strong></a>
-  ·
-  <a href="https://azovskaya.github.io/sejire_arweave_solana/build-provenance.json"><strong>Build Provenance</strong></a>
-</p>
-
-<p align="center">
-  <a href="https://github.com/azovskaya/sejire_arweave_solana/actions/workflows/checks.yml">
-    <img alt="SEJIRE checks" src="https://github.com/azovskaya/sejire_arweave_solana/actions/workflows/checks.yml/badge.svg">
-  </a>
-  <img alt="Solana Mainnet acceptance pending" src="https://img.shields.io/badge/Solana-Mainnet%20acceptance%20pending-D99A24">
-  <img alt="Arweave Mainnet" src="https://img.shields.io/badge/Arweave-Mainnet-222222">
-  <img alt="License MIT" src="https://img.shields.io/badge/license-MIT-C57A45">
-</p>
-
 # SEJIRE
 
-**Pay with Solana. Preserve on Arweave. Recover with 12 words.**
+SEJIRE is a browser application for creating family trees, encrypting complete family archives, and recovering them independently of the original website.
 
-SEJIRE is a decentralized protocol for creating, encrypting, preserving, and independently recovering family trees.
+## Current direction: independent Arweave release
 
-A family can build a tree without an account or wallet. When it chooses permanent preservation, SEJIRE encrypts the archive in the browser, verifies the preservation payment through Solana, stores the encrypted archive on Arweave, and allows recovery on a clean device using 12 words.
+The owner changed the release direction on **16 November 2026**: the current application branch is `feat/decentralized-arweave-20261116`. The `arns:build` command builds a static, independent profile for publication through Arweave and ArNS. New archive writes use the family's own compatible Arweave wallet and a separately confirmed AR storage price. The application runtime does not require a SEJIRE server, Cloudflare Worker, SOL checkout, a project treasury, or a bundler account.
 
-Rooted in the Kazakh tradition of *shezhire*. Built for families everywhere.
+Creating and editing a family tree, exporting a PDF, and downloading an encrypted recovery kit do not require a wallet. An on-chain save uses a durable local journal; a retry continues the same signed transaction. Completion requires both a confirmed header and the actual downloaded archive bytes. A transaction ID alone is insufficient.
 
-## Pilot release status — 16 November 2026
+The recovery kit contains the encrypted full vault, including all trees and history, and can be opened by the standalone tools in [`tools/recovery/`](tools/recovery/README.md). Recovery needs the encrypted file and its **SEJIRE archive words**; a wallet's recovery phrase is never requested. Recovery by a known native Arweave transaction ID additionally needs the network to serve its bytes. External media links do not embed those media in the archive.
 
-The release branch is `feat/promo-funded-preservation`. The service is configured for a **0.03 SOL service payment on Solana Mainnet**, with the network fee shown separately, and encrypted storage on Arweave Mainnet. Promo-funded preservation uses the same archive/recovery format. Contributions are optional and separate from the service payment.
+**The application source, a prepared static package, and a live deployment are separate states.** The public GitHub Pages site and `sejire.ar.io` must not be assumed to run this branch. The 17 November re-audit found and addressed additional version-selection, native-reader, wallet-decline, PDF-dependency, and gateway-path cases; the revised source requires its own complete CI and exact-artifact acceptance. A real wallet round trip, publication manifest, ArNS record update, and recovery of the earlier paid archive remain owner acceptance steps. No 200-year availability guarantee is made.
 
-The prepared release includes reliable single-chunk delivery, continuation of the original paid order, editor safety fixes and a static build for `sejire.ar.io`. Automated checks use synthetic data and mocked wallets/networks. **Real-user pilot acceptance remains pending until the previously paid archive can be retrieved, verified and restored in a clean browser.** A confirmed Arweave transaction header alone is not a completed save.
+- [Independent release and owner acceptance](docs/INDEPENDENT_RELEASE.md)
+- [Open recovery format and offline decoder](tools/recovery/README.md)
+- [Independent architecture and limits](docs/verification/2026-11-16-independent-arweave-architecture.md)
+- [Current automated checks](https://github.com/azovskaya/sejire_arweave_solana/actions/workflows/checks.yml)
 
-Release evidence and outstanding owner actions: [16 November pilot release](docs/verification/2026-11-16-pilot-release.md). The public [build provenance](https://azovskaya.github.io/sejire_arweave_solana/build-provenance.json) identifies the deployed version; a branch or green PR is not itself a deployment.
+The existing funded/Solana implementation and its original journals remain in the repository for compatibility and unfinished earlier obligations. They are excluded from the independent static bundle. Do not delete the previous browser context, encrypted payload, signed transaction, or receipt while the earlier paid archive is still unresolved.
+
+## Historical funded-profile reference
+
+The sections below document the earlier Solana/Worker profile and its evidence. They do not describe the default independent release, and they do not authorize a new payment or deployment.
 
 ## Earlier verified Devnet reference run
 

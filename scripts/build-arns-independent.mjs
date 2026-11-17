@@ -6,6 +6,7 @@ import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { INDEPENDENT_PROFILE_DOCUMENT, PROFILE_FILE, RECOVERY_FILES,
   finalizeIndependentBoundary, normalizeModuleId, verifyIndependentBuild } from './static-release-profile.mjs';
+import { independentPdfPlugin } from './independent-pdf-build.mjs';
 
 const root = resolve(import.meta.dirname, '..'), web = resolve(root, 'apps/web'), dist = resolve(web, 'dist');
 // Explicit empty values override local .env files as well as the caller's shell.
@@ -26,7 +27,7 @@ let capturedChunks;
 await build({
   root: web, configFile: resolve(web, 'vite.config.ts'),
   build: { outDir: dist, emptyOutDir: true, sourcemap: false },
-  plugins: [{
+  plugins: [independentPdfPlugin(requireWeb('typescript')), {
     name: 'sejire-independent-boundary',
     generateBundle(_options, bundle) {
       capturedChunks = Object.values(bundle).filter(item => item.type === 'chunk').map(chunk => ({

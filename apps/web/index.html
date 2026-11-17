@@ -8,9 +8,15 @@
       // while leaving GitHub Pages and local deployment subdirectories intact.
       (() => {
         const host = location.hostname.toLowerCase();
-        const gateways = ['ar.io', 'arweave.net', 'arweave.io', 'arweave.dev'];
-        if (!gateways.some(gateway => host === gateway || host.endsWith('.' + gateway))) return;
-        const manifest = gateways.includes(host) && /^\/([A-Za-z0-9_-]{43})(?:\/|$)/.exec(location.pathname);
+        const gateways = ['ar.io', 'arweave.net', 'arweave.io', 'arweave.dev', 'turbo-gateway.com'];
+        const gateway = gateways.find(value => host === value || host.endsWith('.' + value));
+        const subdomain = gateway && host !== gateway ? host.slice(0, -gateway.length - 1) : '';
+        // Gateway sandbox redirects keep the manifest ID in the URL path.
+        // An ArNS name still resolves from its root even if a deep path looks
+        // like a transaction ID. Sandbox labels are the 52-character base32 ID.
+        const namedOrigin = subdomain && !/^[a-z2-7]{52}$/.test(subdomain);
+        const manifest = !namedOrigin && /^\/([A-Za-z0-9_-]{43})(?:\/|$)/.exec(location.pathname);
+        if (!manifest && !gateway) return;
         const base = document.createElement('base');
         base.setAttribute('href', manifest ? '/' + manifest[1] + '/' : '/');
         document.head.appendChild(base);

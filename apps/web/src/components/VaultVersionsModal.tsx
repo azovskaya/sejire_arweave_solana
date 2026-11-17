@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   fetchVaultEnvelope,
   formatVersionWhen,
@@ -7,13 +7,17 @@ import {
   type VaultVersionMeta,
 } from "../lib/arweave/fetch";
 import { deriveKeysFromMnemonic, fingerprintVaultId } from "../lib/crypto/keys";
-import { openEnvelope, openLocalVault, type VaultV1 } from "../lib/crypto/vault";
+import { openEnvelope, type VaultV1 } from "../lib/crypto/vault";
+import type { EnvelopeV1 } from "../lib/crypto/encrypt";
+import { parseEnvelope } from "../lib/crypto/envelope";
 import { isValidMnemonic, normalizeMnemonic } from "../lib/crypto/bip39";
 import {
   getSessionMnemonic,
   getVaultSession,
-  setVaultSession,
 } from "../lib/vaultSession/session";
+import type { VaultVersionSelection } from "../lib/vaultSession/selection";
+import { retrieveNativeVault } from "../lib/recovery/historicalNative";
+import { DECENTRALIZED_MODE } from "../lib/deploymentMode";
 import {
   getLocalVaultVersion,
   listLocalVaultVersions,
@@ -25,7 +29,7 @@ import { formatUiDateTime } from "../lib/i18n/messages";
 
 type Props = {
   onClose: () => void;
-  onOpenVersion: (vault: VaultV1) => void;
+  onOpenVersion: (selection: VaultVersionSelection) => boolean;
 };
 
 type ListedVersion =
@@ -43,7 +47,9 @@ function mergeVersionLists(
     out.push({ kind: "network", meta });
   }
   for (const entry of archive) {
-    if (seen.has(entry.id)) continue;
+    // Independent network choices require a fresh native proof. Keep their
+    // browser copies separately selectable when that network proof is unavailable.
+    if (seen.has(entry.id) && !DECENTRALIZED_MODE) continue;
     seen.add(entry.id);
     out.push({ kind: "archive", entry });
   }
@@ -60,14 +66,26 @@ export function VaultVersionsModal({ onClose, onOpenVersion }: Props) {
   const [phrase, setPhrase] = useState(getSessionMnemonic() ?? "");
   const [needPhrase, setNeedPhrase] = useState(!getSessionMnemonic());
   const [openingId, setOpeningId] = useState<string | null>(null);
+  const alive = useRef(false);
+  const opening = useRef<AbortController | null>(null);
+
+  useEffect(() => {
+    alive.current = true;
+    return () => { alive.current = false; opening.current?.abort(); };
+  }, []);
+  const closeModal = useCallback(() => {
+    alive.current = false;
+    opening.current?.abort();
+    onClose();
+  }, [onClose]);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") closeModal();
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [onClose]);
+  }, [closeModal]);
 
   useEffect(() => {
     if (!session?.vaultId) {
@@ -76,13 +94,14 @@ export function VaultVersionsModal({ onClose, onOpenVersion }: Props) {
       return;
     }
     let cancelled = false;
+    const controller = new AbortController();
     (async () => {
       try {
         setStatus(t.publish.vaultFp(fingerprintVaultId(session.vaultId)));
         let network: VaultVersionMeta[] = [];
         let networkError: string | null = null;
         try {
-          network = await listVaultVersions(session.vaultId);
+          network = await listVaultVersions(session.vaultId, { signal: controller.signal });
         } catch (e) {
           network = [];
           networkError = isGatewayUnavailable(e)
@@ -116,11 +135,12 @@ export function VaultVersionsModal({ onClose, onOpenVersion }: Props) {
     })();
     return () => {
       cancelled = true;
+      controller.abort();
     };
   }, [session?.vaultId]);
 
   async function openListed(item: ListedVersion) {
-    if (!session?.vaultId) return;
+    if (!session?.vaultId || opening.current) return;
     const raw = normalizeMnemonic(phrase);
     if (!isValidMnemonic(raw)) {
       setNeedPhrase(true);
@@ -128,17 +148,25 @@ export function VaultVersionsModal({ onClose, onOpenVersion }: Props) {
       return;
     }
     const id = item.kind === "network" ? item.meta.txId : item.entry.id;
+    const keys = deriveKeysFromMnemonic(raw);
+    const controller = new AbortController(); opening.current = controller;
     setOpeningId(id);
     setError(null);
     try {
-      const keys = deriveKeysFromMnemonic(raw);
       if (keys.vaultId !== session.vaultId) {
         throw new Error(t.versions.wrongVault);
       }
       let vault: VaultV1 | null = null;
+      let envelope: EnvelopeV1 | null = null;
+      let source: "network" | "local" = "network";
       if (item.kind === "network") {
-        const remote = await fetchVaultEnvelope(session.vaultId, id);
-        if (remote) vault = await openEnvelope(keys, remote.envelope);
+        if (DECENTRALIZED_MODE) {
+          const remote = await retrieveNativeVault(id, keys, { signal: controller.signal });
+          vault = remote.vault; envelope = remote.envelope;
+        } else {
+          const remote = await fetchVaultEnvelope(session.vaultId, id);
+          if (remote) { envelope = remote.envelope; vault = await openEnvelope(keys, envelope); }
+        }
       }
       if (!vault) {
         const archived =
@@ -146,23 +174,34 @@ export function VaultVersionsModal({ onClose, onOpenVersion }: Props) {
             ? item.entry
             : getLocalVaultVersion(session.vaultId, id);
         if (!archived) throw new Error(t.restore.decryptFail);
-        vault = await openEnvelope(keys, archived.envelope);
+        envelope = parseEnvelope(archived.envelope);
+        vault = await openEnvelope(keys, envelope);
+        // A cached local_/demo_ label is not a transaction ID. In the
+        // independent profile even a 43-character label is only a local hint
+        // until the native reader has verified its binding to these bytes.
+        source = DECENTRALIZED_MODE || !/^[A-Za-z0-9_-]{43}$/.test(id) ? "local" : "network";
       }
-      setVaultSession({ vaultId: keys.vaultId, headTxId: id, source: "network" }, raw);
-      onOpenVersion(vault);
+      if (!envelope) throw Error(t.restore.decryptFail);
+      if (!alive.current || controller.signal.aborted) return;
+      onOpenVersion({ vault, envelope, mnemonic: raw,
+        session: { vaultId: keys.vaultId, headTxId: source === "network" ? id : null, source } });
     } catch (e) {
+      if (!alive.current || controller.signal.aborted) return;
       const msg = e instanceof Error ? e.message : String(e);
       setError(
-        /mismatch|decrypt|JSON/i.test(msg)
+        /storage|quota/i.test(msg) ? t.quota : /mismatch|decrypt|JSON|invalid_backup/i.test(msg)
           ? t.versions.decryptFail
           : msg
       );
     } finally {
-      setOpeningId(null);
+      keys.seed.fill(0); keys.master.fill(0); keys.encKey.fill(0);
+      if (opening.current === controller) opening.current = null;
+      if (alive.current) setOpeningId(null);
     }
   }
 
   async function openLocal() {
+    if (opening.current) return;
     const raw = normalizeMnemonic(phrase);
     if (!isValidMnemonic(raw)) {
       setNeedPhrase(true);
@@ -171,19 +210,28 @@ export function VaultVersionsModal({ onClose, onOpenVersion }: Props) {
     }
     setOpeningId("local");
     setError(null);
+    const keys = deriveKeysFromMnemonic(raw);
+    const controller = new AbortController(); opening.current = controller;
     try {
-      const keys = deriveKeysFromMnemonic(raw);
-      const vault = await openLocalVault(keys);
-      if (!vault) throw new Error(t.versions.noLocal);
-      setVaultSession(
-        { vaultId: keys.vaultId, headTxId: session?.headTxId ?? null, source: "local" },
-        raw
-      );
-      onOpenVersion(vault);
+      if (keys.vaultId !== session?.vaultId) throw new Error(t.versions.wrongVault);
+      const text = localStorage.getItem('sejire.envelope.' + keys.vaultId);
+      if (!text) throw new Error(t.versions.noLocal);
+      const envelope = parseEnvelope(JSON.parse(text));
+      const vault = await openEnvelope(keys, envelope);
+      const previousHead = session?.headTxId;
+      if (!alive.current || controller.signal.aborted) return;
+      onOpenVersion({ vault, envelope, mnemonic: raw, session: {
+        vaultId: keys.vaultId, source: "local",
+        headTxId: !DECENTRALIZED_MODE && previousHead && /^[A-Za-z0-9_-]{43}$/.test(previousHead) ? previousHead : null,
+      } });
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      if (!alive.current || controller.signal.aborted) return;
+      const message = e instanceof Error ? e.message : String(e);
+      setError(/storage|quota/i.test(message) ? t.quota : message);
     } finally {
-      setOpeningId(null);
+      keys.seed.fill(0); keys.master.fill(0); keys.encKey.fill(0);
+      if (opening.current === controller) opening.current = null;
+      if (alive.current) setOpeningId(null);
     }
   }
 
@@ -220,7 +268,9 @@ export function VaultVersionsModal({ onClose, onOpenVersion }: Props) {
           <ul className="vault-version-list">
             {versions.map((item, i) => {
               const id = item.kind === "network" ? item.meta.txId : item.entry.id;
-              const isHead = session?.headTxId === id || (i === 0 && !session?.headTxId);
+              const isHead = DECENTRALIZED_MODE
+                ? item.kind === "network" && session?.headTxId === id
+                : session?.headTxId === id || (i === 0 && !session?.headTxId);
               const when =
                 item.kind === "network"
                   ? formatVersionWhen(item.meta)
@@ -242,7 +292,7 @@ export function VaultVersionsModal({ onClose, onOpenVersion }: Props) {
                     onClick={() => void openListed(item)}
                   >
                     <span className="vault-version-title">
-                      {i === 0 ? t.versions.latest : t.versions.versionN(versions.length - i)}
+                      {i === 0 && !DECENTRALIZED_MODE ? t.versions.latest : t.versions.versionN(versions.length - i)}
                       {isHead ? t.versions.now : ""}
                       {openingId === id ? "…" : ""}
                     </span>
@@ -266,7 +316,7 @@ export function VaultVersionsModal({ onClose, onOpenVersion }: Props) {
             >
               {t.versions.localCopy}
             </button>
-            <button type="button" className="btn ghost" onClick={onClose}>
+            <button type="button" className="btn ghost" onClick={closeModal}>
               {t.close}
             </button>
           </div>

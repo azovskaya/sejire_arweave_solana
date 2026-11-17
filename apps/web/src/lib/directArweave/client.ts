@@ -20,6 +20,18 @@ export function directWallet(): DirectWallet {
     typeof wallet.getActivePublicKey === 'function' && typeof wallet.sign === 'function', 'wallet_unavailable');
   return wallet;
 }
+/** Only a returned, recognised decline can clear an intent. Timeouts and
+ * transport errors remain unresolved. Wander's injected API returns this exact
+ * signAuth failure as a string; sign() does not broadcast a transaction.
+ * This classifier is used only on rejection of the wallet promise, never on
+ * validation/storage failures after a signed transaction has been returned.
+ */
+function knownWalletDecline(error: unknown): boolean {
+  if (typeof error === 'object' && error !== null && 'code' in error && error.code === 4001) return true;
+  const message = typeof error === 'string' ? error :
+    typeof error === 'object' && error !== null && 'message' in error ? error.message : null;
+  return message === 'User failed to sign the transaction manually';
+}
 export async function quoteDirectOperation(id: string, address: string, options: DirectOptions = {}): Promise<DirectOperation> {
   return withPreservationGuard(() => withDirectLock(id, () => scoped(options, async signalOptions => {
     const operation = await requireOperation(id); await verifyArchiveBinding(operation);
@@ -58,6 +70,18 @@ export async function signDirectOperation(id: string, wallet: DirectWallet, expe
     try { signing = Promise.resolve(wallet.sign(tx)); } catch (error) { signing = Promise.reject(error); }
     return { operation, intent, signing };
   })));
+  async function recordSigningFailure(error: unknown, rejected = false): Promise<DirectOperation> {
+    return withDirectLock(id, async () => {
+      const latest = await requireOperation(id);
+      if (latest.signingIntent?.id !== prepared.intent.id || latest.signedTx) return latest;
+      const code = directErrorCode(error, 'signature_pending');
+      if (code === 'storage_unavailable' || code === 'storage_conflict') throw error;
+      return writeDirectOperation(latest, { ...latest,
+        state: rejected ? 'prepared' : code === 'signature_invalid' || code === 'invalid_operation' ? 'blocked' : 'signing',
+        signingIntent: rejected ? null : latest.signingIntent,
+        lastError: rejected ? 'wallet_rejected' : code === 'signature_invalid' || code === 'invalid_operation' ? 'signature_invalid' : 'signature_pending' });
+    });
+  }
   const completion = prepared.signing.then(async result => {
     const tx = await verifyDirectSigned(prepared.operation, result);
     const totalChunks = tx.chunks?.chunks.length;
@@ -68,17 +92,8 @@ export async function signDirectOperation(id: string, wallet: DirectWallet, expe
       return writeDirectOperation(latest, { ...latest, signedTx: tx.toJSON(), txId: tx.id, state: 'signed', lastError: null,
         uploadProgress: { node: null, headerAccepted: false, uploadedChunks: 0, totalChunks } });
     });
-  }).catch(async error => withDirectLock(id, async () => {
-    const latest = await requireOperation(id);
-    if (latest.signingIntent?.id !== prepared.intent.id || latest.signedTx) return latest;
-    const rejected = typeof error === 'object' && error !== null && 'code' in error && error.code === 4001;
-    const code = directErrorCode(error, 'signature_pending');
-    if (code === 'storage_unavailable' || code === 'storage_conflict') throw error;
-    return writeDirectOperation(latest, { ...latest,
-      state: rejected ? 'prepared' : code === 'signature_invalid' || code === 'invalid_operation' ? 'blocked' : 'signing',
-      signingIntent: rejected ? null : latest.signingIntent,
-      lastError: rejected ? 'wallet_rejected' : code === 'signature_invalid' || code === 'invalid_operation' ? 'signature_invalid' : 'signature_pending' });
-  }));
+  }, error => recordSigningFailure(error, knownWalletDecline(error)))
+    .catch(error => recordSigningFailure(error));
   // A timeout returns control to the UI but does not discard a later wallet result.
   // Its validated signed bytes are still durably journaled, without uploading.
   let timer: ReturnType<typeof setTimeout> | undefined;

@@ -1,4 +1,4 @@
-import { deriveKeysFromMnemonic } from '../crypto/keys';
+import { deriveKeysFromMnemonic, type SejireKeys } from '../crypto/keys';
 import { MAX_BACKUP_BYTES } from '../crypto/envelope';
 import { DirectError, requireDirect } from '../directArweave/errors';
 import { active, directNodes, nodeRequest, scoped } from '../directArweave/network';
@@ -31,7 +31,19 @@ export async function retrieveHistoricalNative(transactionId: string, words: str
   requireDirect(ID.test(transactionId), 'receipt_invalid');
   const keys = deriveKeysFromMnemonic(words);
   try {
-    return await scoped(options, async readOptions => {
+    return await retrieveNativeVault(transactionId, keys, options);
+  } finally {
+    keys.seed.fill(0); keys.master.fill(0); keys.encKey.fill(0);
+  }
+}
+
+/** Shared native reader for restore, version selection and save preparation.
+ * The caller owns the supplied keys; this function never changes or stores them.
+ * Discovery metadata is only a locator. Native signature, transaction ID and
+ * Merkle binding must pass before any returned vault is associated with that ID. */
+export async function retrieveNativeVault(transactionId: string, keys: SejireKeys, options: DirectOptions = {}) {
+  requireDirect(ID.test(transactionId), 'receipt_invalid');
+  return scoped(options, async readOptions => {
       const nodes = directNodes(readOptions), ar = directCrypto();
       const candidate = historicalNativeCandidate(transactionId, keys.vaultId);
       let last = new DirectError('archive_unavailable');
@@ -107,8 +119,5 @@ export async function retrieveHistoricalNative(transactionId: string, words: str
         }
       }
       active(readOptions.signal); throw last;
-    });
-  } finally {
-    keys.seed.fill(0); keys.master.fill(0); keys.encKey.fill(0);
-  }
+  });
 }

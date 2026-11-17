@@ -56,6 +56,19 @@ jobs:
         run: npm run test:offline-recovery-browser
       - name: Direct Arweave signing, exact resume and chunk delivery (synthetic network)
         run: npm run test:direct --prefix apps/web
+      - name: Read-only direct Arweave API and CORS readiness
+        timeout-minutes: 2
+        run: |
+          node --import ./apps/web/node_modules/tsx/dist/loader.mjs --test scripts/verify-direct-network.test.mts
+          node --import ./apps/web/node_modules/tsx/dist/loader.mjs scripts/verify-direct-network.mts
+      - name: Preserve direct Arweave API readiness evidence (read-only)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: direct-arweave-api-readiness
+          path: .cache/direct-network/readiness.json
+          if-no-files-found: ignore
+          retention-days: 14
       - name: Historical native archives retain signature, Merkle and encryption verification
         run: npm run test:historical-native --prefix apps/web
       - name: Independent recovery kit, complete local vault and legacy journal boundary

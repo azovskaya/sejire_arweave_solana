@@ -27,7 +27,7 @@
     "permaweb:quote": "node scripts/upload-permaweb.mjs --quote",
     "permaweb:verify": "node scripts/verify-arns-published.mjs",
     "permaweb:verify-target": "node scripts/verify-arns-published.mjs --target",
-    "test:permaweb-prepare": "node scripts/prepare-permaweb.selftest.mjs && node --test scripts/permaweb-release.test.mjs",
+    "test:permaweb-prepare": "node scripts/prepare-permaweb.selftest.mjs && node --test scripts/permaweb-release.test.mjs scripts/independent-pdf-build.test.mjs scripts/permaweb-host-base.test.mjs",
     "arns:build": "bash scripts/build-arns-independent.sh",
     "arns:build:independent": "bash scripts/build-arns-independent.sh",
     "arns:build:funded": "bash scripts/build-arns-promo.sh",

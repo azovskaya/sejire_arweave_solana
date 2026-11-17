@@ -3,7 +3,7 @@
 When continuing this project on another computer, first read `docs/CONTINUE_ON_ANOTHER_MAC.md`, then `docs/SOLANA_PRESERVATION.md`. Communicate with the owner in Russian unless requested otherwise.
 
 - Before editing or updating Git, inspect the current branch, working tree and remote. Preserve existing work. Do not reset, force-push or merge into `main` as part of the handoff.
-- Current continuation branch: `feat/solana-preservation`. The immediate priority is real Chrome wallet-extension acceptance on **devnet**, not a redesign or a new payment system.
+- Current application branch: `feat/decentralized-arweave-20261116`. The owner explicitly changed the goal on 16 November 2026 to an independent Arweave/static release for `sejire.ar.io`, without a mandatory Cloudflare Worker or SOL checkout. Read `docs/INDEPENDENT_RELEASE.md` for this profile. Earlier Solana/devnet entries are historical; preserve their data and unresolved obligations.
 - Distinguish software-signer tests from real Phantom/Solflare extension tests, free upload from a SOL payment, and Turbo acceptance from final Arweave settlement.
 - Never request, read, log, store in Git or transmit wallet recovery phrases/private keys. SEJIRE archive words are a different secret. Use synthetic family data; wallet approvals are performed by the owner.
 - Do not enable mainnet, spend real funds, submit a hackathon entry or deploy without separate explicit authorization. A testnet payment also requires the owner to review its amount and approve it in the wallet.

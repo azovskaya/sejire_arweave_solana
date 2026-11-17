@@ -9,6 +9,7 @@ import { PersonPanel, type PersonPanelHandle } from "./PersonPanel";
 import { AddPersonModal, type AddPersonPayload } from "./AddPersonModal";
 import { PublishSeedModal } from "@sejire/publish";
 import { VaultVersionsModal, vaultPersonCount } from "./VaultVersionsModal";
+import { acceptVaultVersion, type VaultVersionSelection } from "../lib/vaultSession/selection";
 import {
   activePersons,
   commitDraft,
@@ -18,7 +19,7 @@ import {
 } from "../lib/treeEngine";
 import { SHEZHIRE_MAX_GENERATIONS, type PdfLocale } from "../lib/i18n/pdf";
 import type { ShezhireTemplateId } from "../lib/pdf/shezhireTemplates";
-import { downloadTreeJson, readTreeJsonFile, coerceTreeStore } from "../lib/treeJson";
+import { downloadTreeJson, readTreeJsonFile } from "../lib/treeJson";
 import { formatShezhireAffiliation } from "../lib/zhuzRu";
 import { ShezhireMetaModal } from "./ShezhireMetaModal";
 import { ShezhireTemplateModal } from "./ShezhireTemplateModal";
@@ -26,7 +27,6 @@ import {
   getSessionMnemonic,
   getVaultSession,
 } from "../lib/vaultSession/session";
-import type { VaultV1 } from "../lib/crypto/vault";
 import { pickPdfRootId } from "../lib/pdfRoot";
 import { mirrorStoreToProtocol } from "../lib/ao/protocolMirror";
 import {
@@ -449,17 +449,11 @@ export function Workspace({ store, guide, onStoreChange, onGuideChange, onHome }
     }
   }
 
-  function applyVaultVersion(vault: VaultV1) {
-    const treeId = vault.active_tree_id;
-    const next = coerceTreeStore(treeId ? vault.trees[treeId] : Object.values(vault.trees)[0]);
-    if (!next) {
-      flash(t.workspace.flashNoTrees);
-      return;
-    }
-    if (!confirmReplaceDraft(t.workspace.replaceOpenVersion)) return;
+  function applyVaultVersion(selection: VaultVersionSelection) {
+    const next = acceptVaultVersion(selection, () => confirmReplaceDraft(t.workspace.replaceOpenVersion));
+    if (!next) return false;
     const selfId = pickHomeFocus(next.draft, null);
     const nextGuide = { ...defaultGuide(), step: "done" as const, selfId };
-    if (!saveDraftTree(next)) flash(t.quota);
     saveGuide(nextGuide);
     onStoreChange(next);
     onGuideChange(nextGuide);
@@ -467,7 +461,8 @@ export function Workspace({ store, guide, onStoreChange, onGuideChange, onHome }
     setSelectedId(selfId);
     setProfileOpen(false);
     setShowVersions(false);
-    flash(t.workspace.flashVersionOpened(vaultPersonCount(vault)));
+    flash(t.workspace.flashVersionOpened(vaultPersonCount(selection.vault)));
+    return true;
   }
 
   function goHome() {

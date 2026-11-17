@@ -3,10 +3,10 @@ import {createHash} from 'node:crypto';
 const manifest=JSON.parse(await readFile(new URL('../apps/web/src/lib/recovery/legacy-locators.v1.json',import.meta.url),'utf8'));
 const fixture=manifest.entries.find(entry=>entry.archiveSha256&&entry.archiveBytes);
 if(!fixture)throw Error('no public encrypted fixture');
-const id=fixture.txIds[0],origin='https://azovskaya.github.io';
-// The AR.IO peer is an independent digest-checked fallback when arweave.net
-// temporarily cannot serve this known encrypted fixture.
-const bases=['https://arweave.net','https://turbo-gateway.com','https://rigel.weavegate.net'];
+const id=fixture.txIds[0],origin='https://sejire.ar.io';
+// Keep the two-provider byte/CORS requirement. A gateway that explicitly denied
+// this audit's access is not retried through a different execution environment.
+const bases=['https://arweave.net','https://turbo-gateway.com'];
 let successes=0;
 for(const base of bases){
   try{

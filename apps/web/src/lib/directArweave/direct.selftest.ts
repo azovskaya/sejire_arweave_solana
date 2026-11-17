@@ -202,6 +202,28 @@ try {
     const completed = await resumeDirectOperation(reloaded!.id, f.options); assert.equal(completed.state, 'complete');
     assert.equal(f.server.signatures, 1); assert.equal(f.server.headerPosts, 1);
   });
+  await test('a replacement node receives the same signed transaction after the first node becomes unavailable', async () => {
+    const f = await fixture(), signed = await f.signed(), secondary = 'https://secondary-test.example';
+    const transport = globalThis.fetch, writes: { origin: string; path: string; body: Record<string, unknown> }[] = [];
+    let primaryUnavailable = false;
+    globalThis.fetch = (async (input: RequestInfo | URL, init: RequestInit = {}) => {
+      const url = new URL(String(input));
+      if (init.method === 'POST') writes.push({ origin: url.origin, path: url.pathname, body: JSON.parse(String(init.body)) });
+      if (url.origin === node && (primaryUnavailable || url.pathname === '/chunk')) {
+        primaryUnavailable = true; return new Response('temporarily unavailable', { status: 503 });
+      }
+      assert([node, secondary].includes(url.origin));
+      return transport(node + url.pathname, init);
+    }) as typeof fetch;
+    const complete = await resumeDirectOperation(signed.id, { nodes: [node, secondary] });
+    assert.equal(complete.state, 'complete'); assert.equal(complete.txId, signed.txId);
+    assert.equal(complete.uploadProgress.node, secondary); assert.equal(complete.verification?.node, secondary);
+    assert.equal(f.server.signatures, 1);
+    const headers = writes.filter(write => write.path === '/tx');
+    assert.deepEqual(headers.map(write => write.origin), [node, secondary]);
+    assert(headers.every(write => write.body.id === signed.txId && write.body.signature === signed.signedTx!.signature));
+    assert.equal(writes.filter(write => write.origin === secondary && write.path === '/chunk').length, signed.uploadProgress.totalChunks);
+  });
   await test('header confirmation without bytes stays pending; explicit resume repairs only the same chunks', async () => {
     const f = await fixture(), signed = await f.signed(); f.server.rawUnavailable = true;
     let pending = await resumeDirectOperation(signed.id, f.options);
@@ -260,6 +282,44 @@ try {
     assert.equal(operation.state, 'blocked'); assert.equal(operation.lastError, 'signature_invalid');
     await assert.rejects(() => signDirectOperation(operation.id, f.wallet, '1000', f.options), /signature_pending/);
     assert.equal(f.server.headerPosts, 0);
+  });
+  await test('Wander returned decline preserves the backup and permits only an explicit new signing request', async () => {
+    const message = 'User failed to sign the transaction manually';
+    for (const rejection of [message, new Error(message), { message }]) {
+      const f = await fixture(), operation = await f.create();
+      await quoteDirectOperation(operation.id, ownerAddress, f.options);
+      let prompts = 0;
+      const wallet = { ...f.wallet, sign: async () => { prompts++; throw rejection; } };
+      const declined = await signDirectOperation(operation.id, wallet, '1000', f.options);
+      assert.equal(declined.state, 'prepared'); assert.equal(declined.lastError, 'wallet_rejected');
+      assert.equal(declined.signingIntent, null); assert.equal(declined.signedTx, null); assert.equal(declined.txId, null);
+      assert.equal(declined.archiveText, operation.archiveText); assert.equal(declined.archiveDigest, operation.archiveDigest);
+      assert.equal(prompts, 1); assert.equal(f.calls.filter(call => call.method === 'POST').length, 0);
+      const reloaded = await readDirectOperation(operation.id);
+      assert.equal(reloaded!.state, 'prepared'); assert.equal(prompts, 1);
+      const signed = await signDirectOperation(operation.id, f.wallet, '1000', f.options);
+      assert.equal(signed.state, 'signed'); assert.equal(f.server.signatures, 1);
+      assert.equal(f.calls.filter(call => call.method === 'POST').length, 0);
+    }
+  });
+  await test('unknown wallet failures remain unresolved and cannot clear the prior signing intent', async () => {
+    for (const failure of [new Error('Wallet connection lost'), 'User failed to sign', { code: -32603 }]) {
+      const f = await fixture(), operation = await f.create();
+      await quoteDirectOperation(operation.id, ownerAddress, f.options);
+      const pending = await signDirectOperation(operation.id, { ...f.wallet, sign: async () => { throw failure; } }, '1000', f.options);
+      assert.equal(pending.state, 'signing'); assert.equal(pending.lastError, 'signature_pending'); assert(pending.signingIntent);
+      await assert.rejects(() => cancelDirectOperation(operation.id), /signature_pending/);
+      await assert.rejects(() => signDirectOperation(operation.id, f.wallet, '1000', f.options), /signature_pending/);
+      assert.equal(f.server.signatures, 0); assert.equal(f.calls.filter(call => call.method === 'POST').length, 0);
+    }
+  });
+  await test('a returned invalid transaction cannot masquerade as a wallet decline during validation', async () => {
+    const f = await fixture(), operation = await f.create(); await quoteDirectOperation(operation.id, ownerAddress, f.options);
+    const returned = { toJSON() { throw new Error('User failed to sign the transaction manually'); } };
+    const blocked = await signDirectOperation(operation.id, { ...f.wallet, sign: async () => returned }, '1000', f.options);
+    assert.equal(blocked.state, 'blocked'); assert.equal(blocked.lastError, 'signature_invalid'); assert(blocked.signingIntent);
+    await assert.rejects(() => signDirectOperation(operation.id, f.wallet, '1000', f.options), /signature_pending/);
+    assert.equal(f.calls.filter(call => call.method === 'POST').length, 0);
   });
   await test('a non-responsive wallet connection is bounded before a signing intent or upload exists', async () => {
     const f = await fixture(), operation = await f.create(); await quoteDirectOperation(operation.id, ownerAddress, f.options);

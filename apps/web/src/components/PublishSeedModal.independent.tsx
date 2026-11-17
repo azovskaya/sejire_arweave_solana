@@ -10,7 +10,7 @@ import { createDirectOperation, listDirectOperations } from '../lib/directArweav
 import { finalizeIndependentOperation } from '../lib/independentFinalization';
 import type { DirectOperation } from '../lib/directArweave/types';
 import { assertNoLegacyPreservation, hasLegacyPreservation } from '../lib/legacyPreservationGuard';
-import { getSessionMnemonic, getVaultSession, setVaultSession } from '../lib/vaultSession/session';
+import { getSessionMnemonic, getVaultSession, setVaultSessionChecked } from '../lib/vaultSession/session';
 import { setLocalJson } from '../lib/storageQuota';
 import { useI18n } from '../lib/i18n/I18nProvider';
 import { independentMessages } from '../lib/independentMessages';
@@ -72,16 +72,17 @@ export function PublishSeedModal({ store, onClose, onPublished, parentTxId, know
       // cache. A racing earlier operation can never lose its original bytes.
       const op = await createDirectOperation({ envelope, treeId: store.meta.id, parentTxId: loaded.parentTxId });
       if (!alive.current) return;
-      setOperationId(op.id); setMode('flow');
       if (!setLocalJson('sejire.envelope.' + keys.vaultId, envelope)) throw Error(copy.localQuota);
-      setVaultSession({ vaultId: keys.vaultId, headTxId: loaded.parentTxId, source: 'local' }, normalized);
+      setVaultSessionChecked({ vaultId: keys.vaultId, headTxId: loaded.parentTxId, source: 'local' }, normalized);
       fresh.current = false;
+      setOperationId(op.id); setMode('flow');
     } catch (e) {
       if (!alive.current) return;
       const code = e instanceof Error ? e.message : '';
       if (code === 'legacy_preservation_requires_original_app') setMode('legacy');
       else if (code === 'pending_direct_operation') setMode('pending');
-      else setError(code === 'legacy_journal_unavailable' ? copy.legacyJournal : code || copy.genericError);
+      else setError(code === 'legacy_journal_unavailable' ? copy.legacyJournal :
+        /storage|quota/i.test(code) ? copy.localQuota : code || copy.genericError);
     } finally { running.current = false; if (alive.current) setBusy(false); }
   }
 

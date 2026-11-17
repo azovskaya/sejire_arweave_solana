@@ -168,9 +168,14 @@ test('ArNS origin explains how to continue previous-origin orders without transf
   await expect(page).toHaveURL('https://sejire.ar.io/');
 });
 
-for(const pathGateway of [false,true])test(`manifest fallback loads the application and assets below a deep path (${pathGateway?'gateway transaction path':'ArNS name'})`, async ({page,context})=>{
-  const host=pathGateway?'https://arweave.net':'https://sejire.ar.io';
-  const prefix=pathGateway?'/'+'C'.repeat(43):'';
+for(const [label,host,prefix] of [
+  ['ArNS name','https://sejire.ar.io',''],
+  ['gateway transaction path','https://arweave.net','/'+'C'.repeat(43)],
+  ['gateway sandbox transaction path','https://'+'a'.repeat(52)+'.arweave.net','/'+'C'.repeat(43)],
+  ['Turbo transaction path','https://turbo-gateway.com','/'+'C'.repeat(43)],
+  ['Turbo sandbox transaction path','https://'+'a'.repeat(52)+'.turbo-gateway.com','/'+'C'.repeat(43)],
+  ['another gateway transaction path','https://another-gateway.example','/'+'C'.repeat(43)],
+])test(`manifest fallback loads the application and assets below a deep path (${label})`, async ({page,context})=>{
   const path=prefix+'/unknown/deep/route';
   const assets=[],denied=[];
   await context.addInitScript(()=>localStorage.setItem('sejire.locale','ru'));

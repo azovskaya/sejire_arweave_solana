@@ -1,8 +1,8 @@
 import { test, expect } from '@playwright/test';
-import { createHash, generateKeyPairSync } from 'node:crypto';
+import { createCipheriv, createHash, generateKeyPairSync, randomBytes } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import Arweave from 'arweave';
-import { recoverText } from '../../../tools/recovery/recover.mjs';
+import { deriveKeysFromWords, recoverText } from '../../../tools/recovery/recover.mjs';
 
 const ORIGIN = 'http://127.0.0.1:5193';
 const { vectors } = JSON.parse(await readFile(new URL('../../../tools/recovery/public-vectors.json', import.meta.url), 'utf8'));
@@ -21,7 +21,7 @@ const json = (route, value, status = 200) => route.fulfill({ status, contentType
 const text = (route, body, status = 200) => route.fulfill({ status, contentType: 'text/plain', body });
 
 async function install(context, page, { draft = false, wallet = false, unavailable = false } = {}) {
-  const state = { signs: 0, posts: [], external: [], denied: [], header: null, raw: null, bytesVisible: !unavailable, chunks: 0, reject: false };
+  const state = { signs: 0, posts: [], external: [], denied: [], header: null, raw: null, bytesVisible: !unavailable, chunks: 0, reject: false, versions: [] };
   await context.addInitScript(({ tree, draft }) => {
     localStorage.setItem('sejire.locale', 'ru');
     if (draft) { localStorage.setItem('sejire.draft.tree.v1', JSON.stringify(tree)); sessionStorage.setItem('sejire.lastScreen', 'work'); }
@@ -59,7 +59,7 @@ async function install(context, page, { draft = false, wallet = false, unavailab
     if (/^\/price\/\d+$/.test(url.pathname)) return text(route, '1000000');
     if (/^\/wallet\/[^/]+\/balance$/.test(url.pathname)) return text(route, '999999999999');
     if (url.pathname === '/tx_anchor') return text(route, 'a'.repeat(64));
-    if (url.pathname === '/graphql') return json(route, { data: { transactions: { edges: [] } } });
+    if (url.pathname === '/graphql') return json(route, { data: { transactions: { edges: state.versions.map(node => ({ node })) } } });
     if (req.method() === 'POST') {
       state.posts.push(url.pathname);
       if (url.pathname === '/tx') {
@@ -82,7 +82,7 @@ async function install(context, page, { draft = false, wallet = false, unavailab
   return state;
 }
 
-async function prepareNew(page) {
+async function prepareNew(page, { prepared = true } = {}) {
   await page.goto('/');
   await page.getByRole('button', { name: 'Сохранить', exact: true }).click();
   await page.getByRole('button', { name: 'Создать 12 слов SEJIRE', exact: true }).click();
@@ -93,7 +93,7 @@ async function prepareNew(page) {
   await page.getByRole('dialog').getByRole('textbox').fill(phrase);
   await page.getByRole('dialog').getByRole('button', { name: 'Далее', exact: true }).click();
   await page.getByRole('button', { name: 'Подготовить зашифрованную копию', exact: true }).click();
-  await expect(page.getByText('Подготовлено локально', { exact: true })).toBeVisible();
+  if (prepared) await expect(page.getByText('Подготовлено локально', { exact: true })).toBeVisible();
   return phrase;
 }
 async function journal(page) {
@@ -103,6 +103,50 @@ async function journal(page) {
       read.onsuccess = () => { db.close(); resolve(read.result); }; read.onerror = () => { db.close(); reject(Error('journal read failed')); }; };
     req.onerror = () => reject(Error('journal open failed'));
   }));
+}
+
+async function restoreFile(page, archiveText = vector.archiveText) {
+  await page.goto('/#/restore');
+  await page.getByLabel('12 слов SEJIRE', { exact: true }).fill(vector.words);
+  await page.getByLabel('Зашифрованный архив, комплект или квитанция', { exact: true }).setInputFiles({
+    name: 'synthetic-vault.json', mimeType: 'application/json', buffer: Buffer.from(archiveText),
+  });
+  await page.getByRole('button', { name: 'Открыть архив', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Сохранить', exact: true })).toBeVisible();
+}
+
+async function syntheticNativeVersion(contents) {
+  const keys = await deriveKeysFromWords(vector.words), iv = randomBytes(12);
+  const cipher = createCipheriv('aes-256-gcm', keys.encKey, iv);
+  const encrypted = Buffer.concat([cipher.update(JSON.stringify(contents)), cipher.final(), cipher.getAuthTag()]);
+  keys.seed.fill(0); keys.master.fill(0); keys.encKey.fill(0);
+  const envelope = { ...JSON.parse(vector.archiveText), iv: iv.toString('base64'), ciphertext: encrypted.toString('base64') };
+  const raw = JSON.stringify(envelope), data = Buffer.from(raw);
+  const tx = await ar.createTransaction({ data, owner: jwk.n, reward: '1000', last_tx: 'A'.repeat(64) });
+  const tags = [
+    { name: 'App-Name', value: 'SEJIRE' }, { name: 'Type', value: 'vault-envelope' },
+    { name: 'Schema', value: 'sejire/envelope/v1' }, { name: 'Protocol-Version', value: 'sejire/v0.3' },
+    { name: 'Vault-Id', value: vector.expectedVaultId }, { name: 'Archive-Bytes', value: String(data.length) },
+    { name: 'Archive-SHA256', value: createHash('sha256').update(data).digest('hex') },
+  ];
+  for (const tag of tags) tx.addTag(tag.name, tag.value);
+  await ar.transactions.sign(tx, jwk);
+  return { raw, envelope, header: { ...tx.toJSON(), data: '' },
+    listed: { id: tx.id, block: { timestamp: 1, height: 1 }, tags } };
+}
+
+async function selectionState(page) {
+  return page.evaluate(vaultId => ({
+    cache: localStorage.getItem('sejire.envelope.' + vaultId),
+    draft: localStorage.getItem('sejire.draft.tree.v1'),
+    session: sessionStorage.getItem('sejire.vaultSession.v1'),
+  }), vector.expectedVaultId);
+}
+
+async function openVersions(page) {
+  await page.getByText('Ещё', { exact: true }).click();
+  await page.getByRole('button', { name: 'Версии сейфа', exact: true }).click();
+  await expect(page.locator('.vault-version-item').first()).toBeVisible();
 }
 
 for (const viewport of [{ width: 1280, height: 900 }, { width: 390, height: 844 }]) {
@@ -231,4 +275,172 @@ test('a damaged portable kit is refused without any network request', async ({ p
   await expect(page.getByRole('alert')).toBeVisible();
   expect(await page.evaluate(() => localStorage.getItem('sejire.draft.tree.v1'))).toBeNull();
   expect(state.posts).toEqual([]); expect(state.external).toEqual([]); expect(state.denied).toEqual([]);
+});
+
+test('declining an older network version preserves the selected full vault and the next local export', async ({ page, context }) => {
+  const state = await install(context, page);
+  const earlier = await syntheticNativeVersion({ ...vault, trees: { [vault.active_tree_id]: tree } });
+  state.header = earlier.header; state.raw = earlier.raw; state.versions = [earlier.listed];
+  await restoreFile(page);
+  const before = await selectionState(page);
+  await openVersions(page);
+  const confirmation = page.waitForEvent('dialog');
+  const opening = page.locator('.vault-version-item').first().click();
+  await (await confirmation).dismiss();
+  await opening;
+  await expect(page.locator('.vault-version-item').first()).toBeEnabled();
+  expect(await selectionState(page)).toEqual(before);
+  await page.getByRole('dialog').getByRole('button', { name: 'Закрыть', exact: true }).click();
+  await page.getByRole('button', { name: 'Сохранить', exact: true }).click();
+  await page.getByRole('button', { name: 'Подготовить зашифрованную копию', exact: true }).click();
+  await expect(page.getByText('Подготовлено локально', { exact: true })).toBeVisible();
+  const operation = (await journal(page))[0];
+  const next = JSON.parse(new TextDecoder().decode((await recoverText(operation.archiveText, vector.words)).plaintext));
+  expect(Object.keys(next.trees).sort()).toEqual(Object.keys(vault.trees).sort());
+  for (const [id, original] of Object.entries(vault.trees)) if (id !== vault.active_tree_id) expect(next.trees[id]).toEqual(original);
+  expect(operation.parentTxId).toBeNull(); expect(state.signs).toBe(0); expect(state.posts).toEqual([]); expect(state.denied).toEqual([]);
+});
+
+test('opening a local_ version adopts its complete vault without inventing a network parent', async ({ page, context }) => {
+  const state = await install(context, page);
+  const earlier = await syntheticNativeVersion({ ...vault, trees: { [vault.active_tree_id]: tree } });
+  await restoreFile(page, earlier.raw);
+  await page.evaluate(({ vaultId, envelope }) => {
+    localStorage.setItem('sejire.vaultArchive.v1.' + vaultId, JSON.stringify([{
+      id: 'local_synthetic_full_vault', vaultId, savedAt: new Date(0).toISOString(), parentId: null, source: 'export', envelope,
+    }]));
+  }, { vaultId: vector.expectedVaultId, envelope: JSON.parse(vector.archiveText) });
+  await openVersions(page);
+  const confirmation = page.waitForEvent('dialog');
+  const opening = page.locator('.vault-version-item').first().click();
+  await (await confirmation).accept();
+  await opening;
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  const selected = await selectionState(page);
+  expect(JSON.parse(selected.session)).toEqual({ vaultId: vector.expectedVaultId, headTxId: null, source: 'local' });
+  expect(JSON.parse(selected.cache)).toEqual(JSON.parse(vector.archiveText));
+  await page.getByRole('button', { name: 'Сохранить', exact: true }).click();
+  await page.getByRole('button', { name: 'Подготовить зашифрованную копию', exact: true }).click();
+  await expect(page.getByText('Подготовлено локально', { exact: true })).toBeVisible();
+  const operation = (await journal(page))[0];
+  const next = JSON.parse(new TextDecoder().decode((await recoverText(operation.archiveText, vector.words)).plaintext));
+  expect(Object.keys(next.trees).sort()).toEqual(Object.keys(vault.trees).sort());
+  for (const [id, original] of Object.entries(vault.trees)) if (id !== vault.active_tree_id) expect(next.trees[id]).toEqual(original);
+  expect(operation.parentTxId).toBeNull(); expect(state.signs).toBe(0); expect(state.posts).toEqual([]); expect(state.denied).toEqual([]);
+});
+
+test('a gateway cannot bind an old valid ciphertext to an unsigned network version', async ({ page, context }) => {
+  const state = await install(context, page);
+  const earlier = await syntheticNativeVersion({ ...vault, trees: { [vault.active_tree_id]: tree } });
+  state.header = { ...earlier.header, signature: '' }; state.raw = earlier.raw; state.versions = [earlier.listed];
+  let confirmations = 0;
+  page.on('dialog', async dialog => { confirmations++; await dialog.dismiss(); });
+  await restoreFile(page);
+  const before = await selectionState(page);
+  await openVersions(page);
+  await page.locator('.vault-version-item').first().click();
+  await expect(page.getByRole('dialog').locator('.form-error')).toBeVisible();
+  await expect(page.locator('.vault-version-item').first()).toBeEnabled();
+  expect(await selectionState(page)).toEqual(before); expect(confirmations).toBe(0);
+  expect(state.signs).toBe(0); expect(state.posts).toEqual([]); expect(state.denied).toEqual([]);
+});
+
+async function denyVaultSessionWrites(context) {
+  await context.addInitScript(() => {
+    const write = Storage.prototype.setItem;
+    Storage.prototype.setItem = function (key, value) {
+      if (this === sessionStorage && key === 'sejire.vaultSession.v1') {
+        throw new DOMException('Synthetic session storage failure', 'QuotaExceededError');
+      }
+      return write.call(this, key, value);
+    };
+  });
+}
+
+test('restoration does not claim success when the selected vault session cannot be persisted', async ({ page, context }) => {
+  const state = await install(context, page); await denyVaultSessionWrites(context);
+  await page.goto('/#/restore');
+  const before = await selectionState(page);
+  await page.getByLabel('12 слов SEJIRE', { exact: true }).fill(vector.words);
+  await page.getByLabel('Зашифрованный архив, комплект или квитанция', { exact: true }).setInputFiles({
+    name: 'synthetic-vault.json', mimeType: 'application/json', buffer: Buffer.from(vector.archiveText),
+  });
+  await page.getByRole('button', { name: 'Открыть архив', exact: true }).click();
+  await expect(page.getByRole('alert')).toContainText('Браузер не смог сохранить');
+  await expect(page.getByRole('button', { name: 'Сохранить', exact: true })).toHaveCount(0);
+  expect(await selectionState(page)).toEqual(before);
+  expect(state.signs).toBe(0); expect(state.posts).toEqual([]); expect(state.external).toEqual([]);
+});
+
+test('a failed preparation session write retains the encrypted attempt and never offers a payment as successful preparation', async ({ page, context }) => {
+  const state = await install(context, page, { draft: true, wallet: true }); await denyVaultSessionWrites(context);
+  const phrase = await prepareNew(page, { prepared: false });
+  await expect(page.getByRole('alert')).toContainText('Браузер не смог сохранить');
+  await expect(page.getByText('Подготовлено локально', { exact: true })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: /Подключить кошелёк|Подписать и отправить/ })).toHaveCount(0);
+  const operations = await journal(page); expect(operations).toHaveLength(1);
+  expect(operations[0].state).toBe('prepared'); expect(operations[0].signedTx).toBeNull();
+  expect(JSON.stringify(operations)).not.toContain(phrase);
+  const recovered = JSON.parse(new TextDecoder().decode((await recoverText(operations[0].archiveText, phrase)).plaintext));
+  expect(recovered.trees[tree.meta.id].commits).toEqual(tree.commits);
+  expect(await page.evaluate(() => sessionStorage.getItem('sejire.vaultSession.v1'))).toBeNull();
+  expect(state.signs).toBe(0); expect(state.posts).toEqual([]); expect(state.external).toEqual([]);
+});
+
+test('both PDF downloads work with every external service blocked', async ({ page, context }) => {
+  const state = await install(context, page), errors = [];
+  page.on('pageerror', error => errors.push(error.message));
+  await restoreFile(page);
+  for (const type of ['classic', 'shezhire']) {
+    await page.getByText('Ещё', { exact: true }).click();
+    const event = page.waitForEvent('download');
+    if (type === 'classic') await page.getByRole('button', { name: 'Древо в PDF', exact: true }).click();
+    else {
+      await page.getByRole('button', { name: 'Шежіре PDF', exact: true }).click();
+      await page.locator('.shezhire-template-option').first().click();
+    }
+    const download = await event, bytes = await readFile(await download.path());
+    expect(download.suggestedFilename()).toMatch(/\.pdf$/i);
+    expect(bytes.length).toBeGreaterThan(1000);
+    expect(bytes.subarray(0, 5).toString()).toBe('%PDF-');
+    expect(bytes.subarray(-32).toString()).toContain('%%EOF');
+  }
+  expect(state.external).toEqual([]); expect(state.denied).toEqual([]); expect(state.signs).toBe(0); expect(state.posts).toEqual([]); expect(errors).toEqual([]);
+});
+
+test('a sandboxed manifest fallback loads independent assets and downloads the offline decoder under its manifest path', async ({ page, context }) => {
+  const host = `https://${'a'.repeat(52)}.arweave.net`, prefix = '/' + 'M'.repeat(43);
+  const requested = [], denied = [], errors = [];
+  await context.addInitScript(() => localStorage.setItem('sejire.locale', 'ru'));
+  page.on('pageerror', error => errors.push(error.message));
+  await context.routeWebSocket('**/*', route => { denied.push(route.url()); route.close({ code: 1008, reason: 'Synthetic offline test' }); });
+  await context.route('**/*', async route => {
+    const url = new URL(route.request().url());
+    if (url.origin !== host || !url.pathname.startsWith(prefix + '/')) { denied.push(url.origin + url.pathname); return route.abort('blockedbyclient'); }
+    requested.push(url.pathname);
+    const path = url.pathname === prefix + '/unknown/deep/route' ? '/' : url.pathname.slice(prefix.length);
+    const response = await route.fetch({ url: ORIGIN + path + url.search });
+    return route.fulfill({ response });
+  });
+  try {
+    await page.goto(host + prefix + '/unknown/deep/route#/restore');
+    await expect(page.locator('base')).toHaveAttribute('href', prefix + '/');
+    const recovery = page.getByRole('link', { name: 'Скачать автономный расшифровщик', exact: true });
+    expect(await recovery.evaluate(link => link.href)).toBe(host + prefix + '/recovery/recovery.html');
+    const event = page.waitForEvent('download'); await recovery.click();
+    const downloaded = await readFile(await (await event).path());
+    expect(downloaded.equals(await readFile(new URL('../../../tools/recovery/recovery.html', import.meta.url)))).toBe(true);
+    await page.getByLabel('12 слов SEJIRE', { exact: true }).fill(vector.words);
+    await page.getByLabel('Зашифрованный архив, комплект или квитанция', { exact: true }).setInputFiles({
+      name: 'synthetic-vault.json', mimeType: 'application/json', buffer: Buffer.from(vector.archiveText),
+    });
+    await page.getByRole('button', { name: 'Открыть архив', exact: true }).click();
+    await expect(page.getByRole('button', { name: 'Сохранить', exact: true })).toBeVisible();
+    expect(requested.some(path => path.startsWith(prefix + '/assets/') && path.endsWith('.js'))).toBe(true);
+    expect(denied).toEqual([]); expect(errors).toEqual([]);
+  } finally {
+    // Stop new favicon/assets before waiting for local proxy handlers to drain.
+    await page.route('**/*', route => route.abort('blockedbyclient'));
+    await context.unrouteAll({ behavior: 'wait' });
+  }
 });

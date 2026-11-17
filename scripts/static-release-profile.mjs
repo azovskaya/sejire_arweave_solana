@@ -43,6 +43,7 @@ export function assertIndependentCode(code) {
   // A read-only Arweave gateway is allowed. Sponsor/executor/payment API origins
   // and routes are not, even in an unvisited dynamic chunk.
   fail(!/(?:[A-Za-z0-9-]+\.)?(?:workers\.dev|pages\.dev|cloudflareaccess\.com)\b/i.test(code), 'independent_worker_endpoint_in_bundle');
+  fail(!/\b(?:[A-Za-z0-9-]+\.)*(?:cloudflare\.com|cloudflareinsights\.com)\b/i.test(code), 'independent_cloudflare_endpoint_in_bundle');
   fail(!/\/(?:api\/)?(?:checkout|fund)\/(?:policy|orders|status|admin|quote|contribution|balance|promo)\b|\/api\/(?:checkout|fund)(?:["'`/]|$)/i.test(code), 'independent_service_route_in_bundle');
   fail(!/(?:upload|payment)(?:[.-](?:devnet|testnet))?\.(?:ardrive\.io|ar\.io)|(?:turbo|devnet)\.ardrive\.io|api\.(?:mainnet-beta|devnet|testnet)\.solana\.com|helius-rpc\.com/i.test(code), 'independent_payment_endpoint_in_bundle');
   fail(!/ARWEAVE_TREASURY_JWK|TURBO_JWK|PROMO_CODE_SECRET|__SEJIRE_[A-Z0-9_]*TEST_DRIVER__|synthetic-browser-test-only/.test(code), 'independent_secret_or_fixture_in_bundle');

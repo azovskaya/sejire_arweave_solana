@@ -1,4 +1,6 @@
 import assert from 'node:assert/strict';
+import { generateKeyPairSync } from 'node:crypto';
+import type { JWKInterface } from 'arweave/web/lib/wallet';
 import { IDBFactory } from 'fake-indexeddb';
 import { buildRecoveryKit, parseIndependentBackup } from './independentBackup';
 import { loadIndependentVaultForPublish } from './independentVault';
@@ -13,6 +15,7 @@ import { cancelDirectOperation, readDirectOperation, writeDirectOperation } from
 import { sha256, directTags } from './directArweave/format';
 import type { DirectOperation, DirectRawTransaction } from './directArweave/types';
 import { getLocalVaultVersion } from './vaultSession/localArchive';
+import { directCrypto } from './directArweave/transaction';
 
 const storage = (): Storage => {
   const items = new Map<string, string>();
@@ -84,51 +87,54 @@ const after = await new Promise<unknown>((resolve, reject) => {
 assert.deepEqual(after, prior); db.close();
 console.log('PASS migration guard blocks existing orders and never creates, upgrades or rewrites legacy journals');
 
-// Fixture models an already-verified journal checkpoint. Actual encryption and
-// immutable byte/hash validation run here; native signature/confirmation checks
-// are covered separately by direct.selftest.ts. No wallet or real chain is used.
+// Fixture models an already-verified journal checkpoint. Ephemeral native
+// signatures also let the publisher re-read that checkpoint through the strict
+// native reader. No real wallet, external request or chain is used.
+const fixtureAr = directCrypto();
+const { privateKey: fixturePrivateKey } = generateKeyPairSync('rsa', { modulusLength: 4096, publicExponent: 0x10001 });
+const fixtureKey = fixturePrivateKey.export({ format: 'jwk' }) as JWKInterface;
+const fixtureAddress = await fixtureAr.wallets.jwkToAddress(fixtureKey);
 let fixtureSequence = 0;
-async function completedFixture(contents: VaultV1, txId: string, parentTxId: string | null, patch: Partial<DirectOperation> = {}) {
+async function completedFixture(contents: VaultV1, _txId: string, parentTxId: string | null, patch: Partial<DirectOperation> = {}) {
   const encrypted = await encryptJson(keys.encKey, keys.vaultId, contents), archiveText = JSON.stringify(encrypted);
   const archiveBytes = new TextEncoder().encode(archiveText).length, archiveDigest = await sha256(new TextEncoder().encode(archiveText));
   const id = await sha256(new TextEncoder().encode(`sejire/direct-arweave/v1\0${keys.vaultId}\0${archiveDigest}`));
-  const createdAt = Date.now() + fixtureSequence++, ownerAddress = 'W'.repeat(43);
-  const raw = { format: 2, id: txId, last_tx: 'L'.repeat(64), owner: 'O'.repeat(683),
-    tags: directTags({ id, vaultId: keys.vaultId, parentTxId, archiveDigest, archiveBytes }).map(tag =>
-      ({ name: Buffer.from(tag.name).toString('base64url'), value: Buffer.from(tag.value).toString('base64url') })),
-    target: '', quantity: '0', data: Buffer.from(archiveText).toString('base64url'), data_size: String(archiveBytes),
-    data_root: 'D'.repeat(43), reward: '1000', signature: 'S'.repeat(683) } as DirectRawTransaction;
+  const createdAt = Date.now() + fixtureSequence++, ownerAddress = fixtureAddress;
+  const transaction = await fixtureAr.createTransaction({ data: archiveText, owner: fixtureKey.n, reward: '1000', last_tx: 'L'.repeat(64) });
+  for (const tag of directTags({ id, vaultId: keys.vaultId, parentTxId, archiveDigest, archiveBytes })) transaction.addTag(tag.name, tag.value);
+  await transaction.prepareChunks(transaction.data);
+  const unsignedTx = transaction.toJSON();
+  await fixtureAr.transactions.sign(transaction, fixtureKey);
+  const raw = transaction.toJSON() as DirectRawTransaction, txId = transaction.id;
   return writeDirectOperation(null, { schema: 'sejire/direct-arweave-operation/v1', id, vaultId: keys.vaultId,
     treeId: contents.active_tree_id, parentTxId, archiveText, archiveDigest, archiveBytes, state: 'complete',
     ownerAddress, quote: { ownerAddress, rewardWinston: '1000', balanceWinston: '10000', bytes: archiveBytes,
       node: 'https://synthetic-finalization.example', quotedAt: createdAt },
-    signingIntent: { id: 'a'.repeat(64), startedAt: createdAt, unsignedTx: { ...raw, id: '', signature: '' } },
+    signingIntent: { id: 'a'.repeat(64), startedAt: createdAt, unsignedTx },
     signedTx: raw, txId, uploadProgress: { node: 'https://synthetic-finalization.example', headerAccepted: true, uploadedChunks: 1, totalChunks: 1 },
     verification: { checkedAt: createdAt, confirmed: true, confirmations: 5, bytesVerified: true, node: 'https://synthetic-finalization.example' },
     lastError: null, createdAt, updatedAt: createdAt, revision: 0, ...patch });
 }
 let finalizationChecks = 0;
 async function finalizationTest(name: string, action: () => Promise<void>) { await action(); finalizationChecks++; console.log(`PASS ${name}`); }
-const v0 = 'V'.repeat(43), v1 = 'X'.repeat(43);
+const v0 = 'V'.repeat(43);
 const aNew = commitDraft(setDraftPerson(a, { id: 'history-person', name: 'New A retained after resume', parents: [], media: [] }), 'A new history');
 const singleA: VaultV1 = { ...vault, trees: { [a.meta.id]: aNew }, active_tree_id: a.meta.id };
-const completed = await completedFixture(singleA, v1, v0);
+const completed = await completedFixture(singleA, 'X'.repeat(43), v0);
+const v1 = completed.txId!;
 try {
   await finalizationTest('resumed completed A(new) advances stale HEAD before sealing B and retains all A history', async () => {
     localStorage.setItem('sejire.envelope.' + keys.vaultId, completed.archiveText);
     setVaultSession({ vaultId: keys.vaultId, headTxId: v0, source: 'local' }, words);
-    globalThis.fetch = async input => {
-      const path = new URL(String(input)).pathname;
-      if (path === `/tx/${v1}`) return new Response(JSON.stringify(completed.signedTx));
-      if ([`/raw/${v1}`, `/${v1}`].includes(path)) return new Response(completed.archiveText);
-      return new Response('[]');
-    };
+    let reads = 0;
+    globalThis.fetch = async () => { reads++; throw Error('A completed journal already preserves this native version'); };
     // The supplied parent is a stale render-time prop captured before reconcile.
     const loaded = await loadIndependentVaultForPublish(keys, { parentTxId: v0 });
     const withB = putTree(loaded.vault, b);
     assert.equal(loaded.parentTxId, v1); assert.equal(getVaultSession()?.headTxId, v1);
     assert.deepEqual(withB.trees[a.meta.id], aNew); assert.deepEqual(withB.trees[b.meta.id], b);
     assert.deepEqual(getLocalVaultVersion(keys.vaultId, v1)?.envelope, JSON.parse(completed.archiveText));
+    assert.equal(reads, 0, 'the preserved signed native version permits offline backup preparation');
   });
   await finalizationTest('repeat finalization never rewrites a subsequent preparation or changes archive ordering', async () => {
     const later = await encryptJson(keys.encKey, keys.vaultId, putTree(singleA, b)), laterText = JSON.stringify(later);
