@@ -57,7 +57,7 @@ async function install(context, page, { draft = false, wallet = false, unavailab
       state.denied.push('unexpected default gateway ' + url.origin + url.pathname);
       return route.abort('blockedbyclient');
     }
-    const allowed = ['arweave.net', 'ar-io.net', 'g8way.io', 'node.test.example'];
+    const allowed = ['arweave.net', 'turbo-gateway.com', 'node.test.example'];
     if (!allowed.includes(url.hostname)) { state.denied.push(url.origin + url.pathname); return route.abort('blockedbyclient'); }
     if (url.pathname === '/info') return json(route, { network: 'arweave.N.1' });
     if (/^\/price\/\d+$/.test(url.pathname)) return text(route, '1000000');
