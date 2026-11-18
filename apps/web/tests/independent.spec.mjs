@@ -438,7 +438,9 @@ test('a sandboxed manifest fallback loads independent assets and the exact offli
     if (url.origin !== host || !url.pathname.startsWith(prefix + '/')) { denied.push(url.origin + url.pathname); return route.abort('blockedbyclient'); }
     requested.push(url.pathname);
     const path = url.pathname === prefix + '/unknown/deep/route' ? '/' : url.pathname.slice(prefix.length);
-    const response = await route.fetch({ url: ORIGIN + path + url.search });
+    // The browser sees the manifest origin. The fixture reads static files
+    // from the local preview with that server's own Host header.
+    const response = await context.request.get(ORIGIN + path + url.search, { maxRedirects: 0 });
     return route.fulfill({ response });
   });
   try {
@@ -515,17 +517,21 @@ test('a valid but wrong archive phrase cannot replace any local state or trigger
   const state = await install(context, page);
   await page.goto('/#/restore');
   const before = await selectionState(page);
+  // The accessible name stays constant after editing. The wrapping label's
+  // raw descendant text can also include a controlled textarea's defaultValue.
+  const archiveWords = page.getByRole('textbox', { name: '12 слов SEJIRE', exact: true });
   await page.getByLabel('Зашифрованный архив, комплект или квитанция', { exact: true }).setInputFiles({
     name: 'synthetic-kit.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(kit)),
   });
-  await page.getByLabel('12 слов SEJIRE', { exact: true }).fill(vectors[1].words);
+  await archiveWords.fill(vectors[1].words);
   await page.getByRole('button', { name: 'Открыть архив', exact: true }).click();
   await expect(page.getByRole('alert')).toContainText('не относится к этим словам');
   expect(await selectionState(page)).toEqual(before);
   expect(state.external).toEqual([]); expect(state.signs).toBe(0); expect(state.posts).toEqual([]);
   // The selected encrypted bytes remain available for a deliberate correction.
   await expect(page.getByText('synthetic-kit.json', { exact: true })).toBeVisible();
-  await page.getByLabel('12 слов SEJIRE', { exact: true }).fill(vector.words);
+  await expect(archiveWords).toBeEditable();
+  await archiveWords.fill(vector.words);
   await page.getByRole('button', { name: 'Открыть архив', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Сохранить', exact: true })).toBeVisible();
   const after = await selectionState(page);
@@ -581,8 +587,15 @@ test('an unavailable IndexedDB journal blocks preparation and wallet access whil
     };
   });
   await page.goto('/');
+  // An unreadable journal is treated as potentially pending. The editor
+  // therefore offers its existing-operation action before it shows the error.
+  const resume = page.getByRole('button', { name: 'Продолжить сохранение', exact: true });
+  await expect(resume).toBeEnabled();
+  // Mount also persists the normalized historical draft. Take the exact-byte
+  // baseline after startup, before any click, and check all original fields.
   const before = await selectionState(page);
-  await page.getByRole('button', { name: 'Сохранить', exact: true }).click();
+  expect(JSON.parse(before.draft)).toMatchObject(tree);
+  await resume.click();
   await expect(page.getByRole('alert')).toContainText('Не удалось проверить прежние заказы');
   await expect(page.getByRole('button', { name: /Создать 12 слов SEJIRE|Подключить кошелёк|Подписать и отправить/ })).toHaveCount(0);
   expect(await page.evaluate(() => window.__deniedDirectJournal)).toBeGreaterThan(0);

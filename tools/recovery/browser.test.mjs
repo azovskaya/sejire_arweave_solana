@@ -187,7 +187,12 @@ test(`${engine}: standalone HTML recovers current production vaults and rejects 
     const { fixtures, seed } = JSON.parse(await readFile(fixtureFile, 'utf8'));
     assert.equal(seed, 0x5e171118);
     assert.equal(vectors.length, 2); assert.deepEqual(fixtures.map(fixture => fixture.index), [0, 3, 10, 15]);
-    browser = await browserType.launch({ headless: true,
+    // The namespace is created by sudo. Do not attach a headless browser to
+    // the runner user's graphical login: Firefox rejects a foreign-owned
+    // XDG_RUNTIME_DIR even when sudo -H has supplied the correct home.
+    const browserEnv = { ...process.env, XDG_RUNTIME_DIR: await mkdtemp(join(directory, 'browser-session-')) };
+    for (const name of ['XAUTHORITY', 'DBUS_SESSION_BUS_ADDRESS', 'DISPLAY', 'WAYLAND_DISPLAY']) delete browserEnv[name];
+    browser = await browserType.launch({ headless: true, env: browserEnv,
       ...(engine === 'chromium' && process.env.SEJIRE_BROWSER_EXECUTABLE ? { executablePath: process.env.SEJIRE_BROWSER_EXECUTABLE } : {}) });
     // The kernel-isolated namespace proves physical offline operation throughout,
     // including file:// navigation. HTTP interception is an additional guard.
