@@ -83,8 +83,15 @@ node --test tools/recovery/browser.test.mjs
 
 Первая проверка работает без npm и сети; вторая сравнивает decoder с текущей
 производственной криптографией приложения. Последняя проверка требует
-установленный проектный Playwright/Chromium и открывает HTML через `file://`
-в браузерном контексте без сети. HTML воспроизводимо создаётся из
+проектный Playwright и все три установленных движка: Chromium, Firefox и WebKit.
+Она открывает настоящую локальную копию HTML через `file://`; HTTP-запросы
+запрещены и учитываются с момента создания контекста. В Chromium и Firefox
+offline emulation включена до загрузки файла. В WebKit она включается сразу
+после загрузки локального HTML: его эмуляция в используемой версии Playwright
+иначе блокирует саму начальную навигацию. Чтение архивов, расшифровка и все
+скачивания на трёх движках выполняются с включённой offline emulation;
+`navigator.onLine` проверяется отдельно. Это не проверка физического Safari/iOS.
+HTML воспроизводимо создаётся из
 того же `recover.mjs` командой `node tools/recovery/build-html.mjs`.
 Публичные vectors воспроизводятся только в разработке через
 `node --import ./apps/web/node_modules/tsx/dist/loader.mjs tools/recovery/generate-public-vectors.mts`.

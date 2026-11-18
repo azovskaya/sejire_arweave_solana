@@ -12,7 +12,7 @@ const { chromium, firefox, webkit } = require('@playwright/test');
 const { vectors } = JSON.parse(await readFile(new URL('./public-vectors.json', import.meta.url), 'utf8'));
 
 for (const [engine, browserType] of Object.entries({ chromium, firefox, webkit })) {
-test(`${engine}: standalone HTML recovers current production vaults and rejects changed inputs without stale plaintext, storage or network`, { timeout: 90000 }, async () => {
+test(`${engine}: standalone HTML recovers current production vaults and rejects changed inputs without stale plaintext, storage or network`, { timeout: 90000 }, async t => {
   const directory = await mkdtemp(join(tmpdir(), 'sejire-offline-html-'));
   const html = join(directory, 'recovery.html');
   await copyFile(new URL('./recovery.html', import.meta.url), html);
@@ -28,7 +28,16 @@ test(`${engine}: standalone HTML recovers current production vaults and rejects 
     assert.equal(seed, 0x5e171118);
     browser = await browserType.launch({ headless: true,
       ...(engine === 'chromium' && process.env.SEJIRE_BROWSER_EXECUTABLE ? { executablePath: process.env.SEJIRE_BROWSER_EXECUTABLE } : {}) });
-    const context = await browser.newContext({ offline: true, acceptDownloads: true, serviceWorkers: 'block' });
+    // Playwright 1.58.2's WebKit patch unconditionally fails resource loading
+    // when offline emulation is set before navigation (WebLoaderStrategy.cpp).
+    // Keep the real file:// navigation and deny HTTP from the start; enable
+    // WebKit's offline flag immediately after loading that local document.
+    // Every archive read, decrypt and download below still runs offline.
+    const offlineBeforeLoad = engine !== 'webkit';
+    const context = await browser.newContext({ offline: offlineBeforeLoad, acceptDownloads: true, serviceWorkers: 'block' });
+    const network = [], errors = [], consoleMessages = [];
+    context.on('request', request => { if (/^https?:/.test(request.url())) network.push(request.url()); });
+    await context.route(/^https?:\/\//, route => route.abort('internetdisconnected'));
     await context.addInitScript(() => {
       window.__storageWrites = 0;
       const original = Storage.prototype.setItem;
@@ -38,11 +47,14 @@ test(`${engine}: standalone HTML recovers current production vaults and rejects 
       URL.createObjectURL = function (...args) { window.__blobCreated++; return create.apply(this, args); };
       URL.revokeObjectURL = function (...args) { window.__blobRevoked++; return revoke.apply(this, args); };
     });
-    const page = await context.newPage(), network = [], errors = [], consoleMessages = [];
-    page.on('request', request => { if (/^https?:/.test(request.url())) network.push(request.url()); });
+    const page = await context.newPage();
     page.on('pageerror', error => errors.push(error.message));
     page.on('console', message => consoleMessages.push(message.text()));
     await page.goto(pathToFileURL(html).href);
+    assert.equal(page.url(), pathToFileURL(html).href, 'the copied decoder must load from its actual local file');
+    if (!offlineBeforeLoad) await context.setOffline(true);
+    assert.equal(await page.evaluate(() => navigator.onLine), false, 'recovery and downloads must run with offline emulation enabled');
+    t.diagnostic(`${engine}: file:// load with HTTP denied throughout; offline emulation ${offlineBeforeLoad ? 'before navigation' : 'after local navigation'}; all recovery/download steps offline`);
     assert.equal(await page.title(), 'SEJIRE — независимое восстановление');
     assert.equal(await page.getByLabel('12 слов SEJIRE', { exact: true }).count(), 1);
     const inputs = [...vectors.map((vector, index) => ({ ...vector,
