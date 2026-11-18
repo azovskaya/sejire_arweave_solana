@@ -91,7 +91,8 @@ npm run lint --prefix apps/web
 npm run arns:build
 npm run arns:verify
 npm run test:independent-browser
-npm run test:offline-recovery-browser
+sudo -H env PLAYWRIGHT_BROWSERS_PATH="$HOME/.cache/ms-playwright" SEJIRE_TEST_OS_OFFLINE=1 \
+  unshare --net "$(command -v node)" --test tools/recovery/browser.test.mjs
 npm run permaweb:prepare
 npm run test:permaweb-prepare
 npm audit --prefix apps/web --omit=dev --audit-level=high
@@ -102,6 +103,12 @@ funded-профиля, editor и runtime. Невозможность запус�
 среде фиксировать как ограничение этой среды; итоговые browser-результаты брать
 из фактически завершившегося CI. Не отключать assertions для получения зелёного
 статуса. Неблокирующие dependency findings отражать отдельно.
+
+Standalone HTML проверяется в Linux network namespace без внешних интерфейсов
+и маршрутов. Путь Playwright в примере должен соответствовать папке установленных
+браузеров; проверка состояния ядра не доверяет одной переменной окружения.
+Подробнее о WebKit offline emulation и диагностике — в
+[`tools/recovery/README.md`](../tools/recovery/README.md).
 
 ## Подготовка без ключа
 

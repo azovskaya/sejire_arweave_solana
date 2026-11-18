@@ -52,8 +52,13 @@ jobs:
       - run: npm exec --prefix apps/web -- playwright install --with-deps chromium firefox webkit
       - name: Offline recovery format, standalone decoder and current-envelope compatibility
         run: npm run test:offline-recovery
-      - name: Standalone recovery HTML offline in Chromium, Firefox and WebKit (synthetic data)
-        run: npm run test:offline-recovery-browser
+      - name: Standalone recovery HTML with OS network isolation in Chromium, Firefox and WebKit (synthetic data)
+        timeout-minutes: 5
+        run: |
+          SEJIRE_TEST_NODE="$(command -v node)"
+          sudo -H env PLAYWRIGHT_BROWSERS_PATH="$HOME/.cache/ms-playwright" \
+            SEJIRE_TEST_OS_OFFLINE=1 \
+            unshare --net "$SEJIRE_TEST_NODE" --test tools/recovery/browser.test.mjs
       - name: Direct Arweave signing, exact resume and chunk delivery (synthetic network)
         run: npm run test:direct --prefix apps/web
       - name: Read-only direct Arweave API and CORS readiness
