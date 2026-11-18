@@ -1,0 +1,182 @@
+{
+  "schema": "sejire/permaweb-upload-quote/v1",
+  "sourceCommit": "1c7cb217954868beb0582458b26b90a0e2b33142",
+  "quotedAt": 1794989184620,
+  "quotedWinc": "39481602974",
+  "maxQuoteWinc": "0",
+  "withinBudget": false,
+  "items": [
+    {
+      "bytes": 6228,
+      "winc": "86998180"
+    },
+    {
+      "bytes": 579836,
+      "winc": "7385088118"
+    },
+    {
+      "bytes": 573304,
+      "winc": "7293751641"
+    },
+    {
+      "bytes": 7852,
+      "winc": "107636979"
+    },
+    {
+      "bytes": 203661,
+      "winc": "2599022808"
+    },
+    {
+      "bytes": 503082,
+      "winc": "6401326919"
+    },
+    {
+      "bytes": 45413,
+      "winc": "585677544"
+    },
+    {
+      "bytes": 155491,
+      "winc": "1986197242"
+    },
+    {
+      "bytes": 404461,
+      "winc": "5147990094"
+    },
+    {
+      "bytes": 9795,
+      "winc": "132510603"
+    },
+    {
+      "bytes": 32664,
+      "winc": "423472329"
+    },
+    {
+      "bytes": 4881,
+      "winc": "69879668"
+    },
+    {
+      "bytes": 17564,
+      "winc": "231315235"
+    },
+    {
+      "bytes": 83033,
+      "winc": "1063083748"
+    },
+    {
+      "bytes": 29336,
+      "winc": "380668973"
+    },
+    {
+      "bytes": 23996,
+      "winc": "312804942"
+    },
+    {
+      "bytes": 24936,
+      "winc": "325109011"
+    },
+    {
+      "bytes": 30272,
+      "winc": "392564242"
+    },
+    {
+      "bytes": 25212,
+      "winc": "328258624"
+    },
+    {
+      "bytes": 19392,
+      "winc": "254612998"
+    },
+    {
+      "bytes": 26196,
+      "winc": "340763906"
+    },
+    {
+      "bytes": 20264,
+      "winc": "265707433"
+    },
+    {
+      "bytes": 9116,
+      "winc": "123700674"
+    },
+    {
+      "bytes": 11184,
+      "winc": "150142652"
+    },
+    {
+      "bytes": 11640,
+      "winc": "155777232"
+    },
+    {
+      "bytes": 9488,
+      "winc": "128564485"
+    },
+    {
+      "bytes": 4604,
+      "winc": "66465637"
+    },
+    {
+      "bytes": 28843,
+      "winc": "374857840"
+    },
+    {
+      "bytes": 4244,
+      "winc": "61845202"
+    },
+    {
+      "bytes": 4244,
+      "winc": "61885366"
+    },
+    {
+      "bytes": 6228,
+      "winc": "87087585"
+    },
+    {
+      "bytes": 13468,
+      "winc": "179242092"
+    },
+    {
+      "bytes": 6509,
+      "winc": "90662741"
+    },
+    {
+      "bytes": 13975,
+      "winc": "185692640"
+    },
+    {
+      "bytes": 17212,
+      "winc": "226876912"
+    },
+    {
+      "bytes": 5056,
+      "winc": "72216422"
+    },
+    {
+      "bytes": 22630,
+      "winc": "295769829"
+    },
+    {
+      "bytes": 29381,
+      "winc": "381702801"
+    },
+    {
+      "bytes": 33740,
+      "winc": "436637736"
+    },
+    {
+      "bytes": 8567,
+      "winc": "116846625"
+    },
+    {
+      "bytes": 4389,
+      "winc": "63730197"
+    },
+    {
+      "bytes": 7829,
+      "winc": "107457069"
+    }
+  ],
+  "pricing": "one quote per item including manifest and conservative signing overhead",
+  "limitKind": "preflight-quote-only",
+  "providerHardCap": false,
+  "autoTopUp": false
+}

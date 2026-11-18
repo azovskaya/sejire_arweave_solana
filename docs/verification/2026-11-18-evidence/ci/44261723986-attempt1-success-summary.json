@@ -1,0 +1,193 @@
+{
+  "checkedAt": "2026-11-18T08:05:21.409Z",
+  "run": 44261723986,
+  "attempt": 1,
+  "job": 134656412880,
+  "completedAt": "2026-11-18T08:04:38Z",
+  "sourceCommit": "1c7cb217954868beb0582458b26b90a0e2b33142",
+  "tree": "2e3a2a969b6f45cd6ef5a92849b95e5fd52686f1",
+  "steps": {
+    "success": 76,
+    "skipped": [
+      "Preserve checkout failure diagnostics"
+    ],
+    "total": 77
+  },
+  "artifactMetadataCount": 11,
+  "acceptedFiles": 41,
+  "acceptedTotalFileBytes": 2903451,
+  "releaseManifestSha256": "6e2de3162ae7ac38c0a7653ac774bd801a6b11a3d95506309b0dbf2743b08c77",
+  "boundary": {
+    "jsAssets": 10,
+    "renderedModules": 339,
+    "picomatchModules": []
+  },
+  "initialProductionAuditRenderedPackages": [],
+  "webFullHighRenderedPackageNames": [
+    "vite-plugin-node-polyfills"
+  ],
+  "directReadiness": {
+    "artifactId": 14408019209,
+    "zipBytes": 869,
+    "sha256": "a0b72fa98c3aa9dad5be8ec7989747578b1fb467b23188aaa7437b6be7d8c5cf",
+    "files": [
+      "readiness.json"
+    ],
+    "checkedAt": "2026-11-18T07:51:38.390Z",
+    "nodes": [
+      {
+        "node": "https://arweave.net",
+        "checks": [
+          200,
+          200,
+          200,
+          204,
+          204
+        ]
+      },
+      {
+        "node": "https://turbo-gateway.com",
+        "checks": [
+          200,
+          200,
+          200,
+          204,
+          204
+        ]
+      }
+    ]
+  },
+  "dependencyAuditCounts": {
+    "sponsor-full.json": {
+      "info": 0,
+      "low": 13,
+      "moderate": 1,
+      "high": 3,
+      "critical": 0,
+      "total": 17
+    },
+    "web-full.json": {
+      "info": 0,
+      "low": 17,
+      "moderate": 11,
+      "high": 8,
+      "critical": 0,
+      "total": 36
+    },
+    "sponsor-production.json": {
+      "info": 0,
+      "low": 13,
+      "moderate": 1,
+      "high": 0,
+      "critical": 0,
+      "total": 14
+    },
+    "web-production.json": {
+      "info": 0,
+      "low": 13,
+      "moderate": 10,
+      "high": 0,
+      "critical": 0,
+      "total": 23
+    }
+  },
+  "independentApp": {
+    "total": 57,
+    "passed": 57,
+    "chromium": 19,
+    "firefox": 19,
+    "webkit": 19
+  },
+  "offlineStandalone": {
+    "passed": 4,
+    "isolatedBrowsers": [
+      "chromium",
+      "firefox",
+      "webkit"
+    ],
+    "ipv4Parser": 1,
+    "webkitFileTextWithEmulation": "NotReadableError",
+    "webkitFileTextWithoutEmulation": "PASS",
+    "webkitWebCryptoBoth": "PASS",
+    "network": "isolated kernel network namespace for all tests"
+  },
+  "selectedLogCounts": {
+    "workerReleaseGate": 53,
+    "permawebReleaseAndPDFAndHosts": 40,
+    "directArweave": 21,
+    "nodePreference": 9,
+    "directProtocolGroups": 10,
+    "directProtocolCases": 36,
+    "historicalNativeRecovery": 14,
+    "independentBackupFinalization": 17,
+    "offlineRecoveryCore": 12,
+    "deepRecoveryGroups": 7,
+    "deepFullVaults": 16,
+    "deepMalformedEnvelopes": 54,
+    "deepAuthenticatedMutations": 51,
+    "deepWrongPhrases": 16,
+    "deepInvalidKitsOrReceipts": 41,
+    "deepMalformedFiles": 22,
+    "copiedCLIRecoveries": 4,
+    "copiedCLIOverwriteProtections": 2
+  },
+  "browserLogSummaries": {
+    "npm run test:independent-browser": {
+      "passed": 57,
+      "duration": "1.5m"
+    },
+    "npx --no-install playwright test --config playwright.editor.config.ts": {
+      "passed": 7,
+      "duration": "14.6s"
+    },
+    "npm run test:checkout-browser": {
+      "passed": 5,
+      "duration": "23.3s"
+    },
+    "npm run test:protocol-browser": {
+      "passed": 5,
+      "duration": "21.7s"
+    },
+    "npm run arns:verify:funded && npm run test:arns-browser": {
+      "passed": 9,
+      "duration": "11.2s"
+    },
+    "npm run test:native-browser --prefix apps/web -- --grep 'public balances never wait for history'": {
+      "passed": 1,
+      "duration": "15.3s"
+    },
+    "npm run test:native-browser": {
+      "passed": 21,
+      "duration": "1.2m"
+    },
+    "npm run test:native-pilot-browser --prefix apps/web": {
+      "passed": 3,
+      "duration": "5.6s"
+    },
+    "npm run test:v2-browser --prefix apps/web": {
+      "passed": 15,
+      "duration": "23.2s"
+    },
+    "npm run test:admin-browser --prefix apps/web": {
+      "passed": 14,
+      "duration": "13.9s"
+    },
+    "npm run test:v2-recovery-browser --prefix apps/web": {
+      "passed": 35,
+      "duration": "1.0m"
+    },
+    "npm run test:fund-browser --prefix apps/web": {
+      "passed": 25,
+      "duration": "59.3s"
+    },
+    "npm run test:paid-browser": {
+      "passed": 48,
+      "duration": "2.8m"
+    },
+    "npm run test:native-journey --prefix apps/web": {
+      "passed": 48,
+      "duration": "1.7m"
+    }
+  },
+  "acceptance": "PASS"
+}

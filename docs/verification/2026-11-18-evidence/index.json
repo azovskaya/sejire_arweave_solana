@@ -3,12 +3,13 @@
   "date": "2026-11-18",
   "timezone": "Asia/Almaty",
   "baselineSource": "3ed64d14738a2c7080de2007bb34f2df13dd7e1f",
-  "currentCandidate": "58474a6cad690de206412dfcb48c8ebbed84fa24",
-  "status": "pending exact CI44259578185; previous failed cases separately preserved",
+  "currentCandidate": "1c7cb217954868beb0582458b26b90a0e2b33142",
+  "status": "accepted exact-source CI, official prepare and delivery ZIP; publication and ArNS cutover outstanding",
   "failedRuns": [
     44252796058,
     44254073368,
-    44258693808
+    44258693808,
+    44259578185
   ],
   "runtimePublication": false,
   "ownerWalletSigning": false,
@@ -29,7 +30,22 @@
     "ci/44252796058-failure-summary.json",
     "ci/44252796058-offline-html-diagnosis.json",
     "offline-browser-cross-review.json",
-    "os-offline-marker-only-negative.json"
+    "os-offline-marker-only-negative.json",
+    "ci/44259578185-attempt1-direct-readiness.json",
+    "ci/44259578185-attempt1-github-evidence-final.json",
+    "ci/44259578185-attempt1-failure-summary.json",
+    "ci/44259578185-attempt1-browser-diagnosis.json",
+    "ci/44261723986-attempt1-visual-review.json",
+    "ci/44261723986-attempt1-accepted-release.json",
+    "ci/44261723986-attempt1-direct-readiness.json",
+    "ci/44261723986-attempt1-github-evidence-final.json",
+    "ci/44261723986-attempt1-success-summary.json",
+    "ci/44261723986-attempt1-verified-artifacts.json",
+    "prepare/44264061901-attempt1-github-evidence-final.json",
+    "prepare/44264061901-attempt1-local-ci-byte-comparison.json",
+    "prepare/44264061901-attempt1-upload-quote.json",
+    "prepare/acceptance-summary.json",
+    "prepare/accepted-build.json"
   ],
   "attempts": [
     {
@@ -52,8 +68,129 @@
       "attempt": 1,
       "conclusion": "failure",
       "browserEnginesLaunched": 0
+    },
+    {
+      "run": 44259578185,
+      "attempt": 1,
+      "source": "58474a6cad690de206412dfcb48c8ebbed84fa24",
+      "job": 134649372719,
+      "conclusion": "failure",
+      "jobCompletedAt": "2026-11-18T07:44:17Z",
+      "stepCounts": {
+        "success": 34,
+        "failure": 2,
+        "skipped": 41
+      },
+      "independentApp": {
+        "passed": 50,
+        "failed": 7,
+        "tested": 57,
+        "enginePasses": {
+          "chromium": 17,
+          "firefox": 16,
+          "webkit": 17
+        }
+      },
+      "standaloneEnginesPassed": [
+        "chromium",
+        "webkit"
+      ],
+      "standaloneFirefox": "launch failure; zero archive recoveries verified",
+      "readyDirectNodes": 2,
+      "releaseArtifactCreated": false,
+      "diagnosis": "ci/44259578185-attempt1-browser-diagnosis.json"
+    },
+    {
+      "run": 44261723986,
+      "attempt": 1,
+      "source": "1c7cb217954868beb0582458b26b90a0e2b33142",
+      "job": 134656412880,
+      "conclusion": "success",
+      "jobCompletedAt": "2026-11-18T08:04:38Z",
+      "stepCounts": {
+        "success": 76,
+        "skipped": 1,
+        "failed": 0
+      },
+      "expectedSkipped": [
+        "Preserve checkout failure diagnostics"
+      ],
+      "artifacts": 11,
+      "browserGates": "browserGates",
+      "ciArtifact": {
+        "name": "permaweb-static-release",
+        "id": 14409315510,
+        "bytes": 1266470,
+        "sha256": "39efa657ace815bb0f076d87c03f579464f0783c2dcffb668f8ff0c010e61f53"
+      }
     }
   ],
-  "pendingRun": 44259578185,
-  "pendingAttempt": 1
+  "currentTree": "2e3a2a969b6f45cd6ef5a92849b95e5fd52686f1",
+  "browserGates": {
+    "run": 44261723986,
+    "attempt": 1,
+    "job": 134656412880,
+    "exactSource": "1c7cb217954868beb0582458b26b90a0e2b33142",
+    "independentApp": {
+      "passed": 57,
+      "tested": 57,
+      "enginePasses": {
+        "chromium": 19,
+        "firefox": 19,
+        "webkit": 19
+      }
+    },
+    "standaloneHtml": {
+      "ipv4Parser": "pass",
+      "passEngines": [
+        "chromium",
+        "firefox",
+        "webkit"
+      ],
+      "verifiedDownloadsPerEngine": 6,
+      "verifiedRejectionsPerEngine": 5
+    }
+  },
+  "officialPrepare": {
+    "run": 44264061901,
+    "attempt": 1,
+    "job": 134664131325,
+    "uploadStep": "skipped",
+    "artifacts": [
+      {
+        "name": "permaweb-accepted-pack",
+        "id": 14409706058,
+        "bytes": 1266906,
+        "sha256": "f65fe8cfeaca5d9bec79aa5a4ba7565cb377b90be33cb017bd612bd91b2fffd1"
+      },
+      {
+        "name": "permaweb-upload-evidence",
+        "id": 14408923104,
+        "bytes": 1341,
+        "sha256": "f536c3999c0808ed0718d172809450869286aa02f28faf3a58a1bcdd88e3da74"
+      }
+    ],
+    "conclusion": "success",
+    "mode": "prepare",
+    "completedSteps": 13,
+    "paidUploadSkipped": true,
+    "maxQuoteWinc": "0"
+  },
+  "acceptedSite": {
+    "files": 41,
+    "bytes": 2903451,
+    "ciPayloadFiles": 40,
+    "comparisons": {
+      "ciAndOfficialPayload": "identical-bytes",
+      "generatedProvenanceAndBothOfficialCopies": "identical-bytes",
+      "ownerZipAndOfficialSite": "identical-bytes"
+    },
+    "delivery": {
+      "name": "sejire-independent-1c7cb21.zip",
+      "bytes": 1257435,
+      "sha256": "d8261dfac30f6c430c7c5b13747d37ca6a902107d652c7f775262c59023a66bc",
+      "rootSiteDirectory": "site",
+      "releaseManifestSha256": "6e2de3162ae7ac38c0a7653ac774bd801a6b11a3d95506309b0dbf2743b08c77"
+    }
+  }
 }

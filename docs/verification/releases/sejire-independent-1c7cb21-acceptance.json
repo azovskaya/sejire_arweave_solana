@@ -1,0 +1,84 @@
+{
+  "schema": "sejire/offline-prepare-acceptance/v1",
+  "historicalRehearsal": false,
+  "status": "PASS",
+  "gate": {
+    "schema": "sejire/worker-release-gate/v1",
+    "sourceCommit": "1c7cb217954868beb0582458b26b90a0e2b33142",
+    "ciRunId": 44261723986,
+    "ciAttempt": 1,
+    "repository": "azovskaya/sejire_arweave_solana",
+    "branch": "feat/decentralized-arweave-20261116"
+  },
+  "ci": {
+    "run": 44261723986,
+    "attempt": 1,
+    "job": 134656412880,
+    "artifact": {
+      "name": "permaweb-static-release",
+      "id": 14409315510,
+      "bytes": 1266470,
+      "sha256": "39efa657ace815bb0f076d87c03f579464f0783c2dcffb668f8ff0c010e61f53"
+    }
+  },
+  "prepare": {
+    "run": 44264061901,
+    "attempt": 1,
+    "job": 134664131325,
+    "uploadStep": "skipped",
+    "artifacts": [
+      {
+        "name": "permaweb-accepted-pack",
+        "id": 14409706058,
+        "bytes": 1266906,
+        "sha256": "f65fe8cfeaca5d9bec79aa5a4ba7565cb377b90be33cb017bd612bd91b2fffd1"
+      },
+      {
+        "name": "permaweb-upload-evidence",
+        "id": 14408923104,
+        "bytes": 1341,
+        "sha256": "f536c3999c0808ed0718d172809450869286aa02f28faf3a58a1bcdd88e3da74"
+      }
+    ]
+  },
+  "quote": {
+    "maxQuoteWinc": "0",
+    "quotedWinc": "39481602974",
+    "quotedAt": 1794989184620,
+    "items": 42
+  },
+  "provenance": {
+    "schema": "sejire/permaweb-provenance/v1",
+    "artifact": "permaweb-static-release",
+    "run": 44261723986,
+    "attempt": 1,
+    "artifactId": 14409315510,
+    "sourceCommit": "1c7cb217954868beb0582458b26b90a0e2b33142",
+    "publishedByCommit": "1c7cb217954868beb0582458b26b90a0e2b33142",
+    "profile": "decentralized-direct-arweave",
+    "zipSha256": "39efa657ace815bb0f076d87c03f579464f0783c2dcffb668f8ff0c010e61f53",
+    "releaseManifestSha256": "6e2de3162ae7ac38c0a7653ac774bd801a6b11a3d95506309b0dbf2743b08c77"
+  },
+  "boundary": {
+    "profile": "decentralized-direct-arweave",
+    "jsAssets": 10,
+    "renderedModules": 339,
+    "recoveryFiles": 8,
+    "mandatorySejireService": false
+  },
+  "bytes": 2903451,
+  "files": 41,
+  "ciPayloadFiles": 40,
+  "comparisons": {
+    "ciAndOfficialPayload": "identical-bytes",
+    "generatedProvenanceAndBothOfficialCopies": "identical-bytes",
+    "ownerZipAndOfficialSite": "identical-bytes"
+  },
+  "delivery": {
+    "name": "sejire-independent-1c7cb21.zip",
+    "bytes": 1257435,
+    "sha256": "d8261dfac30f6c430c7c5b13747d37ca6a902107d652c7f775262c59023a66bc",
+    "rootSiteDirectory": "site",
+    "releaseManifestSha256": "6e2de3162ae7ac38c0a7653ac774bd801a6b11a3d95506309b0dbf2743b08c77"
+  }
+}

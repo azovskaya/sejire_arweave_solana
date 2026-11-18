@@ -1,0 +1,353 @@
+{
+  "schema": "sejire/browser-ci-diagnosis/v1",
+  "run": 44259578185,
+  "attempt": 1,
+  "job": 134649372719,
+  "source": "58474a6cad690de206412dfcb48c8ebbed84fa24",
+  "tree": "ecbff9814a94d53f9e5bda10ed53f78a1b8a2ebb",
+  "conclusion": "failure",
+  "jobStartedAt": "2026-11-18T07:31:47Z",
+  "jobCompletedAt": "2026-11-18T07:44:17Z",
+  "runUpdatedAt": "2026-11-18T07:44:18Z",
+  "stepCounts": {
+    "success": 34,
+    "failure": 2,
+    "skipped": 41
+  },
+  "independentApp": {
+    "logicalScenarios": 19,
+    "engineExecutions": 57,
+    "passed": 50,
+    "failed": 7,
+    "perEngine": {
+      "chromium": {
+        "pass": 17,
+        "fail": 2
+      },
+      "firefox": {
+        "pass": 16,
+        "fail": 3
+      },
+      "webkit": {
+        "pass": 17,
+        "fail": 2
+      }
+    },
+    "perScenario": [
+      {
+        "logicalTest": 1,
+        "title": "independent landing and encrypted-file restoration have no external runtime calls at 1280px",
+        "testedSourceLine": 157,
+        "outcomes": {
+          "chromium": "pass",
+          "firefox": "pass",
+          "webkit": "pass"
+        }
+      },
+      {
+        "logicalTest": 2,
+        "title": "independent landing and encrypted-file restoration have no external runtime calls at 390px",
+        "testedSourceLine": 157,
+        "outcomes": {
+          "chromium": "pass",
+          "firefox": "pass",
+          "webkit": "pass"
+        }
+      },
+      {
+        "logicalTest": 3,
+        "title": "direct save resumes one signed transaction after reload and portable import, and restores by known ID",
+        "testedSourceLine": 176,
+        "outcomes": {
+          "chromium": "pass",
+          "firefox": "pass",
+          "webkit": "pass"
+        }
+      },
+      {
+        "logicalTest": 4,
+        "title": "offline multitreed archive stays complete when saved locally and cancellation never requires payment",
+        "testedSourceLine": 223,
+        "outcomes": {
+          "chromium": "pass",
+          "firefox": "pass",
+          "webkit": "pass"
+        }
+      },
+      {
+        "logicalTest": 5,
+        "title": "legacy order blocks a fresh AR signature and remains byte-for-byte unchanged",
+        "testedSourceLine": 252,
+        "outcomes": {
+          "chromium": "pass",
+          "firefox": "pass",
+          "webkit": "pass"
+        }
+      },
+      {
+        "logicalTest": 6,
+        "title": "a damaged portable kit is refused without any network request",
+        "testedSourceLine": 274,
+        "outcomes": {
+          "chromium": "pass",
+          "firefox": "pass",
+          "webkit": "pass"
+        }
+      },
+      {
+        "logicalTest": 7,
+        "title": "declining an older network version preserves the selected full vault and the next local export",
+        "testedSourceLine": 284,
+        "outcomes": {
+          "chromium": "pass",
+          "firefox": "pass",
+          "webkit": "pass"
+        }
+      },
+      {
+        "logicalTest": 8,
+        "title": "opening a local_ version adopts its complete vault without inventing a network parent",
+        "testedSourceLine": 308,
+        "outcomes": {
+          "chromium": "pass",
+          "firefox": "pass",
+          "webkit": "pass"
+        }
+      },
+      {
+        "logicalTest": 9,
+        "title": "a gateway cannot bind an old valid ciphertext to an unsigned network version",
+        "testedSourceLine": 336,
+        "outcomes": {
+          "chromium": "pass",
+          "firefox": "pass",
+          "webkit": "pass"
+        }
+      },
+      {
+        "logicalTest": 10,
+        "title": "restoration does not claim success when the selected vault session cannot be persisted",
+        "testedSourceLine": 364,
+        "outcomes": {
+          "chromium": "pass",
+          "firefox": "pass",
+          "webkit": "pass"
+        }
+      },
+      {
+        "logicalTest": 11,
+        "title": "a failed preparation session write retains the encrypted attempt and never offers a payment as successful preparation",
+        "testedSourceLine": 379,
+        "outcomes": {
+          "chromium": "pass",
+          "firefox": "pass",
+          "webkit": "pass"
+        }
+      },
+      {
+        "logicalTest": 12,
+        "title": "both PDF downloads work with every external service blocked",
+        "testedSourceLine": 394,
+        "outcomes": {
+          "chromium": "pass",
+          "firefox": "pass",
+          "webkit": "pass"
+        }
+      },
+      {
+        "logicalTest": 13,
+        "title": "the offline decoder link downloads the exact standalone HTML from the real static server",
+        "testedSourceLine": 415,
+        "outcomes": {
+          "chromium": "pass",
+          "firefox": "pass",
+          "webkit": "pass"
+        }
+      },
+      {
+        "logicalTest": 14,
+        "title": "a sandboxed manifest fallback loads independent assets and the exact offline decoder under its manifest path",
+        "testedSourceLine": 430,
+        "outcomes": {
+          "chromium": "pass",
+          "firefox": "fail",
+          "webkit": "pass"
+        }
+      },
+      {
+        "logicalTest": 15,
+        "title": "a chosen custom node remains usable through restore, versions, preparation and reload with default gateways blocked",
+        "testedSourceLine": 474,
+        "outcomes": {
+          "chromium": "pass",
+          "firefox": "pass",
+          "webkit": "pass"
+        }
+      },
+      {
+        "logicalTest": 16,
+        "title": "a valid but wrong archive phrase cannot replace any local state or trigger a network fallback",
+        "testedSourceLine": 514,
+        "outcomes": {
+          "chromium": "fail",
+          "firefox": "fail",
+          "webkit": "fail"
+        }
+      },
+      {
+        "logicalTest": 17,
+        "title": "leaving restoration while a verified network archive is delayed cannot later replace the draft or session",
+        "testedSourceLine": 537,
+        "outcomes": {
+          "chromium": "pass",
+          "firefox": "pass",
+          "webkit": "pass"
+        }
+      },
+      {
+        "logicalTest": 18,
+        "title": "an unavailable IndexedDB journal blocks preparation and wallet access while preserving the editor draft",
+        "testedSourceLine": 570,
+        "outcomes": {
+          "chromium": "fail",
+          "firefox": "fail",
+          "webkit": "fail"
+        }
+      },
+      {
+        "logicalTest": 19,
+        "title": "a definitive Wander decline keeps the same encrypted backup and requires an explicit second signing action",
+        "testedSourceLine": 593,
+        "outcomes": {
+          "chromium": "pass",
+          "firefox": "pass",
+          "webkit": "pass"
+        }
+      }
+    ],
+    "passedAppCaseScope": "Assertions in those particular cases, using a synthetic network and browser wallet. Each failed execution remains failed."
+  },
+  "separateStandaloneHtmlGate": {
+    "linuxKernelNetworkIsolation": true,
+    "perEngine": {
+      "chromium": {
+        "outcome": "pass",
+        "verifiedDownloads": 6,
+        "verifiedRejections": 5
+      },
+      "firefox": {
+        "outcome": "failed to launch",
+        "verifiedDownloads": 0,
+        "verifiedRejections": 0,
+        "observed": "Firefox Nightly refused to run as root with XDG_RUNTIME_DIR owned by the runner. No decoder case completed on that engine in this job."
+      },
+      "webkit": {
+        "outcome": "pass",
+        "verifiedDownloads": 6,
+        "verifiedRejections": 5
+      }
+    },
+    "countsMethod": "The two successful aggregate TAP cases each assert exactly six byte-equal downloads and five rejections. The independent IPv4 parser TAP case is separate.",
+    "webKitSyntheticAB": [
+      {
+        "offlineEmulation": true,
+        "online": false,
+        "fileText": {
+          "ok": false,
+          "error": "NotReadableError"
+        },
+        "webcrypto": {
+          "ok": true,
+          "error": null
+        }
+      },
+      {
+        "offlineEmulation": false,
+        "online": false,
+        "fileText": {
+          "ok": true,
+          "error": null
+        },
+        "webcrypto": {
+          "ok": true,
+          "error": null
+        }
+      }
+    ]
+  },
+  "failureGroups": [
+    {
+      "case": 16,
+      "engines": [
+        "chromium",
+        "firefox",
+        "webkit"
+      ],
+      "observed": "Timeout on the second fill via exact wrapping-label text. All three snapshots retained an editable textbox with the accessible SEJIRE archive-words name. No successful corrected-phrase recovery is credited.",
+      "correction": "Use the exact accessible textbox role and name, then fill the corrected value."
+    },
+    {
+      "case": 18,
+      "engines": [
+        "chromium",
+        "firefox"
+      ],
+      "observed": "The locator expected the initial Save button. The editor displayed its Continue saving action when the journal could not be read. The intended subsequent block was not proven by these two failed executions.",
+      "correction": "Wait for the ready Continue saving action and check the block after clicking it."
+    },
+    {
+      "case": 18,
+      "engines": [
+        "webkit"
+      ],
+      "observed": "Exact draft comparison spanned editor hydration. Independent comparison of the synthetic JSON found canonical defaults added and no removed or changed original values.",
+      "fieldComparison": {
+        "addedLeaves": 25,
+        "removedLeaves": 0,
+        "changedExistingLeaves": 0
+      },
+      "correction": "After the editor is ready, assert all original fields remain and snapshot the normalized state before triggering the denied-journal action. Assert exact before/after equality for that action."
+    },
+    {
+      "case": 14,
+      "engines": [
+        "firefox"
+      ],
+      "observed": "The sandbox-host navigation reached the Vite server with the synthetic gateway Host. Vite returned its blocked-host page, and the expected manifest base was missing.",
+      "correction": "Normalize the upstream Host to the local static server while preserving the sandbox origin seen by the browser."
+    }
+  ],
+  "correctionValidationInThisRun": false,
+  "runtimeAppChangeRequiredForTheseHarnessCorrections": false,
+  "publicNodeReadiness": {
+    "file": "44259578185-attempt1-direct-readiness.json",
+    "observedAt": "2026-11-18T07:34:52.708Z",
+    "readyNodes": 2,
+    "configuredNodes": 2,
+    "readOnly": true
+  },
+  "sourceEvidence": {
+    "officialJob": "https://github.com/azovskaya/sejire_arweave_solana/actions/runs/44259578185/job/134649372719",
+    "metadata": "44259578185-attempt1-github-evidence-final.json",
+    "releaseGateSummary": "44259578185-attempt1-failure-summary.json",
+    "jobLog": {
+      "sha256": "559f8fa58f4a4e39988d31afe7db383f3cbdfd12ad679b50ce0ba2f3e3abe5f5",
+      "bytes": 356606,
+      "includedInDocs": false,
+      "reason": "Includes public synthetic draft JSON from a failed byte comparison."
+    },
+    "diagnosticArtifact": {
+      "id": 14408520346,
+      "sha256": "08aaae9107f472092dd8f9450ac146e88ac7d64c9bd5bde8424245337bd8b215",
+      "bytes": 261911,
+      "errorContextsInspected": 7,
+      "includedInDocs": false,
+      "reason": "Contains DOM snapshots of public synthetic archive words and fixture screenshots. The diagnostic summary retains only labels and outcome counts."
+    }
+  },
+  "release": {
+    "releaseArtifactProduced": false,
+    "result": "release_ci_not_successful",
+    "published": false
+  }
+}

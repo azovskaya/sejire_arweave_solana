@@ -1,0 +1,140 @@
+{
+  "capturedAt": "2026-11-18T07:48:04.129Z",
+  "request": {
+    "sha": "58474a6cad690de206412dfcb48c8ebbed84fa24",
+    "runId": 44259578185,
+    "attempt": 1
+  },
+  "runConclusion": "failure",
+  "jobId": 134649372719,
+  "jobCompletedAt": "2026-11-18T07:44:17Z",
+  "stepCounts": {
+    "success": 34,
+    "failure": 2,
+    "skipped": 41
+  },
+  "fullPagination": {
+    "jobs": 1,
+    "artifacts": 2,
+    "idsUnique": true
+  },
+  "directReadiness": {
+    "checkedAt": "2026-11-18T07:34:52.708Z",
+    "required": 2,
+    "ready": 2,
+    "configured": [
+      "arweave.net",
+      "turbo-gateway.com"
+    ],
+    "eachGetStatuses": [
+      200,
+      200,
+      200
+    ],
+    "eachOptionsStatuses": [
+      204,
+      204
+    ],
+    "allowOrigin": "*"
+  },
+  "standalone": {
+    "chromium": "PASS",
+    "firefox": "launch refused; root inherited runner-owned XDG_RUNTIME_DIR",
+    "webkit": "PASS",
+    "webkitAB": [
+      {
+        "offlineEmulation": true,
+        "online": false,
+        "fileTextError": "NotReadableError",
+        "webcryptoOK": true
+      },
+      {
+        "offlineEmulation": false,
+        "online": false,
+        "fileTextOK": true,
+        "webcryptoOK": true
+      }
+    ]
+  },
+  "independentApp": {
+    "passed": 50,
+    "failed": 7,
+    "total": 57,
+    "secondsApprox": 534,
+    "chromium": {
+      "passed": 17,
+      "failed": 2
+    },
+    "firefox": {
+      "passed": 16,
+      "failed": 3
+    },
+    "webkit": {
+      "passed": 17,
+      "failed": 2
+    },
+    "cases": [
+      {
+        "case": "wrong archive phrase",
+        "engines": [
+          "chromium",
+          "firefox",
+          "webkit"
+        ],
+        "failure": "second locator.fill timed out",
+        "line": 528
+      },
+      {
+        "case": "unavailable IndexedDB journal",
+        "engines": [
+          "chromium",
+          "firefox"
+        ],
+        "failure": "Save locator click timed out",
+        "line": 585
+      },
+      {
+        "case": "unavailable IndexedDB journal",
+        "engines": [
+          "webkit"
+        ],
+        "failure": "hydrated draft serialisation differs only by 25 added default fields; cache and session remain null; no prior field was removed or changed",
+        "line": 589
+      },
+      {
+        "case": "sandboxed manifest fallback",
+        "engines": [
+          "firefox"
+        ],
+        "failure": "base locator missing because the Vite preview virtual host check blocked the test proxy's forwarded Host",
+        "line": 446
+      }
+    ]
+  },
+  "diagnostics": {
+    "downloaded": [
+      {
+        "id": 14407493196,
+        "name": "direct-arweave-api-readiness",
+        "size": 874,
+        "sha256": "9ecf53b859a82a4cb712a56dc79fe2294608bde1c81f1b9e474912be68a036a7"
+      },
+      {
+        "id": 14408520346,
+        "name": "checkout-failure-diagnostics",
+        "size": 261911,
+        "sha256": "08aaae9107f472092dd8f9450ac146e88ac7d64c9bd5bde8424245337bd8b215"
+      }
+    ],
+    "verified": "ZIP byte count and SHA-256, CRC and member paths",
+    "screensInDiagnosticZip": 6,
+    "errorSnapshots": 7
+  },
+  "acceptance": {
+    "acceptedPackageCreated": false,
+    "staticPackAvailable": false,
+    "fullDependencyReportAvailable": false,
+    "finalModuleMapAvailable": false,
+    "gate": "release_ci_not_successful"
+  }
+}

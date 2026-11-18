@@ -1,0 +1,164 @@
+{
+  "dependency-audit-evidence": {
+    "artifactId": 14409601527,
+    "zipBytes": 8603,
+    "sha256": "c91eef53e671df16dbf6c8cc7b83256e8d05a7d56a77c471157d6637e4c38c8b",
+    "files": [
+      "sponsor-full.json",
+      "web-full.json",
+      "sponsor-production.json",
+      "web-production.json"
+    ],
+    "counts": {
+      "sponsor-full.json": {
+        "info": 0,
+        "low": 13,
+        "moderate": 1,
+        "high": 3,
+        "critical": 0,
+        "total": 17
+      },
+      "web-full.json": {
+        "info": 0,
+        "low": 17,
+        "moderate": 11,
+        "high": 8,
+        "critical": 0,
+        "total": 36
+      },
+      "sponsor-production.json": {
+        "info": 0,
+        "low": 13,
+        "moderate": 1,
+        "high": 0,
+        "critical": 0,
+        "total": 14
+      },
+      "web-production.json": {
+        "info": 0,
+        "low": 13,
+        "moderate": 10,
+        "high": 0,
+        "critical": 0,
+        "total": 23
+      }
+    }
+  },
+  "permaweb-static-release": {
+    "artifactId": 14409315510,
+    "zipBytes": 1266470,
+    "sha256": "39efa657ace815bb0f076d87c03f579464f0783c2dcffb668f8ff0c010e61f53",
+    "files": [
+      "404.html",
+      "assets/NotoSans-Regular-Dpf_lrdO.ttf",
+      "assets/NotoSans-Bold-axMicgqH.ttf",
+      "assets/classicTreePdf-Blh-tUPy.js",
+      "assets/html2canvas-B0nUEnH5.js",
+      "assets/index-B7dfJ1K8.js",
+      "assets/index-C0vTJ_5C.css",
+      "assets/index.es-NR5AbxfW.js",
+      "assets/pdf-vendor-DHCs3J6V.js",
+      "assets/poster-CQ3h2TDb.js",
+      "assets/purify.es-Cu8FNuDu.js",
+      "assets/rolldown-runtime-BgaNhQyE.js",
+      "assets/shezhirePdf-gGMSprgq.js",
+      "assets/wallet-DZ-AkEcU.js",
+      "assets/work-sans-latin-400-normal-DE1_0GuN.woff",
+      "assets/work-sans-latin-400-normal-jUejSri3.woff2",
+      "assets/work-sans-latin-700-normal-CEeo_t6l.woff2",
+      "assets/work-sans-latin-700-normal-mDs79oer.woff",
+      "assets/work-sans-latin-ext-400-normal-j7TZlk-s.woff",
+      "assets/work-sans-latin-ext-400-normal-zfQnhXzv.woff2",
+      "assets/work-sans-latin-ext-700-normal-BP8nCPzd.woff",
+      "assets/work-sans-latin-ext-700-normal-Bc0iTajH.woff2",
+      "assets/work-sans-vietnamese-400-normal-BxGuknnG.woff2",
+      "assets/work-sans-vietnamese-400-normal-DFZk_KN_.woff",
+      "assets/work-sans-vietnamese-700-normal-BYAoORCv.woff",
+      "assets/work-sans-vietnamese-700-normal-CqjC4WOy.woff2",
+      "bundle-boundary.json",
+      "favicon.ico",
+      "favicon.svg",
+      "index.html",
+      "recovery/FORMAT.md",
+      "recovery/LICENSES.txt",
+      "recovery/README.md",
+      "recovery/english.txt",
+      "recovery/envelope-v1.schema.json",
+      "recovery/public-vectors.json",
+      "recovery/recovery.html",
+      "release-manifest.json",
+      "recovery/recover.mjs",
+      "release-profile.json"
+    ]
+  },
+  "independent-static-screens": {
+    "artifactId": 14408193446,
+    "zipBytes": 257022,
+    "sha256": "e74d383d372db6e0ef82f25ff02da7c3fe11e8cb540b803955a786783ef6921b",
+    "files": [
+      "independent-independent-la-76680-rnal-runtime-calls-at-390px-chromium/independent-390.png",
+      "independent-independent-la-76680-rnal-runtime-calls-at-390px-webkit/independent-390.png",
+      "independent-independent-la-76680-rnal-runtime-calls-at-390px-firefox/independent-390.png",
+      "independent-independent-la-de6e1-nal-runtime-calls-at-1280px-chromium/independent-1280.png",
+      "independent-independent-la-de6e1-nal-runtime-calls-at-1280px-firefox/independent-1280.png",
+      "independent-independent-la-de6e1-nal-runtime-calls-at-1280px-webkit/independent-1280.png"
+    ],
+    "enginesAndWidths": [
+      [
+        "chromium",
+        390
+      ],
+      [
+        "chromium",
+        1280
+      ],
+      [
+        "firefox",
+        390
+      ],
+      [
+        "firefox",
+        1280
+      ],
+      [
+        "webkit",
+        390
+      ],
+      [
+        "webkit",
+        1280
+      ]
+    ]
+  },
+  "direct-arweave-api-readiness": {
+    "artifactId": 14408019209,
+    "zipBytes": 869,
+    "sha256": "a0b72fa98c3aa9dad5be8ec7989747578b1fb467b23188aaa7437b6be7d8c5cf",
+    "files": [
+      "readiness.json"
+    ],
+    "checkedAt": "2026-11-18T07:51:38.390Z",
+    "nodes": [
+      {
+        "node": "https://arweave.net",
+        "checks": [
+          200,
+          200,
+          200,
+          204,
+          204
+        ]
+      },
+      {
+        "node": "https://turbo-gateway.com",
+        "checks": [
+          200,
+          200,
+          200,
+          204,
+          204
+        ]
+      }
+    ]
+  }
+}

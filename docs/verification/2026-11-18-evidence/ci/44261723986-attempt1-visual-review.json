@@ -1,0 +1,66 @@
+{
+  "run": 44261723986,
+  "attempt": 1,
+  "job": 134656412880,
+  "source": "1c7cb217954868beb0582458b26b90a0e2b33142",
+  "sourceArtifact": {
+    "name": "independent-static-screens",
+    "id": 14408193446,
+    "zipBytes": 257022,
+    "zipSHA256": "e74d383d372db6e0ef82f25ff02da7c3fe11e8cb540b803955a786783ef6921b"
+  },
+  "sourcePngFiles": [
+    {
+      "engine": "chromium",
+      "width": 390,
+      "height": 844,
+      "archiveMember": "independent-independent-la-76680-rnal-runtime-calls-at-390px-chromium/independent-390.png",
+      "sha256": "b48ba578ab617f019e681f58271a70aebf26e9b5c235fe9857b07ef3e029b66b"
+    },
+    {
+      "engine": "firefox",
+      "width": 390,
+      "height": 844,
+      "archiveMember": "independent-independent-la-76680-rnal-runtime-calls-at-390px-firefox/independent-390.png",
+      "sha256": "024b3b5e4ad7e3a618d9b7a1f2290c3e3963dc7c6e10df74cc9ee7e925b0ec35"
+    },
+    {
+      "engine": "webkit",
+      "width": 390,
+      "height": 844,
+      "archiveMember": "independent-independent-la-76680-rnal-runtime-calls-at-390px-webkit/independent-390.png",
+      "sha256": "1178e48562143255625c85b84d645e81aede6b4a3c9dcabf7cfc77ce081584a3"
+    },
+    {
+      "engine": "chromium",
+      "width": 1280,
+      "height": 900,
+      "archiveMember": "independent-independent-la-de6e1-nal-runtime-calls-at-1280px-chromium/independent-1280.png",
+      "sha256": "a09e71fcaba341aa45a1e62b0459c82837da023f0bb9120b6059a20293c441cf"
+    },
+    {
+      "engine": "firefox",
+      "width": 1280,
+      "height": 900,
+      "archiveMember": "independent-independent-la-de6e1-nal-runtime-calls-at-1280px-firefox/independent-1280.png",
+      "sha256": "1aee31ff5b46faf7a7640f917f4d77a3b81bdfa0c5c362adf26a9561afd7cc51"
+    },
+    {
+      "engine": "webkit",
+      "width": 1280,
+      "height": 900,
+      "archiveMember": "independent-independent-la-de6e1-nal-runtime-calls-at-1280px-webkit/independent-1280.png",
+      "sha256": "4f4d20d36ec3d485c9b1ef0fa29ba3cf75556e966ecac76118576d7636524a3f"
+    }
+  ],
+  "reviewImage": {
+    "path": "../../screens/2026-11-18-independent-browser-review.jpg",
+    "bytes": 44410,
+    "sha256": "3ee941955b888323b0ec7278945ab608e0362f79b98c9de7cfa101f282e9547b",
+    "width": 1200,
+    "height": 760,
+    "exifFieldCount": 0
+  },
+  "observed": "At both viewport sizes the public synthetic family layout is visually consistent across the three engines. At width 390 the selected child card is visible and the parent card is partly outside the right edge. The Fit control is present.",
+  "scope": "Static screenshots from Playwright Linux CI. Physical-device touch, gesture interaction and whether Fit displays the entire tree were not exercised by this visual review."
+}

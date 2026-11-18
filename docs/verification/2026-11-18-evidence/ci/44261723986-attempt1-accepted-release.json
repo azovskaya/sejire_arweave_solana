@@ -1,0 +1,304 @@
+{
+  "status": "PASS",
+  "checkedAt": "2026-11-18T08:05:21.409Z",
+  "directory": ".cache/permaweb-accepted-1c7cb21",
+  "gate": {
+    "schema": "sejire/worker-release-gate/v1",
+    "sourceCommit": "1c7cb217954868beb0582458b26b90a0e2b33142",
+    "ciRunId": 44261723986,
+    "ciAttempt": 1,
+    "repository": "azovskaya/sejire_arweave_solana",
+    "branch": "feat/decentralized-arweave-20261116"
+  },
+  "provenance": {
+    "schema": "sejire/permaweb-provenance/v1",
+    "artifact": "permaweb-static-release",
+    "run": 44261723986,
+    "attempt": 1,
+    "artifactId": 14409315510,
+    "sourceCommit": "1c7cb217954868beb0582458b26b90a0e2b33142",
+    "publishedByCommit": "1c7cb217954868beb0582458b26b90a0e2b33142",
+    "profile": "decentralized-direct-arweave",
+    "zipSha256": "39efa657ace815bb0f076d87c03f579464f0783c2dcffb668f8ff0c010e61f53",
+    "releaseManifestSha256": "6e2de3162ae7ac38c0a7653ac774bd801a6b11a3d95506309b0dbf2743b08c77"
+  },
+  "artifact": {
+    "id": 14409315510,
+    "sha256": "39efa657ace815bb0f076d87c03f579464f0783c2dcffb668f8ff0c010e61f53",
+    "zipBytes": 1266470
+  },
+  "acceptedFileCount": 41,
+  "acceptedTotalFileBytes": 2903451,
+  "releaseManifestSha256": "6e2de3162ae7ac38c0a7653ac774bd801a6b11a3d95506309b0dbf2743b08c77",
+  "boundary": {
+    "jsAssets": 10,
+    "renderedModules": 339,
+    "picomatchModules": []
+  },
+  "dependencyScope": {
+    "production": [
+      {
+        "name": "@ardrive/turbo-sdk",
+        "severity": "moderate",
+        "nodes": [
+          "node_modules/@ardrive/turbo-sdk"
+        ],
+        "rendered": []
+      },
+      {
+        "name": "@dha-team/arbundles",
+        "severity": "low",
+        "nodes": [
+          "node_modules/@dha-team/arbundles"
+        ],
+        "rendered": []
+      },
+      {
+        "name": "@ethersproject/abstract-provider",
+        "severity": "low",
+        "nodes": [
+          "node_modules/@ethersproject/abstract-provider"
+        ],
+        "rendered": []
+      },
+      {
+        "name": "@ethersproject/abstract-signer",
+        "severity": "low",
+        "nodes": [
+          "node_modules/@ethersproject/abstract-signer"
+        ],
+        "rendered": []
+      },
+      {
+        "name": "@ethersproject/hash",
+        "severity": "low",
+        "nodes": [
+          "node_modules/@ethersproject/hash",
+          "node_modules/@ethersproject/wordlists/node_modules/@ethersproject/hash"
+        ],
+        "rendered": []
+      },
+      {
+        "name": "@ethersproject/hdnode",
+        "severity": "low",
+        "nodes": [
+          "node_modules/@ethersproject/hdnode"
+        ],
+        "rendered": []
+      },
+      {
+        "name": "@ethersproject/json-wallets",
+        "severity": "low",
+        "nodes": [
+          "node_modules/@ethersproject/json-wallets"
+        ],
+        "rendered": []
+      },
+      {
+        "name": "@ethersproject/providers",
+        "severity": "low",
+        "nodes": [
+          "node_modules/@ethersproject/providers"
+        ],
+        "rendered": []
+      },
+      {
+        "name": "@ethersproject/signing-key",
+        "severity": "low",
+        "nodes": [
+          "node_modules/@ethersproject/abstract-provider/node_modules/@ethersproject/signing-key",
+          "node_modules/@ethersproject/hdnode/node_modules/@ethersproject/signing-key",
+          "node_modules/@ethersproject/json-wallets/node_modules/@ethersproject/signing-key",
+          "node_modules/@ethersproject/signing-key"
+        ],
+        "rendered": []
+      },
+      {
+        "name": "@ethersproject/transactions",
+        "severity": "low",
+        "nodes": [
+          "node_modules/@ethersproject/abstract-provider/node_modules/@ethersproject/transactions",
+          "node_modules/@ethersproject/hdnode/node_modules/@ethersproject/transactions",
+          "node_modules/@ethersproject/json-wallets/node_modules/@ethersproject/transactions",
+          "node_modules/@ethersproject/transactions"
+        ],
+        "rendered": []
+      },
+      {
+        "name": "@ethersproject/wallet",
+        "severity": "low",
+        "nodes": [
+          "node_modules/@ethersproject/wallet"
+        ],
+        "rendered": []
+      },
+      {
+        "name": "@ethersproject/wordlists",
+        "severity": "low",
+        "nodes": [
+          "node_modules/@ethersproject/wordlists"
+        ],
+        "rendered": []
+      },
+      {
+        "name": "@solana/buffer-layout-utils",
+        "severity": "moderate",
+        "nodes": [
+          "node_modules/@solana/buffer-layout-utils"
+        ],
+        "rendered": []
+      },
+      {
+        "name": "@solana/spl-token",
+        "severity": "moderate",
+        "nodes": [
+          "node_modules/@solana/spl-token"
+        ],
+        "rendered": []
+      },
+      {
+        "name": "@solana/spl-token-group",
+        "severity": "moderate",
+        "nodes": [
+          "node_modules/@solana/spl-token-group"
+        ],
+        "rendered": []
+      },
+      {
+        "name": "@solana/spl-token-metadata",
+        "severity": "moderate",
+        "nodes": [
+          "node_modules/@solana/spl-token-metadata"
+        ],
+        "rendered": []
+      },
+      {
+        "name": "@solana/web3.js",
+        "severity": "moderate",
+        "nodes": [
+          "node_modules/@solana/web3.js"
+        ],
+        "rendered": []
+      },
+      {
+        "name": "elliptic",
+        "severity": "low",
+        "nodes": [
+          "node_modules/elliptic"
+        ],
+        "rendered": []
+      },
+      {
+        "name": "jayson",
+        "severity": "moderate",
+        "nodes": [
+          "node_modules/jayson"
+        ],
+        "rendered": []
+      },
+      {
+        "name": "qs",
+        "severity": "moderate",
+        "nodes": [
+          "node_modules/qs"
+        ],
+        "rendered": []
+      },
+      {
+        "name": "secp256k1",
+        "severity": "low",
+        "nodes": [
+          "node_modules/secp256k1"
+        ],
+        "rendered": []
+      },
+      {
+        "name": "stream-json",
+        "severity": "moderate",
+        "nodes": [
+          "node_modules/stream-json"
+        ],
+        "rendered": []
+      },
+      {
+        "name": "uuid",
+        "severity": "moderate",
+        "nodes": [
+          "node_modules/uuid"
+        ],
+        "rendered": []
+      }
+    ],
+    "fullHigh": [
+      {
+        "name": "@rollup/plugin-inject",
+        "severity": "high",
+        "nodes": [
+          "node_modules/@rollup/plugin-inject"
+        ],
+        "rendered": []
+      },
+      {
+        "name": "@rollup/pluginutils",
+        "severity": "high",
+        "nodes": [
+          "node_modules/@rollup/pluginutils"
+        ],
+        "rendered": []
+      },
+      {
+        "name": "@vitejs/plugin-react",
+        "severity": "high",
+        "nodes": [
+          "node_modules/@vitejs/plugin-react"
+        ],
+        "rendered": []
+      },
+      {
+        "name": "fdir",
+        "severity": "high",
+        "nodes": [
+          "node_modules/fdir"
+        ],
+        "rendered": []
+      },
+      {
+        "name": "picomatch",
+        "severity": "high",
+        "nodes": [
+          "node_modules/picomatch"
+        ],
+        "rendered": []
+      },
+      {
+        "name": "tinyglobby",
+        "severity": "high",
+        "nodes": [
+          "node_modules/tinyglobby"
+        ],
+        "rendered": []
+      },
+      {
+        "name": "vite",
+        "severity": "high",
+        "nodes": [
+          "node_modules/vite"
+        ],
+        "rendered": []
+      },
+      {
+        "name": "vite-plugin-node-polyfills",
+        "severity": "high",
+        "nodes": [
+          "node_modules/vite-plugin-node-polyfills"
+        ],
+        "rendered": [
+          "apps/web/node_modules/vite-plugin-node-polyfills/shims/process/dist/index.js",
+          "apps/web/node_modules/vite-plugin-node-polyfills/shims/global/dist/index.js",
+          "apps/web/node_modules/vite-plugin-node-polyfills/shims/buffer/dist/index.js"
+        ]
+      }
+    ],
+    "description": "Compared npm audit paths to the exact emitted module report for this CI artifact."
+  }
+}
