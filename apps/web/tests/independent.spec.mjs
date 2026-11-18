@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { createCipheriv, createHash, generateKeyPairSync, randomBytes } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
+import { execFileSync } from 'node:child_process';
 import Arweave from 'arweave';
 import { deriveKeysFromWords, recoverText } from '../../../tools/recovery/recover.mjs';
 
@@ -410,6 +411,51 @@ test('both PDF downloads work with every external service blocked', async ({ pag
     expect(bytes.subarray(-32).toString()).toContain('%%EOF');
   }
   expect(state.external).toEqual([]); expect(state.denied).toEqual([]); expect(state.signs).toBe(0); expect(state.posts).toEqual([]); expect(errors).toEqual([]);
+});
+
+test('imported deep ancestry survives all four PDF downloads with the network blocked', async ({ page, context }) => {
+  const state = await install(context, page, { draft: true });
+  const people = {};
+  const paternalNames = [];
+  for (let generation = 1; generation <= 32; generation++) {
+    const id = `p${generation}`, name = `Ата${String(generation).padStart(2, '0')}`;
+    paternalNames.push(name);
+    people[id] = { id, name, sex: 'M', parents: generation === 32 ? [] : [`p${generation + 1}`] };
+  }
+  people.p1.parents.push('m1');
+  people.m1 = { id: 'm1', name: 'Айғаным', sex: 'F', parents: [] };
+  const imported = { schema: 'sejire/tree-export/v1',
+    store: { meta: { ...tree.meta, title: 'Терең шежіре' }, draft: { persons: people }, versions: {}, commits: {} },
+    guide: { step: 'done', selfId: 'p1' } };
+  await page.goto('/');
+  await expect(page.locator('summary[aria-label="Ещё"]')).toBeVisible();
+  page.on('dialog', dialog => dialog.accept());
+  await page.locator('input[type=file][accept="application/json,.json"]').setInputFiles({
+    name: 'deep-tree.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(imported)),
+  });
+  await expect.poll(() => page.evaluate(() =>
+    JSON.parse(localStorage.getItem('sejire.draft.tree.v1')).meta.title)).toBe(imported.store.meta.title);
+
+  for (const template of [null, 'Қолжазба', 'Тізім', 'Баспалдақ']) {
+    await page.locator('summary[aria-label="Ещё"]').click();
+    const downloading = page.waitForEvent('download');
+    if (template) {
+      await page.getByRole('button', { name: 'Шежіре PDF', exact: true }).click();
+      await page.getByRole('button', { name: new RegExp(template) }).click();
+    } else {
+      await page.getByRole('button', { name: 'Древо в PDF', exact: true }).click();
+    }
+    const download = await downloading;
+    expect(await download.failure()).toBeNull();
+    const body = execFileSync('pdftotext', ['-raw', await download.path(), '-'], { encoding: 'utf8' });
+    const joined = body.replace(/\s+/gu, '');
+    for (const name of paternalNames) expect(joined, template || 'classic').toContain(name);
+    if (template) expect(joined).not.toContain('Айғаным');
+    else expect(joined).toContain('Айғаным');
+    expect(body.split('\f').length - 1).toBeGreaterThan(1);
+  }
+  expect(state.external).toEqual([]);
+  expect(state.posts).toEqual([]);
 });
 
 test('the offline decoder link downloads the exact standalone HTML from the real static server', async ({ page, context }) => {

@@ -17,7 +17,7 @@ import {
   restoreDraftPerson,
   setDraftPerson,
 } from "../lib/treeEngine";
-import { SHEZHIRE_MAX_GENERATIONS, type PdfLocale } from "../lib/i18n/pdf";
+import type { PdfLocale } from "../lib/i18n/pdf";
 import type { ShezhireTemplateId } from "../lib/pdf/shezhireTemplates";
 import { downloadTreeJson, readTreeJsonFile } from "../lib/treeJson";
 import { formatShezhireAffiliation } from "../lib/zhuzRu";
@@ -431,7 +431,6 @@ export function Workspace({ store, guide, onStoreChange, onGuideChange, onHome }
         startId: id,
         meta: current.meta,
         locale: pdfLocale,
-        maxGenerations: SHEZHIRE_MAX_GENERATIONS,
         template,
       });
       flash(t.workspace.flashPdfShezhire);

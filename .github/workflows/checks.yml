@@ -23,6 +23,17 @@ jobs:
       - run: npm ci --prefix apps/web
       - run: npm ci --prefix apps/sponsor
       - run: npm test
+      - name: Stress-test family tree and шежіре PDF exports
+        working-directory: apps/web
+        run: |
+          if ! command -v pdftotext >/dev/null; then
+            sudo apt-get update
+            sudo apt-get install -y poppler-utils
+          fi
+          python3 -m venv "$RUNNER_TEMP/sejire-pdf-env"
+          "$RUNNER_TEMP/sejire-pdf-env/bin/pip" install PyMuPDF==1.26.6
+          node scripts/export-layout-stress.mjs "$RUNNER_TEMP/sejire-layout" --boundaries
+          "$RUNNER_TEMP/sejire-pdf-env/bin/python" scripts/check-layout-pdfs.py "$RUNNER_TEMP/sejire-layout"
       - run: npm run check --prefix apps/sponsor
       - run: npm run test:fund-runtime
       - name: Paid SOL archive, durable continuation and mainnet adapters (synthetic network)

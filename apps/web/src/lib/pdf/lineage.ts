@@ -45,8 +45,8 @@ export function ancestorSlotLayout(
   type Q = { id: string; generation: number; slot: number };
   const queue: Q[] = [{ id: focusId, generation: 0, slot: 0 }];
 
-  while (queue.length) {
-    const cur = queue.shift()!;
+  for (let i = 0; i < queue.length; i += 1) {
+    const cur = queue[i];
     if (placed.has(cur.id) || cur.generation >= maxGenerations) continue;
     const person = snapshot.persons[cur.id];
     if (!person || person.tombstone) continue;
@@ -110,6 +110,7 @@ export type PedigreeCardPos = {
   x: number;
   y: number;
   cx: number;
+  w: number;
   generation: number;
   slot: number;
 };
@@ -117,6 +118,7 @@ export type PedigreeCardPos = {
 export type PedigreeLayoutBox = { x: number; y: number; w: number; h: number };
 
 export type PedigreeChartLayout = {
+  /** Width of cards in the most crowded row. */
   cardW: number;
   cardH: number;
   rowPitch: number;
@@ -178,99 +180,38 @@ export function isShallowPedigreeChart(slots: AncestorSlot[]): boolean {
   return depth <= SHALLOW_CHART_MAX_DEPTH && slots.length <= SHALLOW_CHART_MAX_PEOPLE;
 }
 
-function rowWidthMm(pageW: number, leaves: number): number {
-  return (pageW - POSTER_MARGIN_X) / Math.max(leaves, 1) - 0.7;
+/** Fit every occupied row and reserve the same vertical bands used when painting. */
+function posterFits(w: number, h: number, widest: number, depth: number): boolean {
+  const cardWidth = (w - POSTER_MARGIN_X) / widest - 0.7;
+  return cardWidth >= MIN_READABLE_CARD_W && 12 * depth + 4 * (depth - 1) <= h - 42;
 }
 
-function oldestRowCount(slots: AncestorSlot[], gens: number): number {
-  const g = Math.max(0, gens - 1);
-  return Math.max(1, slots.filter((s) => s.generation === g).length);
-}
-
-function posterFits(pageW: number, slots: AncestorSlot[], gens: number): boolean {
-  return rowWidthMm(pageW, oldestRowCount(slots, gens)) >= MIN_READABLE_CARD_W;
-}
-
-/**
- * One wall poster. Paper grows A4 → A3 → A2 with the widest ancestor row.
- * Does not emit leftover 2-person family sheets — those were unreadable as a tree.
- */
+/** Find a readable overview, keeping the closest generations when even A2 fills up. */
 export function choosePedigreePoster(
   snapshot: Snapshot,
   focusId: string,
   maxGenerations = 13
 ): PedigreePosterPlan {
-  const allSlots = ancestorSlotLayout(snapshot, focusId, maxGenerations);
-  if (!allSlots.length) {
-    return {
-      format: "a4",
-      orientation: "landscape",
-      pageW: 297,
-      pageH: 210,
-      generations: 0,
-      truncated: false,
-      depth: 0,
-    };
-  }
-  const depth = Math.max(...allSlots.map((s) => s.generation)) + 1;
-  const maxInRow = Math.max(
-    1,
-    ...Array.from({ length: depth }, (_, g) => allSlots.filter((s) => s.generation === g).length)
-  );
-
-  if (maxInRow <= 8 && depth > 8) {
-    return {
-      format: "a4",
-      orientation: "portrait",
-      pageW: 210,
-      pageH: 297,
-      generations: depth,
-      truncated: false,
-      depth,
-    };
-  }
-
-  for (const fmt of PEDIGREE_POSTER_SIZES) {
-    if (posterFits(fmt.w, allSlots, depth)) {
-      return {
-        format: fmt.id,
-        orientation: "landscape",
-        pageW: fmt.w,
-        pageH: fmt.h,
-        generations: depth,
-        truncated: false,
-        depth,
-      };
+  const slots = ancestorSlotLayout(snapshot, focusId, maxGenerations);
+  const counts: number[] = [];
+  for (const { generation } of slots) counts[generation] = (counts[generation] ?? 0) + 1;
+  const depth = counts.length;
+  for (let generations = depth; generations > 0; generations -= 1) {
+    const widest = Math.max(...counts.slice(0, generations));
+    const preferPortrait = generations > 8 && widest <= 8;
+    const orientations = preferPortrait
+      ? (["portrait", "landscape"] as const)
+      : (["landscape", "portrait"] as const);
+    for (const { id, w, h } of PEDIGREE_POSTER_SIZES) {
+      for (const orientation of orientations) {
+        const [pageW, pageH] = orientation === "portrait" ? [h, w] : [w, h];
+        if (posterFits(pageW, pageH, widest, generations)) {
+          return { format: id, orientation, pageW, pageH, generations, truncated: generations < depth, depth };
+        }
+      }
     }
   }
-
-  const a2 = PEDIGREE_POSTER_SIZES[PEDIGREE_POSTER_SIZES.length - 1];
-  let gens = depth;
-  while (gens > 2 && !posterFits(a2.w, allSlots, gens)) gens -= 1;
-
-  for (const fmt of PEDIGREE_POSTER_SIZES) {
-    if (posterFits(fmt.w, allSlots, gens)) {
-      return {
-        format: fmt.id,
-        orientation: "landscape",
-        pageW: fmt.w,
-        pageH: fmt.h,
-        generations: gens,
-        truncated: gens < depth,
-        depth,
-      };
-    }
-  }
-
-  return {
-    format: "a2",
-    orientation: "landscape",
-    pageW: a2.w,
-    pageH: a2.h,
-    generations: gens,
-    truncated: gens < depth,
-    depth,
-  };
+  return { format: "a4", orientation: "landscape", pageW: 297, pageH: 210, generations: 0, truncated: false, depth };
 }
 
 /**
@@ -292,7 +233,6 @@ export function computePedigreeLayout(
   const depth = Math.max(1, ...slots.map((s) => s.generation + 1));
   const maxInRow = Math.max(1, ...[...byGen.values()].map((row) => row.length));
   const roomy = isShallowPedigreeChart(slots);
-  const useBinarySlots = !roomy && maxInRow >= 4;
 
   let gap = 0;
   let cardW: number;
@@ -305,27 +245,18 @@ export function computePedigreeLayout(
       cardW = (box.w - (maxInRow - 1) * gap) / maxInRow;
     }
     cardW = Math.max(18, Math.min(52, cardW));
-  } else if (useBinarySlots) {
-    const leafSlots = 2 ** Math.max(0, depth - 1);
-    cardW = Math.min(40, Math.max(6, box.w / leafSlots - 0.7));
   } else {
-    cardW = Math.min(46, Math.max(16, box.w / maxInRow - 2.4));
+    const gapX = maxInRow >= 4 ? 0.7 : 2.4;
+    cardW = Math.min(maxInRow >= 4 ? 40 : 46, box.w / maxInRow - gapX);
   }
 
-  let cardH: number;
-  if (roomy) {
-    cardH = Math.min(22, Math.max(16, Math.min(cardW * 0.48, box.h / depth - 8)));
-  } else {
-    cardH = Math.min(cardW * 0.62, box.h / depth - 1.0);
-    const minH = depth > 8 ? 11.8 : 12;
-    const maxH = depth > 8 ? 17.2 : 22;
-    cardH = Math.max(minH, Math.min(maxH, cardH));
-  }
-
-  const maxPitch = roomy ? 36 : 48;
-  const minPitch = cardH + (roomy ? 10 : 4);
-  const rowPitch =
-    depth > 1 ? Math.max(minPitch, Math.min(maxPitch, (box.h - cardH) / (depth - 1))) : 0;
+  const minGapY = roomy ? 10 : 4;
+  const heightBudget = (box.h - (depth - 1) * minGapY) / depth;
+  const preferredH = roomy
+    ? Math.min(22, Math.max(16, cardW * 0.48))
+    : depth > 8 ? 17.2 : 22;
+  const cardH = Math.min(preferredH, heightBudget);
+  const rowPitch = depth > 1 ? Math.min(roomy ? 36 : 48, (box.h - cardH) / (depth - 1)) : 0;
   const totalH = (depth - 1) * rowPitch + cardH;
   const originY = box.y + Math.max(0, (box.h - totalH) / 2);
 
@@ -334,24 +265,26 @@ export function computePedigreeLayout(
     const visualRow = depth - 1 - g;
     const y = originY + visualRow * rowPitch;
     const n = row.length;
-    const rowW = roomy ? n * cardW + (n - 1) * gap : box.w;
+    const width = roomy ? cardW : Math.min(n >= 4 ? 40 : 46, box.w / n - (n >= 4 ? 0.7 : 2.4));
+    const rowW = roomy ? n * width + (n - 1) * gap : box.w;
     const rowLeft = roomy ? box.x + (box.w - rowW) / 2 : box.x;
     row.forEach((s, i) => {
       let x: number;
       if (roomy) {
-        x = rowLeft + i * (cardW + gap);
+        x = rowLeft + i * (width + gap);
       } else {
-        const frac = useBinarySlots
-          ? slotCenterFraction(s.generation, s.slot, depth)
-          : (i + 0.5) / n;
+        // Only occupied slots consume space. Sorting by pedigree slot keeps
+        // paternal and maternal branches in the same order on adjacent rows.
+        const frac = (i + 0.5) / n;
         const cx = box.x + frac * box.w;
-        x = Math.min(box.x + box.w - cardW, Math.max(box.x, cx - cardW / 2));
+        x = cx - width / 2;
       }
       positions.set(s.person.id, {
         id: s.person.id,
         x,
         y,
-        cx: x + cardW / 2,
+        cx: x + width / 2,
+        w: width,
         generation: s.generation,
         slot: s.slot,
       });

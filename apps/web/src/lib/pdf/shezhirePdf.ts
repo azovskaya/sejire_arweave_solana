@@ -3,7 +3,7 @@ import type { Person, Snapshot, TreeMeta } from "../types";
 import { pdfT, SHEZHIRE_MAX_GENERATIONS, type PdfLocale } from "../i18n/pdf";
 import { maleLineUp, lifeDatesLine } from "./lineage";
 import { ensurePdfFont, setPdfFont } from "./font";
-import { drawBrandMark, fitText, safeFilename, wrapName } from "./poster";
+import { drawBrandMark, fitText, safeFilename } from "./poster";
 import { formatShezhireAffiliation, zhuzFullLabel } from "../zhuzRu";
 import {
   drawAncientLabelBox,
@@ -17,6 +17,7 @@ import {
   drawTitleOrnament,
   type Rgb,
 } from "./ornaments";
+import { appendPdfDetails, fitBoxText, type PdfDetail } from "./textLayout";
 import type { ShezhireTemplateId } from "./shezhireTemplates";
 
 export type { ShezhireTemplateId, ShezhireTemplateInfo } from "./shezhireTemplates";
@@ -29,52 +30,90 @@ type RenderCtx = {
   line: Person[];
   meta: TreeMeta;
   locale: PdfLocale;
+  youngestDistance: number;
+  sheetLabel: string;
+  details: PdfDetail[];
+  detailNumbers: Map<string, number>;
 };
 
-function buildLine(snapshot: Snapshot, startId: string, maxGenerations: number): Person[] {
-  const youngFirst = maleLineUp(snapshot, startId);
-  if (!youngFirst.length) return [];
-  const ascending = youngFirst.slice(0, maxGenerations);
-  return [...ascending].reverse();
+/** Measure and paint in the same font. Oversized fields retain their full text in a numbered entry. */
+function fitEntry(
+  ctx: RenderCtx, label: string, text: string, w: number, h: number,
+  prefer: number, min: number, maxLines = Infinity
+) {
+  const key = JSON.stringify([label, text]);
+  const existing = ctx.detailNumbers.get(key);
+  const number = existing ?? ctx.details.length + 1;
+  const layout = fitBoxText(ctx.doc, text, w, h, prefer, min, maxLines, `… [${number}]`);
+  if (layout.overflow && existing === undefined) {
+    ctx.details.push({ label, text });
+    ctx.detailNumbers.set(key, number);
+  }
+  return layout;
 }
 
-function drawAffiliationBlock(
-  doc: jsPDF,
-  pageW: number,
-  y: number,
-  meta: TreeMeta,
-  locale: PdfLocale,
-  ink: Rgb,
-  mute: Rgb,
-  maxTextW = pageW - 56
-): number {
-  const t = pdfT(locale);
-  const clan = (meta.clanName || "").trim();
-  const zhuz = zhuzFullLabel(meta.zhuz);
+function drawAffiliationBlock(ctx: RenderCtx, y: number, ink: Rgb, mute: Rgb, maxTextW = ctx.pageW - 56) {
+  const { doc, pageW, meta, locale } = ctx;
   const affiliation = formatShezhireAffiliation(meta.zhuz, meta.clanName);
   if (!affiliation) return y;
 
+  const t = pdfT(locale);
+  const zhuz = zhuzFullLabel(meta.zhuz);
+  const clan = (meta.clanName || "").trim();
+  const label = zhuz && clan ? `${t.zhuzLabel} · ${t.clanLabel}` : zhuz ? t.zhuzLabel : t.clanLabel;
   setPdfFont(doc, "normal");
   doc.setFontSize(7);
   doc.setTextColor(...mute);
-  const label =
-    zhuz && clan ? `${t.zhuzLabel} · ${t.clanLabel}` : zhuz ? t.zhuzLabel : t.clanLabel;
   doc.text(label, pageW / 2, y, { align: "center" });
   setPdfFont(doc, "bold");
-  doc.setFontSize(11);
   doc.setTextColor(...ink);
-  const { lines } = wrapName(doc, affiliation, maxTextW, 2, 11, 8);
-  doc.text(lines[0], pageW / 2, y + 5, { align: "center" });
-  if (lines[1]) {
-    doc.setFontSize(9);
-    doc.text(lines[1], pageW / 2, y + 9, { align: "center" });
-    return y + 14;
+  const block = fitEntry(ctx, label, affiliation, maxTextW, 12, 11, 8, 2);
+  for (const [i, line] of block.lines.entries()) {
+    doc.text(line, pageW / 2, y + 1 + block.baseline + i * block.lineHeight, { align: "center" });
   }
-  return y + 10;
+  return y + 3 + block.lines.length * block.lineHeight;
+}
+
+/** Center the name and its dates together inside the actual inner bounds of each template. */
+function drawPersonText(
+  ctx: RenderCtx, person: Person, label: string, x: number, y: number, w: number, h: number,
+  preferred: number, align: "center" | "left", ink: Rgb, mute: Rgb
+) {
+  const { doc } = ctx;
+  const life = lifeDatesLine(person);
+  setPdfFont(doc, "normal");
+  const dateSize = Math.max(6, Math.min(7.5, preferred * 0.78));
+  const dates = life && fitEntry(ctx, label, life, w, Math.min(h * 0.48, 15), dateSize, 5.5);
+  const dateH = dates ? dates.lines.length * dates.lineHeight + 0.8 : 0;
+  setPdfFont(doc, "bold");
+  const name = fitEntry(ctx, label, person.name || "—", w, h - dateH, preferred, 6);
+  const nameH = name.lines.length * name.lineHeight;
+  const top = y + (h - nameH - dateH) / 2;
+  const anchor = align === "center" ? x + w / 2 : x;
+  doc.setTextColor(...ink);
+  for (const [i, line] of name.lines.entries()) {
+    doc.text(line, anchor, top + name.baseline + i * name.lineHeight, { align });
+  }
+  if (dates) {
+    setPdfFont(doc, "normal");
+    doc.setFontSize(dates.fontSize);
+    doc.setTextColor(...mute);
+    for (const [i, line] of dates.lines.entries()) {
+      doc.text(line, anchor, top + nameH + 0.8 + dates.baseline + i * dates.lineHeight, { align });
+    }
+  }
+}
+
+function drawSheetLabel(ctx: RenderCtx, x: number, y: number) {
+  if (!ctx.sheetLabel) return;
+  setPdfFont(ctx.doc, "normal");
+  ctx.doc.setFontSize(6.5);
+  ctx.doc.setTextColor(95, 70, 45);
+  ctx.doc.text(ctx.sheetLabel, x, y);
 }
 
 function renderManuscript(ctx: RenderCtx) {
-  const { doc, pageW, pageH, line, meta, locale } = ctx;
+  const { doc, pageW, pageH, line, locale } = ctx;
   const t = pdfT(locale);
   const parchment: Rgb = [242, 228, 198];
   const parchmentDeep: Rgb = [232, 212, 172];
@@ -90,6 +129,7 @@ function renderManuscript(ctx: RenderCtx) {
   doc.rect(0, 0, 14, pageH, "F");
   doc.rect(pageW - 14, 0, 14, pageH, "F");
   drawOrnamentBorder(doc, pageW, pageH, 8, ink);
+  drawSheetLabel(ctx, 24, pageH - 15);
 
   setPdfFont(doc, "bold");
   doc.setTextColor(...ink);
@@ -105,11 +145,11 @@ function renderManuscript(ctx: RenderCtx) {
     drawTitleOrnament(doc, pageW / 2, 27, pageW / 2 - 28, gold);
   }
 
-  let contentTop = drawAffiliationBlock(doc, pageW, 34, meta, locale, ink, mute);
+  let contentTop = drawAffiliationBlock(ctx, 34, ink, mute);
   contentTop += 3;
 
   const n = line.length;
-  const bottomY = pageH - 14;
+  const bottomY = pageH - 22;
   const topY = contentTop + 1;
   const available = Math.max(36, bottomY - topY);
   const gap = n > 1 ? Math.min(3.2, available * 0.015) : 0;
@@ -136,7 +176,7 @@ function renderManuscript(ctx: RenderCtx) {
 
   for (let i = 0; i < n; i += 1) {
     const person = line[i];
-    const distanceFromFocus = n - 1 - i;
+    const distanceFromFocus = ctx.youngestDistance + n - 1 - i;
     const y = stackTop + i * block;
     const cy = y + cartoucheH / 2;
     const label = t.jetiAtaLabel(distanceFromFocus);
@@ -150,40 +190,8 @@ function renderManuscript(ctx: RenderCtx) {
     );
     drawNameCartouche(doc, cartoucheX, y, cartoucheW, cartoucheH, ink, plaque, gold);
 
-    const life = lifeDatesLine(person, false);
-    const hasMeta = Boolean(life);
-    const nameMaxLines = cartoucheH < 12 ? 1 : cartoucheH < 16 ? (hasMeta ? 1 : 2) : hasMeta ? 2 : 3;
-    const prefer = cartoucheH >= 18 ? 11 : cartoucheH >= 13 ? 9 : 7.2;
-    const { lines: nameLines, fontSize } = wrapName(
-      doc,
-      person.name || "—",
-      nameMaxW,
-      nameMaxLines,
-      prefer,
-      5.8
-    );
-
-    setPdfFont(doc, "bold");
-    doc.setTextColor(...ink);
-    doc.setFontSize(fontSize);
-    const lineH = fontSize * 0.42 + 0.28;
-    const metaSize = Math.min(6.2, fontSize * 0.78);
-    const metaH = hasMeta && cartoucheH >= 12 ? metaSize + 1.2 : 0;
-    const blockH = nameLines.length * lineH + metaH;
-    let ty = cy - blockH / 2 + lineH * 0.72;
-
-    for (const nl of nameLines) {
-      doc.text(nl, cartoucheX + cartoucheW / 2, ty, { align: "center" });
-      ty += lineH;
-    }
-    if (life && metaH > 0) {
-      setPdfFont(doc, "normal");
-      doc.setFontSize(metaSize);
-      doc.setTextColor(...mute);
-      doc.text(fitText(doc, life, nameMaxW, metaSize), cartoucheX + cartoucheW / 2, ty + 1, {
-        align: "center",
-      });
-    }
+    drawPersonText(ctx, person, label, cartoucheX + (cartoucheW - nameMaxW) / 2, y + 2.3,
+      nameMaxW, cartoucheH - 4.6, cartoucheH >= 18 ? 11 : 9, "center", ink, mute);
   }
 
   setPdfFont(doc, "bold");
@@ -196,7 +204,7 @@ function renderManuscript(ctx: RenderCtx) {
  * No modern cards or rounded UI.
  */
 function renderRegistry(ctx: RenderCtx) {
-  const { doc, pageW, pageH, line, meta, locale } = ctx;
+  const { doc, pageW, pageH, line, locale } = ctx;
   const t = pdfT(locale);
   // Traditional dye palette: soot ink, ochre felt, aged hide
   const hide: Rgb = [214, 196, 160];
@@ -212,6 +220,7 @@ function renderRegistry(ctx: RenderCtx) {
   const frame = drawAncientTizimFrame(doc, pageW, pageH, ink, dye, parchment);
   const { contentX, contentY, contentW, contentH } = frame;
   const cx = contentX + contentW / 2;
+  drawSheetLabel(ctx, contentX + 3, contentY + contentH - 1.5);
 
   // Large geometric қосқар мүйіз above title
   drawGeometricHornCell(doc, cx, contentY + 6, 9, ink);
@@ -226,7 +235,7 @@ function renderRegistry(ctx: RenderCtx) {
   // Ornamental title rule (not a thin modern underline)
   drawAncientRule(doc, contentX + 8, contentX + contentW - 8, contentY + 24, ink);
 
-  let y = drawAffiliationBlock(doc, pageW, contentY + 30, meta, locale, ink, mute, contentW - 12);
+  let y = drawAffiliationBlock(ctx, contentY + 30, ink, mute, contentW - 12);
   y += 4;
 
   // Inner list field — sharp double rect (manuscript tablet)
@@ -245,13 +254,6 @@ function renderRegistry(ctx: RenderCtx) {
   // Faint vertical column rule (generation | name)
   const labelColW = Math.min(36, listW * 0.3);
   const colRuleX = listX + 4 + labelColW;
-  doc.setDrawColor(...dyeDeep);
-  doc.setLineWidth(0.3);
-  doc.line(colRuleX, listTop + 3, colRuleX, listTop + listH - 3);
-  // Second parallel rule (hand-ruled feel)
-  doc.setLineWidth(0.12);
-  doc.line(colRuleX + 1.1, listTop + 3, colRuleX + 1.1, listTop + listH - 3);
-
   const n = line.length;
   const pad = 3.5;
   const usable = listH - pad * 2;
@@ -261,10 +263,9 @@ function renderRegistry(ctx: RenderCtx) {
 
   for (let i = 0; i < n; i += 1) {
     const person = line[i];
-    const distanceFromFocus = n - 1 - i;
+    const distanceFromFocus = ctx.youngestDistance + n - 1 - i;
     const isSelf = distanceFromFocus === 0;
     const label = t.jetiAtaLabel(distanceFromFocus);
-    const life = lifeDatesLine(person, rowH < 11);
     const ry = stackTop + i * rowH;
     const cy = ry + rowH / 2;
 
@@ -277,6 +278,12 @@ function renderRegistry(ctx: RenderCtx) {
       doc.setFillColor(210, 178, 120);
       doc.rect(listX + 2.2, ry, listW - 4.4, rowH, "F");
     }
+
+    doc.setDrawColor(...dyeDeep);
+    doc.setLineWidth(0.3);
+    doc.line(colRuleX, ry, colRuleX, ry + rowH);
+    doc.setLineWidth(0.12);
+    doc.line(colRuleX + 1.1, ry, colRuleX + 1.1, ry + rowH);
 
     // Horizontal rule between generations
     if (i > 0) {
@@ -302,43 +309,8 @@ function renderRegistry(ctx: RenderCtx) {
 
     // Name on the manuscript line
     const nameX = colRuleX + 5;
-    const dateReserve = life && rowH >= 10 ? 30 : 6;
-    const nameMaxW = listX + listW - 5 - nameX - dateReserve;
-    const fontName = rowH >= 13 ? 11 : rowH >= 10 ? 9.4 : 7.6;
-
-    setPdfFont(doc, "bold");
-    doc.setFontSize(fontName);
-    doc.setTextColor(...ink);
-    const { lines: nameLines, fontSize } = wrapName(
-      doc,
-      person.name || "—",
-      nameMaxW,
-      rowH >= 13 && !life ? 2 : 1,
-      fontName,
-      5.6
-    );
-    const lineH = fontSize * 0.42 + 0.18;
-    const metaSize = Math.max(5.4, fontName * 0.65);
-    const metaH = life && rowH >= 11 ? metaSize + 0.6 : 0;
-    const blockH = nameLines.length * lineH + metaH;
-    let ty = cy - blockH / 2 + lineH * 0.75;
-    for (const nl of nameLines) {
-      doc.text(nl, nameX, ty);
-      ty += lineH;
-    }
-
-    if (life && rowH >= 10) {
-      setPdfFont(doc, "normal");
-      doc.setFontSize(metaSize);
-      doc.setTextColor(...mute);
-      if (rowH >= 12 && nameLines.length === 1) {
-        doc.text(fitText(doc, life, nameMaxW, metaSize), nameX, ty + 0.4);
-      } else {
-        doc.text(fitText(doc, life, 28, metaSize), listX + listW - 5, cy + metaSize * 0.28, {
-          align: "right",
-        });
-      }
-    }
+    drawPersonText(ctx, person, label, nameX, ry + 1, listX + listW - 9 - nameX,
+      rowH - 2, rowH >= 13 ? 11 : 9.4, "left", ink, mute);
 
     // End-of-row diamond knot (traditional)
     doc.setFillColor(...ink);
@@ -363,7 +335,7 @@ function renderRegistry(ctx: RenderCtx) {
  * Oldest left → self right on a horizontal spine.
  */
 function renderCascade(ctx: RenderCtx) {
-  const { doc, pageW, pageH, line, meta, locale } = ctx;
+  const { doc, pageW, pageH, line, locale } = ctx;
   const t = pdfT(locale);
   const bg: Rgb = [236, 228, 214];
   const ink: Rgb = [40, 28, 18];
@@ -383,6 +355,7 @@ function renderCascade(ctx: RenderCtx) {
   doc.setLineWidth(0.3);
   doc.setDrawColor(...goldSoft);
   doc.rect(9, 9, pageW - 18, pageH - 18);
+  drawSheetLabel(ctx, 15, pageH - 13);
 
   setPdfFont(doc, "bold");
   doc.setTextColor(...ink);
@@ -392,7 +365,7 @@ function renderCascade(ctx: RenderCtx) {
   doc.setFillColor(...accent);
   doc.rect(pageW / 2 - 40, 23.5, 80, 0.7, "F");
 
-  let headerBottom = drawAffiliationBlock(doc, pageW, 30, meta, locale, ink, mute, pageW - 36);
+  let headerBottom = drawAffiliationBlock(ctx, 30, ink, mute, pageW - 36);
   headerBottom += 4;
 
   const n = line.length;
@@ -419,10 +392,9 @@ function renderCascade(ctx: RenderCtx) {
 
   for (let i = 0; i < n; i += 1) {
     const person = line[i];
-    const distanceFromFocus = n - 1 - i;
+    const distanceFromFocus = ctx.youngestDistance + n - 1 - i;
     const isSelf = distanceFromFocus === 0;
     const label = t.jetiAtaLabel(distanceFromFocus);
-    const life = lifeDatesLine(person, cardW < 26);
     const x = startX + i * (cardW + gap);
 
     doc.setFillColor(...accent);
@@ -447,39 +419,9 @@ function renderCascade(ctx: RenderCtx) {
       align: "center",
     });
 
-    const nameMaxW = cardW - 4;
-    const hasMeta = Boolean(life);
-    const prefer = cardW >= 34 ? 10.5 : cardW >= 26 ? 9 : cardW >= 20 ? 7.5 : 6.2;
-    const { lines: nameLines, fontSize } = wrapName(
-      doc,
-      person.name || "—",
-      nameMaxW,
-      hasMeta ? 2 : 3,
-      prefer,
-      5.4
-    );
-
-    setPdfFont(doc, "bold");
-    doc.setFontSize(fontSize);
-    doc.setTextColor(...ink);
-    const lineH = fontSize * 0.42 + 0.25;
-    const metaSize = Math.min(6.2, fontSize * 0.72);
-    const metaH = hasMeta ? metaSize + 2.2 : 0;
-    const blockH = nameLines.length * lineH + metaH;
-    let ty = cardY + 12 + Math.max(0, (cardH - 14 - blockH) / 2) + lineH * 0.8;
-
-    for (const nl of nameLines) {
-      doc.text(nl, x + cardW / 2, ty, { align: "center" });
-      ty += lineH;
-    }
-    if (life) {
-      setPdfFont(doc, "normal");
-      doc.setFontSize(metaSize);
-      doc.setTextColor(...mute);
-      doc.text(fitText(doc, life, nameMaxW, metaSize), x + cardW / 2, ty + 1.6, {
-        align: "center",
-      });
-    }
+    const prefer = cardW >= 34 ? 10.5 : cardW >= 26 ? 9 : 8;
+    drawPersonText(ctx, person, label, x + 2, cardY + 10.5, cardW - 4, cardH - 13,
+      prefer, "center", ink, mute);
   }
 
   setPdfFont(doc, "bold");
@@ -488,7 +430,7 @@ function renderCascade(ctx: RenderCtx) {
 
 /**
  * Wall / print «Жеті ата» PDF with selectable layout template.
- * Supports 1–13 generations on the male line.
+ * All paternal generations are printed, in reading order, on A4 sheets.
  */
 export async function renderShezhirePdf(opts: {
   snapshot: Snapshot;
@@ -501,27 +443,40 @@ export async function renderShezhirePdf(opts: {
   const locale = opts.locale ?? "ru";
   const t = pdfT(locale);
   const template = opts.template ?? "manuscript";
-  const maxGen = Math.min(
-    Math.max(1, opts.maxGenerations ?? SHEZHIRE_MAX_GENERATIONS),
-    SHEZHIRE_MAX_GENERATIONS
-  );
-  const line = buildLine(opts.snapshot, opts.startId, maxGen);
+  const limit = Math.max(1, Math.floor(opts.maxGenerations ?? Infinity));
+  const line = maleLineUp(opts.snapshot, opts.startId).slice(0, limit).reverse();
   if (!line.length) throw new Error(t.noMaleLine);
 
   const landscape = template === "cascade";
   const doc = new jsPDF({
     orientation: landscape ? "landscape" : "portrait",
     unit: "mm",
+    compress: true,
     format: "a4",
   });
   await ensurePdfFont(doc);
   const pageW = doc.internal.pageSize.getWidth();
   const pageH = doc.internal.pageSize.getHeight();
-  const ctx: RenderCtx = { doc, pageW, pageH, line, meta: opts.meta, locale };
-
-  if (template === "registry") renderRegistry(ctx);
-  else if (template === "cascade") renderCascade(ctx);
-  else renderManuscript(ctx);
+  const details: PdfDetail[] = [];
+  const detailNumbers = new Map<string, number>();
+  const pages = Math.ceil(line.length / SHEZHIRE_MAX_GENERATIONS);
+  for (let page = 0; page < pages; page++) {
+    if (page) doc.addPage("a4", landscape ? "landscape" : "portrait");
+    // Balance the sheets so a fourteenth ancestor does not sit alone on a second poster.
+    const start = Math.floor(page * line.length / pages);
+    const end = Math.floor((page + 1) * line.length / pages);
+    const youngestDistance = line.length - end;
+    const sheetLabel = pages === 1 ? "" :
+      `${t.posterOf(page + 1, pages)} · ${t.kneeRange(youngestDistance + 1, line.length - start)}`;
+    const ctx: RenderCtx = {
+      doc, pageW, pageH, line: line.slice(start, end), youngestDistance, sheetLabel,
+      meta: opts.meta, locale, details, detailNumbers,
+    };
+    if (template === "registry") renderRegistry(ctx);
+    else if (template === "cascade") renderCascade(ctx);
+    else renderManuscript(ctx);
+  }
+  appendPdfDetails(doc, locale, details);
   return doc;
 }
 

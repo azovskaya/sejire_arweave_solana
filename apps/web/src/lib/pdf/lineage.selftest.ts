@@ -125,3 +125,28 @@ console.log("lineage.selftest: OK", {
   six: sixPoster.format,
   seven: sevenPoster.format,
 });
+
+// A family can be widest in the middle, then continue as one parent to generation 13.
+const uneven = completeAncestry(7);
+let previous = "a64";
+for (let g = 8; g <= 13; g += 1) {
+  const id = `extra${g}`;
+  uneven.persons[previous].parents = [id];
+  uneven.persons[id] = { id, name: id, parents: [], media: [], sex: "M" };
+  previous = id;
+}
+const unevenPlan = choosePedigreePoster(uneven, "a1");
+assert(unevenPlan.format === "a2" && unevenPlan.generations === 13, "size for all rows, including the widest");
+const unevenSlots = ancestorSlotLayout(uneven, "a1", 13);
+const box = { x: 12, y: 28, w: unevenPlan.pageW - 24, h: unevenPlan.pageH - 42 };
+const layout = computePedigreeLayout(unevenSlots, box);
+assert(layout.positions.size === 133, "all uneven ancestors have a card");
+assert(layout.positions.get("a1")!.w > 40, "use the space in sparse rows for readable names");
+const rightByGeneration = new Map<number, number>();
+for (const pos of layout.positions.values()) {
+  const previousRight = rightByGeneration.get(pos.generation) ?? box.x;
+  assert(pos.x >= previousRight - 1e-7, `overlapping cards or left overflow: ${pos.id}`);
+  assert(pos.x + pos.w <= box.x + box.w + 1e-7, `right overflow: ${pos.id}`);
+  assert(pos.y >= box.y - 1e-7 && pos.y + layout.cardH <= box.y + box.h + 1e-7, `vertical overflow: ${pos.id}`);
+  rightByGeneration.set(pos.generation, pos.x + pos.w);
+}

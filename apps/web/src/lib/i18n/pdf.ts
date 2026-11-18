@@ -10,6 +10,9 @@ export type PdfLocale = "ru" | "kk" | "en";
 
 type PdfMessages = {
   classicTitle: string;
+  peopleShown: (shown: number, total: number) => string;
+  detailsKey: string;
+  parentRefs: string;
   /** Main poster title — always «Шежіре» for male-line charts */
   shezhireTitle: string;
   /** Optional quiet line under title; empty = omit */
@@ -27,6 +30,8 @@ type PdfMessages = {
   exportedWith: string;
   ancestorsOf: (name: string) => string;
   pageOf: (page: number, total: number) => string;
+  posterOf: (page: number, total: number) => string;
+  fullEntries: string;
   kneeRange: (from: number, to: number) => string;
 };
 
@@ -46,6 +51,9 @@ const FROM_SELF = [
 
 const ru: PdfMessages = {
   classicTitle: "Генеалогическое древо",
+  peopleShown: (shown, total) => shown === total ? `На схеме: ${shown}` : `На схеме: ${shown} из ${total}`,
+  detailsKey: "Номера в скобках — записи на следующих листах",
+  parentRefs: "Родители",
   shezhireTitle: "Шежіре",
   shezhireSubtitle: "",
   jetiAtaLabel: (d) => {
@@ -63,6 +71,8 @@ const ru: PdfMessages = {
   noMaleLine: "Нет мужской линии для шежіре (нужен отец или выбран мужчина)",
   exportedWith: "SEJIRE",
   ancestorsOf: (name) => `Предки: ${name}`,
+  posterOf: (page, total) => `Плакат ${page} / ${total}`,
+  fullEntries: "Полные записи",
   pageOf: (page, total) => `лист ${page} / ${total}`,
   kneeRange: (from, to) => (from === to ? `колено ${from}` : `колена ${from}–${to}`),
 };
@@ -70,9 +80,14 @@ const ru: PdfMessages = {
 const kk: PdfMessages = {
   ...ru,
   classicTitle: "Шежіре",
+  peopleShown: (shown, total) => shown === total ? `Сызбада: ${shown}` : `Сызбада: ${shown} / ${total}`,
+  detailsKey: "Жақшадағы нөмірлер — келесі беттердегі жазбалар",
+  parentRefs: "Ата-анасы",
   noPeople: "Шежіреде экспортқа адам жоқ",
   noMaleLine: "Шежіре үшін ер жолы жоқ (әке керек немесе ер адамды таңдаңыз)",
   ancestorsOf: (name) => `Ата-баба: ${name}`,
+  posterOf: (page, total) => `Плакат ${page} / ${total}`,
+  fullEntries: "Толық жазбалар",
   pageOf: (page, total) => `бет ${page} / ${total}`,
   kneeRange: (from, to) => (from === to ? `${from}-ата` : `${from}–${to}-ата`),
 };
@@ -80,9 +95,14 @@ const kk: PdfMessages = {
 const en: PdfMessages = {
   ...ru,
   classicTitle: "Family tree",
+  peopleShown: (shown, total) => shown === total ? `On poster: ${shown}` : `On poster: ${shown} of ${total}`,
+  detailsKey: "Bracketed numbers refer to entries on the following pages",
+  parentRefs: "Parents",
   noPeople: "No people in the tree to export",
   noMaleLine: "No male line for shezhire (need a father, or select a man)",
   ancestorsOf: (name) => `Ancestors: ${name}`,
+  posterOf: (page, total) => `Poster ${page} / ${total}`,
+  fullEntries: "Full entries",
   pageOf: (page, total) => `sheet ${page} / ${total}`,
   kneeRange: (from, to) => (from === to ? `generation ${from}` : `generations ${from}–${to}`),
 };
@@ -93,5 +113,5 @@ export function pdfT(locale: PdfLocale = "ru"): PdfMessages {
   return catalogs[locale] ?? catalogs.ru;
 }
 
-/** Soft cap for male-line posters (7 classic жеті ата, up to 13 for deep lines). */
+/** Up to 13 paternal generations per printed poster sheet. */
 export const SHEZHIRE_MAX_GENERATIONS = 13;
