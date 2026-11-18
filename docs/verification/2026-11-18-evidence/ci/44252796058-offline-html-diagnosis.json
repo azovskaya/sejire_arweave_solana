@@ -1,0 +1,43 @@
+{
+  "sourceCommit": "6add1826929ee6ce9f08c59ff11108d8b903a06d",
+  "ciRun": "44252796058",
+  "attempt": 1,
+  "job": "134627271684",
+  "observed": {
+    "chromium": "passed all recovery assertions",
+    "firefox": "passed all recovery assertions",
+    "webkit": "failed at first page.goto(file://...) before decoder loaded",
+    "error": "page.goto: WebKit encountered an internal error",
+    "logLines": "3260-3274"
+  },
+  "pinnedPlaywright": "1.58.2",
+  "primarySource": "https://github.com/microsoft/playwright/blob/v1.58.2/browser_patches/webkit/patches/bootstrap.diff",
+  "primarySourceGitBlobSha": "80d62c3967ecec705a9ab43ddce9271f06235bf2",
+  "sourceEvidence": "WebLoaderStrategy::scheduleLoad patch at lines 18935ff calls scheduleInternallyFailedLoad and returns while m_emulateOfflineState is true, without a URL protocol guard, before interception.",
+  "localAB": {
+    "performed": false,
+    "reason": "Pinned WebKit executable is absent; no browser installation or launch attempted.",
+    "path": "/home/agent/.cache/ms-playwright/webkit-2248/pw_run.sh"
+  },
+  "change": {
+    "scope": [
+      "tools/recovery/browser.test.mjs",
+      "tools/recovery/README.md"
+    ],
+    "actualLocalFileNavigation": true,
+    "httpDenyAndCaptureFromContextCreation": true,
+    "chromiumAndFirefoxOffline": "before navigation, unchanged",
+    "webkitOffline": "immediately after local navigation and before input files/words",
+    "navigatorOnlineMustBeFalse": true,
+    "allSixDownloadsAndFiveNegativeCasesPreserved": true,
+    "decoderRuntimeChanged": false,
+    "skipRetryOrHttpServerSubstitute": false
+  },
+  "localChecks": {
+    "nodeCheck": 0,
+    "htmlReproducibility": 0,
+    "gitDiffCheck": 0
+  },
+  "validationStatus": "Source-supported harness diagnosis; final three-engine browser execution still requires CI.",
+  "commitPushWorkflowRerunPerformed": false
+}

@@ -1,0 +1,35 @@
+PASS recovery kit retains exact bytes and rejects tampering without words
+PASS editing an offline A+B+C snapshot retains B+C and never substitutes older network state
+PASS migration guard blocks existing orders and never creates, upgrades or rewrites legacy journals
+PASS resumed completed A(new) advances stale HEAD before sealing B and retains all A history
+PASS repeat finalization never rewrites a subsequent preparation or changes archive ordering
+PASS an explicitly imported full snapshot with null HEAD survives historical completion
+PASS divergent local/file cache with parent HEAD is not replaced
+PASS another vault, newer HEAD and absent session remain selected exactly as before
+PASS confirmation-only or subsequently unavailable archives cannot finalize
+PASS unwritten local archive is not reported as finalized and HEAD stays unchanged
+PASS reconcile is idempotent and never selects an archive in a closed session
+PASS cancelled free backup retains A(new) and its history when B is added above an existing ancestor
+PASS session failure rolls back the full cache and retry finalizes the same immutable operation
+PASS cache failure or a silently dropped write never advances HEAD or changes the signed journal
+PASS cache read failure leaves the previous selection and immutable journal intact
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: must preserve prepared full cache
+
+true !== false
+
+    at <anonymous> (/workspace/scratch/0aa608872e5d/sejire-deep-validation/apps/web/src/lib/independentBackup.selftest.ts:287:14)
+    at async finalizationTest (/workspace/scratch/0aa608872e5d/sejire-deep-validation/apps/web/src/lib/independentBackup.selftest.ts:119:78)
+    at async <anonymous> (/workspace/scratch/0aa608872e5d/sejire-deep-validation/apps/web/src/lib/independentBackup.selftest.ts:274:3) {
+  generatedMessage: false,
+  code: 'ERR_ASSERTION',
+  actual: true,
+  expected: false,
+  operator: 'strictEqual',
+  diff: 'simple'
+}
+
+Node.js v24.22.3

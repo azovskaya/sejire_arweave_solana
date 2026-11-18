@@ -1,0 +1,2221 @@
+﻿2026-11-18T06:48:33.7936817Z Current runner version: '2.338.2'
+2026-11-18T06:48:33.7954976Z ##[group]Runner Image Provisioner
+2026-11-18T06:48:33.7955584Z Hosted Compute Agent
+2026-11-18T06:48:33.7956095Z Version: 20261103.629
+2026-11-18T06:48:33.7956544Z Commit: 15dbd9ccb5dbf34fae002b6ed1a2670f52df37bc
+2026-11-18T06:48:33.7957123Z Build Date: 2026-11-03T17:26:59Z
+2026-11-18T06:48:33.7957619Z Worker ID: {bf5b7c5c-0728-47dd-baa3-513b92b12e62}
+2026-11-18T06:48:33.7958096Z Region: us-west-2
+2026-11-18T06:48:33.7958498Z Cloud: AWS
+2026-11-18T06:48:33.7958863Z ##[endgroup]
+2026-11-18T06:48:33.7959726Z ##[group]Operating System
+2026-11-18T06:48:33.7960177Z Ubuntu
+2026-11-18T06:48:33.7960539Z 24.04.5
+2026-11-18T06:48:33.7960902Z LTS
+2026-11-18T06:48:33.7961286Z ##[endgroup]
+2026-11-18T06:48:33.7961666Z ##[group]Runner Image
+2026-11-18T06:48:33.7962510Z Image: ubuntu-24.04
+2026-11-18T06:48:33.7962937Z Version: 20261111.127.1
+2026-11-18T06:48:33.7963890Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20261111.127/images/ubuntu/Ubuntu2404-Readme.md
+2026-11-18T06:48:33.7964990Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20261111.127
+2026-11-18T06:48:33.7965690Z ##[endgroup]
+2026-11-18T06:48:33.7966478Z ##[group]GITHUB_TOKEN Permissions
+2026-11-18T06:48:33.7968061Z Contents: read
+2026-11-18T06:48:33.7968461Z Metadata: read
+2026-11-18T06:48:33.7968880Z ##[endgroup]
+2026-11-18T06:48:33.7970341Z Secret source: Actions
+2026-11-18T06:48:33.7971006Z Cache mode: write
+2026-11-18T06:48:33.7971481Z Prepare workflow directory
+2026-11-18T06:48:33.8196941Z Prepare all required actions
+2026-11-18T06:48:33.8233111Z Getting action download info
+2026-11-18T06:48:34.2148530Z Download action repository 'actions/checkout@v4' (SHA:11d5960a326750d5838078e36cf38b85af677262)
+2026-11-18T06:48:35.7848440Z Download action repository 'actions/setup-node@v4' (SHA:49933ea5288caeca8642d1e84afbd3f7d6820020)
+2026-11-18T06:48:35.9708764Z Download action repository 'actions/upload-artifact@v4' (SHA:ea165f8d65b6e75b540449e92b4886f43607fa02)
+2026-11-18T06:48:36.3692070Z Complete job name: verify
+2026-11-18T06:48:36.4796023Z ##[group]Run actions/checkout@v4
+2026-11-18T06:48:36.4796969Z with:
+2026-11-18T06:48:36.4797618Z   repository: azovskaya/sejire_arweave_solana
+2026-11-18T06:48:36.4804482Z   token: ***
+2026-11-18T06:48:36.4805130Z   ssh-strict: true
+2026-11-18T06:48:36.4805777Z   ssh-user: git
+2026-11-18T06:48:36.4806413Z   persist-credentials: true
+2026-11-18T06:48:36.4807087Z   clean: true
+2026-11-18T06:48:36.4807777Z   sparse-checkout-cone-mode: true
+2026-11-18T06:48:36.4808517Z   fetch-depth: 1
+2026-11-18T06:48:36.4809157Z   fetch-tags: false
+2026-11-18T06:48:36.4809813Z   show-progress: true
+2026-11-18T06:48:36.4810497Z   lfs: false
+2026-11-18T06:48:36.4811116Z   submodules: false
+2026-11-18T06:48:36.4811753Z   set-safe-directory: true
+2026-11-18T06:48:36.4812690Z   allow-unsafe-pr-checkout: false
+2026-11-18T06:48:36.4813664Z ##[endgroup]
+2026-11-18T06:48:39.1784356Z Syncing repository: azovskaya/sejire_arweave_solana
+2026-11-18T06:48:39.1785665Z ##[group]Getting Git version info
+2026-11-18T06:48:39.1786243Z Working directory is '/home/runner/work/sejire_arweave_solana/sejire_arweave_solana'
+2026-11-18T06:48:39.1786801Z [command]/usr/bin/git version
+2026-11-18T06:48:39.4042714Z git version 2.56.1
+2026-11-18T06:48:39.4058110Z ##[endgroup]
+2026-11-18T06:48:39.4069904Z Temporarily overriding HOME='/home/runner/work/_temp/a81874ba-302f-4674-88ec-a0e323dc072d' before making global git config changes
+2026-11-18T06:48:39.4074394Z Adding repository directory to the temporary git global config as a safe directory
+2026-11-18T06:48:39.4075160Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/sejire_arweave_solana/sejire_arweave_solana
+2026-11-18T06:48:39.4473218Z Deleting the contents of '/home/runner/work/sejire_arweave_solana/sejire_arweave_solana'
+2026-11-18T06:48:39.4476071Z ##[group]Initializing the repository
+2026-11-18T06:48:39.4479578Z [command]/usr/bin/git init /home/runner/work/sejire_arweave_solana/sejire_arweave_solana
+2026-11-18T06:48:39.5178283Z hint: Using 'master' as the name for the initial branch. This default branch name
+2026-11-18T06:48:39.5179155Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+2026-11-18T06:48:39.5179603Z hint: to use in all of your new repositories, which will suppress this warning,
+2026-11-18T06:48:39.5179949Z hint: call:
+2026-11-18T06:48:39.5180180Z hint:
+2026-11-18T06:48:39.5180470Z hint: 	git config --global init.defaultBranch <name>
+2026-11-18T06:48:39.5180786Z hint:
+2026-11-18T06:48:39.5181088Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+2026-11-18T06:48:39.5181475Z hint: 'development'. The just-created branch can be renamed via this command:
+2026-11-18T06:48:39.5181815Z hint:
+2026-11-18T06:48:39.5182031Z hint: 	git branch -m <name>
+2026-11-18T06:48:39.5182454Z hint:
+2026-11-18T06:48:39.5182837Z hint: Disable this message with "git config set advice.defaultBranchName false"
+2026-11-18T06:48:39.5197427Z Initialized empty Git repository in /home/runner/work/sejire_arweave_solana/sejire_arweave_solana/.git/
+2026-11-18T06:48:39.5204788Z [command]/usr/bin/git remote add origin https://github.com/azovskaya/sejire_arweave_solana
+2026-11-18T06:48:39.5254601Z ##[endgroup]
+2026-11-18T06:48:39.5255152Z ##[group]Disabling automatic garbage collection
+2026-11-18T06:48:39.5257711Z [command]/usr/bin/git config --local gc.auto 0
+2026-11-18T06:48:39.5279770Z ##[endgroup]
+2026-11-18T06:48:39.5280317Z ##[group]Setting up auth
+2026-11-18T06:48:39.5285214Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-11-18T06:48:39.5313186Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-11-18T06:48:39.8587494Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-11-18T06:48:39.8618586Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-11-18T06:48:39.8766565Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-11-18T06:48:39.8790065Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-11-18T06:48:39.8938570Z [command]/usr/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+2026-11-18T06:48:39.8965699Z ##[endgroup]
+2026-11-18T06:48:39.8966349Z ##[group]Fetching the repository
+2026-11-18T06:48:39.8977357Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +0f5bcfd53cd5287a972e13618c59576789c2d471:refs/remotes/origin/feat/decentralized-arweave-20261116
+2026-11-18T06:48:40.9062840Z From https://github.com/azovskaya/sejire_arweave_solana
+2026-11-18T06:48:40.9064412Z  * [new ref]         0f5bcfd53cd5287a972e13618c59576789c2d471 -> origin/feat/decentralized-arweave-20261116
+2026-11-18T06:48:40.9073491Z ##[endgroup]
+2026-11-18T06:48:40.9074043Z ##[group]Determining the checkout info
+2026-11-18T06:48:40.9074587Z ##[endgroup]
+2026-11-18T06:48:40.9074912Z [command]/usr/bin/git sparse-checkout disable
+2026-11-18T06:48:40.9139094Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+2026-11-18T06:48:40.9159403Z ##[group]Checking out the ref
+2026-11-18T06:48:40.9162898Z [command]/usr/bin/git checkout --progress --force -B feat/decentralized-arweave-20261116 refs/remotes/origin/feat/decentralized-arweave-20261116
+2026-11-18T06:48:40.9690162Z Switched to a new branch 'feat/decentralized-arweave-20261116'
+2026-11-18T06:48:40.9696082Z branch 'feat/decentralized-arweave-20261116' set up to track 'origin/feat/decentralized-arweave-20261116'.
+2026-11-18T06:48:40.9700558Z ##[endgroup]
+2026-11-18T06:48:40.9732773Z [command]/usr/bin/git log -1 --format=%H
+2026-11-18T06:48:40.9749755Z 0f5bcfd53cd5287a972e13618c59576789c2d471
+2026-11-18T06:48:40.9967867Z ##[group]Run actions/setup-node@v4
+2026-11-18T06:48:40.9968192Z with:
+2026-11-18T06:48:40.9968397Z   node-version: 22
+2026-11-18T06:48:40.9968615Z   cache: npm
+2026-11-18T06:48:40.9968943Z   cache-dependency-path: apps/web/package-lock.json
+apps/sponsor/package-lock.json
+
+2026-11-18T06:48:40.9969292Z   always-auth: false
+2026-11-18T06:48:40.9969543Z   check-latest: false
+2026-11-18T06:48:40.9971495Z   token: ***
+2026-11-18T06:48:40.9971729Z ##[endgroup]
+2026-11-18T06:48:41.2904188Z (node:2141) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+2026-11-18T06:48:41.2905779Z (Use `node --trace-deprecation ...` to show where the warning was created)
+2026-11-18T06:48:41.2916552Z Found in cache @ /opt/hostedtoolcache/node/22.23.4/x64
+2026-11-18T06:48:41.2917602Z ##[group]Environment details
+2026-11-18T06:48:45.4258942Z node: v22.23.4
+2026-11-18T06:48:45.4259298Z npm: 10.9.9
+2026-11-18T06:48:45.4259749Z yarn: 1.22.22
+2026-11-18T06:48:45.4260347Z ##[endgroup]
+2026-11-18T06:48:45.4272052Z [command]/opt/hostedtoolcache/node/22.23.4/x64/bin/npm config get cache
+2026-11-18T06:48:45.6940420Z /home/runner/.npm
+2026-11-18T06:48:45.9933040Z Cache hit for: node-cache-Linux-x64-npm-a30c40efbfe25f4e16fdb335aadb81a414d4c63125c0212b7dd1e2548b7da8d1
+2026-11-18T06:48:46.0014716Z (node:2141) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+2026-11-18T06:48:47.3279855Z Received 0 of 167233119 (0.0%), 0.0 MBs/sec
+2026-11-18T06:48:48.3276873Z Received 92274688 of 167233119 (55.2%), 44.0 MBs/sec
+2026-11-18T06:48:49.1831863Z Received 167233119 of 167233119 (100.0%), 55.9 MBs/sec
+2026-11-18T06:48:49.1832729Z Cache Size: ~159 MB (167233119 B)
+2026-11-18T06:48:49.1886446Z [command]/usr/bin/tar -xf /home/runner/work/_temp/42eceb9d-d1ab-41b5-b0e0-5b59f7e94fd3/cache.tzst -P -C /home/runner/work/sejire_arweave_solana/sejire_arweave_solana --use-compress-program unzstd
+2026-11-18T06:48:49.3228636Z Cache restored successfully
+2026-11-18T06:48:49.3287110Z Cache restored from key: node-cache-Linux-x64-npm-a30c40efbfe25f4e16fdb335aadb81a414d4c63125c0212b7dd1e2548b7da8d1
+2026-11-18T06:48:49.3426853Z ##[group]Run node --test scripts/worker-release-gate.test.mjs
+2026-11-18T06:48:49.3427368Z [36;1mnode --test scripts/worker-release-gate.test.mjs[0m
+2026-11-18T06:48:49.7468576Z shell: /usr/bin/bash -e {0}
+2026-11-18T06:48:49.7468955Z ##[endgroup]
+2026-11-18T06:48:49.8215599Z TAP version 13
+2026-11-18T06:48:49.8638772Z # Subtest: exact production SHA, completed CI and deliberate confirmation are accepted
+2026-11-18T06:48:49.8643651Z ok 1 - exact production SHA, completed CI and deliberate confirmation are accepted
+2026-11-18T06:48:49.8644383Z   ---
+2026-11-18T06:48:49.8644880Z   duration_ms: 1.598448
+2026-11-18T06:48:49.8660277Z   type: 'test'
+2026-11-18T06:48:49.8660962Z   ...
+2026-11-18T06:48:49.8661606Z # Subtest: push cannot deploy
+2026-11-18T06:48:49.8662120Z ok 2 - push cannot deploy
+2026-11-18T06:48:49.8662965Z   ---
+2026-11-18T06:48:49.8663394Z   duration_ms: 0.278266
+2026-11-18T06:48:49.8663823Z   type: 'test'
+2026-11-18T06:48:49.8664299Z   ...
+2026-11-18T06:48:49.8664890Z # Subtest: PR cannot deploy
+2026-11-18T06:48:49.8665400Z ok 3 - PR cannot deploy
+2026-11-18T06:48:49.8665768Z   ---
+2026-11-18T06:48:49.8666189Z   duration_ms: 0.074258
+2026-11-18T06:48:49.8666632Z   type: 'test'
+2026-11-18T06:48:49.8667050Z   ...
+2026-11-18T06:48:49.8667587Z # Subtest: other repository
+2026-11-18T06:48:49.8668065Z ok 4 - other repository
+2026-11-18T06:48:49.8668548Z   ---
+2026-11-18T06:48:49.8668955Z   duration_ms: 0.067268
+2026-11-18T06:48:49.8669425Z   type: 'test'
+2026-11-18T06:48:49.8669858Z   ...
+2026-11-18T06:48:49.8670305Z # Subtest: main branch
+2026-11-18T06:48:49.8670858Z ok 5 - main branch
+2026-11-18T06:48:49.8671309Z   ---
+2026-11-18T06:48:49.8672097Z   duration_ms: 0.076173
+2026-11-18T06:48:49.8672847Z   type: 'test'
+2026-11-18T06:48:49.8673327Z   ...
+2026-11-18T06:48:49.8673908Z # Subtest: test branch
+2026-11-18T06:48:49.8674414Z ok 6 - test branch
+2026-11-18T06:48:49.8683009Z   ---
+2026-11-18T06:48:49.8685262Z   duration_ms: 0.754232
+2026-11-18T06:48:49.8685889Z   type: 'test'
+2026-11-18T06:48:49.8686585Z   ...
+2026-11-18T06:48:49.8687026Z # Subtest: tag
+2026-11-18T06:48:49.8687398Z ok 7 - tag
+2026-11-18T06:48:49.8687777Z   ---
+2026-11-18T06:48:49.8688102Z   duration_ms: 0.066828
+2026-11-18T06:48:49.8688439Z   type: 'test'
+2026-11-18T06:48:49.8688806Z   ...
+2026-11-18T06:48:49.8689191Z # Subtest: missing confirmation
+2026-11-18T06:48:49.8689598Z ok 8 - missing confirmation
+2026-11-18T06:48:49.8689929Z   ---
+2026-11-18T06:48:49.8690288Z   duration_ms: 0.064222
+2026-11-18T06:48:49.8690629Z   type: 'test'
+2026-11-18T06:48:49.8690943Z   ...
+2026-11-18T06:48:49.8691306Z # Subtest: partial SHA
+2026-11-18T06:48:49.8691650Z ok 9 - partial SHA
+2026-11-18T06:48:49.8691985Z   ---
+2026-11-18T06:48:49.8692591Z   duration_ms: 0.233752
+2026-11-18T06:48:49.8692928Z   type: 'test'
+2026-11-18T06:48:49.8693250Z   ...
+2026-11-18T06:48:49.8693552Z # Subtest: missing SHA
+2026-11-18T06:48:49.8693934Z ok 10 - missing SHA
+2026-11-18T06:48:49.8694234Z   ---
+2026-11-18T06:48:49.8694547Z   duration_ms: 0.285953
+2026-11-18T06:48:49.8694926Z   type: 'test'
+2026-11-18T06:48:49.8695216Z   ...
+2026-11-18T06:48:49.8695538Z # Subtest: non numeric run
+2026-11-18T06:48:49.8695947Z ok 11 - non numeric run
+2026-11-18T06:48:49.8696266Z   ---
+2026-11-18T06:48:49.8696563Z   duration_ms: 0.100192
+2026-11-18T06:48:49.8696904Z   type: 'test'
+2026-11-18T06:48:49.8697220Z   ...
+2026-11-18T06:48:49.8697559Z # Subtest: non positive run
+2026-11-18T06:48:49.8697931Z ok 12 - non positive run
+2026-11-18T06:48:49.8698282Z   ---
+2026-11-18T06:48:49.8698555Z   duration_ms: 0.044672
+2026-11-18T06:48:49.8698912Z   type: 'test'
+2026-11-18T06:48:49.8699272Z   ...
+2026-11-18T06:48:49.8699599Z # Subtest: unsafe run number
+2026-11-18T06:48:49.8699986Z ok 13 - unsafe run number
+2026-11-18T06:48:49.8700345Z   ---
+2026-11-18T06:48:49.8700663Z   duration_ms: 0.038672
+2026-11-18T06:48:49.8700984Z   type: 'test'
+2026-11-18T06:48:49.8701325Z   ...
+2026-11-18T06:48:49.8701673Z # Subtest: non positive attempt
+2026-11-18T06:48:49.8702577Z ok 14 - non positive attempt
+2026-11-18T06:48:49.8702994Z   ---
+2026-11-18T06:48:49.8703308Z   duration_ms: 0.033643
+2026-11-18T06:48:49.8703661Z   type: 'test'
+2026-11-18T06:48:49.8703950Z   ...
+2026-11-18T06:48:49.8704323Z # Subtest: different run id
+2026-11-18T06:48:49.8704880Z ok 15 - different run id
+2026-11-18T06:48:49.8705571Z   ---
+2026-11-18T06:48:49.8705934Z   duration_ms: 0.081822
+2026-11-18T06:48:49.8706254Z   type: 'test'
+2026-11-18T06:48:49.8706575Z   ...
+2026-11-18T06:48:49.8706962Z # Subtest: run from another repository
+2026-11-18T06:48:49.8707398Z ok 16 - run from another repository
+2026-11-18T06:48:49.8707774Z   ---
+2026-11-18T06:48:49.8708103Z   duration_ms: 0.041157
+2026-11-18T06:48:49.8708495Z   type: 'test'
+2026-11-18T06:48:49.8708785Z   ...
+2026-11-18T06:48:49.8709131Z # Subtest: fork run
+2026-11-18T06:48:49.8709443Z ok 17 - fork run
+2026-11-18T06:48:49.8709746Z   ---
+2026-11-18T06:48:49.8710087Z   duration_ms: 0.037433
+2026-11-18T06:48:49.8710407Z   type: 'test'
+2026-11-18T06:48:49.8710703Z   ...
+2026-11-18T06:48:49.8711050Z # Subtest: wrong workflow
+2026-11-18T06:48:49.8711426Z ok 18 - wrong workflow
+2026-11-18T06:48:49.8711749Z   ---
+2026-11-18T06:48:49.8712055Z   duration_ms: 0.03801
+2026-11-18T06:48:49.8712660Z   type: 'test'
+2026-11-18T06:48:49.8712978Z   ...
+2026-11-18T06:48:49.8713320Z # Subtest: wrong workflow name
+2026-11-18T06:48:49.8713747Z ok 19 - wrong workflow name
+2026-11-18T06:48:49.8714064Z   ---
+2026-11-18T06:48:49.8714382Z   duration_ms: 0.047056
+2026-11-18T06:48:49.8714759Z   type: 'test'
+2026-11-18T06:48:49.8715065Z   ...
+2026-11-18T06:48:49.8715379Z # Subtest: PR merge evidence
+2026-11-18T06:48:49.8715779Z ok 20 - PR merge evidence
+2026-11-18T06:48:49.8716360Z   ---
+2026-11-18T06:48:49.8716649Z   duration_ms: 0.037727
+2026-11-18T06:48:49.8717002Z   type: 'test'
+2026-11-18T06:48:49.8717287Z   ...
+2026-11-18T06:48:49.8717600Z # Subtest: untrusted event
+2026-11-18T06:48:49.8717992Z ok 21 - untrusted event
+2026-11-18T06:48:49.8718330Z   ---
+2026-11-18T06:48:49.8718667Z   duration_ms: 0.033925
+2026-11-18T06:48:49.8718989Z   type: 'test'
+2026-11-18T06:48:49.8719327Z   ...
+2026-11-18T06:48:49.8719688Z # Subtest: other source branch
+2026-11-18T06:48:49.8720053Z ok 22 - other source branch
+2026-11-18T06:48:49.8720446Z   ---
+2026-11-18T06:48:49.8720734Z   duration_ms: 0.035791
+2026-11-18T06:48:49.8721064Z   type: 'test'
+2026-11-18T06:48:49.8721376Z   ...
+2026-11-18T06:48:49.8758001Z # Subtest: older successful SHA
+2026-11-18T06:48:49.8783283Z ok 23 - older successful SHA
+2026-11-18T06:48:49.8822862Z   ---
+2026-11-18T06:48:49.8823562Z   duration_ms: 0.041544
+2026-11-18T06:48:49.8823933Z   type: 'test'
+2026-11-18T06:48:49.8824222Z   ...
+2026-11-18T06:48:49.8824638Z # Subtest: CI still running
+2026-11-18T06:48:49.8825023Z ok 24 - CI still running
+2026-11-18T06:48:49.8825398Z   ---
+2026-11-18T06:48:49.8825824Z   duration_ms: 0.035141
+2026-11-18T06:48:49.8826145Z   type: 'test'
+2026-11-18T06:48:49.8826486Z   ...
+2026-11-18T06:48:49.8826823Z # Subtest: CI cancelled
+2026-11-18T06:48:49.8827142Z ok 25 - CI cancelled
+2026-11-18T06:48:49.8827449Z   ---
+2026-11-18T06:48:49.8827704Z   duration_ms: 0.077227
+2026-11-18T06:48:49.8828237Z   type: 'test'
+2026-11-18T06:48:49.8828502Z   ...
+2026-11-18T06:48:49.8828704Z # Subtest: CI failed
+2026-11-18T06:48:49.8828956Z ok 26 - CI failed
+2026-11-18T06:48:49.8829242Z   ---
+2026-11-18T06:48:49.8829476Z   duration_ms: 0.036912
+2026-11-18T06:48:49.8829702Z   type: 'test'
+2026-11-18T06:48:49.8829937Z   ...
+2026-11-18T06:48:49.8830192Z # Subtest: rerun changed attempt
+2026-11-18T06:48:49.8830468Z ok 27 - rerun changed attempt
+2026-11-18T06:48:49.8830739Z   ---
+2026-11-18T06:48:49.8830974Z   duration_ms: 0.036687
+2026-11-18T06:48:49.8831218Z   type: 'test'
+2026-11-18T06:48:49.8831440Z   ...
+2026-11-18T06:48:49.8831699Z # Subtest: production head moved
+2026-11-18T06:48:49.8832007Z ok 28 - production head moved
+2026-11-18T06:48:49.8832502Z   ---
+2026-11-18T06:48:49.8832826Z   duration_ms: 0.038329
+2026-11-18T06:48:49.8833126Z   type: 'test'
+2026-11-18T06:48:49.8833381Z   ...
+2026-11-18T06:48:49.8834005Z # Subtest: wrong branch ref
+2026-11-18T06:48:49.8834347Z ok 29 - wrong branch ref
+2026-11-18T06:48:49.8834668Z   ---
+2026-11-18T06:48:49.8834952Z   duration_ms: 0.035387
+2026-11-18T06:48:49.8835320Z   type: 'test'
+2026-11-18T06:48:49.8835608Z   ...
+2026-11-18T06:48:49.8835899Z # Subtest: missing jobs
+2026-11-18T06:48:49.8836277Z ok 30 - missing jobs
+2026-11-18T06:48:49.8836588Z   ---
+2026-11-18T06:48:49.8836882Z   duration_ms: 0.037221
+2026-11-18T06:48:49.8837257Z   type: 'test'
+2026-11-18T06:48:49.8837511Z   ...
+2026-11-18T06:48:49.8837835Z # Subtest: missing verify job
+2026-11-18T06:48:49.8838194Z ok 31 - missing verify job
+2026-11-18T06:48:49.8838555Z   ---
+2026-11-18T06:48:49.8838827Z   duration_ms: 0.042222
+2026-11-18T06:48:49.8839105Z   type: 'test'
+2026-11-18T06:48:49.8839449Z   ...
+2026-11-18T06:48:49.8840395Z # Subtest: duplicate verify job
+2026-11-18T06:48:49.8840789Z ok 32 - duplicate verify job
+2026-11-18T06:48:49.8841133Z   ---
+2026-11-18T06:48:49.8841431Z   duration_ms: 0.044953
+2026-11-18T06:48:49.8841744Z   type: 'test'
+2026-11-18T06:48:49.8842398Z   ...
+2026-11-18T06:48:49.8842785Z # Subtest: wrong job SHA
+2026-11-18T06:48:49.8843158Z ok 33 - wrong job SHA
+2026-11-18T06:48:49.8843501Z   ---
+2026-11-18T06:48:49.8843883Z   duration_ms: 0.039619
+2026-11-18T06:48:49.8844198Z   type: 'test'
+2026-11-18T06:48:49.8844537Z   ...
+2026-11-18T06:48:49.8844869Z # Subtest: wrong job run
+2026-11-18T06:48:49.8845244Z ok 34 - wrong job run
+2026-11-18T06:48:49.8845558Z   ---
+2026-11-18T06:48:49.8845876Z   duration_ms: 0.035829
+2026-11-18T06:48:49.8846203Z   type: 'test'
+2026-11-18T06:48:49.8846485Z   ...
+2026-11-18T06:48:49.8846858Z # Subtest: wrong job attempt
+2026-11-18T06:48:49.8847430Z ok 35 - wrong job attempt
+2026-11-18T06:48:49.8847757Z   ---
+2026-11-18T06:48:49.8848056Z   duration_ms: 0.087927
+2026-11-18T06:48:49.8848383Z   type: 'test'
+2026-11-18T06:48:49.8848727Z   ...
+2026-11-18T06:48:49.8849035Z # Subtest: verify skipped
+2026-11-18T06:48:49.8849440Z ok 36 - verify skipped
+2026-11-18T06:48:49.8849757Z   ---
+2026-11-18T06:48:49.8850035Z   duration_ms: 0.053365
+2026-11-18T06:48:49.8850435Z   type: 'test'
+2026-11-18T06:48:49.8850724Z   ...
+2026-11-18T06:48:49.8851073Z # Subtest: verify still running
+2026-11-18T06:48:49.8851430Z ok 37 - verify still running
+2026-11-18T06:48:49.8851821Z   ---
+2026-11-18T06:48:49.8852094Z   duration_ms: 0.040713
+2026-11-18T06:48:49.8852666Z   type: 'test'
+2026-11-18T06:48:49.8853018Z   ...
+2026-11-18T06:48:49.8853491Z # Subtest: missing step evidence
+2026-11-18T06:48:49.8853920Z ok 38 - missing step evidence
+2026-11-18T06:48:49.8854244Z   ---
+2026-11-18T06:48:49.8854564Z   duration_ms: 0.037831
+2026-11-18T06:48:49.8854894Z   type: 'test'
+2026-11-18T06:48:49.8855189Z   ...
+2026-11-18T06:48:49.8855594Z # Subtest: skipped required step
+2026-11-18T06:48:49.8855967Z ok 39 - skipped required step
+2026-11-18T06:48:49.8856296Z   ---
+2026-11-18T06:48:49.8856624Z   duration_ms: 0.03743
+2026-11-18T06:48:49.8856936Z   type: 'test'
+2026-11-18T06:48:49.8857257Z   ...
+2026-11-18T06:48:49.8857596Z # Subtest: failed nonblocking step
+2026-11-18T06:48:49.8858253Z ok 40 - failed nonblocking step
+2026-11-18T06:48:49.8858595Z   ---
+2026-11-18T06:48:49.8858994Z   duration_ms: 0.548088
+2026-11-18T06:48:49.8859363Z   type: 'test'
+2026-11-18T06:48:49.8859638Z   ...
+2026-11-18T06:48:49.8860007Z # Subtest: successful workflow_dispatch CI is accepted
+2026-11-18T06:48:49.8860505Z ok 41 - successful workflow_dispatch CI is accepted
+2026-11-18T06:48:49.8860864Z   ---
+2026-11-18T06:48:49.8861137Z   duration_ms: 0.128336
+2026-11-18T06:48:49.8861436Z   type: 'test'
+2026-11-18T06:48:49.8861716Z   ...
+2026-11-18T06:48:49.8862451Z # Subtest: network adapter reads only fixed GitHub GET evidence and binds run attempt
+2026-11-18T06:48:49.8863284Z ok 42 - network adapter reads only fixed GitHub GET evidence and binds run attempt
+2026-11-18T06:48:49.8863784Z   ---
+2026-11-18T06:48:49.8864032Z   duration_ms: 0.546749
+2026-11-18T06:48:49.8864378Z   type: 'test'
+2026-11-18T06:48:49.8864664Z   ...
+2026-11-18T06:48:49.8865297Z # Subtest: missing token and invalid request make zero network requests
+2026-11-18T06:48:49.8865920Z ok 43 - missing token and invalid request make zero network requests
+2026-11-18T06:48:49.8866343Z   ---
+2026-11-18T06:48:49.8866654Z   duration_ms: 0.186559
+2026-11-18T06:48:49.8866964Z   type: 'test'
+2026-11-18T06:48:49.8867275Z   ...
+2026-11-18T06:48:49.8867637Z # Subtest: HTTP 401 fails closed without body leak
+2026-11-18T06:48:49.8868111Z ok 44 - HTTP 401 fails closed without body leak
+2026-11-18T06:48:49.8868535Z   ---
+2026-11-18T06:48:49.8869401Z   duration_ms: 0.259684
+2026-11-18T06:48:49.8869729Z   type: 'test'
+2026-11-18T06:48:49.8870000Z   ...
+2026-11-18T06:48:49.8870361Z # Subtest: HTTP 403 fails closed without body leak
+2026-11-18T06:48:49.8870801Z ok 45 - HTTP 403 fails closed without body leak
+2026-11-18T06:48:49.8871159Z   ---
+2026-11-18T06:48:49.8871429Z   duration_ms: 0.137361
+2026-11-18T06:48:49.8871725Z   type: 'test'
+2026-11-18T06:48:49.8872034Z   ...
+2026-11-18T06:48:49.8872580Z # Subtest: HTTP 404 fails closed without body leak
+2026-11-18T06:48:49.8873022Z ok 46 - HTTP 404 fails closed without body leak
+2026-11-18T06:48:49.8873380Z   ---
+2026-11-18T06:48:49.8873668Z   duration_ms: 0.096358
+2026-11-18T06:48:49.8873987Z   type: 'test'
+2026-11-18T06:48:49.8874236Z   ...
+2026-11-18T06:48:49.8874600Z # Subtest: HTTP 429 fails closed without body leak
+2026-11-18T06:48:49.8875047Z ok 47 - HTTP 429 fails closed without body leak
+2026-11-18T06:48:49.8875363Z   ---
+2026-11-18T06:48:49.8875695Z   duration_ms: 0.084003
+2026-11-18T06:48:49.8875993Z   type: 'test'
+2026-11-18T06:48:49.8876249Z   ...
+2026-11-18T06:48:49.8876622Z # Subtest: HTTP 500 fails closed without body leak
+2026-11-18T06:48:49.8877230Z ok 48 - HTTP 500 fails closed without body leak
+2026-11-18T06:48:49.8877554Z   ---
+2026-11-18T06:48:49.8877797Z   duration_ms: 0.0811
+2026-11-18T06:48:49.8878108Z   type: 'test'
+2026-11-18T06:48:49.8878355Z   ...
+2026-11-18T06:48:49.8878752Z # Subtest: transport failure does not expose its error details
+2026-11-18T06:48:49.8879288Z ok 49 - transport failure does not expose its error details
+2026-11-18T06:48:49.8879636Z   ---
+2026-11-18T06:48:49.8879910Z   duration_ms: 0.273654
+2026-11-18T06:48:49.8880221Z   type: 'test'
+2026-11-18T06:48:49.8880441Z   ...
+2026-11-18T06:48:49.8880686Z # Subtest: malformed JSON fails closed
+2026-11-18T06:48:49.8881009Z ok 50 - malformed JSON fails closed
+2026-11-18T06:48:49.8881267Z   ---
+2026-11-18T06:48:49.8881490Z   duration_ms: 0.149888
+2026-11-18T06:48:49.8881753Z   type: 'test'
+2026-11-18T06:48:49.8881961Z   ...
+2026-11-18T06:48:49.8882602Z # Subtest: incomplete job pagination is rejected
+2026-11-18T06:48:49.8882962Z ok 51 - incomplete job pagination is rejected
+2026-11-18T06:48:49.8883274Z   ---
+2026-11-18T06:48:49.8883507Z   duration_ms: 0.16336
+2026-11-18T06:48:49.8883737Z   type: 'test'
+2026-11-18T06:48:49.8883986Z   ...
+2026-11-18T06:48:49.8884260Z # Subtest: duplicate job pages are rejected
+2026-11-18T06:48:49.8884583Z ok 52 - duplicate job pages are rejected
+2026-11-18T06:48:49.8884888Z   ---
+2026-11-18T06:48:49.8885092Z   duration_ms: 0.127942
+2026-11-18T06:48:49.8885323Z   type: 'test'
+2026-11-18T06:48:49.8885572Z   ...
+2026-11-18T06:48:49.8885973Z # Subtest: workflow keeps deployment manual, rechecks gate, and audits without continue-on-error
+2026-11-18T06:48:49.8886526Z ok 53 - workflow keeps deployment manual, rechecks gate, and audits without continue-on-error
+2026-11-18T06:48:49.8886914Z   ---
+2026-11-18T06:48:49.8887143Z   duration_ms: 25.430657
+2026-11-18T06:48:49.8887403Z   type: 'test'
+2026-11-18T06:48:49.8887645Z   ...
+2026-11-18T06:48:49.8925873Z 1..53
+2026-11-18T06:48:49.8926132Z # tests 53
+2026-11-18T06:48:49.8926511Z # suites 0
+2026-11-18T06:48:49.8926783Z # pass 53
+2026-11-18T06:48:49.8927003Z # fail 0
+2026-11-18T06:48:49.8927212Z # cancelled 0
+2026-11-18T06:48:49.8927481Z # skipped 0
+2026-11-18T06:48:49.8927703Z # todo 0
+2026-11-18T06:48:49.8927925Z # duration_ms 111.78243
+2026-11-18T06:48:49.8988985Z ##[group]Run npm ci --prefix apps/web
+2026-11-18T06:48:49.8989310Z [36;1mnpm ci --prefix apps/web[0m
+2026-11-18T06:48:49.9017249Z shell: /usr/bin/bash -e {0}
+2026-11-18T06:48:49.9017566Z ##[endgroup]
+2026-11-18T06:48:53.8938173Z npm warn deprecated formidable@1.2.6: Please upgrade to latest, formidable@v2 or formidable@v3! Check these notes: https://bit.ly/2ZEqIau
+2026-11-18T06:48:54.2354555Z npm warn deprecated superagent@6.1.0: Please upgrade to superagent v10.2.2+, see release notes at https://github.com/forwardemail/superagent/releases/tag/v10.2.2 - maintenance is supported by Forward Email @ https://forwardemail.net
+2026-11-18T06:48:54.3462982Z npm warn deprecated uuid@8.3.2: uuid@10 and below is no longer supported.  For ESM codebases, update to uuid@latest.  For CommonJS codebases, use uuid@11 (but be aware this version will likely be deprecated in 2028).
+2026-11-18T06:48:57.0610258Z 
+2026-11-18T06:48:57.0611250Z added 437 packages, and audited 438 packages in 7s
+2026-11-18T06:48:57.0611894Z 
+2026-11-18T06:48:57.0612452Z 114 packages are looking for funding
+2026-11-18T06:48:57.0612988Z   run `npm fund` for details
+2026-11-18T06:48:57.0857357Z 
+2026-11-18T06:48:57.0858719Z 36 vulnerabilities (17 low, 11 moderate, 8 high)
+2026-11-18T06:48:57.0859388Z 
+2026-11-18T06:48:57.0859920Z To address issues that do not require attention, run:
+2026-11-18T06:48:57.0860526Z   npm audit fix
+2026-11-18T06:48:57.0860813Z 
+2026-11-18T06:48:57.0861339Z To address all issues (including breaking changes), run:
+2026-11-18T06:48:57.0861847Z   npm audit fix --force
+2026-11-18T06:48:57.0862004Z 
+2026-11-18T06:48:57.0862122Z Run `npm audit` for details.
+2026-11-18T06:48:57.1218130Z ##[group]Run npm ci --prefix apps/sponsor
+2026-11-18T06:48:57.1218566Z [36;1mnpm ci --prefix apps/sponsor[0m
+2026-11-18T06:48:57.1244329Z shell: /usr/bin/bash -e {0}
+2026-11-18T06:48:57.1244641Z ##[endgroup]
+2026-11-18T06:48:58.5189174Z npm warn deprecated formidable@1.2.6: Please upgrade to latest, formidable@v2 or formidable@v3! Check these notes: https://bit.ly/2ZEqIau
+2026-11-18T06:48:58.7578683Z npm warn deprecated superagent@6.1.0: Please upgrade to superagent v10.2.2+, see release notes at https://github.com/forwardemail/superagent/releases/tag/v10.2.2 - maintenance is supported by Forward Email @ https://forwardemail.net
+2026-11-18T06:48:59.5387778Z 
+2026-11-18T06:48:59.5388747Z added 196 packages, and audited 197 packages in 2s
+2026-11-18T06:48:59.5389131Z 
+2026-11-18T06:48:59.5389460Z 59 packages are looking for funding
+2026-11-18T06:48:59.5389905Z   run `npm fund` for details
+2026-11-18T06:48:59.5553289Z 
+2026-11-18T06:48:59.5554529Z 17 vulnerabilities (13 low, 1 moderate, 3 high)
+2026-11-18T06:48:59.5554900Z 
+2026-11-18T06:48:59.5555251Z To address issues that do not require attention, run:
+2026-11-18T06:48:59.5555707Z   npm audit fix
+2026-11-18T06:48:59.5555892Z 
+2026-11-18T06:48:59.5556140Z To address all issues possible (including breaking changes), run:
+2026-11-18T06:48:59.5556656Z   npm audit fix --force
+2026-11-18T06:48:59.5556818Z 
+2026-11-18T06:48:59.5557009Z Some issues need review, and may require choosing
+2026-11-18T06:48:59.5557420Z a different dependency.
+2026-11-18T06:48:59.5557612Z 
+2026-11-18T06:48:59.5557777Z Run `npm audit` for details.
+2026-11-18T06:48:59.5766650Z ##[group]Run npm test
+2026-11-18T06:48:59.5767072Z [36;1mnpm test[0m
+2026-11-18T06:48:59.5804218Z shell: /usr/bin/bash -e {0}
+2026-11-18T06:48:59.5804514Z ##[endgroup]
+2026-11-18T06:48:59.6536969Z 
+2026-11-18T06:48:59.6538445Z > sejire@0.3.0 test
+2026-11-18T06:48:59.6539316Z > npm run test:admin-terminal && npm test --prefix apps/web && npm test --prefix apps/sponsor
+2026-11-18T06:48:59.6539702Z 
+2026-11-18T06:48:59.7217254Z 
+2026-11-18T06:48:59.7218161Z > sejire@0.3.0 test:admin-terminal
+2026-11-18T06:48:59.7218973Z > node --test scripts/admin-hidden-input.test.mjs
+2026-11-18T06:48:59.7219260Z 
+2026-11-18T06:48:59.7550957Z TAP version 13
+2026-11-18T06:48:59.7862694Z # Subtest: typed ASCII password preserves ordinary punctuation
+2026-11-18T06:48:59.7865718Z ok 1 - typed ASCII password preserves ordinary punctuation
+2026-11-18T06:48:59.7866267Z   ---
+2026-11-18T06:48:59.7866573Z   duration_ms: 1.074335
+2026-11-18T06:48:59.7866884Z   type: 'test'
+2026-11-18T06:48:59.7867371Z   ...
+2026-11-18T06:48:59.7869562Z # Subtest: bracketed paste strips both wrappers, even when events split them
+2026-11-18T06:48:59.7870605Z ok 2 - bracketed paste strips both wrappers, even when events split them
+2026-11-18T06:48:59.7871188Z   ---
+2026-11-18T06:48:59.7871573Z   duration_ms: 0.225703
+2026-11-18T06:48:59.7872134Z   type: 'test'
+2026-11-18T06:48:59.7872986Z   ...
+2026-11-18T06:48:59.7873612Z # Subtest: regression: old parser hashes bracketed paste wrappers as password characters
+2026-11-18T06:48:59.7874491Z ok 3 - regression: old parser hashes bracketed paste wrappers as password characters
+2026-11-18T06:48:59.7875149Z   ---
+2026-11-18T06:48:59.7875491Z   duration_ms: 0.117906
+2026-11-18T06:48:59.7875919Z   type: 'test'
+2026-11-18T06:48:59.7876257Z   ...
+2026-11-18T06:48:59.7876857Z # Subtest: typed Unicode survives split UTF-8 and NFC/NFD derive identical verifier
+2026-11-18T06:48:59.7877653Z ok 4 - typed Unicode survives split UTF-8 and NFC/NFD derive identical verifier
+2026-11-18T06:48:59.7878194Z   ---
+2026-11-18T06:48:59.7878536Z   duration_ms: 0.468191
+2026-11-18T06:48:59.7878903Z   type: 'test'
+2026-11-18T06:48:59.7879876Z   ...
+2026-11-18T06:48:59.7880626Z # Subtest: backspace removes one Unicode code point
+2026-11-18T06:48:59.7881371Z ok 5 - backspace removes one Unicode code point
+2026-11-18T06:48:59.7881942Z   ---
+2026-11-18T06:48:59.7882970Z   duration_ms: 0.136452
+2026-11-18T06:48:59.7883470Z   type: 'test'
+2026-11-18T06:48:59.7883943Z   ...
+2026-11-18T06:48:59.7884721Z # Subtest: Ctrl+C cancels and never completes or accepts later bytes
+2026-11-18T06:48:59.7885371Z ok 6 - Ctrl+C cancels and never completes or accepts later bytes
+2026-11-18T06:48:59.7885818Z   ---
+2026-11-18T06:48:59.7886465Z   duration_ms: 0.126378
+2026-11-18T06:48:59.7886770Z   type: 'test'
+2026-11-18T06:48:59.7887104Z   ...
+2026-11-18T06:48:59.7887599Z # Subtest: CSI, OSC, DCS and bracketed paste controls never enter password
+2026-11-18T06:48:59.7888209Z ok 7 - CSI, OSC, DCS and bracketed paste controls never enter password
+2026-11-18T06:48:59.7888719Z   ---
+2026-11-18T06:48:59.7889004Z   duration_ms: 0.082617
+2026-11-18T06:48:59.7889335Z   type: 'test'
+2026-11-18T06:48:59.7889678Z   ...
+2026-11-18T06:48:59.7928080Z 1..7
+2026-11-18T06:48:59.7928368Z # tests 7
+2026-11-18T06:48:59.7928631Z # suites 0
+2026-11-18T06:48:59.7928897Z # pass 7
+2026-11-18T06:48:59.7929108Z # fail 0
+2026-11-18T06:48:59.7929314Z # cancelled 0
+2026-11-18T06:48:59.7929583Z # skipped 0
+2026-11-18T06:48:59.7929782Z # todo 0
+2026-11-18T06:48:59.7930065Z # duration_ms 45.986866
+2026-11-18T06:48:59.8661668Z 
+2026-11-18T06:48:59.8662473Z > sejire-web@0.3.0 test
+2026-11-18T06:48:59.8664548Z > npm run test:engine && npm run test:crypto && npm run test:kinship && npm run test:pedigree && npm run test:lineage && npm run test:thirteen && npm run test:dates && npm run test:json && npm run test:zhuz && npm run test:sponsor && npm run test:loadVault && npm run test:mirror && npm run test:permawebHost && npm run test:lastScreen && npm run test:fetch && npm run test:gateways && npm run test:storage && npm run test:archive && npm run test:protocol && npm run test:i18n && npm run test:opsDesk && npm run test:solana && npm run test:native && npm run test:v2 && npm run test:recovery && npm run test:fund-client && npm run test:paid-client
+2026-11-18T06:48:59.8666418Z 
+2026-11-18T06:48:59.9337125Z 
+2026-11-18T06:48:59.9338153Z > sejire-web@0.3.0 test:engine
+2026-11-18T06:48:59.9338690Z > tsx src/lib/treeEngine.selftest.ts
+2026-11-18T06:48:59.9338881Z 
+2026-11-18T06:49:00.0849021Z treeEngine.selftest: OK
+2026-11-18T06:49:00.1682532Z 
+2026-11-18T06:49:00.1683190Z > sejire-web@0.3.0 test:crypto
+2026-11-18T06:49:00.1683750Z > tsx src/lib/crypto/crypto.selftest.ts && tsx src/lib/crypto/backup.selftest.ts
+2026-11-18T06:49:00.1684104Z 
+2026-11-18T06:49:00.4107110Z crypto.selftest: OK { vaultId: 'c180be9d' }
+2026-11-18T06:49:00.7766784Z backup.selftest: OK (portable recovery, relationships, history, validation, tampering, full-vault cache)
+2026-11-18T06:49:00.8598430Z 
+2026-11-18T06:49:00.8599215Z > sejire-web@0.3.0 test:kinship
+2026-11-18T06:49:00.8599621Z > tsx src/lib/kinship.selftest.ts
+2026-11-18T06:49:00.8599910Z 
+2026-11-18T06:49:01.0053980Z kinship.selftest: OK
+2026-11-18T06:49:01.0891321Z 
+2026-11-18T06:49:01.0892652Z > sejire-web@0.3.0 test:pedigree
+2026-11-18T06:49:01.0893236Z > tsx src/lib/pedigree.selftest.ts
+2026-11-18T06:49:01.0893492Z 
+2026-11-18T06:49:01.2372866Z pedigree.selftest: OK {
+2026-11-18T06:49:01.2373400Z   items: 7,
+2026-11-18T06:49:01.2373812Z   edges: 6,
+2026-11-18T06:49:01.2374158Z   soloH: 364,
+2026-11-18T06:49:01.2374479Z   sixAdds: 0,
+2026-11-18T06:49:01.2374807Z   sevenFromSelf: 64,
+2026-11-18T06:49:01.2375124Z   lineH: 364
+2026-11-18T06:49:01.2375484Z }
+2026-11-18T06:49:01.3167893Z 
+2026-11-18T06:49:01.3168925Z > sejire-web@0.3.0 test:lineage
+2026-11-18T06:49:01.3169326Z > tsx src/lib/pdf/lineage.selftest.ts
+2026-11-18T06:49:01.3169632Z 
+2026-11-18T06:49:01.4646438Z lineage.selftest: OK { male: 3, gens: 3, slots: 7, deep: 13, six: 'a3', seven: 'a2' }
+2026-11-18T06:49:01.5483411Z 
+2026-11-18T06:49:01.5484923Z > sejire-web@0.3.0 test:thirteen
+2026-11-18T06:49:01.5485681Z > tsx src/lib/pdf/thirteenLineage.fixture.selftest.ts
+2026-11-18T06:49:01.5486093Z 
+2026-11-18T06:49:01.7467583Z thirteenLineage.fixture.selftest: OK { people: 8191, maleLine: 13, charts: 273, poster: 'A2 7 gens' }
+2026-11-18T06:49:01.8375744Z 
+2026-11-18T06:49:01.8376680Z > sejire-web@0.3.0 test:dates
+2026-11-18T06:49:01.8493769Z > tsx src/lib/dates.selftest.ts
+2026-11-18T06:49:01.8494459Z 
+2026-11-18T06:49:01.9798184Z dates.selftest: OK
+2026-11-18T06:49:02.0619898Z 
+2026-11-18T06:49:02.0620483Z > sejire-web@0.3.0 test:json
+2026-11-18T06:49:02.0620827Z > tsx src/lib/treeJson.selftest.ts
+2026-11-18T06:49:02.0620963Z 
+2026-11-18T06:49:02.2118401Z treeJson.selftest: OK
+2026-11-18T06:49:02.2970604Z 
+2026-11-18T06:49:02.2971324Z > sejire-web@0.3.0 test:zhuz
+2026-11-18T06:49:02.2971754Z > tsx src/lib/zhuzRu.selftest.ts
+2026-11-18T06:49:02.2971959Z 
+2026-11-18T06:49:02.4321771Z zhuzRu.selftest: OK
+2026-11-18T06:49:02.5191150Z 
+2026-11-18T06:49:02.5191663Z > sejire-web@0.3.0 test:sponsor
+2026-11-18T06:49:02.5192098Z > tsx src/lib/sponsor/client.selftest.ts
+2026-11-18T06:49:02.5192586Z 
+2026-11-18T06:49:02.6607125Z sponsor.client.selftest: 2 asserts ok
+2026-11-18T06:49:02.7465746Z 
+2026-11-18T06:49:02.7466511Z > sejire-web@0.3.0 test:loadVault
+2026-11-18T06:49:02.7466880Z > tsx src/lib/arweave/loadVault.selftest.ts
+2026-11-18T06:49:02.7467038Z 
+2026-11-18T06:49:02.9328829Z loadVault.selftest: OK
+2026-11-18T06:49:15.0734553Z loadVault verified retrieval, local parent and sequential multi-tree selftests: OK
+2026-11-18T06:49:15.1520488Z 
+2026-11-18T06:49:15.1521017Z > sejire-web@0.3.0 test:mirror
+2026-11-18T06:49:15.1521318Z > tsx src/lib/siteMirror.selftest.ts
+2026-11-18T06:49:15.1521464Z 
+2026-11-18T06:49:15.2937773Z siteMirror.selftest: OK
+2026-11-18T06:49:15.3743155Z 
+2026-11-18T06:49:15.3743813Z > sejire-web@0.3.0 test:permawebHost
+2026-11-18T06:49:15.3744315Z > tsx src/lib/permawebHost.selftest.ts
+2026-11-18T06:49:15.3744840Z 
+2026-11-18T06:49:15.5130165Z permawebHost.selftest: OK
+2026-11-18T06:49:15.5998028Z 
+2026-11-18T06:49:15.5998704Z > sejire-web@0.3.0 test:lastScreen
+2026-11-18T06:49:15.5999053Z > tsx src/lib/lastScreen.selftest.ts
+2026-11-18T06:49:15.5999198Z 
+2026-11-18T06:49:15.7460759Z lastScreen/pdfRoot/pedigreeFit.selftest: OK
+2026-11-18T06:49:15.8304961Z 
+2026-11-18T06:49:15.8305457Z > sejire-web@0.3.0 test:fetch
+2026-11-18T06:49:15.8305829Z > tsx src/lib/arweave/fetch.selftest.ts
+2026-11-18T06:49:15.8306055Z 
+2026-11-18T06:49:15.9883970Z fetch.selftest: OK { versions: 3 }
+2026-11-18T06:49:16.3471887Z 
+2026-11-18T06:49:16.3472706Z > sejire-web@0.3.0 test:gateways
+2026-11-18T06:49:16.3473201Z > tsx src/lib/arweave/gateways.selftest.ts
+2026-11-18T06:49:16.3473422Z 
+2026-11-18T06:49:16.5567880Z gateways.selftest: OK { graphql: 3, data: 3 }
+2026-11-18T06:49:16.6401803Z 
+2026-11-18T06:49:16.6402753Z > sejire-web@0.3.0 test:storage
+2026-11-18T06:49:16.6403097Z > tsx src/lib/storageQuota.selftest.ts
+2026-11-18T06:49:16.6403276Z 
+2026-11-18T06:49:16.7827003Z storageQuota.selftest: OK
+2026-11-18T06:49:16.8685946Z 
+2026-11-18T06:49:16.8686419Z > sejire-web@0.3.0 test:archive
+2026-11-18T06:49:16.8687010Z > tsx src/lib/vaultSession/localArchive.selftest.ts && tsx src/lib/vaultSession/selection.selftest.ts
+2026-11-18T06:49:16.8687382Z 
+2026-11-18T06:49:17.0072522Z localArchive.selftest: OK { count: 2 }
+2026-11-18T06:49:17.2270973Z PASS declining an older network version leaves the complete vault, editor, HEAD and phrase unchanged
+2026-11-18T06:49:17.2285140Z PASS accepting a local snapshot persists all trees and histories before returning its active tree
+2026-11-18T06:49:17.2288924Z PASS local_/demo_ labels cannot become network parents
+2026-11-18T06:49:17.2290244Z PASS another vault or an invalid inactive tree cannot be adopted
+2026-11-18T06:49:17.2293117Z PASS failure writing the complete vault does not change the draft or session
+2026-11-18T06:49:17.2294492Z PASS draft quota failure rolls back the full vault cache and keeps the prior session
+2026-11-18T06:49:17.2295600Z PASS failed session persistence restores both storage values and the in-memory phrase
+2026-11-18T06:49:17.2297975Z PASS the rollback snapshot includes editor edits flushed by the confirmation callback
+2026-11-18T06:49:17.2298764Z vault version selection: 8 synthetic checks passed; no wallets, uploads, or network
+2026-11-18T06:49:17.3130179Z 
+2026-11-18T06:49:17.3131007Z > sejire-web@0.3.0 test:protocol
+2026-11-18T06:49:17.3131861Z > tsx src/lib/ao/protocol.selftest.ts
+2026-11-18T06:49:17.3132113Z 
+2026-11-18T06:49:17.4870728Z protocol.selftest: OK
+2026-11-18T06:49:17.5706315Z 
+2026-11-18T06:49:17.5706812Z > sejire-web@0.3.0 test:i18n
+2026-11-18T06:49:17.5707119Z > tsx src/lib/i18n/i18n.selftest.ts
+2026-11-18T06:49:17.5707254Z 
+2026-11-18T06:49:17.7203483Z i18n.selftest: OK
+2026-11-18T06:49:17.8024406Z 
+2026-11-18T06:49:17.8025206Z > sejire-web@0.3.0 test:opsDesk
+2026-11-18T06:49:17.8025812Z > tsx src/lib/opsDesk/store.selftest.ts && tsx src/lib/opsDesk/networkOverview.selftest.ts
+2026-11-18T06:49:17.8026117Z 
+2026-11-18T06:49:18.1384897Z opsDesk.selftest: OK
+2026-11-18T06:49:18.4880514Z networkOverview.selftest: reference, valid/invalid finalized payments, RPC unavailable, legacy fingerprint OK
+2026-11-18T06:49:18.5749152Z 
+2026-11-18T06:49:18.5750122Z > sejire-web@0.3.0 test:solana
+2026-11-18T06:49:18.5751257Z > tsx src/lib/solana/policy.selftest.ts && tsx src/lib/solana/wallet.selftest.ts && tsx src/lib/solana/upload.selftest.ts && tsx src/lib/solana/receipt.selftest.ts && tsx src/lib/solana/boundaries.selftest.ts
+2026-11-18T06:49:18.5752011Z 
+2026-11-18T06:49:18.7733806Z solana.policy.selftest: OK — encryption, money caps, quote binding, tags and network isolation
+2026-11-18T06:49:19.9858811Z solana.wallet.selftest: OK — both adapter contracts, real SDK signatures, isolation, changed account and unavailable wallet
+2026-11-18T06:49:21.2433778Z OK free upload signs only once; durable receipt survives a new journal instance
+2026-11-18T06:49:21.2514292Z OK 402 cannot trigger an unauthorized payment
+2026-11-18T06:49:21.2733657Z OK authorized top-up signs exactly one verified transfer
+2026-11-18T06:49:21.2845549Z OK dropped response replays exact data-item bytes, without another signature
+2026-11-18T06:49:21.3007801Z OK lost payment response reconciles the stored transfer; never double-pays
+2026-11-18T06:49:21.3183438Z OK a credited but still insufficient payment is not sent again
+2026-11-18T06:49:21.3260165Z OK SDK transaction to an unexpected recipient is rejected before wallet prompt
+2026-11-18T06:49:21.3275855Z OK rejected message signature cannot upload or pay
+2026-11-18T06:49:21.3296913Z OK account change while message prompt is open stops submission
+2026-11-18T06:49:21.3317172Z OK abort while signature prompt is open stops submission
+2026-11-18T06:49:21.3325465Z OK expired or mismatched quote requests no signature
+2026-11-18T06:49:21.3360922Z OK storage failure prevents upload and payment
+2026-11-18T06:49:21.3426711Z OK payment journal failure prevents the transaction prompt
+2026-11-18T06:49:21.3579913Z OK rejected payment may be retried because no signed transaction escaped
+2026-11-18T06:49:21.3653901Z OK changed transaction returned by wallet is rejected before broadcast
+2026-11-18T06:49:21.3723701Z OK abort during payment signature cannot broadcast
+2026-11-18T06:49:21.4124233Z OK unresolved payment blocks funding a different snapshot
+2026-11-18T06:49:21.4185949Z OK persistence failure after acceptance still returns the successful receipt
+2026-11-18T06:49:21.4250056Z OK receipt must identify exactly the signed item
+2026-11-18T06:49:21.4251209Z OK concurrent attempts are excluded and the lock is released
+2026-11-18T06:49:21.4251674Z solana.upload.selftest: 20 scenarios passed; real SDK signatures, mocked service responses
+2026-11-18T06:49:21.9092475Z solana.receipt.selftest: OK — recovery, exact-byte hash, network isolation, hostile receipts, unavailable/oversized data
+2026-11-18T06:49:22.3735430Z {
+2026-11-18T06:49:22.3742375Z   "result": "PASS",
+2026-11-18T06:49:22.3745146Z   "checkedAt": "2026-11-18T06:49:22.373Z",
+2026-11-18T06:49:22.3748051Z   "checks": {
+2026-11-18T06:49:22.3749964Z     "splIntegerSerializationAndBoundsCases": 98,
+2026-11-18T06:49:22.3750608Z     "moneyRoundtripAndIntegerRoundingCases": 10000,
+2026-11-18T06:49:22.3752850Z     "quoteBoundaryAndInvalidDecimalCases": 16,
+2026-11-18T06:49:22.3753313Z     "unicodeEncryptionUniqueIvRoundtrips": 32,
+2026-11-18T06:49:22.3753815Z     "authenticatedTamperingAndWrongKeyCases": 13,
+2026-11-18T06:49:22.3754631Z     "httpFailureAndAbortCases": 12,
+2026-11-18T06:49:22.3755061Z     "untrustedReceiptUrlIsolationCases": 4,
+2026-11-18T06:49:22.3755533Z     "invalidReceiptAndNetworkCases": 14,
+2026-11-18T06:49:22.3756019Z     "parallelDurableJournalRowsAndNetworkIsolation": 50,
+2026-11-18T06:49:22.3756515Z     "lockReleaseAfterFailure": 1
+2026-11-18T06:49:22.3756850Z   },
+2026-11-18T06:49:22.3757151Z   "externalRequests": 0,
+2026-11-18T06:49:22.3757541Z   "solTransfers": 0,
+2026-11-18T06:49:22.3758050Z   "note": "Additional local diagnostics. IndexedDB is simulated; not a real-browser cross-tab or extension test."
+2026-11-18T06:49:22.3758492Z }
+2026-11-18T06:49:22.4720192Z 
+2026-11-18T06:49:22.4720743Z > sejire-web@0.3.0 test:native
+2026-11-18T06:49:22.4721190Z > tsx src/lib/native/native.selftest.ts
+2026-11-18T06:49:22.4721455Z 
+2026-11-18T06:49:22.8251178Z PASS native read-only network errors never imply an unknown payment
+2026-11-18T06:49:22.8333466Z PASS native three distinct wallet roles and signed genesis
+2026-11-18T06:49:22.8371474Z PASS native fake signature rejected
+2026-11-18T06:49:22.8373994Z PASS native untrusted initial visitor rejected
+2026-11-18T06:49:22.8375331Z PASS native secret/unknown configuration field rejected
+2026-11-18T06:49:22.8416618Z PASS native configuration recovery from portable bytes
+2026-11-18T06:49:22.8516252Z PASS native address rotation preserves previous terms
+2026-11-18T06:49:22.8590981Z PASS native fork not last JSON wins
+2026-11-18T06:49:22.8631168Z PASS native rollback rejected
+2026-11-18T06:49:22.8680338Z PASS native old authority must sign new configuration
+2026-11-18T06:49:22.8794720Z PASS native new key explicit acceptance
+2026-11-18T06:49:22.8795804Z PASS native exact split 30000000
+2026-11-18T06:49:22.8796150Z PASS native exact split 100000000
+2026-11-18T06:49:22.8796485Z PASS native exact split 1000000000
+2026-11-18T06:49:22.8798831Z PASS native donation only no archive or service fee
+2026-11-18T06:49:22.8799575Z PASS native below price rejected
+2026-11-18T06:49:22.8800095Z PASS native large lamports integer precision
+2026-11-18T06:49:22.8800621Z PASS native technical u64 bound not commercial cap
+2026-11-18T06:49:22.8801308Z PASS native one archive authorization exact payer digest bytes and integer ceiling
+2026-11-18T06:49:22.8802086Z PASS native pilot policy binds manager devnet treasury reserve and budget
+2026-11-18T06:49:22.8803520Z PASS native disabled and expired executor stop before RPC or order signature
+2026-11-18T06:49:22.8805832Z PASS native ciphertext or config publication cannot use single archive permission
+2026-11-18T06:49:23.3813679Z PASS native write-ahead failure stops before wallet signature
+2026-11-18T06:49:23.4984312Z PASS native real SDK format-2 preparation with synthetic RSA signer
+2026-11-18T06:49:23.5018377Z PASS native insufficient operational budget rejects
+2026-11-18T06:49:23.5018783Z PASS native wrong signer rejects
+2026-11-18T06:49:23.5048787Z PASS native damaged ciphertext rejects
+2026-11-18T06:49:23.5049164Z PASS native mainnet broadcast is off by default
+2026-11-18T06:49:23.5733485Z PASS native signed bytes saved before first send
+2026-11-18T06:49:23.7246147Z PASS native resume in clean runtime state uses same ID without old private key
+2026-11-18T06:49:23.7775413Z PASS native repeat upload no second transaction
+2026-11-18T06:49:23.7897725Z PASS native tampered signed transaction rejected
+2026-11-18T06:49:23.7915074Z PASS native native status is independent of accepted flag
+2026-11-18T06:49:23.8010690Z PASS native alternate gateway verifies exact bytes and hash
+2026-11-18T06:49:23.8049504Z PASS native corrupted retrieval rejected
+2026-11-18T06:49:23.8193693Z PASS native two trees relationships and history offline restore unchanged
+2026-11-18T06:49:23.8194241Z PASS native no Turbo or cloud endpoints in direct upload path
+2026-11-18T06:49:23.8194554Z PASS native custom endpoint supported by real SDK
+2026-11-18T06:49:23.8199195Z PASS 38 native admin / Arweave tests; LOCAL fixtures, no live transaction or permanent settlement
+2026-11-18T06:49:23.9308794Z PASS native stale tab v3 adopts persistent v4 and cannot roll back
+2026-11-18T06:49:23.9601314Z PASS native trusted fork rejected without changing persistent history
+2026-11-18T06:49:24.1656005Z PASS native exact missing job configuration recovered only from signed historical extension
+2026-11-18T06:49:24.1656977Z PASS native every payment-signing marker forbids orphan replacement
+2026-11-18T06:49:24.2346588Z PASS native stale authorization preserves a recoverable signed mirror before overwriting cache
+2026-11-18T06:49:24.2347162Z PASS 43 native tests including monotonic configuration / orphan guards; LOCAL fixtures only
+2026-11-18T06:49:24.3198341Z 
+2026-11-18T06:49:24.3198717Z > sejire-web@0.3.0 test:v2
+2026-11-18T06:49:24.3199243Z > tsx src/lib/preserveV2/v2.selftest.ts && tsx src/lib/preserveV2/machine.selftest.ts
+2026-11-18T06:49:24.3199560Z 
+2026-11-18T06:49:24.6923134Z PASS V2 stable deterministic save ID
+2026-11-18T06:49:24.6930547Z PASS V2 one prepared service transfer and one reference
+2026-11-18T06:49:24.6937134Z PASS V2 finalized economic payment accepts ComputeBudget
+2026-11-18T06:49:24.6941645Z PASS V2 changed recipient rejected
+2026-11-18T06:49:24.6945098Z PASS V2 changed amount rejected
+2026-11-18T06:49:24.6948421Z PASS V2 additional value transfer rejected
+2026-11-18T06:49:24.6949522Z PASS V2 changed payer rejected
+2026-11-18T06:49:24.6953279Z PASS V2 missing reference rejected
+2026-11-18T06:49:24.6954783Z PASS V2 missing payer signature rejected
+2026-11-18T06:49:24.6958506Z PASS V2 unknown instruction rejected
+2026-11-18T06:49:24.6963557Z PASS V2 unsafe compute budget rejected
+2026-11-18T06:49:24.6966982Z PASS V2 inner value effects rejected
+2026-11-18T06:49:24.6968145Z PASS V2 failed finalized transaction rejected
+2026-11-18T06:49:24.6968768Z PASS V2 wrong Solana network rejected
+2026-11-18T06:49:24.6979797Z PASS V2 lost wallet response discovered by reference
+2026-11-18T06:49:24.6980482Z PASS V2 recovery uses the three approved public devnet RPC URLs
+2026-11-18T06:49:24.6981671Z PASS V2 RPC timeout never proves absence
+2026-11-18T06:49:24.6985448Z PASS V2 two valid readers recover payment while one reader fails
+2026-11-18T06:49:24.6988767Z PASS V2 two valid readers prove expiry and absence while one reader fails
+2026-11-18T06:49:24.7037289Z PASS V2 a hanging third reader cannot block two valid readers
+2026-11-18T06:49:24.7039322Z PASS V2 one remaining valid reader cannot authorize retry
+2026-11-18T06:49:24.7041647Z PASS V2 successful transaction on third valid reader blocks retry
+2026-11-18T06:49:24.7043566Z PASS V2 expired blockhash with complete empty history allows same-reference preparation
+2026-11-18T06:49:24.7045954Z PASS V2 failed finalized transaction with expired blockhash permits same-reference retry
+2026-11-18T06:49:24.7047170Z PASS V2 failed history mismatch cannot authorize another payment
+2026-11-18T06:49:24.7047992Z PASS V2 live blockhash blocks a second payment
+2026-11-18T06:49:24.7049154Z PASS V2 pruned history blocks a second payment
+2026-11-18T06:49:24.7049982Z PASS V2 conflicting reference signatures block a second payment
+2026-11-18T06:49:24.7050412Z PASS V2 only explicit wallet rejection enables safe retry
+2026-11-18T06:49:24.7059199Z PASS V2 Wander signing metadata is accepted without weakening SEJIRE tag binding
+2026-11-18T06:49:24.7060504Z PASS V2 Arweave exact quote and balance accepted
+2026-11-18T06:49:24.7060853Z PASS V2 Arweave quote above cap rejected
+2026-11-18T06:49:24.7064300Z PASS V2 wrong Wander address rejected before signing
+2026-11-18T06:49:24.7064873Z PASS V2 wrong archive size rejected before signing
+2026-11-18T06:49:24.7065462Z PASS V2 insufficient AR balance rejected
+2026-11-18T06:49:24.7065993Z PASS V2 retrieved wrong SHA is never complete
+2026-11-18T06:49:24.7082477Z PASS V2 synthetic retrieved envelope with exact SHA and vault ID verifies
+2026-11-18T06:49:24.7113565Z PASS V2 atomic session transition persists after reload
+2026-11-18T06:49:24.7116275Z PASS V2 immutable reference and archive cannot be replaced
+2026-11-18T06:49:24.7127179Z PASS V2 completed session cannot return to payment
+2026-11-18T06:49:24.7127759Z PASS V2 one session lock name serializes actions
+2026-11-18T06:49:24.7128135Z V2 unit assertions: 41
+2026-11-18T06:49:25.0749837Z PASS V2 machine A happy path uses one payment, one signing, upload, retrieval verification
+2026-11-18T06:49:25.0755658Z PASS V2 machine B double click serializes to one Phantom invocation
+2026-11-18T06:49:25.0763624Z PASS V2 machine C explicit Phantom rejection retains same session/reference for retry
+2026-11-18T06:49:25.0769515Z PASS V2 machine G account switch after broadcast still accepts correct finalized payment
+2026-11-18T06:49:25.0776999Z PASS V2 machine H lost wallet response discovered after reload by reference
+2026-11-18T06:49:25.0828361Z PASS V2 machine Phantom timeout stays pending and reference finds the sent payment
+2026-11-18T06:49:25.0834048Z PASS V2 machine I RPC timeout keeps pending payment and prevents another Phantom call
+2026-11-18T06:49:25.0841370Z PASS V2 machine J expired absent payment retries same session and reference
+2026-11-18T06:49:25.0853272Z PASS V2 machine J finalized failed payment retries same session and reference after expiry
+2026-11-18T06:49:25.0855823Z PASS V2 machine K uncertain previous payment remains pending
+2026-11-18T06:49:25.0856351Z PASS V2 machine L reload READY does not open wallets
+2026-11-18T06:49:25.0857679Z PASS V2 machine L reload SOLANA_PREPARED preserves same reference
+2026-11-18T06:49:25.0858929Z PASS V2 machine L reload AR_READY with lost signature response permits safe retry
+2026-11-18T06:49:25.0859718Z PASS V2 machine L reload SOLANA_PAID and AR_READY preserves the next action
+2026-11-18T06:49:25.0861342Z PASS V2 machine L reload AR_SIGNED resumes same signed ID without Wander
+2026-11-18T06:49:25.0862505Z PASS V2 machine L reload COMPLETE and BLOCKED cannot start a new payment
+2026-11-18T06:49:25.0864823Z PASS V2 machine M Wander rejection leaves no signed plan and permits retry
+2026-11-18T06:49:25.0919353Z PASS V2 machine Wander timeout without signed bytes resets flag and retries without duplicate upload
+2026-11-18T06:49:25.0920435Z PASS V2 machine quote movement before Wander signature permits safe re-quote
+2026-11-18T06:49:25.0921929Z PASS V2 machine lost Wander response before persistence permits same-session retry
+2026-11-18T06:49:25.0924165Z PASS V2 machine legacy false-negative BLOCKED Wander signature is revalidated and resumed without re-signing
+2026-11-18T06:49:25.0926775Z PASS V2 machine N signed transaction survives reload before upload
+2026-11-18T06:49:25.0928736Z PASS V2 machine O upload timeout resumes same signed transaction and progress
+2026-11-18T06:49:25.0929728Z PASS V2 machine P wrong archive blocks payment before Phantom
+2026-11-18T06:49:25.0930561Z PASS V2 machine P wrong archive blocks Wander before signing
+2026-11-18T06:49:25.0931669Z PASS V2 machine R wrong Wander address blocks signature
+2026-11-18T06:49:25.0932942Z PASS V2 machine S retrieval hash mismatch never reaches COMPLETE
+2026-11-18T06:49:25.1255726Z PASS V2 machine gateway redirect retrieves exact archive before COMPLETE and keeps the same Arweave ID
+2026-11-18T06:49:25.1338236Z PASS V2 machine raw gateway fallback verifies archive when rendered endpoint is unavailable
+2026-11-18T06:49:25.1341893Z PASS V2 machine T successful confirmed retrieval with exact SHA reaches COMPLETE
+2026-11-18T06:49:25.1342742Z V2 machine assertions: 30
+2026-11-18T06:49:25.2341868Z 
+2026-11-18T06:49:25.2342636Z > sejire-web@0.3.0 test:recovery
+2026-11-18T06:49:25.2343100Z > tsx src/lib/recovery/recovery.selftest.ts
+2026-11-18T06:49:25.2343325Z 
+2026-11-18T06:49:26.5942702Z Recovery provider, strict historical fund metadata, bounded native data/JSON reads, raw/hash/AES/vault checks and HEAD selftests passed
+2026-11-18T06:49:26.6730158Z 
+2026-11-18T06:49:26.6730867Z > sejire-web@0.3.0 test:fund-client
+2026-11-18T06:49:26.6731291Z > tsx src/lib/fund/journal.selftest.ts
+2026-11-18T06:49:26.6731513Z 
+2026-11-18T06:49:26.8409845Z fund journal.selftest: OK (exact ciphertext, parent response binding, conflicts, locking, legacy recovery/refusals, cleanup, storage failures, bounds)
+2026-11-18T06:49:26.9226496Z 
+2026-11-18T06:49:26.9227265Z > sejire-web@0.3.0 test:paid-client
+2026-11-18T06:49:26.9227601Z > tsx src/lib/checkout/paidClient.selftest.ts
+2026-11-18T06:49:26.9227942Z 
+2026-11-18T06:49:28.3858379Z paidClient.selftest: PASS (preserved legacy journal, serialized session bootstrap, independent help policy/receipt, u64 RPC precision, cross-tab single payment, lost create/reserve/wallet, cancellation, exact full-vault receipt, no help archive/head change, bounded body)
+2026-11-18T06:49:28.4717326Z 
+2026-11-18T06:49:28.4717895Z > sejire-sponsor@0.2.0 test
+2026-11-18T06:49:28.4718474Z > tsx src/selftest.ts && npm run test:checkout && npm run test:rpc && npm run test:fund && npm run test:paid
+2026-11-18T06:49:28.4718786Z 
+2026-11-18T06:49:28.8231722Z sponsor.selftest: 46 asserts ok
+2026-11-18T06:49:28.9035130Z 
+2026-11-18T06:49:28.9035631Z > sejire-sponsor@0.2.0 test:checkout
+2026-11-18T06:49:28.9035974Z > tsx src/checkout/selftest.ts
+2026-11-18T06:49:28.9036108Z 
+2026-11-18T06:49:29.1066908Z PASS arbitrary contributions include one million and above; no commercial cap
+2026-11-18T06:49:29.1071334Z PASS zero contribution does not request a fund transfer
+2026-11-18T06:49:29.1076941Z PASS service and contribution have exact distinct instruction allocations
+2026-11-18T06:49:29.1078400Z PASS SOL represented in lamports with its own program, not USDC units
+2026-11-18T06:49:29.1099609Z PASS decimal arithmetic and format roundtrip for 1000 varied amounts
+2026-11-18T06:49:29.1103102Z PASS technical u64 boundary, total overflow and precision fail closed
+2026-11-18T06:49:29.1103694Z PASS large contribution requests confirmation without rejecting it
+2026-11-18T06:49:29.1107885Z PASS preservation requires digest/size/service; no fixed 512 KiB policy
+2026-11-18T06:49:29.1108875Z PASS donation-only cannot charge service or require an archive; must be positive
+2026-11-18T06:49:29.1112573Z PASS quote/order immutability and distinct recipient roles
+2026-11-18T06:49:29.1113637Z PASS reject wrong network
+2026-11-18T06:49:29.1115223Z PASS reject wrong genesis
+2026-11-18T06:49:29.1116231Z PASS reject failed transaction
+2026-11-18T06:49:29.1116883Z PASS reject processed transaction
+2026-11-18T06:49:29.1117562Z PASS reject confirmed is not finalized
+2026-11-18T06:49:29.1118922Z PASS reject missing block time
+2026-11-18T06:49:29.1119614Z PASS reject late payment
+2026-11-18T06:49:29.1124300Z PASS reject predates order
+2026-11-18T06:49:29.1124846Z PASS reject wrong fee payer
+2026-11-18T06:49:29.1125468Z PASS reject missing payer signature
+2026-11-18T06:49:29.1125857Z PASS reject malformed signature
+2026-11-18T06:49:29.1126804Z PASS reject wrong recipient
+2026-11-18T06:49:29.1127376Z PASS reject wrong sender
+2026-11-18T06:49:29.1128280Z PASS reject counterfeit USDC mint
+2026-11-18T06:49:29.1128773Z PASS reject wrong token program
+2026-11-18T06:49:29.1129309Z PASS reject wrong decimals
+2026-11-18T06:49:29.1129853Z PASS reject wrong amount
+2026-11-18T06:49:29.1130972Z PASS reject wrong reference
+2026-11-18T06:49:29.1131761Z PASS reject duplicate instruction
+2026-11-18T06:49:29.1133127Z PASS reject extra transfer
+2026-11-18T06:49:29.1134784Z PASS forged order asset or total is rejected
+2026-11-18T06:49:29.1168465Z PASS atomic test store: 32 concurrent confirmations credit once
+2026-11-18T06:49:29.1172790Z PASS not found and RPC loss retain pending signature; replacement blocked
+2026-11-18T06:49:29.1174766Z PASS pending finality and wrong response signature never grant fulfillment
+2026-11-18T06:49:29.1177380Z PASS response lost AFTER atomic credit: retry does not credit again
+2026-11-18T06:49:29.1185998Z PASS duplicate order/reference and cross-order instruction replay are refused
+2026-11-18T06:49:29.1186909Z PASS detached reads cannot tamper with test store state
+2026-11-18T06:49:29.1189044Z PASS contribution-only is verified without storage fulfillment or archive
+2026-11-18T06:49:29.1189559Z PASS validated payment and credit allocations are frozen
+2026-11-18T06:49:29.1190983Z PASS SOL MVP preservation: 30000000 service + 0 fund
+2026-11-18T06:49:29.1191557Z PASS SOL MVP preservation: 30000000 service + 5000000 fund
+2026-11-18T06:49:29.1192345Z PASS SOL MVP contribution: 0 service + 5000000 fund
+2026-11-18T06:49:29.1193902Z PASS SOL rejects wrong servicePayment recipient
+2026-11-18T06:49:29.1194244Z PASS SOL rejects wrong servicePayment amount
+2026-11-18T06:49:29.1194732Z PASS SOL rejects wrong fundContribution recipient
+2026-11-18T06:49:29.1195830Z PASS SOL rejects wrong fundContribution amount
+2026-11-18T06:49:29.1196308Z PASS SOL rejects wrong payer
+2026-11-18T06:49:29.1196672Z PASS SOL rejects wrong signer
+2026-11-18T06:49:29.1197164Z PASS SOL rejects wrong network
+2026-11-18T06:49:29.1197516Z PASS SOL rejects failed transaction
+2026-11-18T06:49:29.1197967Z PASS SOL rejects not finalized
+2026-11-18T06:49:29.1198382Z PASS SOL rejects extra unexpected transfer
+2026-11-18T06:49:29.1199378Z PASS SOL large contributions remain exact without product cap
+2026-11-18T06:49:29.1200313Z checkout.selftest: 53 scenarios PASS; synthetic normalized RPC evidence, single-isolate memory store only; zero external requests/signatures/transfers
+2026-11-18T06:49:29.2044185Z 
+2026-11-18T06:49:29.2044764Z > sejire-sponsor@0.2.0 test:rpc
+2026-11-18T06:49:29.2045198Z > tsx src/checkout/rpc.selftest.ts
+2026-11-18T06:49:29.2045399Z 
+2026-11-18T06:49:29.4156679Z PASS RPC finalized legacy USDC uses account owners, not token account addresses
+2026-11-18T06:49:29.4180840Z PASS RPC actual reader requests the workerd-supported manual redirect mode
+2026-11-18T06:49:29.4213923Z PASS RPC canonical RPC response URL with trailing slash is accepted
+2026-11-18T06:49:29.4222728Z PASS RPC RPC HTTP 301 cannot follow Location or credit a payment
+2026-11-18T06:49:29.4226573Z PASS RPC RPC HTTP 302 cannot follow Location or credit a payment
+2026-11-18T06:49:29.4227490Z PASS RPC RPC HTTP 303 cannot follow Location or credit a payment
+2026-11-18T06:49:29.4230243Z PASS RPC RPC HTTP 307 cannot follow Location or credit a payment
+2026-11-18T06:49:29.4232592Z PASS RPC RPC HTTP 308 cannot follow Location or credit a payment
+2026-11-18T06:49:29.4237428Z PASS RPC an unexpected RPC response URL is rejected before accepting its valid body
+2026-11-18T06:49:29.4245763Z PASS RPC legacy SOL direct transfers
+2026-11-18T06:49:29.4252016Z PASS RPC v0 resolves writable/readonly loaded addresses in correct order
+2026-11-18T06:49:29.4259441Z PASS RPC v0 supports writable token accounts loaded from lookup table
+2026-11-18T06:49:29.4277202Z PASS RPC optional compute unit limit/price before transfers
+2026-11-18T06:49:29.4284085Z PASS RPC u64 instruction amount never passes through floating point
+2026-11-18T06:49:29.4294234Z PASS RPC reject signature mismatch
+2026-11-18T06:49:29.4301794Z PASS RPC reject failed execution
+2026-11-18T06:49:29.4309280Z PASS RPC reject unsupported version
+2026-11-18T06:49:29.4315889Z PASS RPC reject missing meta
+2026-11-18T06:49:29.4323140Z PASS RPC reject missing block time
+2026-11-18T06:49:29.4329104Z PASS RPC reject counterfeit mint
+2026-11-18T06:49:29.4334678Z PASS RPC reject wrong token program
+2026-11-18T06:49:29.4343494Z PASS RPC reject changed token owner
+2026-11-18T06:49:29.4352529Z PASS RPC reject recipient token account mistaken for owner
+2026-11-18T06:49:29.4360450Z PASS RPC reject wrong recipient
+2026-11-18T06:49:29.4368290Z PASS RPC reject wrong amount
+2026-11-18T06:49:29.4376294Z PASS RPC reject wrong reference
+2026-11-18T06:49:29.4382458Z PASS RPC reject wrong payer
+2026-11-18T06:49:29.4387979Z PASS RPC reject non-signer authority
+2026-11-18T06:49:29.4395567Z PASS RPC reject missing signer
+2026-11-18T06:49:29.4399973Z PASS RPC reject readonly fee payer
+2026-11-18T06:49:29.4405002Z PASS RPC reject arbitrary CPI
+2026-11-18T06:49:29.4410445Z PASS RPC reject ATA instruction
+2026-11-18T06:49:29.4415443Z PASS RPC reject unknown program
+2026-11-18T06:49:29.4420392Z PASS RPC reject unchecked token transfer
+2026-11-18T06:49:29.4426545Z PASS RPC reject unsafe JSON fee
+2026-11-18T06:49:29.4432845Z PASS RPC reject missing token owner
+2026-11-18T06:49:29.4438052Z PASS RPC reject out-of-range account index
+2026-11-18T06:49:29.4443934Z PASS RPC reject writable reference
+2026-11-18T06:49:29.4452980Z PASS RPC reject extra transfer
+2026-11-18T06:49:29.4456226Z PASS RPC wrong genesis remains unresolved
+2026-11-18T06:49:29.4458942Z PASS RPC HTTP 429 remains unresolved
+2026-11-18T06:49:29.4460122Z PASS RPC HTTP 503 remains unresolved
+2026-11-18T06:49:29.4461887Z PASS RPC malformed JSON remains unresolved
+2026-11-18T06:49:29.4463916Z PASS RPC RPC response id mismatch remains unresolved
+2026-11-18T06:49:29.4465462Z PASS RPC RPC unsupported version error remains unresolved
+2026-11-18T06:49:29.4467291Z PASS RPC confirmed status remains unresolved
+2026-11-18T06:49:29.4468901Z PASS RPC processed status remains unresolved
+2026-11-18T06:49:29.4470489Z PASS RPC failed status remains unresolved
+2026-11-18T06:49:29.4472480Z PASS RPC missing status context remains unresolved
+2026-11-18T06:49:29.4479816Z PASS RPC status/transaction slot mismatch remains unresolved
+2026-11-18T06:49:29.4480816Z PASS RPC RPC 500 remains unresolved
+2026-11-18T06:49:29.4484475Z PASS RPC null transaction remains unresolved
+2026-11-18T06:49:29.4486208Z PASS RPC null signature status remains unresolved
+2026-11-18T06:49:29.4563337Z PASS RPC timeout remains unresolved
+2026-11-18T06:49:29.4583192Z PASS RPC late server response uses original inclusion time; retry credits only once
+2026-11-18T06:49:29.4591858Z PASS RPC client cannot provide paid/evidence/finalized/recipient/amount/RPC
+2026-11-18T06:49:29.4626560Z PASS RPC bounded RPC response and missing result reject without credit
+2026-11-18T06:49:29.4651962Z PASS RPC raw RPC u64 balances stay exact while ordinary context numbers remain numbers
+2026-11-18T06:49:29.4812141Z PASS RPC preparation compares a large balance and network fee without rounding a single lamport
+2026-11-18T06:49:29.4896985Z PASS RPC balance preparation rejects invalid monetary tokens before any wallet action
+2026-11-18T06:49:29.4903417Z PASS RPC legacy SOL preparation also preserves exact large balances
+2026-11-18T06:49:29.4904086Z rpc.selftest: 61 scenarios PASS; synthetic encoding=json RPC fixtures, zero external requests/signatures/transfers
+2026-11-18T06:49:29.5762986Z 
+2026-11-18T06:49:29.5763396Z > sejire-sponsor@0.2.0 test:fund
+2026-11-18T06:49:29.5764393Z > node --loader ../../scripts/offline-ts-loader.mjs tests/fund-provider.mjs && node --experimental-sqlite --loader ../../scripts/offline-ts-loader.mjs tests/fund.local.mjs
+2026-11-18T06:49:29.5765043Z 
+2026-11-18T06:49:29.9005120Z (node:4012) ExperimentalWarning: `--experimental-loader` may be removed in the future; instead use `register()`:
+2026-11-18T06:49:29.9005949Z --import 'data:text/javascript,import { register } from "node:module"; import { pathToFileURL } from "node:url"; register("../../scripts/offline-ts-loader.mjs", pathToFileURL("./"));'
+2026-11-18T06:49:29.9006537Z (Use `node --trace-warnings ...` to show where the warning was created)
+2026-11-18T06:49:30.1051273Z arweave-web-init: PASS
+2026-11-18T06:49:30.8318215Z fund-provider: PASS; pending/confirmed distinction, bounded raw/canonical/node-data verification, strict base64url, trusted archive redirects, rejected node API redirects and shared check deadline; zero posts
+2026-11-18T06:49:31.1414546Z (node:4025) ExperimentalWarning: `--experimental-loader` may be removed in the future; instead use `register()`:
+2026-11-18T06:49:31.1415781Z --import 'data:text/javascript,import { register } from "node:module"; import { pathToFileURL } from "node:url"; register("../../scripts/offline-ts-loader.mjs", pathToFileURL("./"));'
+2026-11-18T06:49:31.1470467Z (Use `node --trace-warnings ...` to show where the warning was created)
+2026-11-18T06:49:31.1471214Z (node:4025) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+2026-11-18T06:49:31.7107906Z PASS fund: initial limit 13 AR; disabled; server admin auth
+2026-11-18T06:49:31.7121657Z PASS fund: public balance needs no admin credential but cannot change settings
+2026-11-18T06:49:31.7150358Z PASS fund: every admin operation rejects missing and invalid credentials server-side
+2026-11-18T06:49:31.7304244Z PASS fund: promo normalization, change, old invalid, disable and enable
+2026-11-18T06:49:31.7393080Z PASS fund: success uses confirmed transaction reward and words-recoverable metadata, with no plaintext promo
+2026-11-18T06:49:31.7450837Z PASS fund: duplicate POST and polling preserve same tx and accounting
+2026-11-18T06:49:31.7492436Z PASS fund: 13 to 26 limit is cumulative and lower than spent rejected
+2026-11-18T06:49:31.7637508Z PASS fund: lost response retains signed ID and reservation; reconcile once
+2026-11-18T06:49:31.7655325Z PASS fund: wallet lower than budget stops reservation
+2026-11-18T06:49:31.7687086Z PASS fund: recovery words and plaintext tree fields cannot enter Fund API
+2026-11-18T06:49:31.7963968Z PASS fund: parallel reservations cannot exceed cap and count active reserves
+2026-11-18T06:49:31.8087381Z PASS fund: rate limit and persistence after restart
+2026-11-18T06:49:31.8274533Z PASS fund: verification failure holds reservation, retry completes once; provider errors fail closed
+2026-11-18T06:49:31.8479191Z PASS fund: reconcile resubmits stored signed transaction after upload was not accepted
+2026-11-18T06:49:31.8480582Z PASS fund: audit records contain revision and limits, never promo plaintext
+2026-11-18T06:49:31.8501627Z PASS fund: prepare failure returns safe code before reservation
+2026-11-18T06:49:31.8647688Z PASS fund: GET never signs, reserves or resubmits a missing signed transaction; explicit POST recovers the same order
+2026-11-18T06:49:31.8823102Z PASS fund: confirmed network with unavailable archive remains reserved, then the same order completes exactly once
+2026-11-18T06:49:31.8935212Z PASS fund: public attention reasons remain safe and cannot release or complete an unverified archive
+2026-11-18T06:49:31.9135528Z PASS fund: existing order completes through direct-provider GET despite stale and split gateway evidence, with exactly-once spend
+2026-11-18T06:49:31.9349240Z PASS fund: new parent is signed, immutable on replay and ledger reserve, and survives GET completion and restart
+2026-11-18T06:49:31.9501825Z PASS fund: invalid parents are rejected before reservation or signing; explicit null and omitted genesis replay identically
+2026-11-18T06:49:31.9625795Z PASS fund: old-client omitted POST remains unbound across new-client GET resume with an existing local parent
+2026-11-18T06:49:31.9733955Z PASS fund: additive schema preserves historical prepared/signed bytes and GET settles the original parent-less order
+2026-11-18T06:49:31.9734750Z fund.local: PASS; real SQLite, mocked gateway/provider responses, zero network calls or AR transactions
+2026-11-18T06:49:32.0575671Z 
+2026-11-18T06:49:32.0576112Z > sejire-sponsor@0.2.0 test:paid
+2026-11-18T06:49:32.0576988Z > tsx src/checkout/paid.selftest.ts && tsx src/checkout/directPreservation.selftest.ts && node --experimental-sqlite --loader ../../scripts/offline-ts-loader.mjs tests/paid.local.mjs && npm run test:recipients
+2026-11-18T06:49:32.0577537Z 
+2026-11-18T06:49:32.3956966Z PASS paid primitives: v1 output and rollback boundary stay distinct from immutable v2
+2026-11-18T06:49:32.3971750Z PASS paid primitives: policy hash is canonical; roles, genesis and limits are not caller defaults
+2026-11-18T06:49:32.3979267Z PASS paid primitives: standalone policy requires only explicit SOL terms; preservation still requires complete AR policy
+2026-11-18T06:49:32.4231821Z PASS paid primitives: standalone contribution has one independently decoded fund transfer, no storage, and exact u64 amounts
+2026-11-18T06:49:32.4251470Z PASS paid primitives: standalone contribution rejects zero/service/archive/storage and cannot change preservation terms
+2026-11-18T06:49:32.4256218Z PASS paid primitives: v2 rejects omitted parent, invalid archive/storage, test recipients and extra order fields
+2026-11-18T06:49:32.4334265Z PASS paid primitives: independent SDK roundtrip: Phantom-safe compute budget, one signer and exact transfers
+2026-11-18T06:49:32.4389567Z PASS paid primitives: pre-existing transfer-only preparation remains valid and can be renewed with Phantom-safe bytes
+2026-11-18T06:49:32.4410733Z PASS paid primitives: preparation binds policy/order/payer/reference/blockhash/bytes/id and window
+2026-11-18T06:49:32.4675631Z PASS paid primitives: explicit recovery preparation has a bounded new window and exact predecessor without changing immutable order terms
+2026-11-18T06:49:32.4723622Z PASS paid primitives: explicit RPC renewal permits expired original order but rejects the unchanged old blockhash
+2026-11-18T06:49:32.4789934Z PASS paid primitives: reserve can verify the payer signature against exact saved bytes without broadcasting
+2026-11-18T06:49:32.4837826Z PASS paid primitives: Phantom Lighthouse suffix preserves payment and binds its actual signature
+2026-11-18T06:49:32.4901523Z PASS paid primitives: modern validator requires the persisted preparation and exact chain message
+2026-11-18T06:49:32.4918097Z PASS paid primitives: late verification of timely inclusion credits once; current expiry cannot revoke payment
+2026-11-18T06:49:32.4952271Z PASS paid primitives: v2 accepts creation-second inclusion at RPC precision, including reference recovery, and rejects an earlier second
+2026-11-18T06:49:32.4984383Z PASS paid primitives: devnet preparePaid uses pinned genesis/RPC and fee for exact message
+2026-11-18T06:49:32.5015438Z PASS paid primitives: mainnet-beta preparePaid uses pinned genesis/RPC and fee for exact message
+2026-11-18T06:49:32.5078294Z PASS paid primitives: legacy mainnet preparation remains unavailable; modern bad readiness cannot reach wallet
+2026-11-18T06:49:32.5093297Z PASS paid primitives: unknown wallet outcome recovers exact old reference/preparation without sending
+2026-11-18T06:49:32.5108148Z PASS paid primitives: reference mention with different blockhash cannot substitute another preparation
+2026-11-18T06:49:32.5142093Z PASS paid primitives: null, timeout/unavailable, wrong genesis and malformed lookup stay uncertain
+2026-11-18T06:49:32.5189160Z PASS paid primitives: two exact matching signatures are ambiguous; a full lookup page is not an empty proof
+2026-11-18T06:49:32.5190196Z PASS paid primitives: expired overall lookup budget stops before another HTTP request
+2026-11-18T06:49:32.5199663Z PASS paid primitives: v2 receipt separates payment/storage networks and exact parent/payment evidence
+2026-11-18T06:49:32.5200759Z paid.selftest: 25 synthetic scenarios PASS; ephemeral software-signature fixture only; no network, live keys, submission or activation
+2026-11-18T06:49:33.0672945Z PASS direct-preservation: invalid storage policy is rejected before any transport or signing
+2026-11-18T06:49:33.1009266Z PASS direct-preservation: readiness and unsigned exact preparation work while execution is disabled
+2026-11-18T06:49:33.1050321Z PASS direct-preservation: no signer, wrong signer, network, low balance or excess reward cannot offer ready
+2026-11-18T06:49:33.1057333Z PASS direct-preservation: changed archive, missing parent binding and noncanonical serialization fail before network
+2026-11-18T06:49:33.1090073Z PASS direct-preservation: all prepared transaction fields are bound before signing, including Merkle data root
+2026-11-18T06:49:33.1220345Z PASS direct-preservation: real software RSA signature uses stored quote and exact recovery metadata without network
+2026-11-18T06:49:33.1310629Z PASS direct-preservation: lost submit response replays identical signed bytes after fresh provider construction
+2026-11-18T06:49:33.1315297Z PASS direct-preservation: altered signed data or parent never reaches POST, even with a valid signature over old root
+2026-11-18T06:49:33.1359106Z PASS direct-preservation: confirmed small transaction can replay its original data without another header or signature
+2026-11-18T06:49:33.1485051Z PASS direct-preservation: read-only reconciliation survives restart without signer and verifies node-data fallback
+2026-11-18T06:49:33.1638980Z PASS direct-preservation: on-chain spend stays proved when the archive is missing or fails integrity
+2026-11-18T06:49:33.1895751Z PASS direct-preservation: wrong owner, reward, ID, Parent or duplicate signed metadata cannot prove spend/completion
+2026-11-18T06:49:33.1930958Z PASS direct-preservation: valid same-ID metadata wins another host mismatch; object-key order is immaterial
+2026-11-18T06:49:33.2092369Z PASS direct-preservation: pending, absent and partially unavailable indexes never become a false completion
+2026-11-18T06:49:33.2200513Z PASS direct-preservation: redirects cannot escape the pinned transport or produce readiness, acceptance or proof
+2026-11-18T06:49:33.2923403Z PASS direct-preservation: bounded full response bodies and an explicit abort cannot outlive the deadline
+2026-11-18T06:49:33.4075333Z PASS direct-preservation: arbitrary larger ciphertext uses immutable signed header and all deterministic Merkle chunks
+2026-11-18T06:49:33.4076072Z directPreservation.selftest: PASS (17 scenarios); software-only unfunded RSA, mocked mainnet wire, no external connections or funds
+2026-11-18T06:49:33.7537107Z (node:4113) ExperimentalWarning: `--experimental-loader` may be removed in the future; instead use `register()`:
+2026-11-18T06:49:33.7538098Z --import 'data:text/javascript,import { register } from "node:module"; import { pathToFileURL } from "node:url"; register("../../scripts/offline-ts-loader.mjs", pathToFileURL("./"));'
+2026-11-18T06:49:33.7538699Z (Use `node --trace-warnings ...` to show where the warning was created)
+2026-11-18T06:49:33.7676971Z (node:4113) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+2026-11-18T06:49:34.2813892Z PASS paid SQLite: explicit unsigned renewal preserves one order before blockhash expiry
+2026-11-18T06:49:34.3136401Z PASS paid SQLite: reserved signed payment survives restart and service retries only identical bytes
+2026-11-18T06:49:34.3348536Z PASS paid SQLite: standalone contribution creates no archive/AR hold/job and credits its single purpose once after restart
+2026-11-18T06:49:34.3524191Z PASS paid SQLite: standalone payment and terminal state commit atomically; storage-bearing inputs are rejected
+2026-11-18T06:49:34.3768425Z PASS paid SQLite: unknown standalone signature/reference never completes or expires; same preparation recovers while gates are off
+2026-11-18T06:49:34.3914880Z PASS paid SQLite: creation binds exact ciphertext and parent; all order/hold/job rows roll back together
+2026-11-18T06:49:34.4040917Z PASS paid SQLite: cancel before admission wins the race, survives a lost reply/restart and rejects every late create
+2026-11-18T06:49:34.4216884Z PASS paid SQLite: admission committed before its response wins cancellation-by-key and returns the unchanged original order
+2026-11-18T06:49:34.4367420Z PASS paid SQLite: pre-admission cancellation is owner/key scoped, admits known expired owners and rejects legacy/unknown sessions
+2026-11-18T06:49:34.4567147Z PASS paid SQLite: SOL credit and durable storage job commit atomically; injected job failure rolls back credit
+2026-11-18T06:49:34.4742675Z PASS paid SQLite: explicit cancellation wins an in-flight reserve CAS and exact preparation remains mandatory
+2026-11-18T06:49:34.5007936Z PASS paid SQLite: durably reserved signature wins cancellation; null-preparation cancellation cannot erase a newer preparation
+2026-11-18T06:49:34.5246484Z PASS paid SQLite: only an untouched offer expires; unknown wallet/prepared payment retains its hold across time and restart
+2026-11-18T06:49:34.5564908Z PASS paid SQLite: explicit recovery renews only the payment window of an expired immutable order; a lost reply survives restart
+2026-11-18T06:49:34.5838746Z PASS paid SQLite: signed recovery needs an exact checked signature; payment and active lease still forbid it
+2026-11-18T06:49:34.6089149Z PASS paid SQLite: finalized expired signed attempt is fenced on the same order and cannot credit later
+2026-11-18T06:49:34.6296137Z PASS paid SQLite: a found reserved signature credits the original payment instead of renewing it
+2026-11-18T06:49:34.6579258Z PASS paid SQLite: recovery and reserve share an atomic preparation fence in both asynchronous race directions
+2026-11-18T06:49:34.6757867Z PASS paid SQLite: concurrent recovery requests serialize; duplicate predecessor never makes another preparation
+2026-11-18T06:49:34.6939251Z PASS paid SQLite: recovery preserves a real original reference payment and never executes the archive
+2026-11-18T06:49:34.7186168Z PASS paid SQLite: uncertainty, stale candidate height, and SQL failure cannot rotate or release the existing attempt
+2026-11-18T06:49:34.7544804Z PASS paid SQLite: shared physical balance includes paid and promo holds in both admission directions
+2026-11-18T06:49:34.7692794Z PASS paid SQLite: paid budget has its own cap and does not consume promo allowance
+2026-11-18T06:49:34.7972513Z PASS paid SQLite: revision rejects an in-flight stale balance; persisted ceiling rejects later stale high snapshots
+2026-11-18T06:49:34.8250673Z PASS paid SQLite: promo confirmed debits constrain paid admissions; an unobserved debit survives restart conservatively
+2026-11-18T06:49:34.8559468Z PASS paid SQLite: lost header/chunk acknowledgement retries exactly one signed TX across restart, then becomes read-only
+2026-11-18T06:49:34.8854800Z PASS paid SQLite: confirmed spend is counted once while unavailable archive never completes; later outage cannot undo proof
+2026-11-18T06:49:34.9079619Z PASS paid SQLite: confirmed header with lost upload acknowledgement replays only the existing data chunks
+2026-11-18T06:49:34.9389727Z PASS paid SQLite: failed chunk replay stays distinguishable from successful replay awaiting gateway data across restart
+2026-11-18T06:49:34.9629057Z PASS paid SQLite: missing paid payload releases its own lease, records safe backoff and preserves the signed obligation
+2026-11-18T06:49:34.9893781Z PASS paid SQLite: explicit completed repair replays the exact ciphertext after restart without changing receipt, payment or spend
+2026-11-18T06:49:35.0191050Z PASS paid SQLite: repair uses fresh proof, preserves active backoff and never treats a historical receipt as current availability
+2026-11-18T06:49:35.0554578Z PASS paid SQLite: repair failures, execution pause and integrity errors preserve immutable completion and exact retry data
+2026-11-18T06:49:35.0846506Z PASS paid SQLite: repair does not require old preparation bytes; missing archive releases lease and keeps retry durable
+2026-11-18T06:49:35.1237314Z PASS paid SQLite: repair ownership and completed receipt admission do not widen old capability or create new obligations
+2026-11-18T06:49:35.1559892Z PASS paid SQLite: repair lease fences simultaneous runners and a new generation until the previous finalizer finishes
+2026-11-18T06:49:35.1796257Z PASS paid SQLite: cold constructor preserves an already scheduled alarm instead of cancelling its due invocation
+2026-11-18T06:49:35.2019731Z PASS paid SQLite: wrong TX/reward or archive-without-chain proof cannot spend or complete
+2026-11-18T06:49:35.2247860Z PASS paid SQLite: expired original bearer can read its exact v2 result while service continuation remains token-free
+2026-11-18T06:49:35.2409751Z PASS paid SQLite: expired v2 capability cannot create, renew, reach v1 or reach another owner/key
+2026-11-18T06:49:35.2646828Z PASS paid SQLite: known reserved signature reconciles without another payment; paused executor retains obligation
+2026-11-18T06:49:35.2865639Z PASS paid SQLite: lease excludes simultaneous runners; a persisted signed job resumes without new preparation or signature
+2026-11-18T06:49:35.2866330Z Paid SQLite integration: 42 scenarios passed; external requests: 0.
+2026-11-18T06:49:35.3698752Z 
+2026-11-18T06:49:35.3699537Z > sejire-sponsor@0.2.0 test:recipients
+2026-11-18T06:49:35.3700230Z > node --experimental-sqlite --loader ../../scripts/offline-ts-loader.mjs tests/recipient-settings.local.mjs
+2026-11-18T06:49:35.3700661Z 
+2026-11-18T06:49:35.6981974Z (node:4137) ExperimentalWarning: `--experimental-loader` may be removed in the future; instead use `register()`:
+2026-11-18T06:49:35.6983847Z --import 'data:text/javascript,import { register } from "node:module"; import { pathToFileURL } from "node:url"; register("../../scripts/offline-ts-loader.mjs", pathToFileURL("./"));'
+2026-11-18T06:49:35.6984446Z (Use `node --trace-warnings ...` to show where the warning was created)
+2026-11-18T06:49:35.7038961Z (node:4137) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+2026-11-18T06:49:36.3094142Z PASS recipients: empty state does not invent recipients or enable payments
+2026-11-18T06:49:36.3102990Z PASS recipients: strict public address validation rejects invalid, equal, system and disposable pilot addresses
+2026-11-18T06:49:36.3115797Z PASS recipients: both recipients commit together, retry once, audit once
+2026-11-18T06:49:36.3125916Z PASS recipients: stale tab cannot overwrite the latest settings
+2026-11-18T06:49:36.3130655Z PASS recipients: settings survive SQLite reopen without changing flags, network or budgets
+2026-11-18T06:49:36.3340249Z PASS recipients: actual entry authenticates reads and writes and rejects foreign origins
+2026-11-18T06:49:36.3476644Z PASS recipients: admin form endpoint saves with all payment gates OFF and no treasury key
+2026-11-18T06:49:36.3541616Z PASS recipients: new offer reads stored recipients; address save alone cannot activate it
+2026-11-18T06:49:36.3689883Z PASS recipients: changing recipients preserves the already admitted order; stale new admission is refused
+2026-11-18T06:49:36.3691279Z recipient-settings: 9 scenarios PASS; actual SQLite and Worker handlers; zero external requests, payments, signing or archive publication.
+2026-11-18T06:49:36.4053431Z ##[group]Run npm run check --prefix apps/sponsor
+2026-11-18T06:49:36.4053722Z [36;1mnpm run check --prefix apps/sponsor[0m
+2026-11-18T06:49:36.4079957Z shell: /usr/bin/bash -e {0}
+2026-11-18T06:49:36.4080170Z ##[endgroup]
+2026-11-18T06:49:36.4798661Z 
+2026-11-18T06:49:36.4799262Z > sejire-sponsor@0.2.0 check
+2026-11-18T06:49:36.4799555Z > tsc --noEmit -p tsconfig.json
+2026-11-18T06:49:36.4799718Z 
+2026-11-18T06:49:38.3925163Z ##[group]Run npm run test:fund-runtime
+2026-11-18T06:49:38.3925536Z [36;1mnpm run test:fund-runtime[0m
+2026-11-18T06:49:38.3961829Z shell: /usr/bin/bash -e {0}
+2026-11-18T06:49:38.3962062Z ##[endgroup]
+2026-11-18T06:49:38.4654628Z 
+2026-11-18T06:49:38.4655029Z > sejire@0.3.0 test:fund-runtime
+2026-11-18T06:49:38.4655436Z > npm run test:fund-runtime --prefix apps/sponsor
+2026-11-18T06:49:38.4655630Z 
+2026-11-18T06:49:38.5316591Z 
+2026-11-18T06:49:38.5317310Z > sejire-sponsor@0.2.0 test:fund-runtime
+2026-11-18T06:49:38.5317799Z > node tests/fund-runtime.mjs
+2026-11-18T06:49:38.5318033Z 
+2026-11-18T06:49:39.4610771Z PASS fund workerd disabled: Worker health responds through workerd HTTP
+2026-11-18T06:49:39.4790907Z PASS fund workerd disabled: fund routes fail closed by default
+2026-11-18T06:49:39.4999444Z PASS fund workerd disabled: read-only signed treasury readiness and admin dashboard work before fund activation
+2026-11-18T06:49:39.4999967Z fund workerd disabled: 3 acceptance checks PASS
+2026-11-18T06:49:40.0427689Z PASS fund workerd write: Worker health responds through workerd HTTP
+2026-11-18T06:49:40.0853836Z PASS fund workerd write: every management route rejects missing and wrong server credential
+2026-11-18T06:49:40.1127803Z PASS fund workerd write: one promo validates, rotates immediately, and persists only hash/hint
+2026-11-18T06:49:40.1239475Z PASS fund workerd write: mock funded HTTP order completes with confirmed reward, not estimate
+2026-11-18T06:49:40.1333259Z PASS fund workerd write: duplicate HTTP POST keeps one transaction and one charge
+2026-11-18T06:49:40.1488584Z PASS fund workerd write: parent binding rejects changed or dropped links before another submission
+2026-11-18T06:49:40.1577455Z PASS fund workerd write: 13 to 26 AR changes cumulative cap without resetting ledger
+2026-11-18T06:49:40.1810292Z PASS fund workerd write: concurrent HTTP reservations respect exact SQLite limit
+2026-11-18T06:49:40.1990852Z PASS fund workerd write: lost response reconciles same signed txId without second signing
+2026-11-18T06:49:40.2248471Z PASS fund workerd write: unaccepted upload reconciles by resubmitting saved signed bytes
+2026-11-18T06:49:40.3514030Z PASS fund workerd write: pending reservation and private data boundaries survive runtime
+2026-11-18T06:49:40.3514455Z fund workerd write: 11 acceptance checks PASS
+2026-11-18T06:49:40.9175450Z PASS fund workerd restart-read: Worker health responds through workerd HTTP
+2026-11-18T06:49:40.9476910Z PASS fund workerd restart-read: SQLite DO persists promo, limit, completed ledger and active reservation across process restart
+2026-11-18T06:49:40.9477801Z fund workerd restart-read: 2 acceptance checks PASS
+2026-11-18T06:49:41.5455323Z PASS fund workerd direct-read: Worker health responds through workerd HTTP
+2026-11-18T06:49:41.5714089Z PASS fund workerd direct-read: direct provider races gateway evidence and verifies node data inside workerd
+2026-11-18T06:49:41.5714884Z fund workerd direct-read: 2 acceptance checks PASS
+2026-11-18T06:49:41.6250605Z fund.runtime: PASS; real workerd HTTP handlers and persisted SQLite Durable Object, mock only, no AR network calls
+2026-11-18T06:49:41.6454625Z ##[group]Run npm run test:paid-runtime
+2026-11-18T06:49:41.6454878Z [36;1mnpm run test:paid-runtime[0m
+2026-11-18T06:49:41.6481177Z shell: /usr/bin/bash -e {0}
+2026-11-18T06:49:41.6481389Z ##[endgroup]
+2026-11-18T06:49:41.7189571Z 
+2026-11-18T06:49:41.7190079Z > sejire@0.3.0 test:paid-runtime
+2026-11-18T06:49:41.7190483Z > npm run test:paid-runtime --prefix apps/sponsor
+2026-11-18T06:49:41.7190656Z 
+2026-11-18T06:49:41.7908960Z 
+2026-11-18T06:49:41.7909923Z > sejire-sponsor@0.2.0 test:paid-runtime
+2026-11-18T06:49:41.7910578Z > node tests/direct-preservation-runtime.mjs && node tests/paid-api-runtime.mjs
+2026-11-18T06:49:41.7910952Z 
+2026-11-18T06:49:42.5034187Z PASS direct workerd: default global fetch gets bounded mainnet readiness and unsigned preparation
+2026-11-18T06:49:42.5186814Z PASS direct workerd: actual RSA workerd signature has no network side effects and execution pause rejects signing
+2026-11-18T06:49:42.5324955Z PASS direct workerd: lost acknowledgement leaves immutable signed bytes for exact retry; acceptance is not completion
+2026-11-18T06:49:42.5450326Z PASS direct workerd: confirmed metadata plus exact node-data produces complete proof
+2026-11-18T06:49:42.5529541Z PASS direct workerd: confirmed header can replay its identical data chunk without another transaction post or signature
+2026-11-18T06:49:42.5739158Z PASS direct workerd: confirmed spend survives unavailable/corrupted archive; neither case reports archive verified
+2026-11-18T06:49:42.5864859Z PASS direct workerd: wrong reward and redirected status cannot prove an AR debit
+2026-11-18T06:49:42.6924744Z PASS direct workerd: fresh workerd isolate without secret rechecks the same persisted plan with GET only
+2026-11-18T06:49:42.6925730Z direct-preservation.runtime: PASS (8 scenarios); actual default-fetch workerd, in-memory unfunded RSA, fresh isolate, network disabled
+2026-11-18T06:49:44.0127341Z PASS paid API workerd: default off exposes no payment offer or session and makes no outbound request
+2026-11-18T06:49:44.5139278Z PASS paid API workerd: actual readiness pins SOL mainnet, separate AR network, configured roles and 0.03 SOL
+2026-11-18T06:49:44.9110225Z PASS paid API workerd: cancel before any admission works while paused with known or expired owner and never creates a hold
+2026-11-18T06:49:45.2924567Z PASS paid API workerd: pre-admission tombstone survives a lost reply and fresh paused isolate without a paid order
+2026-11-18T06:49:45.7084539Z PASS paid API workerd: every late create with a cancelled key is rejected before readiness or AR reservation
+2026-11-18T06:49:45.7329224Z PASS paid API workerd: malformed modern input and oversized bodies fail before payment or storage admission
+2026-11-18T06:49:45.7838196Z PASS paid API workerd: a rejected create reports the mainnet RPC cause while the same key remains unadmitted
+2026-11-18T06:49:46.9608425Z PASS paid API workerd: provider HTTP 403 leaves the same attempt unadmitted; server-only RPC access admits it once
+2026-11-18T06:49:47.8157505Z PASS paid API workerd: one denied RPC falls through to another complete Mainnet preparation without another order
+2026-11-18T06:49:47.8822453Z PASS paid API workerd: v2 admission persists exact ciphertext/parent/policy and one idempotent order
+2026-11-18T06:49:47.9153549Z PASS paid API workerd: ownership/origin/auth guard every resume and mutation before network evidence
+2026-11-18T06:49:47.9453410Z PASS paid API workerd: preparation is durable and reused; invalid signature or different saved message cannot reserve
+2026-11-18T06:49:47.9688912Z PASS paid API workerd: cancel-by-key returns an admitted preparation unchanged and foreign same-key cancellation is isolated
+2026-11-18T06:49:48.5488640Z PASS paid API workerd: admission/execution pause still recovers unknown wallet result from old reference without signing AR
+2026-11-18T06:49:49.3510100Z PASS paid API workerd: alarm fulfils paid obligation after restart/session expiry; lost AR acknowledgement preserves one TX
+2026-11-18T06:49:49.8322415Z PASS paid API workerd: valid public Ed25519 signature reserves exact preparation once and rejects replacement
+2026-11-18T06:49:50.2636937Z PASS paid API workerd: accepted header with interrupted chunk resumes exact signed TX and completes without a second SOL payment
+2026-11-18T06:49:50.6346143Z PASS paid API workerd: fresh secretless paused isolate retains completed receipt and GET never broadcasts
+2026-11-18T06:49:51.2720504Z PASS paid API workerd: owner-only completed repair preserves receipt and retries original chunks without signer or another payment
+2026-11-18T06:49:53.1213461Z PASS paid API workerd: cold durable alarm resumes a queued completed repair without a browser request or a signer
+2026-11-18T06:49:53.4764678Z PASS paid API workerd: help-only policy never invokes storage with both gates enabled and an Arweave outage
+2026-11-18T06:49:53.8663015Z PASS paid API workerd: standalone readiness has its own explicit gate and works without AR settings, signer or preservation admission
+2026-11-18T06:49:53.9086837Z PASS paid API workerd: standalone admission saves only immutable SOL terms; idempotent reuse adds no AR hold, payload or upload job
+2026-11-18T06:49:53.9290013Z PASS paid API workerd: standalone reserve verifies exact signature; nonfinalized payment remains unresolved with no credit or AR side effect
+2026-11-18T06:49:54.5269517Z PASS paid API workerd: disabled standalone admission still reconciles the original finalized payment after restart exactly once
+2026-11-18T06:49:55.4810101Z PASS paid API workerd: explicit recovery resume route is owned and rejects stale and uncertain RPC evidence
+2026-11-18T06:49:56.2491963Z PASS paid API workerd: explicit same-order recovery persists a bounded preparation and lost-response retry after restart is idempotent
+2026-11-18T06:49:56.2827152Z PASS paid API workerd: RPC recovery finds and credits the original exact payment before checking expiry and never rotates it
+2026-11-18T06:49:56.2837614Z paid-api.runtime: PASS (28 scenarios); actual API/DO/SQLite/global fetch/alarm, fresh workerd isolates, unmatched outbound denied, no real payments or deployment
+2026-11-18T06:49:56.3376091Z ##[group]Run npm run test:linux --prefix apps/sponsor
+2026-11-18T06:49:56.3376399Z [36;1mnpm run test:linux --prefix apps/sponsor[0m
+2026-11-18T06:49:56.3402727Z shell: /usr/bin/bash -e {0}
+2026-11-18T06:49:56.3403008Z ##[endgroup]
+2026-11-18T06:49:56.4080458Z 
+2026-11-18T06:49:56.4081014Z > sejire-sponsor@0.2.0 test:linux
+2026-11-18T06:49:56.4081402Z > node --experimental-sqlite --import tsx tests/linux-server.mjs
+2026-11-18T06:49:56.4081606Z 
+2026-11-18T06:49:56.6522069Z (node:4599) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+2026-11-18T06:49:56.6522914Z (Use `node --trace-warnings ...` to show where the warning was created)
+2026-11-18T06:49:56.6619571Z PASS Linux storage: async alarm contract, Date input, replacement, durable reopen, cold constructor preserves future/due alarm
+2026-11-18T06:49:56.6850744Z PASS Linux startup: initialization awaited, future alarm preserved, due alarm processed
+2026-11-18T06:49:56.7823754Z PASS Linux backend: shared ledger contracts, one writer, same key/token after restart, one synthetic order
+2026-11-18T06:49:56.7985910Z ##[group]Run npm run test:checkout
+2026-11-18T06:49:56.7986257Z [36;1mnpm run test:checkout[0m
+2026-11-18T06:49:56.8023775Z shell: /usr/bin/bash -e {0}
+2026-11-18T06:49:56.8024087Z ##[endgroup]
+2026-11-18T06:49:56.8721723Z 
+2026-11-18T06:49:56.8722484Z > sejire@0.3.0 test:checkout
+2026-11-18T06:49:56.8722972Z > npm run test:checkout --prefix apps/sponsor
+2026-11-18T06:49:56.8723134Z 
+2026-11-18T06:49:56.9414725Z 
+2026-11-18T06:49:56.9415049Z > sejire-sponsor@0.2.0 test:checkout
+2026-11-18T06:49:56.9415352Z > tsx src/checkout/selftest.ts
+2026-11-18T06:49:56.9415480Z 
+2026-11-18T06:49:57.0696138Z PASS arbitrary contributions include one million and above; no commercial cap
+2026-11-18T06:49:57.0704195Z PASS zero contribution does not request a fund transfer
+2026-11-18T06:49:57.0711675Z PASS service and contribution have exact distinct instruction allocations
+2026-11-18T06:49:57.0715139Z PASS SOL represented in lamports with its own program, not USDC units
+2026-11-18T06:49:57.0743328Z PASS decimal arithmetic and format roundtrip for 1000 varied amounts
+2026-11-18T06:49:57.0747843Z PASS technical u64 boundary, total overflow and precision fail closed
+2026-11-18T06:49:57.0748956Z PASS large contribution requests confirmation without rejecting it
+2026-11-18T06:49:57.0753133Z PASS preservation requires digest/size/service; no fixed 512 KiB policy
+2026-11-18T06:49:57.0754477Z PASS donation-only cannot charge service or require an archive; must be positive
+2026-11-18T06:49:57.0758796Z PASS quote/order immutability and distinct recipient roles
+2026-11-18T06:49:57.0760500Z PASS reject wrong network
+2026-11-18T06:49:57.0762135Z PASS reject wrong genesis
+2026-11-18T06:49:57.0763660Z PASS reject failed transaction
+2026-11-18T06:49:57.0764651Z PASS reject processed transaction
+2026-11-18T06:49:57.0765588Z PASS reject confirmed is not finalized
+2026-11-18T06:49:57.0767277Z PASS reject missing block time
+2026-11-18T06:49:57.0768256Z PASS reject late payment
+2026-11-18T06:49:57.0769067Z PASS reject predates order
+2026-11-18T06:49:57.0769932Z PASS reject wrong fee payer
+2026-11-18T06:49:57.0770821Z PASS reject missing payer signature
+2026-11-18T06:49:57.0771428Z PASS reject malformed signature
+2026-11-18T06:49:57.0773119Z PASS reject wrong recipient
+2026-11-18T06:49:57.0773955Z PASS reject wrong sender
+2026-11-18T06:49:57.0777601Z PASS reject counterfeit USDC mint
+2026-11-18T06:49:57.0779084Z PASS reject wrong token program
+2026-11-18T06:49:57.0779436Z PASS reject wrong decimals
+2026-11-18T06:49:57.0784950Z PASS reject wrong amount
+2026-11-18T06:49:57.0786166Z PASS reject wrong reference
+2026-11-18T06:49:57.0787032Z PASS reject duplicate instruction
+2026-11-18T06:49:57.0787763Z PASS reject extra transfer
+2026-11-18T06:49:57.0789093Z PASS forged order asset or total is rejected
+2026-11-18T06:49:57.0816565Z PASS atomic test store: 32 concurrent confirmations credit once
+2026-11-18T06:49:57.0820718Z PASS not found and RPC loss retain pending signature; replacement blocked
+2026-11-18T06:49:57.0822694Z PASS pending finality and wrong response signature never grant fulfillment
+2026-11-18T06:49:57.0825842Z PASS response lost AFTER atomic credit: retry does not credit again
+2026-11-18T06:49:57.0831182Z PASS duplicate order/reference and cross-order instruction replay are refused
+2026-11-18T06:49:57.0831840Z PASS detached reads cannot tamper with test store state
+2026-11-18T06:49:57.0835022Z PASS contribution-only is verified without storage fulfillment or archive
+2026-11-18T06:49:57.0835739Z PASS validated payment and credit allocations are frozen
+2026-11-18T06:49:57.0837621Z PASS SOL MVP preservation: 30000000 service + 0 fund
+2026-11-18T06:49:57.0838480Z PASS SOL MVP preservation: 30000000 service + 5000000 fund
+2026-11-18T06:49:57.0839457Z PASS SOL MVP contribution: 0 service + 5000000 fund
+2026-11-18T06:49:57.0843699Z PASS SOL rejects wrong servicePayment recipient
+2026-11-18T06:49:57.0844155Z PASS SOL rejects wrong servicePayment amount
+2026-11-18T06:49:57.0844935Z PASS SOL rejects wrong fundContribution recipient
+2026-11-18T06:49:57.0845427Z PASS SOL rejects wrong fundContribution amount
+2026-11-18T06:49:57.0846324Z PASS SOL rejects wrong payer
+2026-11-18T06:49:57.0846790Z PASS SOL rejects wrong signer
+2026-11-18T06:49:57.0847231Z PASS SOL rejects wrong network
+2026-11-18T06:49:57.0847664Z PASS SOL rejects failed transaction
+2026-11-18T06:49:57.0848097Z PASS SOL rejects not finalized
+2026-11-18T06:49:57.0848562Z PASS SOL rejects extra unexpected transfer
+2026-11-18T06:49:57.0849396Z PASS SOL large contributions remain exact without product cap
+2026-11-18T06:49:57.0850323Z checkout.selftest: 53 scenarios PASS; synthetic normalized RPC evidence, single-isolate memory store only; zero external requests/signatures/transfers
+2026-11-18T06:49:57.1093302Z ##[group]Run npm run test:rpc
+2026-11-18T06:49:57.1093544Z [36;1mnpm run test:rpc[0m
+2026-11-18T06:49:57.1124034Z shell: /usr/bin/bash -e {0}
+2026-11-18T06:49:57.1124294Z ##[endgroup]
+2026-11-18T06:49:57.1840364Z 
+2026-11-18T06:49:57.1840961Z > sejire@0.3.0 test:rpc
+2026-11-18T06:49:57.1841359Z > npm run test:rpc --prefix apps/sponsor
+2026-11-18T06:49:57.1841554Z 
+2026-11-18T06:49:57.2509750Z 
+2026-11-18T06:49:57.2510119Z > sejire-sponsor@0.2.0 test:rpc
+2026-11-18T06:49:57.2510423Z > tsx src/checkout/rpc.selftest.ts
+2026-11-18T06:49:57.2510565Z 
+2026-11-18T06:49:57.3945437Z PASS RPC finalized legacy USDC uses account owners, not token account addresses
+2026-11-18T06:49:57.3961724Z PASS RPC actual reader requests the workerd-supported manual redirect mode
+2026-11-18T06:49:57.3996867Z PASS RPC canonical RPC response URL with trailing slash is accepted
+2026-11-18T06:49:57.4005020Z PASS RPC RPC HTTP 301 cannot follow Location or credit a payment
+2026-11-18T06:49:57.4008744Z PASS RPC RPC HTTP 302 cannot follow Location or credit a payment
+2026-11-18T06:49:57.4011390Z PASS RPC RPC HTTP 303 cannot follow Location or credit a payment
+2026-11-18T06:49:57.4014677Z PASS RPC RPC HTTP 307 cannot follow Location or credit a payment
+2026-11-18T06:49:57.4017076Z PASS RPC RPC HTTP 308 cannot follow Location or credit a payment
+2026-11-18T06:49:57.4021402Z PASS RPC an unexpected RPC response URL is rejected before accepting its valid body
+2026-11-18T06:49:57.4035938Z PASS RPC legacy SOL direct transfers
+2026-11-18T06:49:57.4040340Z PASS RPC v0 resolves writable/readonly loaded addresses in correct order
+2026-11-18T06:49:57.4046758Z PASS RPC v0 supports writable token accounts loaded from lookup table
+2026-11-18T06:49:57.4058590Z PASS RPC optional compute unit limit/price before transfers
+2026-11-18T06:49:57.4067340Z PASS RPC u64 instruction amount never passes through floating point
+2026-11-18T06:49:57.4078436Z PASS RPC reject signature mismatch
+2026-11-18T06:49:57.4087774Z PASS RPC reject failed execution
+2026-11-18T06:49:57.4096362Z PASS RPC reject unsupported version
+2026-11-18T06:49:57.4106173Z PASS RPC reject missing meta
+2026-11-18T06:49:57.4119395Z PASS RPC reject missing block time
+2026-11-18T06:49:57.4126218Z PASS RPC reject counterfeit mint
+2026-11-18T06:49:57.4133034Z PASS RPC reject wrong token program
+2026-11-18T06:49:57.4138999Z PASS RPC reject changed token owner
+2026-11-18T06:49:57.4148363Z PASS RPC reject recipient token account mistaken for owner
+2026-11-18T06:49:57.4156682Z PASS RPC reject wrong recipient
+2026-11-18T06:49:57.4164868Z PASS RPC reject wrong amount
+2026-11-18T06:49:57.4175264Z PASS RPC reject wrong reference
+2026-11-18T06:49:57.4181775Z PASS RPC reject wrong payer
+2026-11-18T06:49:57.4187617Z PASS RPC reject non-signer authority
+2026-11-18T06:49:57.4192697Z PASS RPC reject missing signer
+2026-11-18T06:49:57.4197467Z PASS RPC reject readonly fee payer
+2026-11-18T06:49:57.4202416Z PASS RPC reject arbitrary CPI
+2026-11-18T06:49:57.4208299Z PASS RPC reject ATA instruction
+2026-11-18T06:49:57.4214009Z PASS RPC reject unknown program
+2026-11-18T06:49:57.4219277Z PASS RPC reject unchecked token transfer
+2026-11-18T06:49:57.4225855Z PASS RPC reject unsafe JSON fee
+2026-11-18T06:49:57.4234467Z PASS RPC reject missing token owner
+2026-11-18T06:49:57.4240195Z PASS RPC reject out-of-range account index
+2026-11-18T06:49:57.4246750Z PASS RPC reject writable reference
+2026-11-18T06:49:57.4252944Z PASS RPC reject extra transfer
+2026-11-18T06:49:57.4256096Z PASS RPC wrong genesis remains unresolved
+2026-11-18T06:49:57.4259197Z PASS RPC HTTP 429 remains unresolved
+2026-11-18T06:49:57.4260719Z PASS RPC HTTP 503 remains unresolved
+2026-11-18T06:49:57.4263430Z PASS RPC malformed JSON remains unresolved
+2026-11-18T06:49:57.4265733Z PASS RPC RPC response id mismatch remains unresolved
+2026-11-18T06:49:57.4267870Z PASS RPC RPC unsupported version error remains unresolved
+2026-11-18T06:49:57.4270488Z PASS RPC confirmed status remains unresolved
+2026-11-18T06:49:57.4273440Z PASS RPC processed status remains unresolved
+2026-11-18T06:49:57.4275809Z PASS RPC failed status remains unresolved
+2026-11-18T06:49:57.4278295Z PASS RPC missing status context remains unresolved
+2026-11-18T06:49:57.4286413Z PASS RPC status/transaction slot mismatch remains unresolved
+2026-11-18T06:49:57.4288081Z PASS RPC RPC 500 remains unresolved
+2026-11-18T06:49:57.4292833Z PASS RPC null transaction remains unresolved
+2026-11-18T06:49:57.4295398Z PASS RPC null signature status remains unresolved
+2026-11-18T06:49:57.4350208Z PASS RPC timeout remains unresolved
+2026-11-18T06:49:57.4368062Z PASS RPC late server response uses original inclusion time; retry credits only once
+2026-11-18T06:49:57.4374992Z PASS RPC client cannot provide paid/evidence/finalized/recipient/amount/RPC
+2026-11-18T06:49:57.4403842Z PASS RPC bounded RPC response and missing result reject without credit
+2026-11-18T06:49:57.4458556Z PASS RPC raw RPC u64 balances stay exact while ordinary context numbers remain numbers
+2026-11-18T06:49:57.4589202Z PASS RPC preparation compares a large balance and network fee without rounding a single lamport
+2026-11-18T06:49:57.4659600Z PASS RPC balance preparation rejects invalid monetary tokens before any wallet action
+2026-11-18T06:49:57.4660708Z PASS RPC legacy SOL preparation also preserves exact large balances
+2026-11-18T06:49:57.4661679Z rpc.selftest: 61 scenarios PASS; synthetic encoding=json RPC fixtures, zero external requests/signatures/transfers
+2026-11-18T06:49:57.4874017Z ##[group]Run npm run test:sqlite
+2026-11-18T06:49:57.4874245Z [36;1mnpm run test:sqlite[0m
+2026-11-18T06:49:57.4901775Z shell: /usr/bin/bash -e {0}
+2026-11-18T06:49:57.4901974Z ##[endgroup]
+2026-11-18T06:49:57.5605745Z 
+2026-11-18T06:49:57.5606058Z > sejire@0.3.0 test:sqlite
+2026-11-18T06:49:57.5606473Z > npm run test:sqlite --prefix apps/sponsor
+2026-11-18T06:49:57.5606708Z 
+2026-11-18T06:49:57.6260293Z 
+2026-11-18T06:49:57.6260745Z > sejire-sponsor@0.2.0 test:sqlite
+2026-11-18T06:49:57.6261040Z > node tests/sqlite-runtime.mjs
+2026-11-18T06:49:57.6261169Z 
+2026-11-18T06:49:58.6725732Z PASS SQLite write: immutable order and pending signature saved
+2026-11-18T06:49:58.6761469Z PASS SQLite write: global reference uniqueness across orders
+2026-11-18T06:49:58.7098876Z PASS SQLite write: 32 concurrent confirmations yield one credit
+2026-11-18T06:49:58.7170693Z PASS SQLite write: transaction replay across different orders blocked
+2026-11-18T06:49:58.7228451Z PASS SQLite write: unresolved signature is retained and cannot be replaced
+2026-11-18T06:49:58.7364654Z PASS SQLite write: large values and cumulative totals beyond u64 stay exact
+2026-11-18T06:49:58.7488541Z PASS SQLite write: fault before commit rolls back inserts and preserves pending operation
+2026-11-18T06:49:58.7542113Z PASS SQLite write: lost response AFTER durable commit does not erase credit
+2026-11-18T06:49:58.7918193Z PASS SQLite write: saved real devnet payments: disk commit/reopen/repeat yields one credit per purpose
+2026-11-18T06:49:58.7922834Z sqlite write: 9 scenarios PASS
+2026-11-18T06:49:59.4749751Z PASS SQLite restart-read: new process reopens complete order/payment/credits/states
+2026-11-18T06:49:59.4835673Z PASS SQLite restart-read: repeat confirmation after restart never credits again
+2026-11-18T06:49:59.4966109Z PASS SQLite restart-read: unfinished reconciliation survives restart then completes once
+2026-11-18T06:49:59.5017758Z PASS SQLite restart-read: exact large amounts remain TEXT after reopen
+2026-11-18T06:49:59.5083008Z PASS SQLite restart-read: lost commit response followed by process restart returns already-credited
+2026-11-18T06:49:59.5287945Z PASS SQLite restart-read: wrong object identity cannot create separate uniqueness island
+2026-11-18T06:49:59.5432412Z PASS SQLite restart-read: saved real devnet payments: disk commit/reopen/repeat yields one credit per purpose
+2026-11-18T06:49:59.5436253Z sqlite restart-read: 7 scenarios PASS
+2026-11-18T06:49:59.5603968Z sqlite.runtime: PASS; separate Node/workerd processes reopened persisted SQLite; no in-memory adapter, no cloud resources
+2026-11-18T06:49:59.5816051Z ##[group]Run npm run test:api
+2026-11-18T06:49:59.5816375Z [36;1mnpm run test:api[0m
+2026-11-18T06:49:59.5853088Z shell: /usr/bin/bash -e {0}
+2026-11-18T06:49:59.5853369Z ##[endgroup]
+2026-11-18T06:49:59.6554360Z 
+2026-11-18T06:49:59.6554697Z > sejire@0.3.0 test:api
+2026-11-18T06:49:59.6555105Z > npm run test:api --prefix apps/sponsor
+2026-11-18T06:49:59.6555336Z 
+2026-11-18T06:49:59.7225952Z 
+2026-11-18T06:49:59.7226458Z > sejire-sponsor@0.2.0 test:api
+2026-11-18T06:49:59.7226739Z > node tests/api-runtime.mjs
+2026-11-18T06:49:59.7226875Z 
+2026-11-18T06:50:01.0943317Z PASS API write: server-issued access token; cross-origin no-store and no secret echo
+2026-11-18T06:50:01.1083021Z PASS API write: A reads own order; B/unknown token/id do not reveal order
+2026-11-18T06:50:01.1259151Z PASS API write: unauthorized submission and reconcile cannot write pendingSignature
+2026-11-18T06:50:01.1392476Z PASS API write: same key normalized intent returns same order; changed intent conflicts
+2026-11-18T06:50:01.1548938Z PASS API write: parallel create gives one order and one reference
+2026-11-18T06:50:01.1835948Z PASS API write: client price/recipient/network/evidence and paid claims rejected
+2026-11-18T06:50:01.1984500Z PASS API write: donation without archive/service; million SOL exact and maximum native amount accepted
+2026-11-18T06:50:01.2572663Z PASS API write: 16 parallel verifications credit once; retries preserve verified/ready semantics
+2026-11-18T06:50:02.3127155Z PASS API write: RPC uncertainty and bad recipient do not create credits; pending cannot be replaced
+2026-11-18T06:50:02.3229408Z PASS API write: body bound works without Content-Length; malformed JSON/precision refused
+2026-11-18T06:50:02.3298474Z PASS API write: origin allowlist and preflight do not replace bearer authorization
+2026-11-18T06:50:02.3435046Z PASS API write: production entry exposes no commit/ledger/fault endpoint or client action
+2026-11-18T06:50:02.3509827Z PASS API write: uploader/account readiness rejects BEFORE order is offered
+2026-11-18T06:50:02.3708006Z PASS API write: paid preservation binds exact ciphertext; B cannot upload A archive
+2026-11-18T06:50:02.4157443Z PASS API write: Turbo acceptance is distinct from retrieval; signed item and receipt are persistent
+2026-11-18T06:50:02.5513358Z PASS API write: persistent verification quota works and unauthorized does not reserve signature
+2026-11-18T06:50:02.6678694Z PASS API write: persistent create quota and anonymous bootstrap quota work
+2026-11-18T06:50:02.6728074Z api write: 17 scenarios PASS
+2026-11-18T06:50:03.6310214Z PASS API restart-read: fresh process recovers access ownership immutable conditions and separate credits
+2026-11-18T06:50:03.6412783Z PASS API restart-read: idempotency survives restart/lost response without creating a second order
+2026-11-18T06:50:03.6529713Z PASS API restart-read: lost verification response after commit resumes without duplicate credit
+2026-11-18T06:50:03.6737407Z PASS API restart-read: pending signature and last uncertainty survive restart; resume credits once
+2026-11-18T06:50:03.7018992Z PASS API restart-read: upload receipt survives restart; concurrent execution reuses one item then retrieval completes
+2026-11-18T06:50:03.7170640Z PASS API restart-read: rate limit persists across process restart
+2026-11-18T06:50:03.7171088Z api restart-read: 6 scenarios PASS
+2026-11-18T06:50:04.6773504Z PASS API disabled: disabled API opens no routes including OPTIONS through production entry
+2026-11-18T06:50:04.6774097Z api disabled: 1 scenarios PASS
+2026-11-18T06:50:05.6741305Z PASS API direct-write: production readiness reaches the real fetch adapter and refuses a free-allowance redirect
+2026-11-18T06:50:05.7092345Z PASS API direct-write: default uploader readiness and RPC preparation create the actual production order
+2026-11-18T06:50:05.7222111Z PASS API direct-write: a redirected real RPC response cannot credit a reserved payment
+2026-11-18T06:50:05.7407607Z PASS API direct-write: same signature is finalized by default RPC reader and credited exactly once
+2026-11-18T06:50:05.7527643Z PASS API direct-write: real SDK signing is persisted, and an upload redirect cannot complete preservation
+2026-11-18T06:50:05.7596641Z PASS API direct-write: retry reuses signed bytes; receipt persists while a raw redirect remains unverified
+2026-11-18T06:50:05.7616678Z api direct-write: 6 scenarios PASS
+2026-11-18T06:50:06.7121308Z PASS API direct-restart: fresh workerd process reads the same production order, payment and accepted item
+2026-11-18T06:50:06.7405737Z PASS API direct-restart: accepted item resumes with one exact-hash read and no signing, upload or payment after restart
+2026-11-18T06:50:06.7406422Z api direct-restart: 2 scenarios PASS
+2026-11-18T06:50:06.7623212Z api.runtime: PASS; real HTTP/default adapters + on-disk DO SQLite, independent process restarts, wire-mocked RPC/upload, no external connections/payments/deployment
+2026-11-18T06:50:06.7827399Z ##[group]Run npm run test:protocol
+2026-11-18T06:50:06.7827642Z [36;1mnpm run test:protocol[0m
+2026-11-18T06:50:06.7854340Z shell: /usr/bin/bash -e {0}
+2026-11-18T06:50:06.7854554Z ##[endgroup]
+2026-11-18T06:50:06.8584146Z 
+2026-11-18T06:50:06.8584592Z > sejire@0.3.0 test:protocol
+2026-11-18T06:50:06.8585013Z > npm run test:protocol --prefix apps/sponsor
+2026-11-18T06:50:06.8585223Z 
+2026-11-18T06:50:06.9242312Z 
+2026-11-18T06:50:06.9243039Z > sejire-sponsor@0.2.0 test:protocol
+2026-11-18T06:50:06.9243379Z > tsx src/protocol/selftest.ts
+2026-11-18T06:50:06.9243515Z 
+2026-11-18T06:50:07.1544707Z PASS protocol: authenticated creation, no first caller bootstrap
+2026-11-18T06:50:07.1585679Z PASS protocol: payer signature authorizes exact order and ephemeral capability
+2026-11-18T06:50:07.1602575Z PASS protocol: tampering price, From JSON, signature and replay domain rejected
+2026-11-18T06:50:07.1606150Z PASS protocol: unauthorized capability cannot reserve or block foreign order
+2026-11-18T06:50:07.1637785Z PASS protocol: atomic failure before commit leaves no pending operation
+2026-11-18T06:50:07.1888294Z PASS protocol: unknown RPC keeps one pending signature, cannot replace it
+2026-11-18T06:50:07.1974121Z PASS protocol: replacement observer continues pending operation without first observer key
+2026-11-18T06:50:07.2418294Z PASS protocol: parallel verified attestations produce one service and fund credit
+2026-11-18T06:50:07.2428265Z PASS protocol: public JSON From is not observer authority
+2026-11-18T06:50:07.2500023Z PASS protocol: no SQLite: saved signed journal replays identical state without RPC
+2026-11-18T06:50:07.2547898Z PASS protocol: missing middle, missing tail and modified evidence fail pinned checkpoint
+2026-11-18T06:50:07.5044761Z PASS protocol: first uploader stops after signed plan; different executor reuses bytes/id without original key
+2026-11-18T06:50:07.5063544Z PASS protocol: conflicting signed attestation is retained, never last-wins or credited twice
+2026-11-18T06:50:07.5186927Z PASS protocol: management threshold, explicit new-key acceptance, no Eval or Owner path
+2026-11-18T06:50:07.5260234Z PASS protocol: large lamports and summed ledger stay exact above u64 without floating point
+2026-11-18T06:50:07.5444813Z PASS protocol: lost commit response freezes writes until durable history is reconciled, no second credit
+2026-11-18T06:50:07.5472479Z PASS protocol: HTTP adapter cannot expose commit, fault or unsigned payment proof
+2026-11-18T06:50:07.5473142Z protocol.selftest: 17 scenarios PASS; local signed scheduler + synthetic RPC/upload, no Cloudflare/SQLite; NOT live AO/Arweave
+2026-11-18T06:50:07.5710613Z ##[group]Run node scripts/ao-live-readiness.mjs --selftest
+2026-11-18T06:50:07.5710926Z [36;1mnode scripts/ao-live-readiness.mjs --selftest[0m
+2026-11-18T06:50:07.5738035Z shell: /usr/bin/bash -e {0}
+2026-11-18T06:50:07.5738252Z ##[endgroup]
+2026-11-18T06:50:07.9620323Z PASS AO readiness signing: valid RSA-PSS accepted; changed bytes rejected; no network or persisted keys
+2026-11-18T06:50:07.9699273Z ##[group]Run if ! command -v lua5.4 >/dev/null; then
+2026-11-18T06:50:07.9699562Z [36;1mif ! command -v lua5.4 >/dev/null; then[0m
+2026-11-18T06:50:07.9699945Z [36;1m  sudo apt-get update -o Acquire::Retries=0 -o Acquire::http::Timeout=20 -o Acquire::https::Timeout=20[0m
+2026-11-18T06:50:07.9700281Z [36;1m  sudo apt-get install -y lua5.4[0m
+2026-11-18T06:50:07.9700473Z [36;1mfi[0m
+2026-11-18T06:50:07.9700636Z [36;1mlua5.4 ao/modules/local_checks.lua[0m
+2026-11-18T06:50:07.9727938Z shell: /usr/bin/bash -e {0}
+2026-11-18T06:50:07.9728153Z ##[endgroup]
+2026-11-18T06:50:08.2473235Z Get:1 file:/etc/apt/apt-mirrors.txt Mirrorlist [152 B]
+2026-11-18T06:50:08.3112448Z Get:5 https://packages.microsoft.com/ubuntu/24.04/prod noble InRelease [3600 B]
+2026-11-18T06:50:08.4038668Z Get:6 https://packages.microsoft.com/ubuntu/24.04/prod noble/main arm64 Packages [723 kB]
+2026-11-18T06:50:08.4278397Z Hit:2 http://us-east-2.ec2.archive.ubuntu.com/ubuntu noble InRelease
+2026-11-18T06:50:08.4938389Z Get:7 http://security.ubuntu.com/ubuntu noble-security InRelease [126 kB]
+2026-11-18T06:50:08.4952845Z Get:8 https://packages.microsoft.com/ubuntu/24.04/prod noble/main amd64 Packages [794 kB]
+2026-11-18T06:50:08.7199746Z Get:3 http://us-east-2.ec2.archive.ubuntu.com/ubuntu noble-updates InRelease [126 kB]
+2026-11-18T06:50:09.2156576Z Get:16 http://security.ubuntu.com/ubuntu noble-security/main amd64 Packages [1196 kB]
+2026-11-18T06:50:09.6833370Z Get:4 http://us-east-2.ec2.archive.ubuntu.com/ubuntu noble-backports InRelease [126 kB]
+2026-11-18T06:50:10.0298875Z Get:17 http://security.ubuntu.com/ubuntu noble-security/main Translation-en [238 kB]
+2026-11-18T06:50:10.0911189Z Get:9 http://us-east-2.ec2.archive.ubuntu.com/ubuntu noble-updates/main amd64 Packages [1455 kB]
+2026-11-18T06:50:10.1949354Z Get:18 http://security.ubuntu.com/ubuntu noble-security/universe amd64 Packages [1229 kB]
+2026-11-18T06:50:10.4459698Z Get:19 http://security.ubuntu.com/ubuntu noble-security/universe Translation-en [248 kB]
+2026-11-18T06:50:10.6083566Z Get:20 http://security.ubuntu.com/ubuntu noble-security/restricted amd64 Packages [1788 kB]
+2026-11-18T06:50:10.8807509Z Get:21 http://security.ubuntu.com/ubuntu noble-security/restricted Translation-en [411 kB]
+2026-11-18T06:50:11.0477715Z Get:22 http://security.ubuntu.com/ubuntu noble-security/multiverse Translation-en [12.7 kB]
+2026-11-18T06:50:12.5390062Z Get:10 http://us-east-2.ec2.archive.ubuntu.com/ubuntu noble-updates/main Translation-en [317 kB]
+2026-11-18T06:50:13.5614108Z Get:11 http://us-east-2.ec2.archive.ubuntu.com/ubuntu noble-updates/universe amd64 Packages [1715 kB]
+2026-11-18T06:50:15.7983013Z Get:12 http://us-east-2.ec2.archive.ubuntu.com/ubuntu noble-updates/universe Translation-en [345 kB]
+2026-11-18T06:50:16.8154119Z Get:13 http://us-east-2.ec2.archive.ubuntu.com/ubuntu noble-updates/restricted amd64 Packages [1887 kB]
+2026-11-18T06:50:18.2821830Z Get:14 http://us-east-2.ec2.archive.ubuntu.com/ubuntu noble-updates/restricted Translation-en [433 kB]
+2026-11-18T06:50:20.3888733Z Get:15 http://us-east-2.ec2.archive.ubuntu.com/ubuntu noble-updates/multiverse Translation-en [14.6 kB]
+2026-11-18T06:50:32.1661802Z Fetched 13.2 MB in 12s (1076 kB/s)
+2026-11-18T06:50:33.0970784Z Reading package lists...
+2026-11-18T06:50:33.1305955Z Reading package lists...
+2026-11-18T06:50:33.3344939Z Building dependency tree...
+2026-11-18T06:50:33.3351461Z Reading state information...
+2026-11-18T06:50:33.5284442Z The following NEW packages will be installed:
+2026-11-18T06:50:33.5284823Z   lua5.4
+2026-11-18T06:50:33.5453045Z 0 upgraded, 1 newly installed, 0 to remove and 30 not upgraded.
+2026-11-18T06:50:33.5453387Z Need to get 159 kB of archives.
+2026-11-18T06:50:33.5453694Z After this operation, 469 kB of additional disk space will be used.
+2026-11-18T06:50:33.5454040Z Get:1 file:/etc/apt/apt-mirrors.txt Mirrorlist [152 B]
+2026-11-18T06:50:35.6530413Z Get:2 http://us-east-2.ec2.archive.ubuntu.com/ubuntu noble/universe amd64 lua5.4 amd64 5.4.6-3build2 [159 kB]
+2026-11-18T06:50:39.3014293Z Fetched 159 kB in 4s (35.5 kB/s)
+2026-11-18T06:50:39.3895796Z Selecting previously unselected package lua5.4.
+2026-11-18T06:50:39.7443338Z (Reading database ... 
+2026-11-18T06:50:39.7443619Z (Reading database ... 5%
+2026-11-18T06:50:39.7443829Z (Reading database ... 10%
+2026-11-18T06:50:39.7444027Z (Reading database ... 15%
+2026-11-18T06:50:39.7444216Z (Reading database ... 20%
+2026-11-18T06:50:39.7444410Z (Reading database ... 25%
+2026-11-18T06:50:39.7444595Z (Reading database ... 30%
+2026-11-18T06:50:39.7444776Z (Reading database ... 35%
+2026-11-18T06:50:39.7444964Z (Reading database ... 40%
+2026-11-18T06:50:39.7445144Z (Reading database ... 45%
+2026-11-18T06:50:39.7445324Z (Reading database ... 50%
+2026-11-18T06:50:39.9805372Z (Reading database ... 55%
+2026-11-18T06:50:41.2568146Z (Reading database ... 60%
+2026-11-18T06:50:41.6209556Z (Reading database ... 65%
+2026-11-18T06:50:41.8972988Z (Reading database ... 70%
+2026-11-18T06:50:42.0781302Z (Reading database ... 75%
+2026-11-18T06:50:42.4178983Z (Reading database ... 80%
+2026-11-18T06:50:44.0500988Z (Reading database ... 85%
+2026-11-18T06:50:45.3723201Z (Reading database ... 90%
+2026-11-18T06:50:46.5404836Z (Reading database ... 95%
+2026-11-18T06:50:46.5405326Z (Reading database ... 100%
+2026-11-18T06:50:46.5405866Z (Reading database ... 216380 files and directories currently installed.)
+2026-11-18T06:50:46.5449597Z Preparing to unpack .../lua5.4_5.4.6-3build2_amd64.deb ...
+2026-11-18T06:50:46.5465938Z Unpacking lua5.4 (5.4.6-3build2) ...
+2026-11-18T06:50:46.7156145Z Setting up lua5.4 (5.4.6-3build2) ...
+2026-11-18T06:50:46.7201346Z update-alternatives: using /usr/bin/lua5.4 to provide /usr/bin/lua (lua-interpreter) in auto mode
+2026-11-18T06:50:46.7239082Z update-alternatives: using /usr/bin/luac5.4 to provide /usr/bin/luac (lua-compiler) in auto mode
+2026-11-18T06:50:46.7259571Z Processing triggers for man-db (2.12.0-4build2) ...
+2026-11-18T06:50:46.7287225Z Not building database; man-db/auto-update is not 'true'.
+2026-11-18T06:50:47.9737989Z 
+2026-11-18T06:50:47.9738571Z Running kernel seems to be up-to-date.
+2026-11-18T06:50:47.9738843Z 
+2026-11-18T06:50:47.9739013Z No services need to be restarted.
+2026-11-18T06:50:47.9739188Z 
+2026-11-18T06:50:47.9739337Z No containers need to be restarted.
+2026-11-18T06:50:47.9739519Z 
+2026-11-18T06:50:47.9739688Z No user sessions are running outdated binaries.
+2026-11-18T06:50:47.9739911Z 
+2026-11-18T06:50:47.9740190Z No VM guests are running outdated hypervisor (qemu) binaries on this host.
+2026-11-18T06:50:48.8386560Z PASS Lua exact lamports and fail-closed module boundary (LOCAL gate stub only; NOT live AO threshold/Eval proof)
+2026-11-18T06:50:48.8409562Z ##[group]Run npm run test:preservation
+2026-11-18T06:50:48.8409824Z [36;1mnpm run test:preservation[0m
+2026-11-18T06:50:48.8435323Z shell: /usr/bin/bash -e {0}
+2026-11-18T06:50:48.8435531Z ##[endgroup]
+2026-11-18T06:50:48.9152998Z 
+2026-11-18T06:50:48.9153749Z > sejire@0.3.0 test:preservation
+2026-11-18T06:50:48.9154242Z > npm run test:preservation --prefix apps/sponsor
+2026-11-18T06:50:48.9154507Z 
+2026-11-18T06:50:48.9835456Z 
+2026-11-18T06:50:48.9836054Z > sejire-sponsor@0.2.0 test:preservation
+2026-11-18T06:50:48.9837040Z > tsx src/checkout/preparation.selftest.ts && tsx src/checkout/preservation.selftest.ts
+2026-11-18T06:50:48.9837407Z 
+2026-11-18T06:50:49.1679084Z PASS SOL preparation: success
+2026-11-18T06:50:49.1705301Z PASS SOL preparation: empty-recipient
+2026-11-18T06:50:49.1710137Z PASS SOL preparation: program
+2026-11-18T06:50:49.1713205Z PASS SOL preparation: executable
+2026-11-18T06:50:49.1719198Z PASS SOL preparation: balance
+2026-11-18T06:50:49.1724102Z PASS SOL preparation: large-balance
+2026-11-18T06:50:49.1728110Z PASS SOL preparation: max-u64-balance
+2026-11-18T06:50:49.1731885Z PASS SOL preparation: large-exact-balance
+2026-11-18T06:50:49.1736393Z PASS SOL preparation: large-short-balance
+2026-11-18T06:50:49.1741553Z PASS SOL preparation: overflow-balance
+2026-11-18T06:50:49.1746160Z PASS SOL preparation: fractional-balance
+2026-11-18T06:50:49.1750342Z PASS SOL preparation: exponential-balance
+2026-11-18T06:50:49.1754764Z PASS SOL preparation: negative-balance
+2026-11-18T06:50:49.1759254Z PASS SOL preparation: negative-zero-balance
+2026-11-18T06:50:49.1763436Z PASS SOL preparation: null-balance
+2026-11-18T06:50:49.1765385Z PASS SOL preparation: network
+2026-11-18T06:50:49.1768052Z PASS SOL preparation: blockhash
+2026-11-18T06:50:49.1770922Z PASS SOL preparation: height
+2026-11-18T06:50:49.1772126Z PASS SOL preparation: token
+2026-11-18T06:50:49.1773392Z PASS SOL preparation: unsafe-JavaScript-number
+2026-11-18T06:50:49.1773878Z preparation.selftest: 20 synthetic native SOL scenarios PASS; no wallet/network
+2026-11-18T06:50:49.6940545Z preservation.selftest: PASS (actual ANS-104 library signature with public vector, exact ciphertext, sandbox-only transport, readiness); no live upload/funding
+2026-11-18T06:50:49.7177489Z ##[group]Run npm run lint --prefix apps/web
+2026-11-18T06:50:49.7177765Z [36;1mnpm run lint --prefix apps/web[0m
+2026-11-18T06:50:49.7205516Z shell: /usr/bin/bash -e {0}
+2026-11-18T06:50:49.7205750Z ##[endgroup]
+2026-11-18T06:50:49.7894764Z 
+2026-11-18T06:50:49.7895177Z > sejire-web@0.3.0 lint
+2026-11-18T06:50:49.7895465Z > oxlint
+2026-11-18T06:50:49.7895574Z 
+2026-11-18T06:50:49.8635780Z ##[warning]Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components.
+2026-11-18T06:50:49.8640956Z ##[warning]The ref's value `.current` is accessed directly in the effect cleanup function.
+2026-11-18T06:50:49.8641976Z ##[warning]React Hook useEffect has a missing dependency: 't.restore.badFile'
+2026-11-18T06:50:49.8643765Z ##[warning]Left-hand side of `&&` operator has no effect.
+2026-11-18T06:50:49.8644937Z ##[warning]Variable 'chunks' is assigned a value but never used. Unused variables should start with a '_'.
+2026-11-18T06:50:49.8646009Z ##[warning]React Hook useEffect has a missing dependency: 't.quota'
+2026-11-18T06:50:49.8647392Z ##[warning]React Hook useEffect has missing dependencies: 'job.arPlan.uploaded', 'inspectArchive', 'job.paymentSignature', 'job.reconciledSignature', 'job', and 'verifySelected'
+2026-11-18T06:50:49.8648856Z ##[warning]React Hook useEffect has missing dependencies: 'session.lastError', 'session.arTransactionId', and 'session.arSignedTransaction'
+2026-11-18T06:50:49.8649933Z ##[warning]React Hook useEffect has a missing dependency: 'locale'
+2026-11-18T06:50:49.8651124Z ##[warning]Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components.
+2026-11-18T06:50:49.8653145Z ##[warning]React Hook useEffect has missing dependencies: 't.restore.shownLocal', 't.versions.needOpen', 't.restore.arweaveFail', 't.restore.arweaveDown', 't.publish', 't.versions.none', and 't.versions.noneLocalToo'
+2026-11-18T06:50:49.8654586Z ##[warning]Parameter 'v' is declared but never used. Unused parameters should start with a '_'.
+2026-11-18T06:50:49.8655549Z ##[warning]Identifier 'readFile' is imported but never used.
+2026-11-18T06:50:49.8656442Z ##[warning]Function 'prepare' is declared but never used.
+2026-11-18T06:50:49.8657544Z ##[warning]Function 'pay' is declared but never used.
+2026-11-18T06:50:49.8658416Z ##[warning]Function 'check' is declared but never used.
+2026-11-18T06:50:49.8659562Z ##[warning]React Hook useEffect has missing dependencies: 'envelope', 'envelope.vault_id', and 'resume'
+2026-11-18T06:50:49.8660560Z ##[warning]React Hook useEffect has a missing dependency: 'job'
+2026-11-18T06:50:49.8661767Z ##[warning]React Hook useEffect has missing dependencies: 'job', 'reconcile', 'run', 'job.reconciledSignature', and 'job.paymentSignature'
+2026-11-18T06:50:49.8663178Z ##[warning]React Hook useEffect has a missing dependency: 'refreshDesk'
+2026-11-18T06:50:49.8664214Z ##[warning]React Hook useEffect has a missing dependency: 't.publish.kaspiPaid'
+2026-11-18T06:50:49.8665224Z ##[warning]React Hook useEffect has a missing dependency: 'confirmDiscardSeed'
+2026-11-18T06:50:49.8665746Z 
+2026-11-18T06:50:49.8665905Z Found 22 warnings and 0 errors.
+2026-11-18T06:50:49.8666211Z Finished in 45ms on 253 files with 103 rules using 4 threads.
+2026-11-18T06:50:49.8776395Z ##[group]Run npm run archive:measure
+2026-11-18T06:50:49.8776642Z [36;1mnpm run archive:measure[0m
+2026-11-18T06:50:49.8806411Z shell: /usr/bin/bash -e {0}
+2026-11-18T06:50:49.8806623Z ##[endgroup]
+2026-11-18T06:50:49.9513449Z 
+2026-11-18T06:50:49.9513793Z > sejire@0.3.0 archive:measure
+2026-11-18T06:50:49.9514312Z > apps/sponsor/node_modules/.bin/tsx scripts/archive-size-study.mts
+2026-11-18T06:50:49.9514628Z 
+2026-11-18T06:50:53.9478973Z {
+2026-11-18T06:50:53.9479388Z   "synthetic": true,
+2026-11-18T06:50:53.9479786Z   "externalRequests": 0,
+2026-11-18T06:50:53.9480161Z   "signatures": 0,
+2026-11-18T06:50:53.9480478Z   "paidUploads": 0,
+2026-11-18T06:50:53.9480883Z   "technicalImportLimitBytes": 10485760,
+2026-11-18T06:50:53.9481284Z   "results": [
+2026-11-18T06:50:53.9481575Z     {
+2026-11-18T06:50:53.9481866Z       "trees": 1,
+2026-11-18T06:50:53.9482455Z       "people": 20,
+2026-11-18T06:50:53.9482825Z       "revisions": 1,
+2026-11-18T06:50:53.9483125Z       "personsTotal": 20,
+2026-11-18T06:50:53.9483368Z       "plainBytes": 19001,
+2026-11-18T06:50:53.9483590Z       "envelopeBytes": 25541,
+2026-11-18T06:50:53.9483817Z       "quotePlanningBytes": 29637,
+2026-11-18T06:50:53.9484022Z       "roundtrip": "PASS",
+2026-11-18T06:50:53.9484284Z       "underTechnicalImportLimit": true
+2026-11-18T06:50:53.9484505Z     },
+2026-11-18T06:50:53.9484670Z     {
+2026-11-18T06:50:53.9484832Z       "trees": 2,
+2026-11-18T06:50:53.9485024Z       "people": 100,
+2026-11-18T06:50:53.9485232Z       "revisions": 5,
+2026-11-18T06:50:53.9485414Z       "personsTotal": 200,
+2026-11-18T06:50:53.9485601Z       "plainBytes": 554946,
+2026-11-18T06:50:53.9485818Z       "envelopeBytes": 740137,
+2026-11-18T06:50:53.9486032Z       "quotePlanningBytes": 744233,
+2026-11-18T06:50:53.9486238Z       "roundtrip": "PASS",
+2026-11-18T06:50:53.9486457Z       "underTechnicalImportLimit": true
+2026-11-18T06:50:53.9486659Z     },
+2026-11-18T06:50:53.9486800Z     {
+2026-11-18T06:50:53.9486947Z       "trees": 4,
+2026-11-18T06:50:53.9487130Z       "people": 250,
+2026-11-18T06:50:53.9487301Z       "revisions": 10,
+2026-11-18T06:50:53.9487480Z       "personsTotal": 1000,
+2026-11-18T06:50:53.9487676Z       "plainBytes": 5092480,
+2026-11-18T06:50:53.9487888Z       "envelopeBytes": 6790181,
+2026-11-18T06:50:53.9488097Z       "quotePlanningBytes": 6794277,
+2026-11-18T06:50:53.9488304Z       "roundtrip": "PASS",
+2026-11-18T06:50:53.9488504Z       "underTechnicalImportLimit": true
+2026-11-18T06:50:53.9488701Z     },
+2026-11-18T06:50:53.9488840Z     {
+2026-11-18T06:50:53.9488988Z       "trees": 2,
+2026-11-18T06:50:53.9489149Z       "people": 1000,
+2026-11-18T06:50:53.9489313Z       "revisions": 3,
+2026-11-18T06:50:53.9489480Z       "personsTotal": 2000,
+2026-11-18T06:50:53.9489655Z       "plainBytes": 3709986,
+2026-11-18T06:50:53.9489851Z       "envelopeBytes": 4946857,
+2026-11-18T06:50:53.9490064Z       "quotePlanningBytes": 4950953,
+2026-11-18T06:50:53.9490261Z       "roundtrip": "PASS",
+2026-11-18T06:50:53.9490454Z       "underTechnicalImportLimit": true
+2026-11-18T06:50:53.9491034Z     }
+2026-11-18T06:50:53.9491175Z   ],
+2026-11-18T06:50:53.9491324Z   "attachments": [
+2026-11-18T06:50:53.9491481Z     {
+2026-11-18T06:50:53.9491672Z       "hypotheticalRawAttachmentMiB": 1,
+2026-11-18T06:50:53.9491929Z       "base64CiphertextBytesLowerBound": 1398124,
+2026-11-18T06:50:53.9492412Z       "status": "MODEL_ONLY_NOT_SUPPORTED_ATTACHMENT_FORMAT"
+2026-11-18T06:50:53.9492716Z     },
+2026-11-18T06:50:53.9492880Z     {
+2026-11-18T06:50:53.9493096Z       "hypotheticalRawAttachmentMiB": 5,
+2026-11-18T06:50:53.9493413Z       "base64CiphertextBytesLowerBound": 6990528,
+2026-11-18T06:50:53.9493763Z       "status": "MODEL_ONLY_NOT_SUPPORTED_ATTACHMENT_FORMAT"
+2026-11-18T06:50:53.9494037Z     },
+2026-11-18T06:50:53.9494194Z     {
+2026-11-18T06:50:53.9494411Z       "hypotheticalRawAttachmentMiB": 20,
+2026-11-18T06:50:53.9494775Z       "base64CiphertextBytesLowerBound": 27962048,
+2026-11-18T06:50:53.9495323Z       "status": "MODEL_ONLY_NOT_SUPPORTED_ATTACHMENT_FORMAT"
+2026-11-18T06:50:53.9495618Z     }
+2026-11-18T06:50:53.9495781Z   ],
+2026-11-18T06:50:53.9496296Z   "costs": "NOT RUN: no live quotes or uploads. Free tier is not guaranteed. 4096 overhead is an estimate, not a signed-item measurement."
+2026-11-18T06:50:53.9496823Z }
+2026-11-18T06:50:53.9884721Z ##[group]Run npm run solana:build
+2026-11-18T06:50:53.9885086Z [36;1mnpm run solana:build[0m
+2026-11-18T06:50:53.9921200Z shell: /usr/bin/bash -e {0}
+2026-11-18T06:50:53.9921480Z ##[endgroup]
+2026-11-18T06:50:54.0638275Z 
+2026-11-18T06:50:54.0638716Z > sejire@0.3.0 solana:build
+2026-11-18T06:50:54.0639351Z > VITE_PUBLISH_MODE=solana VITE_SOLANA_NETWORK=devnet VITE_QA_TOOLS=0 npm run web:build
+2026-11-18T06:50:54.0639709Z 
+2026-11-18T06:50:54.1352640Z 
+2026-11-18T06:50:54.1353433Z > sejire@0.3.0 web:build
+2026-11-18T06:50:54.1353792Z > npm run build --prefix apps/web
+2026-11-18T06:50:54.1353936Z 
+2026-11-18T06:50:54.2020260Z 
+2026-11-18T06:50:54.2020718Z > sejire-web@0.3.0 build
+2026-11-18T06:50:54.2021042Z > tsc -b && vite build
+2026-11-18T06:50:54.2021150Z 
+2026-11-18T06:51:00.7942699Z [36mvite v8.1.6 [32mbuilding client environment for production...[36m[39m
+2026-11-18T06:51:00.8023363Z [2K
+2026-11-18T06:51:01.1847045Z transforming...✓ 2561 modules transformed.
+2026-11-18T06:51:01.3447460Z rendering chunks...
+2026-11-18T06:51:01.5477335Z computing gzip size...
+2026-11-18T06:51:01.5661717Z dist/index.html                                               2.68 kB │ gzip:   1.18 kB
+2026-11-18T06:51:01.5662506Z dist/assets/work-sans-vietnamese-400-normal-BxGuknnG.woff2    5.02 kB
+2026-11-18T06:51:01.5663143Z dist/assets/work-sans-vietnamese-700-normal-CqjC4WOy.woff2    5.39 kB
+2026-11-18T06:51:01.5663958Z dist/assets/work-sans-vietnamese-400-normal-DFZk_KN_.woff     7.08 kB
+2026-11-18T06:51:01.5664436Z dist/assets/work-sans-vietnamese-700-normal-BYAoORCv.woff     7.54 kB
+2026-11-18T06:51:01.5664819Z dist/assets/work-sans-latin-ext-400-normal-zfQnhXzv.woff2    15.29 kB
+2026-11-18T06:51:01.5665194Z dist/assets/work-sans-latin-ext-700-normal-Bc0iTajH.woff2    16.16 kB
+2026-11-18T06:51:01.5665607Z dist/assets/work-sans-latin-400-normal-jUejSri3.woff2        19.90 kB
+2026-11-18T06:51:01.5665968Z dist/assets/work-sans-latin-700-normal-CEeo_t6l.woff2        20.84 kB
+2026-11-18T06:51:01.5666339Z dist/assets/work-sans-latin-ext-400-normal-j7TZlk-s.woff     21.11 kB
+2026-11-18T06:51:01.5666708Z dist/assets/work-sans-latin-ext-700-normal-BP8nCPzd.woff     22.10 kB
+2026-11-18T06:51:01.5667074Z dist/assets/work-sans-latin-400-normal-DE1_0GuN.woff         25.24 kB
+2026-11-18T06:51:01.5667506Z dist/assets/work-sans-latin-700-normal-mDs79oer.woff         26.17 kB
+2026-11-18T06:51:01.5667861Z dist/assets/NotoSans-Regular-Dpf_lrdO.ttf                   569.20 kB
+2026-11-18T06:51:01.5668267Z dist/assets/NotoSans-Bold-axMicgqH.ttf                      575.74 kB
+2026-11-18T06:51:01.5668764Z dist/assets/index-C0vTJ_5C.css                               41.31 kB │ gzip:   9.08 kB
+2026-11-18T06:51:01.5669218Z dist/assets/turbo-sdk-CwjIIJj_.js                             0.12 kB │ gzip:   0.13 kB
+2026-11-18T06:51:01.5669925Z dist/assets/zhuzRu-DEYd_gmS.js                                1.20 kB │ gzip:   0.69 kB
+2026-11-18T06:51:01.5670395Z dist/assets/rolldown-runtime-DAXXjFlN.js                      1.26 kB │ gzip:   0.70 kB
+2026-11-18T06:51:01.5670907Z dist/assets/bs58-DyHhzI8_.js                                  1.74 kB │ gzip:   0.87 kB
+2026-11-18T06:51:01.5671354Z dist/assets/utils-Bpv4vmSW.js                                 2.19 kB │ gzip:   0.97 kB
+2026-11-18T06:51:01.5671793Z dist/assets/cache-D_0DiMSP.js                                 2.83 kB │ gzip:   1.19 kB
+2026-11-18T06:51:01.5672454Z dist/assets/classicTreePdf-Dzu8iPdr.js                        3.76 kB │ gzip:   1.84 kB
+2026-11-18T06:51:01.5673088Z dist/assets/ccip-wTNKpTqH.js                                  4.47 kB │ gzip:   1.92 kB
+2026-11-18T06:51:01.5673539Z dist/assets/poster-1Kzvrff8.js                                5.69 kB │ gzip:   2.51 kB
+2026-11-18T06:51:01.5674054Z dist/assets/order-iFbtrOvu.js                                 6.72 kB │ gzip:   2.55 kB
+2026-11-18T06:51:01.5674606Z dist/assets/pdf-BbTATvTi.js                                   7.63 kB │ gzip:   3.25 kB
+2026-11-18T06:51:01.5675199Z dist/assets/shezhirePdf-BbWTn3FZ.js                          13.53 kB │ gzip:   4.74 kB
+2026-11-18T06:51:01.5675672Z dist/assets/purify.es-Cu8FNuDu.js                            28.56 kB │ gzip:  11.43 kB
+2026-11-18T06:51:01.5676146Z dist/assets/secp256k1-DJUQ3EI_.js                            29.93 kB │ gzip:  11.95 kB
+2026-11-18T06:51:01.5676602Z dist/assets/payment-d2tTVYjr.js                              80.60 kB │ gzip:  23.79 kB
+2026-11-18T06:51:01.5677050Z dist/assets/call-Dymx83xK.js                                 96.80 kB │ gzip:  27.69 kB
+2026-11-18T06:51:01.5677509Z dist/assets/index.es-uV2cgD89.js                            151.39 kB │ gzip:  48.89 kB
+2026-11-18T06:51:01.5677971Z dist/assets/html2canvas-CNGsUNfu.js                         199.56 kB │ gzip:  46.78 kB
+2026-11-18T06:51:01.5678682Z [33m[33m[EVAL] [0mUse of direct `eval` function is strongly discouraged as it poses security risks and may cause issues with minification.
+2026-11-18T06:51:01.5679383Z      [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/vm-browserify/index.js:110:12 [38;5;246m][0m
+2026-11-18T06:51:01.5679717Z      [38;5;246m│[0m
+2026-11-18T06:51:01.5681137Z  [38;5;246m110 │[0m [38;5;249m [0m[38;5;249m [0m[38;5;249m [0m[38;5;249m [0m[38;5;249mr[0m[38;5;249me[0m[38;5;249mt[0m[38;5;249mu[0m[38;5;249mr[0m[38;5;249mn[0m[38;5;249m [0meval[38;5;249m([0m[38;5;249mt[0m[38;5;249mh[0m[38;5;249mi[0m[38;5;249ms[0m[38;5;249m.[0m[38;5;249mc[0m[38;5;249mo[0m[38;5;249md[0m[38;5;249me[0m[38;5;249m)[0m[38;5;249m;[0m[38;5;249m [0m[38;5;249m/[0m[38;5;249m/[0m[38;5;249m [0m[38;5;249mm[0m[38;5;249ma[0m[38;5;249my[0m[38;5;249mb[0m[38;5;249me[0m[38;5;249m.[0m[38;5;249m.[0m[38;5;249m.[0m
+2026-11-18T06:51:01.5682126Z  [38;5;240m    │[0m            ──┬─  
+2026-11-18T06:51:01.5682581Z  [38;5;240m    │[0m              ╰─── Use of direct `eval` here.
+2026-11-18T06:51:01.5682951Z  [38;5;240m    │[0m 
+2026-11-18T06:51:01.5683572Z  [38;5;240m    │[0m [38;5;115mHelp[0m: Consider using indirect eval. For more information, check the documentation: https://rolldown.rs/guide/troubleshooting#avoiding-direct-eval
+2026-11-18T06:51:01.5684074Z [38;5;246m─────╯[0m
+2026-11-18T06:51:01.5684246Z [39m
+2026-11-18T06:51:01.5685298Z [33m[33m[INEFFECTIVE_DYNAMIC_IMPORT] [0msrc/lib/native/payment.ts is dynamically imported by src/lib/native/jobs.ts, src/lib/native/successor.ts but also statically imported by src/components/NativeAdminDesk.tsx, src/components/NativeCheckoutPanel.tsx, dynamic import will not move module into another chunk.
+2026-11-18T06:51:01.5686065Z [39m
+2026-11-18T06:51:01.5686412Z dist/assets/index.browser.esm-DTYMSJL9.js                   320.51 kB │ gzip:  92.65 kB
+2026-11-18T06:51:01.5686892Z dist/assets/pdf-vendor-CdNqq2dV.js                          400.81 kB │ gzip: 130.36 kB
+2026-11-18T06:51:01.5687432Z dist/assets/webIndex-ntjvyTYF.js                            485.22 kB │ gzip: 152.78 kB
+2026-11-18T06:51:01.5687877Z dist/assets/web-DFi3YYIc.js                                 562.01 kB │ gzip: 200.58 kB
+2026-11-18T06:51:01.5688312Z dist/assets/index-BiDBTFqt.js                               624.10 kB │ gzip: 191.77 kB
+2026-11-18T06:51:01.5688747Z dist/assets/wallet-qtq7BEwv.js                              919.32 kB │ gzip: 264.65 kB
+2026-11-18T06:51:01.5688954Z 
+2026-11-18T06:51:01.5689062Z [32m✓ built in 773ms[39m
+2026-11-18T06:51:01.6040627Z ##[group]Run npm run checkout:build
+2026-11-18T06:51:01.6040864Z [36;1mnpm run checkout:build[0m
+2026-11-18T06:51:01.6067646Z shell: /usr/bin/bash -e {0}
+2026-11-18T06:51:01.6067871Z ##[endgroup]
+2026-11-18T06:51:01.6755931Z 
+2026-11-18T06:51:01.6756407Z > sejire@0.3.0 checkout:build
+2026-11-18T06:51:01.6757059Z > VITE_CHECKOUT_ENABLED=1 VITE_PUBLISH_MODE=solana VITE_SOLANA_NETWORK=devnet VITE_QA_TOOLS=0 npm run web:build
+2026-11-18T06:51:01.6757472Z 
+2026-11-18T06:51:01.7469434Z 
+2026-11-18T06:51:01.7470006Z > sejire@0.3.0 web:build
+2026-11-18T06:51:01.7470398Z > npm run build --prefix apps/web
+2026-11-18T06:51:01.7470573Z 
+2026-11-18T06:51:01.8164376Z 
+2026-11-18T06:51:01.8165118Z > sejire-web@0.3.0 build
+2026-11-18T06:51:01.8165507Z > tsc -b && vite build
+2026-11-18T06:51:01.8165682Z 
+2026-11-18T06:51:08.3829192Z [36mvite v8.1.6 [32mbuilding client environment for production...[36m[39m
+2026-11-18T06:51:08.3910128Z [2K
+2026-11-18T06:51:08.7733888Z transforming...✓ 2561 modules transformed.
+2026-11-18T06:51:08.8976827Z rendering chunks...
+2026-11-18T06:51:09.0793252Z computing gzip size...
+2026-11-18T06:51:09.0928647Z dist/index.html                                                 2.36 kB │ gzip:   1.12 kB
+2026-11-18T06:51:09.0929311Z dist/assets/work-sans-vietnamese-400-normal-BxGuknnG.woff2      5.02 kB
+2026-11-18T06:51:09.0929920Z dist/assets/work-sans-vietnamese-700-normal-CqjC4WOy.woff2      5.39 kB
+2026-11-18T06:51:09.0930472Z dist/assets/work-sans-vietnamese-400-normal-DFZk_KN_.woff       7.08 kB
+2026-11-18T06:51:09.0930860Z dist/assets/work-sans-vietnamese-700-normal-BYAoORCv.woff       7.54 kB
+2026-11-18T06:51:09.0931254Z dist/assets/work-sans-latin-ext-400-normal-zfQnhXzv.woff2      15.29 kB
+2026-11-18T06:51:09.0931651Z dist/assets/work-sans-latin-ext-700-normal-Bc0iTajH.woff2      16.16 kB
+2026-11-18T06:51:09.0932037Z dist/assets/work-sans-latin-400-normal-jUejSri3.woff2          19.90 kB
+2026-11-18T06:51:09.0932603Z dist/assets/work-sans-latin-700-normal-CEeo_t6l.woff2          20.84 kB
+2026-11-18T06:51:09.0932983Z dist/assets/work-sans-latin-ext-400-normal-j7TZlk-s.woff       21.11 kB
+2026-11-18T06:51:09.0933375Z dist/assets/work-sans-latin-ext-700-normal-BP8nCPzd.woff       22.10 kB
+2026-11-18T06:51:09.0933751Z dist/assets/work-sans-latin-400-normal-DE1_0GuN.woff           25.24 kB
+2026-11-18T06:51:09.0934117Z dist/assets/work-sans-latin-700-normal-mDs79oer.woff           26.17 kB
+2026-11-18T06:51:09.0934500Z dist/assets/NotoSans-Regular-Dpf_lrdO.ttf                     569.20 kB
+2026-11-18T06:51:09.0934864Z dist/assets/NotoSans-Bold-axMicgqH.ttf                        575.74 kB
+2026-11-18T06:51:09.0935437Z dist/assets/index-C0vTJ_5C.css                                 41.31 kB │ gzip:   9.08 kB
+2026-11-18T06:51:09.0936012Z dist/assets/rolldown-runtime-CNC7AqOf.js                        0.87 kB │ gzip:   0.50 kB
+2026-11-18T06:51:09.0936498Z dist/assets/bs58-BpdPodED.js                                    1.74 kB │ gzip:   0.87 kB
+2026-11-18T06:51:09.0936976Z dist/assets/cache-B3QL1hUm.js                                   2.83 kB │ gzip:   1.19 kB
+2026-11-18T06:51:09.0937540Z dist/assets/classicTreePdf-Dr53fHIL.js                          3.75 kB │ gzip:   1.84 kB
+2026-11-18T06:51:09.0938025Z dist/assets/poster-BqlTe31p.js                                  5.69 kB │ gzip:   2.52 kB
+2026-11-18T06:51:09.0938607Z dist/assets/order-aUImZ1HR.js                                   6.72 kB │ gzip:   2.55 kB
+2026-11-18T06:51:09.0939381Z dist/assets/shezhirePdf-Bi2uQkrq.js                            13.46 kB │ gzip:   4.70 kB
+2026-11-18T06:51:09.0939858Z dist/assets/purify.es-Cu8FNuDu.js                              28.56 kB │ gzip:  11.43 kB
+2026-11-18T06:51:09.0940385Z dist/assets/index.es-CGdsPtaP.js                              151.39 kB │ gzip:  48.90 kB
+2026-11-18T06:51:09.0940862Z dist/assets/html2canvas-CshxQvNN.js                           199.56 kB │ gzip:  46.78 kB
+2026-11-18T06:51:09.0941445Z dist/assets/pdf-vendor-Cw9c99At.js                            400.81 kB │ gzip: 130.37 kB
+2026-11-18T06:51:09.0941925Z dist/assets/wallet-BneICEBZ.js                                889.53 kB │ gzip: 256.22 kB
+2026-11-18T06:51:09.0942563Z dist/assets/index-Id6SLk6v.js                               1,017.06 kB │ gzip: 306.39 kB
+2026-11-18T06:51:09.0942789Z 
+2026-11-18T06:51:09.0943312Z [33m[33m[EVAL] [0mUse of direct `eval` function is strongly discouraged as it poses security risks and may cause issues with minification.
+2026-11-18T06:51:09.0944184Z      [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/vm-browserify/index.js:110:12 [38;5;246m][0m
+2026-11-18T06:51:09.0944518Z      [38;5;246m│[0m
+2026-11-18T06:51:09.0945887Z  [38;5;246m110 │[0m [38;5;249m [0m[38;5;249m [0m[38;5;249m [0m[38;5;249m [0m[38;5;249mr[0m[38;5;249me[0m[38;5;249mt[0m[38;5;249mu[0m[38;5;249mr[0m[38;5;249mn[0m[38;5;249m [0meval[38;5;249m([0m[38;5;249mt[0m[38;5;249mh[0m[38;5;249mi[0m[38;5;249ms[0m[38;5;249m.[0m[38;5;249mc[0m[38;5;249mo[0m[38;5;249md[0m[38;5;249me[0m[38;5;249m)[0m[38;5;249m;[0m[38;5;249m [0m[38;5;249m/[0m[38;5;249m/[0m[38;5;249m [0m[38;5;249mm[0m[38;5;249ma[0m[38;5;249my[0m[38;5;249mb[0m[38;5;249me[0m[38;5;249m.[0m[38;5;249m.[0m[38;5;249m.[0m
+2026-11-18T06:51:09.0946874Z  [38;5;240m    │[0m            ──┬─  
+2026-11-18T06:51:09.0947230Z  [38;5;240m    │[0m              ╰─── Use of direct `eval` here.
+2026-11-18T06:51:09.0947536Z  [38;5;240m    │[0m 
+2026-11-18T06:51:09.0948135Z  [38;5;240m    │[0m [38;5;115mHelp[0m: Consider using indirect eval. For more information, check the documentation: https://rolldown.rs/guide/troubleshooting#avoiding-direct-eval
+2026-11-18T06:51:09.0948634Z [38;5;246m─────╯[0m
+2026-11-18T06:51:09.0948802Z [39m
+2026-11-18T06:51:09.0950592Z [33m[33m[INEFFECTIVE_DYNAMIC_IMPORT] [0mnode_modules/@solana/web3.js/lib/index.browser.esm.js is dynamically imported by src/lib/solana/client.ts, src/lib/solana/upload.ts but also statically imported by node_modules/@ardrive/turbo-sdk/lib/esm/common/arnsActions.js, node_modules/@ardrive/turbo-sdk/lib/esm/common/signer.js, node_modules/@ardrive/turbo-sdk/lib/esm/common/token/solana.js, node_modules/@ardrive/turbo-sdk/lib/esm/common/token/spl.js, node_modules/@ardrive/turbo-sdk/lib/esm/utils/common.js, ..., dynamic import will not move module into another chunk.
+2026-11-18T06:51:09.0954888Z [39m
+2026-11-18T06:51:09.0956337Z [33m[33m[INEFFECTIVE_DYNAMIC_IMPORT] [0msrc/lib/native/payment.ts is dynamically imported by src/lib/native/jobs.ts, src/lib/native/successor.ts but also statically imported by src/components/NativeAdminDesk.tsx, src/components/NativeCheckoutPanel.tsx, dynamic import will not move module into another chunk.
+2026-11-18T06:51:09.0957356Z [39m
+2026-11-18T06:51:09.0957605Z [32m✓ built in 711ms[39m
+2026-11-18T06:51:09.1247078Z ##[group]Run npm exec --prefix apps/web -- playwright install --with-deps chromium firefox webkit
+2026-11-18T06:51:09.1247534Z [36;1mnpm exec --prefix apps/web -- playwright install --with-deps chromium firefox webkit[0m
+2026-11-18T06:51:09.1278066Z shell: /usr/bin/bash -e {0}
+2026-11-18T06:51:09.1278302Z ##[endgroup]
+2026-11-18T06:51:09.7874714Z Installing dependencies...
+2026-11-18T06:51:09.7933885Z Switching to root user to install dependencies...
+2026-11-18T06:51:09.8645572Z Get:1 file:/etc/apt/apt-mirrors.txt Mirrorlist [152 B]
+2026-11-18T06:51:09.9686047Z Hit:5 https://packages.microsoft.com/ubuntu/24.04/prod noble InRelease
+2026-11-18T06:51:09.9926868Z Hit:6 http://security.ubuntu.com/ubuntu noble-security InRelease
+2026-11-18T06:51:10.0078068Z Hit:2 http://us-east-2.ec2.archive.ubuntu.com/ubuntu noble InRelease
+2026-11-18T06:51:10.0694942Z Hit:3 http://us-east-2.ec2.archive.ubuntu.com/ubuntu noble-updates InRelease
+2026-11-18T06:51:10.1291776Z Hit:4 http://us-east-2.ec2.archive.ubuntu.com/ubuntu noble-backports InRelease
+2026-11-18T06:51:11.1646686Z Reading package lists...
+2026-11-18T06:51:11.1894921Z Reading package lists...
+2026-11-18T06:51:11.3990391Z Building dependency tree...
+2026-11-18T06:51:11.3996425Z Reading state information...
+2026-11-18T06:51:11.4151106Z libasound2t64 is already the newest version (1.2.11-1ubuntu0.3).
+2026-11-18T06:51:11.4151688Z libasound2t64 set to manually installed.
+2026-11-18T06:51:11.4152679Z libatk-bridge2.0-0t64 is already the newest version (2.52.0-1build1).
+2026-11-18T06:51:11.4153126Z libatk-bridge2.0-0t64 set to manually installed.
+2026-11-18T06:51:11.4153599Z libatk1.0-0t64 is already the newest version (2.52.0-1build1).
+2026-11-18T06:51:11.4153891Z libatk1.0-0t64 set to manually installed.
+2026-11-18T06:51:11.4154192Z libatspi2.0-0t64 is already the newest version (2.52.0-1build1).
+2026-11-18T06:51:11.4154490Z libatspi2.0-0t64 set to manually installed.
+2026-11-18T06:51:11.4154788Z libcairo2 is already the newest version (1.18.0-3build1).
+2026-11-18T06:51:11.4155063Z libcairo2 set to manually installed.
+2026-11-18T06:51:11.4155361Z libcups2t64 is already the newest version (2.4.7-1.2ubuntu7.14).
+2026-11-18T06:51:11.4155648Z libcups2t64 set to manually installed.
+2026-11-18T06:51:11.4155937Z libdbus-1-3 is already the newest version (1.14.10-4ubuntu4.1).
+2026-11-18T06:51:11.4156219Z libdbus-1-3 set to manually installed.
+2026-11-18T06:51:11.4156521Z libdrm2 is already the newest version (2.4.125-1ubuntu0.1~24.04.2).
+2026-11-18T06:51:11.4156805Z libdrm2 set to manually installed.
+2026-11-18T06:51:11.4157100Z libglib2.0-0t64 is already the newest version (2.80.0-6ubuntu3.10).
+2026-11-18T06:51:11.4157407Z libglib2.0-0t64 set to manually installed.
+2026-11-18T06:51:11.4157705Z libnspr4 is already the newest version (2:4.35-1.1build1).
+2026-11-18T06:51:11.4157976Z libnspr4 set to manually installed.
+2026-11-18T06:51:11.4158255Z libnss3 is already the newest version (2:3.98-1ubuntu0.3).
+2026-11-18T06:51:11.4158522Z libnss3 set to manually installed.
+2026-11-18T06:51:11.4158812Z libpango-1.0-0 is already the newest version (1.52.1+ds-1build1).
+2026-11-18T06:51:11.4159110Z libpango-1.0-0 set to manually installed.
+2026-11-18T06:51:11.4159398Z libx11-6 is already the newest version (2:1.8.7-1ubuntu0.1).
+2026-11-18T06:51:11.4159664Z libx11-6 set to manually installed.
+2026-11-18T06:51:11.4159923Z libxcb1 is already the newest version (1.15-1ubuntu2).
+2026-11-18T06:51:11.4160185Z libxcb1 set to manually installed.
+2026-11-18T06:51:11.4160475Z libxcomposite1 is already the newest version (1:0.4.5-1build3).
+2026-11-18T06:51:11.4160760Z libxcomposite1 set to manually installed.
+2026-11-18T06:51:11.4161059Z libxdamage1 is already the newest version (1:1.1.6-1build1).
+2026-11-18T06:51:11.4161334Z libxdamage1 set to manually installed.
+2026-11-18T06:51:11.4161606Z libxext6 is already the newest version (2:1.3.4-1build2).
+2026-11-18T06:51:11.4161877Z libxext6 set to manually installed.
+2026-11-18T06:51:11.4162915Z libxfixes3 is already the newest version (1:6.0.0-2build1).
+2026-11-18T06:51:11.4163224Z libxfixes3 set to manually installed.
+2026-11-18T06:51:11.4163519Z libxkbcommon0 is already the newest version (1.6.0-1build1).
+2026-11-18T06:51:11.4163828Z libxkbcommon0 set to manually installed.
+2026-11-18T06:51:11.4164114Z libxrandr2 is already the newest version (2:1.5.2-2build1).
+2026-11-18T06:51:11.4164385Z libxrandr2 set to manually installed.
+2026-11-18T06:51:11.4164664Z xvfb is already the newest version (2:21.1.12-1ubuntu1.9).
+2026-11-18T06:51:11.4165034Z fonts-noto-color-emoji is already the newest version (2.047-0ubuntu0.24.04.1).
+2026-11-18T06:51:11.4165436Z libfontconfig1 is already the newest version (2.15.0-1.1ubuntu2).
+2026-11-18T06:51:11.4165816Z libfontconfig1 set to manually installed.
+2026-11-18T06:51:11.4166118Z libfreetype6 is already the newest version (2.13.2+dfsg-1ubuntu0.2).
+2026-11-18T06:51:11.4166421Z libfreetype6 set to manually installed.
+2026-11-18T06:51:11.4166711Z fonts-liberation is already the newest version (1:2.1.5-3).
+2026-11-18T06:51:11.4166999Z fonts-liberation set to manually installed.
+2026-11-18T06:51:11.4167319Z libcairo-gobject2 is already the newest version (1.18.0-3build1).
+2026-11-18T06:51:11.4167622Z libcairo-gobject2 set to manually installed.
+2026-11-18T06:51:11.4167960Z libgdk-pixbuf-2.0-0 is already the newest version (2.42.10+dfsg-3ubuntu3.3).
+2026-11-18T06:51:11.4168294Z libgdk-pixbuf-2.0-0 set to manually installed.
+2026-11-18T06:51:11.4168610Z libgtk-3-0t64 is already the newest version (3.24.41-4ubuntu1.3).
+2026-11-18T06:51:11.4168893Z libgtk-3-0t64 set to manually installed.
+2026-11-18T06:51:11.4169204Z libpangocairo-1.0-0 is already the newest version (1.52.1+ds-1build1).
+2026-11-18T06:51:11.4169527Z libpangocairo-1.0-0 set to manually installed.
+2026-11-18T06:51:11.4169836Z libx11-xcb1 is already the newest version (2:1.8.7-1ubuntu0.1).
+2026-11-18T06:51:11.4170118Z libx11-xcb1 set to manually installed.
+2026-11-18T06:51:11.4170396Z libxcb-shm0 is already the newest version (1.15-1ubuntu2).
+2026-11-18T06:51:11.4170670Z libxcb-shm0 set to manually installed.
+2026-11-18T06:51:11.4170950Z libxcursor1 is already the newest version (1:1.2.1-1build1).
+2026-11-18T06:51:11.4171228Z libxcursor1 set to manually installed.
+2026-11-18T06:51:11.4171490Z libxi6 is already the newest version (2:1.8.1-1build1).
+2026-11-18T06:51:11.4171742Z libxi6 set to manually installed.
+2026-11-18T06:51:11.4172059Z libxrender1 is already the newest version (1:0.9.10-1.1build1).
+2026-11-18T06:51:11.4172527Z libxrender1 set to manually installed.
+2026-11-18T06:51:11.4172812Z libicu74 is already the newest version (74.2-1ubuntu3.1).
+2026-11-18T06:51:11.4173156Z libatomic1 is already the newest version (14.2.0-4ubuntu2~24.04.1).
+2026-11-18T06:51:11.4173449Z libatomic1 set to manually installed.
+2026-11-18T06:51:11.4173737Z libenchant-2-2 is already the newest version (2.3.3-2build2).
+2026-11-18T06:51:11.4174021Z libenchant-2-2 set to manually installed.
+2026-11-18T06:51:11.4174298Z libepoxy0 is already the newest version (1.5.10-1build1).
+2026-11-18T06:51:11.4174567Z libepoxy0 set to manually installed.
+2026-11-18T06:51:11.4174868Z libgstreamer1.0-0 is already the newest version (1.24.2-1ubuntu0.1).
+2026-11-18T06:51:11.4175185Z libgstreamer1.0-0 set to manually installed.
+2026-11-18T06:51:11.4175480Z libharfbuzz0b is already the newest version (8.3.0-2build2).
+2026-11-18T06:51:11.4175757Z libharfbuzz0b set to manually installed.
+2026-11-18T06:51:11.4176058Z libjpeg-turbo8 is already the newest version (2.1.5-2ubuntu2).
+2026-11-18T06:51:11.5552474Z libjpeg-turbo8 set to manually installed.
+2026-11-18T06:51:11.5552994Z liblcms2-2 is already the newest version (2.14-2ubuntu0.1).
+2026-11-18T06:51:11.5553320Z liblcms2-2 set to manually installed.
+2026-11-18T06:51:11.5553628Z libpng16-16t64 is already the newest version (1.6.43-5ubuntu0.7).
+2026-11-18T06:51:11.5553919Z libpng16-16t64 set to manually installed.
+2026-11-18T06:51:11.5554238Z libwayland-client0 is already the newest version (1.22.0-2.1build1).
+2026-11-18T06:51:11.5555015Z libwayland-client0 set to manually installed.
+2026-11-18T06:51:11.5555437Z libwayland-egl1 is already the newest version (1.22.0-2.1build1).
+2026-11-18T06:51:11.5555761Z libwayland-egl1 set to manually installed.
+2026-11-18T06:51:11.5556039Z libwebp7 is already the newest version (1.3.2-0.4build3).
+2026-11-18T06:51:11.5556299Z libwebp7 set to manually installed.
+2026-11-18T06:51:11.5556582Z libwebpdemux2 is already the newest version (1.3.2-0.4build3).
+2026-11-18T06:51:11.5556940Z libwebpdemux2 set to manually installed.
+2026-11-18T06:51:11.5557293Z libxml2 is already the newest version (2.9.14+dfsg-1.3ubuntu3.10).
+2026-11-18T06:51:11.5557583Z libxml2 set to manually installed.
+2026-11-18T06:51:11.5557999Z libxslt1.1 is already the newest version (1.1.39-0exp1ubuntu0.24.04.3).
+2026-11-18T06:51:11.5558424Z libxslt1.1 set to manually installed.
+2026-11-18T06:51:11.5558701Z The following additional packages will be installed:
+2026-11-18T06:51:11.5559021Z   glib-networking glib-networking-common glib-networking-services
+2026-11-18T06:51:11.5559390Z   gsettings-desktop-schemas libaa1 libabsl20220623t64 libass9 libasyncns0
+2026-11-18T06:51:11.5559761Z   libavc1394-0 libavcodec60 libavfilter9 libavformat60 libavtp0 libavutil58
+2026-11-18T06:51:11.5560118Z   libblas3 libbluray2 libbs2b0 libcaca0 libcairo-script-interpreter2
+2026-11-18T06:51:11.5560469Z   libcdparanoia0 libchromaprint1 libcjson1 libcodec2-1.2 libdav1d7
+2026-11-18T06:51:11.5560821Z   libdc1394-25 libdca0 libde265-0 libdecor-0-0 libdirectfb-1.7-7t64 libdv4t64
+2026-11-18T06:51:11.5561176Z   libdvdnav4 libdvdread8t64 libegl-mesa0 libegl1 libfaad2 libflac12t64
+2026-11-18T06:51:11.5561552Z   libfluidsynth3 libfreeaptx0 libgav1-1 libgl1-mesa-dri libglx-mesa0 libgme0
+2026-11-18T06:51:11.5561923Z   libgraphene-1.0-0 libgsm1 libgssdp-1.6-0 libgstreamer-plugins-good1.0-0
+2026-11-18T06:51:11.5562526Z   libgtk-4-common libgupnp-1.6-0 libgupnp-igd-1.6-0 libhwy1t64 libiec61883-0
+2026-11-18T06:51:11.5563039Z   libimath-3-1-29t64 libinstpatch-1.0-2 libjack-jackd2-0 libjxl0.7 liblapack3
+2026-11-18T06:51:11.5563428Z   liblc3-1 libldacbt-enc2 liblilv-0-0 liblrdf0 libltc11 libmbedcrypto7t64
+2026-11-18T06:51:11.5563797Z   libmfx1 libmjpegutils-2.1-0t64 libmodplug1 libmp3lame0 libmpcdec6
+2026-11-18T06:51:11.5564149Z   libmpeg2encpp-2.1-0t64 libmpg123-0t64 libmplex2-2.1-0t64 libmysofa1
+2026-11-18T06:51:11.5564497Z   libneon27t64 libnice10 libopenal-data libopenal1 libopenexr-3-1-30
+2026-11-18T06:51:11.5564838Z   libopenh264-7 libopenmpt0t64 libopenni2-0 liborc-0.4-0t64
+2026-11-18T06:51:11.5565164Z   libpipewire-0.3-0t64 libplacebo338 libpocketsphinx3 libpostproc57
+2026-11-18T06:51:11.5565547Z   libproxy1v5 libpulse0 libqrencode4 libraptor2-0 librav1e0 libraw1394-11
+2026-11-18T06:51:11.5565930Z   librist4 librsvg2-2 librubberband2 libsamplerate0 libsbc1 libsdl2-2.0-0
+2026-11-18T06:51:11.5566361Z   libsecret-common libserd-0-0 libshine3 libshout3 libsndfile1 libsndio7.0
+2026-11-18T06:51:11.5566790Z   libsord-0-0 libsoundtouch1 libsoup-3.0-0 libsoup-3.0-common libsoxr0
+2026-11-18T06:51:11.5567165Z   libspa-0.2-modules libspandsp2t64 libspeex1 libsphinxbase3t64 libsratom-0-0
+2026-11-18T06:51:11.5567543Z   libsrt1.5-gnutls libsrtp2-1 libssh-gcrypt-4 libsvtav1enc1d1 libswresample4
+2026-11-18T06:51:11.5567915Z   libswscale7 libtag1v5 libtag1v5-vanilla libtheora0 libtwolame0 libudfread0
+2026-11-18T06:51:11.5568286Z   libunibreak5 libv4l-0t64 libv4lconvert0t64 libva-drm2 libva-x11-2 libva2
+2026-11-18T06:51:11.5568640Z   libvdpau1 libvidstab1.1 libvisual-0.4-0 libvo-aacenc0 libvo-amrwbenc0
+2026-11-18T06:51:11.5569005Z   libvorbisenc2 libvpl2 libwavpack1 libwebrtc-audio-processing1 libwildmidi2
+2026-11-18T06:51:11.5569394Z   libx265-199 libxcb-xkb1 libxkbcommon-x11-0 libxvidcore4 libyuv0 libzbar0t64
+2026-11-18T06:51:11.5569757Z   libzimg2 libzix-0-0 libzvbi-common libzvbi0t64 libzxing3 mesa-libgallium
+2026-11-18T06:51:11.5570137Z   ocl-icd-libopencl1 session-migration timgm6mb-soundfont xfonts-encodings
+2026-11-18T06:51:11.5570409Z   xfonts-utils
+2026-11-18T06:51:11.5570588Z Suggested packages:
+2026-11-18T06:51:11.5570953Z   frei0r-plugins gvfs libcuda1 libnvcuvid1 libnvidia-encode1 libbluray-bdj
+2026-11-18T06:51:11.5571318Z   libdirectfb-extra libdv-bin oss-compat libdvdcss2 libvisual-0.4-plugins
+2026-11-18T06:51:11.5571669Z   jackd2 liblrdf0-dev libportaudio2 opus-tools pipewire pulseaudio
+2026-11-18T06:51:11.5572017Z   raptor2-utils libraw1394-doc librsvg2-bin serdi sndiod sordi speex
+2026-11-18T06:51:11.5572458Z   libwildmidi-config opencl-icd fluid-soundfont-gm
+2026-11-18T06:51:11.5572698Z Recommended packages:
+2026-11-18T06:51:11.5572955Z   fonts-ipafont-mincho fonts-tlwg-loma gstreamer1.0-x libaacs0
+2026-11-18T06:51:11.5573297Z   default-libdecor-0-plugin-1 | libdecor-0-plugin-1 gstreamer1.0-gl
+2026-11-18T06:51:11.5573737Z   libgtk-4-bin librsvg2-common libgtk-4-media-gstreamer libpipewire-0.3-common
+2026-11-18T06:51:11.5574140Z   pocketsphinx-en-us va-driver-all | va-driver vdpau-driver-all | vdpau-driver
+2026-11-18T06:51:11.5574429Z   libmagickcore-6.q16-7-extra
+2026-11-18T06:51:11.6761426Z The following NEW packages will be installed:
+2026-11-18T06:51:11.6761966Z   fonts-freefont-ttf fonts-ipafont-gothic fonts-tlwg-loma-otf fonts-unifont
+2026-11-18T06:51:11.6762733Z   fonts-wqy-zenhei glib-networking glib-networking-common
+2026-11-18T06:51:11.6763232Z   glib-networking-services gsettings-desktop-schemas gstreamer1.0-libav
+2026-11-18T06:51:11.6763763Z   gstreamer1.0-plugins-bad gstreamer1.0-plugins-base gstreamer1.0-plugins-good
+2026-11-18T06:51:11.6764278Z   libaa1 libabsl20220623t64 libass9 libasyncns0 libavc1394-0 libavcodec60
+2026-11-18T06:51:11.6764735Z   libavfilter9 libavformat60 libavif16 libavtp0 libavutil58 libblas3
+2026-11-18T06:51:11.6765225Z   libbluray2 libbs2b0 libcaca0 libcairo-script-interpreter2 libcdparanoia0
+2026-11-18T06:51:11.6765625Z   libchromaprint1 libcjson1 libcodec2-1.2 libdav1d7 libdc1394-25 libdca0
+2026-11-18T06:51:11.6765983Z   libde265-0 libdecor-0-0 libdirectfb-1.7-7t64 libdv4t64 libdvdnav4
+2026-11-18T06:51:11.6766354Z   libdvdread8t64 libegl-mesa0 libegl1 libevent-2.1-7t64 libfaad2 libflac12t64
+2026-11-18T06:51:11.6766731Z   libflite1 libfluidsynth3 libfreeaptx0 libgav1-1 libgles2 libgme0
+2026-11-18T06:51:11.6767066Z   libgraphene-1.0-0 libgsm1 libgssdp-1.6-0 libgstreamer-gl1.0-0
+2026-11-18T06:51:11.6767408Z   libgstreamer-plugins-bad1.0-0 libgstreamer-plugins-base1.0-0
+2026-11-18T06:51:11.6767791Z   libgstreamer-plugins-good1.0-0 libgtk-4-1 libgtk-4-common libgupnp-1.6-0
+2026-11-18T06:51:11.6768176Z   libgupnp-igd-1.6-0 libharfbuzz-icu0 libhwy1t64 libhyphen0 libiec61883-0
+2026-11-18T06:51:11.6768626Z   libimath-3-1-29t64 libinstpatch-1.0-2 libjack-jackd2-0 libjxl0.7 liblapack3
+2026-11-18T06:51:11.6769113Z   liblc3-1 libldacbt-enc2 liblilv-0-0 liblrdf0 libltc11 libmanette-0.2-0
+2026-11-18T06:51:11.6769586Z   libmbedcrypto7t64 libmfx1 libmjpegutils-2.1-0t64 libmodplug1 libmp3lame0
+2026-11-18T06:51:11.6770063Z   libmpcdec6 libmpeg2encpp-2.1-0t64 libmpg123-0t64 libmplex2-2.1-0t64
+2026-11-18T06:51:11.6770420Z   libmysofa1 libneon27t64 libnice10 libopenal-data libopenal1
+2026-11-18T06:51:11.6770763Z   libopenexr-3-1-30 libopenh264-7 libopenmpt0t64 libopenni2-0 libopus0
+2026-11-18T06:51:11.6771107Z   liborc-0.4-0t64 libpipewire-0.3-0t64 libplacebo338 libpocketsphinx3
+2026-11-18T06:51:11.6771464Z   libpostproc57 libproxy1v5 libpulse0 libqrencode4 libraptor2-0 librav1e0
+2026-11-18T06:51:11.6771828Z   libraw1394-11 librist4 librsvg2-2 librubberband2 libsamplerate0 libsbc1
+2026-11-18T06:51:11.6772461Z   libsdl2-2.0-0 libsecret-1-0 libsecret-common libserd-0-0 libshine3 libshout3
+2026-11-18T06:51:11.6772877Z   libsndfile1 libsndio7.0 libsord-0-0 libsoundtouch1 libsoup-3.0-0
+2026-11-18T06:51:11.6773236Z   libsoup-3.0-common libsoxr0 libspa-0.2-modules libspandsp2t64 libspeex1
+2026-11-18T06:51:11.6773620Z   libsphinxbase3t64 libsratom-0-0 libsrt1.5-gnutls libsrtp2-1 libssh-gcrypt-4
+2026-11-18T06:51:11.6774087Z   libsvtav1enc1d1 libswresample4 libswscale7 libtag1v5 libtag1v5-vanilla
+2026-11-18T06:51:11.6774482Z   libtheora0 libtwolame0 libudfread0 libunibreak5 libv4l-0t64
+2026-11-18T06:51:11.6775175Z   libv4lconvert0t64 libva-drm2 libva-x11-2 libva2 libvdpau1 libvidstab1.1
+2026-11-18T06:51:11.6775552Z   libvisual-0.4-0 libvo-aacenc0 libvo-amrwbenc0 libvorbisenc2 libvpl2 libvpx9
+2026-11-18T06:51:11.6775931Z   libwavpack1 libwayland-server0 libwebrtc-audio-processing1 libwildmidi2
+2026-11-18T06:51:11.6776321Z   libwoff1 libx264-164 libx265-199 libxcb-xkb1 libxkbcommon-x11-0 libxvidcore4
+2026-11-18T06:51:11.6776704Z   libyuv0 libzbar0t64 libzimg2 libzix-0-0 libzvbi-common libzvbi0t64 libzxing3
+2026-11-18T06:51:11.6777096Z   ocl-icd-libopencl1 session-migration timgm6mb-soundfont xfonts-cyrillic
+2026-11-18T06:51:11.6777415Z   xfonts-encodings xfonts-scalable xfonts-utils
+2026-11-18T06:51:11.6779202Z The following packages will be upgraded:
+2026-11-18T06:51:11.6784703Z   libgbm1 libgl1-mesa-dri libglx-mesa0 mesa-libgallium
+2026-11-18T06:51:11.6959686Z 4 upgraded, 181 newly installed, 0 to remove and 26 not upgraded.
+2026-11-18T06:51:11.6960076Z Need to get 125 MB of archives.
+2026-11-18T06:51:11.6960412Z After this operation, 364 MB of additional disk space will be used.
+2026-11-18T06:51:11.6960756Z Get:1 file:/etc/apt/apt-mirrors.txt Mirrorlist [152 B]
+2026-11-18T06:51:11.8547345Z Get:2 http://us-east-2.ec2.archive.ubuntu.com/ubuntu noble/universe amd64 fonts-ipafont-gothic all 00303-21ubuntu1 [3513 kB]
+2026-11-18T06:51:13.4974627Z Get:3 http://us-east-2.ec2.archive.ubuntu.com/ubuntu noble/main amd64 fonts-freefont-ttf all 20211204+svn4273-2 [5641 kB]
+2026-11-18T06:52:37.4386570Z Get:4 http://us-east-2.ec2.archive.ubuntu.com/ubuntu noble/universe amd64 fonts-tlwg-loma-otf all 1:0.7.3-1 [107 kB]
+2026-11-18T06:52:39.1883413Z Get:5 http://us-east-2.ec2.archive.ubuntu.com/ubuntu noble/universe amd64 fonts-unifont all 1:15.1.01-1build1 [2993 kB]
+2026-11-18T06:52:39.7424199Z Get:6 http://us-east-2.ec2.archive.ubuntu.com/ubuntu noble/universe amd64 fonts-wqy-zenhei all 0.9.45-8 [7472 kB]
+2026-11-18T06:52:41.2464825Z Get:7 http://us-east-2.ec2.archive.ubuntu.com/ubuntu noble/main amd64 libproxy1v5 amd64 0.5.4-4build1 [26.5 kB]
+2026-11-18T06:52:42.1249846Z Get:8 http://us-east-2.ec2.archive.ubuntu.com/ubuntu noble/main amd64 glib-networking-common all 2.80.0-1build1 [6702 B]
+2026-11-18T06:52:42.2736476Z Get:9 http://us-east-2.ec2.archive.ubuntu.com/ubuntu noble/main amd64 glib-networking-services amd64 2.80.0-1build1 [12.8 kB]
+2026-11-18T06:52:43.4258037Z Get:10 http://us-east-2.ec2.archive.ubuntu.com/ubuntu noble/main amd64 session-migration amd64 0.3.9build1 [9034 B]
+2026-11-18T06:52:43.6354513Z Get:11 http://us-east-2.ec2.archive.ubuntu.com/ubuntu noble-updates/main amd64 gsettings-desktop-schemas all 46.1-0ubuntu1 [35.6 kB]
+2026-11-18T06:52:44.6455592Z Get:12 http://us-east-2.ec2.archive.ubuntu.com/ubuntu noble/main amd64 glib-networking amd64 2.80.0-1build1 [64.1 kB]
+2026-11-18T06:52:45.6993479Z Get:13 http://us-east-2.ec2.archive.ubuntu.com/ubuntu noble-updates/universe amd64 libva2 amd64 2.20.0-2ubuntu0.2 [66.4 kB]
+2026-11-18T06:52:46.1981096Z Get:14 http://us-east-2.ec2.archive.ubuntu.com/ubuntu noble-updates/universe amd64 libva-drm2 amd64 2.20.0-2ubuntu0.2 [7124 B]
+2026-11-18T06:52:46.9617625Z Get:15 http://us-east-2.ec2.archive.ubuntu.com/ubuntu noble-updates/universe amd64 libva-x11-2 amd64 2.20.0-2ubuntu0.2 [12.0 kB]
+2026-11-18T06:52:47.1739708Z Get:16 http://us-east-2.ec2.archive.ubuntu.com/ubuntu noble/main amd64 libvdpau1 amd64 1.5-2build1 [27.8 kB]
+2026-11-18T06:52:47.3060352Z Get:17 http://us-east-2.ec2.archive.ubuntu.com/ubuntu noble/universe amd64 libvpl2 amd64 2023.3.0-1build1 [99.8 kB]
+2026-11-18T06:52:47.9508398Z Get:18 http://us-east-2.ec2.archive.ubuntu.com/ubuntu noble/universe amd64 ocl-icd-libopencl1 amd64 2.3.2-1build1 [38.5 kB]
+2026-11-18T06:52:48.6753437Z Get:19 http://us-east-2.ec2.archive.ubuntu.com/ubuntu noble/universe amd64 libavutil58 amd64 7:6.1.1-3ubuntu5 [401 kB]
+2026-11-18T06:52:49.3814262Z Get:20 http://us-east-2.ec2.archive.ubuntu.com/ubuntu noble/universe amd64 libcodec2-1.2 amd64 1.2.0-2build1 [8998 kB]
+2026-11-18T06:55:18.3568993Z Get:21 http://us-east-2.ec2.archive.ubuntu.com/ubuntu noble/universe amd64 libdav1d7 amd64 1.4.1-1build1 [604 kB]
+2026-11-18T06:55:27.7670837Z Get:22 http://us-east-2.ec2.archive.ubuntu.com/ubuntu noble/universe amd64 libgsm1 amd64 1.0.22-1build1 [27.8 kB]
+2026-11-18T06:55:28.2344624Z Get:23 http://us-east-2.ec2.archive.ubuntu.com/ubuntu noble/universe amd64 libhwy1t64 amd64 1.0.7-8.1build1 [584 kB]
+2026-11-18T06:55:28.7541308Z Get:24 http://us-east-2.ec2.archive.ubuntu.com/ubuntu noble-updates/universe amd64 libjxl0.7 amd64 0.7.0-10.2ubuntu6.1 [1001 kB]
+2026-11-18T06:55:44.0610271Z Get:25 http://us-east-2.ec2.archive.ubuntu.com/ubuntu noble/main amd64 libmp3lame0 amd64 3.100-6build1 [142 kB]
+2026-11-18T06:55:44.3953022Z Get:26 http://us-east-2.ec2.archive.ubuntu.com/ubuntu noble/main amd64 libopus0 amd64 1.4-1build1 [208 kB]
+2026-11-18T06:55:47.5544982Z Get:27 http://us-east-2.ec2.archive.ubuntu.com/ubuntu noble/universe amd64 librav1e0 amd64 0.7.1-2 [1022 kB]
+2026-11-18T06:55:47.8464669Z Get:28 http://us-east-2.ec2.archive.ubuntu.com/ubuntu noble-updates/main amd64 librsvg2-2 amd64 2.58.0+dfsg-1ubuntu0.1 [2141 kB]
+2026-11-18T06:55:48.2584101Z Get:29 http://us-east-2.ec2.archive.ubuntu.com/ubuntu noble/universe amd64 libshine3 amd64 3.1.1-2build1 [23.2 kB]
+2026-11-18T06:55:50.5000365Z Get:30 http://us-east-2.ec2.archive.ubuntu.com/ubuntu noble-updates/main amd64 libspeex1 amd64 1.2.1-2ubuntu2.24.04.1 [59.6 kB]
+2026-11-18T06:55:51.9622928Z Get:31 http://us-east-2.ec2.archive.ubuntu.com/ubuntu noble/universe amd64 libsvtav1enc1d1 amd64 1.7.0+dfsg-2build1 [2425 kB]
+2026-11-18T06:56:29.7191787Z Get:32 http://us-east-2.ec2.archive.ubuntu.com/ubuntu noble/universe amd64 libsoxr0 amd64 0.1.3-4build3 [80.0 kB]
+2026-11-18T06:56:31.3824712Z Get:33 http://us-east-2.ec2.archive.ubuntu.com/ubuntu noble/universe amd64 libswresample4 amd64 7:6.1.1-3ubuntu5 [63.8 kB]
+2026-11-18T06:56:32.4124594Z Get:34 http://us-east-2.ec2.archive.ubuntu.com/ubuntu noble/main amd64 libtheora0 amd64 1.1.1+dfsg.1-16.1build3 [211 kB]
+2026-11-18T06:56:32.6498906Z Get:35 http://us-east-2.ec2.archive.ubuntu.com/ubuntu noble/main amd64 libtwolame0 amd64 0.4.0-2build3 [52.3 kB]
+2026-11-18T06:56:32.7290777Z Get:36 http://us-east-2.ec2.archive.ubuntu.com/ubuntu noble/main amd64 libvorbisenc2 amd64 1.3.7-1build3 [80.8 kB]
+2026-11-18T06:56:33.1176707Z Get:37 http://us-east-2.ec2.archive.ubuntu.com/ubuntu noble-updates/main amd64 libvpx9 amd64 1.14.0-1ubuntu2.3 [1143 kB]
+2026-11-18T06:56:50.6272712Z Get:38 http://us-east-2.ec2.archive.ubuntu.com/ubuntu noble/universe amd64 libx264-164 amd64 2:0.164.3108+git31e19f9-1 [604 kB]
+2026-11-18T06:56:51.0102557Z Get:39 http://us-east-2.ec2.archive.ubuntu.com/ubuntu noble/universe amd64 libx265-199 amd64 3.5-2build1 [1226 kB]
+2026-11-18T06:56:55.1924456Z Get:40 http://us-east-2.ec2.archive.ubuntu.com/ubuntu noble/universe amd64 libxvidcore4 amd64 2:1.3.7-1build1 [219 kB]
+2026-11-18T06:56:58.8475976Z Get:41 http://us-east-2.ec2.archive.ubuntu.com/ubuntu noble/universe amd64 libzvbi-common all 0.2.42-2 [42.4 kB]
+2026-11-18T06:56:59.2316163Z Get:42 http://us-east-2.ec2.archive.ubuntu.com/ubuntu noble/universe amd64 libzvbi0t64 amd64 0.2.42-2 [261 kB]
+2026-11-18T06:57:03.5624044Z Get:43 http://us-east-2.ec2.archive.ubuntu.com/ubuntu noble/universe amd64 libavcodec60 amd64 7:6.1.1-3ubuntu5 [5851 kB]
+2026-11-18T06:58:32.3845920Z Get:44 http://us-east-2.ec2.archive.ubuntu.com/ubuntu noble/universe amd64 libunibreak5 amd64 5.1-2build1 [25.0 kB]
+2026-11-18T06:58:33.3190704Z Get:45 http://us-east-2.ec2.archive.ubuntu.com/ubuntu noble/universe amd64 libass9 amd64 1:0.17.1-2build1 [104 kB]
+2026-11-18T06:58:39.5338335Z Get:46 http://us-east-2.ec2.archive.ubuntu.com/ubuntu noble/universe amd64 libudfread0 amd64 1.1.2-1build1 [19.0 kB]
+2026-11-18T06:58:40.1578818Z Get:47 http://us-east-2.ec2.archive.ubuntu.com/ubuntu noble/universe amd64 libbluray2 amd64 1:1.3.4-1build1 [159 kB]
+2026-11-18T06:58:42.6510760Z Get:48 http://us-east-2.ec2.archive.ubuntu.com/ubuntu noble/universe amd64 libchromaprint1 amd64 1.5.1-5 [30.5 kB]
+2026-11-18T06:58:42.7832077Z Get:49 http://us-east-2.ec2.archive.ubuntu.com/ubuntu noble/universe amd64 libgme0 amd64 0.6.3-7build1 [134 kB]
+2026-11-18T06:58:44.1933085Z Get:50 http://us-east-2.ec2.archive.ubuntu.com/ubuntu noble-updates/main amd64 libmpg123-0t64 amd64 1.32.5-1ubuntu1.1 [169 kB]
+2026-11-18T06:58:46.8261457Z Get:51 http://us-east-2.ec2.archive.ubuntu.com/ubuntu noble/universe amd64 libopenmpt0t64 amd64 0.7.3-1.1build3 [647 kB]
+2026-11-18T06:58:47.2136669Z Get:52 http://us-east-2.ec2.archive.ubuntu.com/ubuntu noble/universe amd64 libcjson1 amd64 1.7.17-1 [24.8 kB]
+2026-11-18T06:58:47.2917011Z Get:53 http://us-east-2.ec2.archive.ubuntu.com/ubuntu noble/universe amd64 libmbedcrypto7t64 amd64 2.28.8-1 [209 kB]
+2026-11-18T06:58:47.7798732Z Get:54 http://us-east-2.ec2.archive.ubuntu.com/ubuntu noble/universe amd64 librist4 amd64 0.2.10+dfsg-2 [74.9 kB]
+2026-11-18T06:58:49.0512537Z Get:55 http://us-east-2.ec2.archive.ubuntu.com/ubuntu noble/universe amd64 libsrt1.5-gnutls amd64 1.5.3-1build2 [316 kB]
+2026-11-18T06:58:55.4237528Z Get:56 http://us-east-2.ec2.archive.ubuntu.com/ubuntu noble-updates/main amd64 libssh-gcrypt-4 amd64 0.10.6-2ubuntu0.5 [226 kB]
+2026-11-18T06:58:59.1163858Z Get:57 http://us-east-2.ec2.archive.ubuntu.com/ubuntu noble/universe amd64 libavformat60 amd64 7:6.1.1-3ubuntu5 [1153 kB]
+2026-11-18T06:59:05.5060617Z Get:58 http://us-east-2.ec2.archive.ubuntu.com/ubuntu noble/universe amd64 libbs2b0 amd64 3.1.0+dfsg-7build1 [10.6 kB]
+2026-11-18T06:59:06.0144701Z Get:59 http://us-east-2.ec2.archive.ubuntu.com/ubuntu noble/universe amd64 libflite1 amd64 2.2-6build3 [13.6 MB]
+2026-11-18T07:02:38.9790092Z Get:60 http://us-east-2.ec2.archive.ubuntu.com/ubuntu noble/universe amd64 libserd-0-0 amd64 0.32.2-1 [43.6 kB]
+2026-11-18T07:02:41.2778087Z Get:61 http://us-east-2.ec2.archive.ubuntu.com/ubuntu noble/universe amd64 libzix-0-0 amd64 0.4.2-2build1 [23.6 kB]
+2026-11-18T07:02:42.5362960Z Get:62 http://us-east-2.ec2.archive.ubuntu.com/ubuntu noble/universe amd64 libsord-0-0 amd64 0.16.16-2build1 [15.8 kB]
+2026-11-18T07:02:42.8340525Z Get:63 http://us-east-2.ec2.archive.ubuntu.com/ubuntu noble/universe amd64 libsratom-0-0 amd64 0.6.16-1build1 [17.3 kB]
+2026-11-18T07:02:43.9888681Z Get:64 http://us-east-2.ec2.archive.ubuntu.com/ubuntu noble/universe amd64 liblilv-0-0 amd64 0.24.22-1build1 [41.0 kB]
+2026-11-18T07:02:44.7636826Z Get:65 http://us-east-2.ec2.archive.ubuntu.com/ubuntu noble/universe amd64 libmysofa1 amd64 1.3.2+dfsg-2ubuntu2 [1158 kB]
+2026-11-18T07:02:45.1695365Z Get:66 http://us-east-2.ec2.archive.ubuntu.com/ubuntu noble/universe amd64 libplacebo338 amd64 6.338.2-2build1 [2654 kB]
+2026-11-18T07:02:46.3599292Z Get:67 http://us-east-2.ec2.archive.ubuntu.com/ubuntu noble-updates/main amd64 libblas3 amd64 3.12.0-3build1.1 [238 kB]
+2026-11-18T07:02:58.0870490Z Get:68 http://us-east-2.ec2.archive.ubuntu.com/ubuntu noble-updates/main amd64 liblapack3 amd64 3.12.0-3build1.1 [2646 kB]
+2026-11-18T07:03:40.0533783Z Get:69 http://us-east-2.ec2.archive.ubuntu.com/ubuntu noble/main amd64 libasyncns0 amd64 0.8-6build4 [11.3 kB]
+2026-11-18T07:03:40.2593042Z Get:70 http://us-east-2.ec2.archive.ubuntu.com/ubuntu noble/main amd64 libflac12t64 amd64 1.4.3+ds-2.1ubuntu2 [197 kB]
+2026-11-18T07:03:40.9135355Z Get:71 http://us-east-2.ec2.archive.ubuntu.com/ubuntu noble-updates/main amd64 libsndfile1 amd64 1.2.2-1ubuntu5.24.04.1 [209 kB]
+2026-11-18T07:03:44.2255309Z Get:72 http://us-east-2.ec2.archive.ubuntu.com/ubuntu noble-updates/main amd64 libpulse0 amd64 1:16.1+dfsg1-2ubuntu10.1 [292 kB]
+2026-11-18T07:03:46.4715220Z Get:73 http://us-east-2.ec2.archive.ubuntu.com/ubuntu noble/universe amd64 libsphinxbase3t64 amd64 0.8+5prealpha+1-17build2 [126 kB]
+2026-11-18T07:03:48.7168018Z Get:74 http://us-east-2.ec2.archive.ubuntu.com/ubuntu noble/universe amd64 libpocketsphinx3 amd64 0.8.0+real5prealpha+1-15ubuntu5 [133 kB]
+2026-11-18T07:03:49.6822398Z Get:75 http://us-east-2.ec2.archive.ubuntu.com/ubuntu noble/universe amd64 libpostproc57 amd64 7:6.1.1-3ubuntu5 [49.9 kB]
+2026-11-18T07:03:50.5355084Z Get:76 http://us-east-2.ec2.archive.ubuntu.com/ubuntu noble/main amd64 libsamplerate0 amd64 0.2.2-4build1 [1344 kB]
+2026-11-18T07:03:52.8284213Z Get:77 http://us-east-2.ec2.archive.ubuntu.com/ubuntu noble/universe amd64 librubberband2 amd64 3.3.0+dfsg-2build1 [130 kB]
+2026-11-18T07:04:03.5483741Z Get:78 http://us-east-2.ec2.archive.ubuntu.com/ubuntu noble/universe amd64 libswscale7 amd64 7:6.1.1-3ubuntu5 [193 kB]
+2026-11-18T07:04:06.8930027Z Get:79 http://us-east-2.ec2.archive.ubuntu.com/ubuntu noble/universe amd64 libvidstab1.1 amd64 1.1.0-2build1 [38.5 kB]
+2026-11-18T07:04:07.0332984Z Get:80 http://us-east-2.ec2.archive.ubuntu.com/ubuntu noble/universe amd64 libzimg2 amd64 3.0.5+ds1-1build1 [254 kB]
+2026-11-18T07:04:07.6514288Z Get:81 http://us-east-2.ec2.archive.ubuntu.com/ubuntu noble/universe amd64 libavfilter9 amd64 7:6.1.1-3ubuntu5 [4235 kB]
+2026-11-18T07:04:59.8995192Z ##[error]The operation was canceled.
+2026-11-18T07:04:59.9045499Z ##[group]Run actions/upload-artifact@v4
+2026-11-18T07:04:59.9045727Z with:
+2026-11-18T07:04:59.9045913Z   name: direct-arweave-api-readiness
+2026-11-18T07:04:59.9046145Z   path: .cache/direct-network/readiness.json
+2026-11-18T07:04:59.9046368Z   if-no-files-found: ignore
+2026-11-18T07:04:59.9046556Z   retention-days: 14
+2026-11-18T07:04:59.9046749Z   compression-level: 6
+2026-11-18T07:04:59.9046917Z   overwrite: false
+2026-11-18T07:04:59.9047092Z   include-hidden-files: false
+2026-11-18T07:04:59.9047277Z ##[endgroup]
+2026-11-18T07:05:00.0271963Z (node:6240) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+2026-11-18T07:05:00.0272686Z (Use `node --trace-deprecation ...` to show where the warning was created)
+2026-11-18T07:05:00.0283004Z No files were found with the provided path: .cache/direct-network/readiness.json. No artifacts will be uploaded.
+2026-11-18T07:05:00.0621621Z Post job cleanup.
+2026-11-18T07:05:00.1287123Z [command]/usr/bin/git version
+2026-11-18T07:05:00.1311527Z git version 2.56.1
+2026-11-18T07:05:00.1339134Z Temporarily overriding HOME='/home/runner/work/_temp/6dbd0536-d7c8-499f-b0bd-a07d42354ed2' before making global git config changes
+2026-11-18T07:05:00.1340399Z Adding repository directory to the temporary git global config as a safe directory
+2026-11-18T07:05:00.1344376Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/sejire_arweave_solana/sejire_arweave_solana
+2026-11-18T07:05:00.1374311Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-11-18T07:05:00.1400781Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-11-18T07:05:00.1561306Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-11-18T07:05:00.1584173Z http.https://github.com/.extraheader
+2026-11-18T07:05:00.1593042Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+2026-11-18T07:05:00.1617399Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-11-18T07:05:00.1809166Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-11-18T07:05:00.1824268Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-11-18T07:05:00.2075444Z Cleaning up orphan processes
+2026-11-18T07:05:00.2219802Z Terminate orphan process: pid (5765) (npm exec playwright install --with-deps chromium firefox webkit)
+2026-11-18T07:05:00.2244262Z Terminate orphan process: pid (5777) (sh)
+2026-11-18T07:05:00.2264741Z Terminate orphan process: pid (5778) (node)
+2026-11-18T07:05:00.2361454Z ##[warning]Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@v4, actions/setup-node@v4, actions/upload-artifact@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+

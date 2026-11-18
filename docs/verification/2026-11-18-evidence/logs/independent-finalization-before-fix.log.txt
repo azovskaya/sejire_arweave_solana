@@ -1,0 +1,50 @@
+PASS recovery kit retains exact bytes and rejects tampering without words
+PASS editing an offline A+B+C snapshot retains B+C and never substitutes older network state
+PASS migration guard blocks existing orders and never creates, upgrades or rewrites legacy journals
+PASS resumed completed A(new) advances stale HEAD before sealing B and retains all A history
+PASS repeat finalization never rewrites a subsequent preparation or changes archive ordering
+PASS an explicitly imported full snapshot with null HEAD survives historical completion
+PASS divergent local/file cache with parent HEAD is not replaced
+PASS another vault, newer HEAD and absent session remain selected exactly as before
+PASS confirmation-only or subsequently unavailable archives cannot finalize
+PASS unwritten local archive is not reported as finalized and HEAD stays unchanged
+PASS reconcile is idempotent and never selects an archive in a closed session
+PASS cancelled free backup retains A(new) and its history when B is added above an existing ancestor
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: failed HEAD persistence must not replace the selected full cache
++ actual - expected
+
++ '{"schema":"sejire/envelope/v1","vault_id":"f6128c8c810a8d358f4d93c81ee695ed","cipher":"aes-gcm-256","kdf":"hkdf-sha256","iv":"KY6t0BQMnO5Au6tR","ciphertext":"hg1UGWcCKG8A5EJ7nRhprB1utFC0/15g5OyN7lpQDf2JWpcoY9K7VQG9D54VVmj4TmcC7SHkqEiXeKw8hnBE2D8xmjndTbHT9B2j0P6wNqBbb6AMBuDmBlEF05AClZIk46ehGLPwRvz6CZf8cLkVeYvds1UvVTJLYHeIKyeuIPKLsnzL50o2VvOfSZO1TGltJnA3stvyt5lUFVSHdYA3QJTDOtHOdsHdOpMlLGbOCB5OqgHLmBFzoH3QJ3i0sXNxs1AViOZXS9Pr460Q3PXOT9HnRkHm2cOngmCRNfi17mSYj7GjUJ1IF2JU6wLmmoqi7+UW4e56zLtFYcW4PC9h6A5oZ7iWga3BOY9/pCYcPoobRsgYE8nkanFhhltPEJOuTsG47zzPiSEaVgO+r8erg9w7lzruReQmdWjb0nnnBBtztzPwximVtMzk4jSjjlyJw8YuTHnnh70SCIkfv0LT8lIPZQfstDua5bNZz38GKpPDoYixnZUj/mvS/E3r0hlnImktfk1tGAgS7eZlgsp/fNOmG8KQ7Kmog7w6ckHac9ThywXYaoMU34YsrG+tEDMBopLqJhUOQHU/ZDcurf9D7RAe7LBY7bUKjr0Ja4fY7IvFzqyrb/RBaOZjFmg7uOmF5rkEV7LGpUCviUJq2SdGq7qKKob1WyNdcLl1QsR2C7X8dV1hwdxCbJo377/bLjS63RpINMLhS2VU3Eml+ujXNI3uKrMkbVTriNtnIHA1amC/m8OVzC4+eYDwkisxUAsyqlmOG23TTTKquJmueehmbk/v/pnegb7o9PmUI6V55mUXkZVni/TzVHxZ9Oh+fzNBz922X4/RzmIZh9/b1qEIQchdI1Aa2FCQnmQF1sj88mbOqsahrioOrJzRi4gxbTZv8tcjisWo4tKs0MjxbqIUzcNEj+X7XNhJqYlRWQtAW2djFZxKVqEABodhZ2dyq813YfxAy3JyCPDG/sqUeQD2a1oz9ocG4xFL0BmjfxdvPTEg9pLwAKScwowwCpMozdzV3YqEyvhPhkcZBGzrX1jVx3LT6vt6OLMzNbjAzknvnRyBYS7BfMc1Y7RSJjIfFd2zt4ff5d5Awfi+5Z6ifGzTrRMRdxjrnTRV4Tgy8VTMF8sHfRrt8uliHBbPjRdY6zoV45iirykzZjI7Qwk9AbWi8iQPf2ihW4ax+y+jB8gJWgkh1u1NFyyVGW4Vy5Am0vsuY+EgDQcbe4p5a0705nwQ3mBuYlmdBjFmkX4tKZoo63iBD9g1sgNb6nPBd8KDV/j7KpxiUGCYLxxTcH536cWKtZuU6tXaicCVoVukEBDD0OarRAQ++oBWiI2L3K0=","protocol":"sejire/v0.3"}'
+- '{\n' +
+-   '  "schema": "sejire/envelope/v1",\n' +
+-   '  "vault_id": "f6128c8c810a8d358f4d93c81ee695ed",\n' +
+-   '  "cipher": "aes-gcm-256",\n' +
+-   '  "kdf": "hkdf-sha256",\n' +
+-   '  "iv": "Mk/1DEjhVZ/ILSt/",\n' +
+-   '  "ciphertext": "/t5JjmxqsN7woliAV94LXAppidcRj4qDziz5ddcP5pg7phfSrtfAbOzZr+WhY7+7Z+nJoBLA5dSEWEy3SPNXEcQZMv/2iSas3n6jqWp5Dum3ihr6amQziGBv9EoFv9Z7ohSEtrYVxcfbVq2fUnArvI1Jpvee29EQzDdI7hQjTdLHQ/gHMhm+zxt2YJw0oHC11AZaZEDQGrrpEqpNDitLNkd4yCaVgmhQurhB2W3OTUlnXKrs8jxqFEFEG2pB7alM9D82Un6YSYd7zmRTcGdnjVF2XNcxquldxz/hsiViH4/zjyXUAtUi2XLHQHDbkG3amc9tUCS3moiXuogHsJ0ZGYROXbZg0UChxqPGG2FKKP5EhvnVrK0wksTfngn7ICtqYkd38MbvqhPZIw++al2OPPYrZzrm73OH2eyFB8yIzeloEBO9ODdgYGufvWBspRUjXuP6iLISHnQ7658P0S7sbLxz55QL/hsV+pQ5jIvWhihSjozhXDB95d+VBkucJipj4lFNP8zwp54eLhbKLklpQ+zxDID+W1bfd1KwzrboLFPSdmbqNptEZ1j3nbFtztyDLv2E/ebdlCPRH0buujTAEtSEz/WFWzQs85ZjWgbS5Of6mqq2WWDmNuuXWqBoITl4sjiSiw1wXoa9qbdfiYqj6Q9F04aWmW9a/TgOjM0fxF2PjQ2o/bBPIO6Svo+oCwZcFKKDZLNUZYzgsv0o9wzBgoC6M0Q6B0dEOXsoak3577h4irwizQ6HEeEeaBDnj1nFlKM0sXAjFXUjdEZH+vsrwTxVJO8JoZ1+XTzotM9P4+R77qtEmKilsTcPGRZKULhSsCLDiLIsOp7jL7XVhAK8X3is9qBizTez4rMkr2SnYhMu1G6oKyewCm4BK/5s6GTUUrg6dBZ2Z9iKZafECNPnIZxaGOrUrXWHPAAeRMHmuf6N+MiDPCw78uU4/aoa81IPn9frDQiDIyOUZN9sfGJ8VEqAncoc0YBc137gJ3ziwgsO5EC960ti7B95Uyk2osi7X/0Ev8hC7Jh3vHtd1bX3DR/iYK15vd0mGaQmPqSUdD4bbffcLhiEYOY5Ao767Z981G2qkXjN88BpaaEAuKxsnkb+EwxnOW5NlHxZvBwV4gPZIgZtu0xwDd7krK4jngLOI/FTGZdaulCGt72V4p/4Vwy3P6/rasLkHxC7pmEPdgpZldPCbnf9dvaGVq4Kb85GeHf/lF2Dbe5O2R6wtvUIbb9/Ld+5lLelHQEN2nexpcvk3eS58Bo4j3MMx6610JiFXpvZBRIN0xS86WBqi+2v+crWCQiI/SY8P/aZ1L5183WtemNvSJ4oHAo9DT0=",\n' +
+-   '  "protocol": "sejire/v0.3"\n' +
+-   '}'
+
+    at <anonymous> (/workspace/scratch/0aa608872e5d/sejire-deep-validation/apps/web/src/lib/independentBackup.selftest.ts:233:14)
+    at async finalizationTest (/workspace/scratch/0aa608872e5d/sejire-deep-validation/apps/web/src/lib/independentBackup.selftest.ts:119:78)
+    at async <anonymous> (/workspace/scratch/0aa608872e5d/sejire-deep-validation/apps/web/src/lib/independentBackup.selftest.ts:216:3) {
+  generatedMessage: false,
+  code: 'ERR_ASSERTION',
+  actual: '{"schema":"sejire/envelope/v1","vault_id":"f6128c8c810a8d358f4d93c81ee695ed","cipher":"aes-gcm-256","kdf":"hkdf-sha256","iv":"KY6t0BQMnO5Au6tR","ciphertext":"hg1UGWcCKG8A5EJ7nRhprB1utFC0/15g5OyN7lpQDf2JWpcoY9K7VQG9D54VVmj4TmcC7SHkqEiXeKw8hnBE2D8xmjndTbHT9B2j0P6wNqBbb6AMBuDmBlEF05AClZIk46ehGLPwRvz6CZf8cLkVeYvds1UvVTJLYHeIKyeuIPKLsnzL50o2VvOfSZO1TGltJnA3stvyt5lUFVSHdYA3QJTDOtHOdsHdOpMlLGbOCB5OqgHLmBFzoH3QJ3i0sXNxs1AViOZXS9Pr460Q3PXOT9HnRkHm2cOngmCRNfi17mSYj7GjUJ1IF2JU6wLmmoqi7+UW4e56zLtFYcW4PC9h6A5oZ7iWga3BOY9/pCYcPoobRsgYE8nkanFhhltPEJOuTsG47zzPiSEaVgO+r8erg9w7lzruReQmdWjb0nnnBBtztzPwximVtMzk4jSjjlyJw8YuTHnnh70SCIkfv0LT8lIPZQfstDua5bNZz38GKpPDoYixnZUj/mvS/E3r0hlnImktfk1tGAgS7eZlgsp/fNOmG8KQ7Kmog7w6ckHac9ThywXYaoMU34YsrG+tEDMBopLqJhUOQHU/ZDcurf9D7RAe7LBY7bUKjr0Ja4fY7IvFzqyrb/RBaOZjFmg7uOmF5rkEV7LGpUCviUJq2SdGq7qKKob1WyNdcLl1QsR2C7X8dV1hwdxCbJo377/bLjS63RpINMLhS2VU3Eml+ujXNI3uKrMkbVTriNtnIHA1amC/m8OVzC4+eYDwkisxUAsyqlmOG23TTTKquJmueehmbk/v/pnegb7o9PmUI6V55mUXkZVni/TzVHxZ9Oh+fzNBz922X4/RzmIZh9/b1qEIQchdI1Aa2FCQnmQF1sj88mbOqsahrioOrJzRi4gxbTZv8tcjisWo4tKs0MjxbqIUzcNEj+X7XNhJqYlRWQtAW2djFZxKVqEABodhZ2dyq813YfxAy3JyCPDG/sqUeQD2a1oz9ocG4xFL0BmjfxdvPTEg9pLwAKScwowwCpMozdzV3YqEyvhPhkcZBGzrX1jVx3LT6vt6OLMzNbjAzknvnRyBYS7BfMc1Y7RSJjIfFd2zt4ff5d5Awfi+5Z6ifGzTrRMRdxjrnTRV4Tgy8VTMF8sHfRrt8uliHBbPjRdY6zoV45iirykzZjI7Qwk9AbWi8iQPf2ihW4ax+y+jB8gJWgkh1u1NFyyVGW4Vy5Am0vsuY+EgDQcbe4p5a0705nwQ3mBuYlmdBjFmkX4tKZoo63iBD9g1sgNb6nPBd8KDV/j7KpxiUGCYLxxTcH536cWKtZuU6tXaicCVoVukEBDD0OarRAQ++oBWiI2L3K0=","protocol":"sejire/v0.3"}',
+  expected: '{\n' +
+    '  "schema": "sejire/envelope/v1",\n' +
+    '  "vault_id": "f6128c8c810a8d358f4d93c81ee695ed",\n' +
+    '  "cipher": "aes-gcm-256",\n' +
+    '  "kdf": "hkdf-sha256",\n' +
+    '  "iv": "Mk/1DEjhVZ/ILSt/",\n' +
+    '  "ciphertext": "/t5JjmxqsN7woliAV94LXAppidcRj4qDziz5ddcP5pg7phfSrtfAbOzZr+WhY7+7Z+nJoBLA5dSEWEy3SPNXEcQZMv/2iSas3n6jqWp5Dum3ihr6amQziGBv9EoFv9Z7ohSEtrYVxcfbVq2fUnArvI1Jpvee29EQzDdI7hQjTdLHQ/gHMhm+zxt2YJw0oHC11AZaZEDQGrrpEqpNDitLNkd4yCaVgmhQurhB2W3OTUlnXKrs8jxqFEFEG2pB7alM9D82Un6YSYd7zmRTcGdnjVF2XNcxquldxz/hsiViH4/zjyXUAtUi2XLHQHDbkG3amc9tUCS3moiXuogHsJ0ZGYROXbZg0UChxqPGG2FKKP5EhvnVrK0wksTfngn7ICtqYkd38MbvqhPZIw++al2OPPYrZzrm73OH2eyFB8yIzeloEBO9ODdgYGufvWBspRUjXuP6iLISHnQ7658P0S7sbLxz55QL/hsV+pQ5jIvWhihSjozhXDB95d+VBkucJipj4lFNP8zwp54eLhbKLklpQ+zxDID+W1bfd1KwzrboLFPSdmbqNptEZ1j3nbFtztyDLv2E/ebdlCPRH0buujTAEtSEz/WFWzQs85ZjWgbS5Of6mqq2WWDmNuuXWqBoITl4sjiSiw1wXoa9qbdfiYqj6Q9F04aWmW9a/TgOjM0fxF2PjQ2o/bBPIO6Svo+oCwZcFKKDZLNUZYzgsv0o9wzBgoC6M0Q6B0dEOXsoak3577h4irwizQ6HEeEeaBDnj1nFlKM0sXAjFXUjdEZH+vsrwTxVJO8JoZ1+XTzotM9P4+R77qtEmKilsTcPGRZKULhSsCLDiLIsOp7jL7XVhAK8X3is9qBizTez4rMkr2SnYhMu1G6oKyewCm4BK/5s6GTUUrg6dBZ2Z9iKZafECNPnIZxaGOrUrXWHPAAeRMHmuf6N+MiDPCw78uU4/aoa81IPn9frDQiDIyOUZN9sfGJ8VEqAncoc0YBc137gJ3ziwgsO5EC960ti7B95Uyk2osi7X/0Ev8hC7Jh3vHtd1bX3DR/iYK15vd0mGaQmPqSUdD4bbffcLhiEYOY5Ao767Z981G2qkXjN88BpaaEAuKxsnkb+EwxnOW5NlHxZvBwV4gPZIgZtu0xwDd7krK4jngLOI/FTGZdaulCGt72V4p/4Vwy3P6/rasLkHxC7pmEPdgpZldPCbnf9dvaGVq4Kb85GeHf/lF2Dbe5O2R6wtvUIbb9/Ld+5lLelHQEN2nexpcvk3eS58Bo4j3MMx6610JiFXpvZBRIN0xS86WBqi+2v+crWCQiI/SY8P/aZ1L5183WtemNvSJ4oHAo9DT0=",\n' +
+    '  "protocol": "sejire/v0.3"\n' +
+    '}',
+  operator: 'strictEqual',
+  diff: 'simple'
+}
+
+Node.js v24.22.3

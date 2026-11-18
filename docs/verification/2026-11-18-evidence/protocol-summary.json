@@ -1,0 +1,173 @@
+{
+  "schema": "sejire/protocol-review-summary/v1",
+  "recordedAt": "2026-11-18T06:39:14.455650+00:00",
+  "reviewer": "reaudit_protocol",
+  "worktree": "/workspace/scratch/0aa608872e5d/sejire-deep-validation",
+  "branch": "test/prepublication-20261118",
+  "baseSourceCommit": "3ed64d14738a2c7080de2007bb34f2df13dd7e1f",
+  "runtime": {
+    "node": "v24.22.3",
+    "expectedCIRuntime": "Node 22",
+    "localNode22Run": false
+  },
+  "sourceState": "Local changes; this reviewer made no git commit or push. Root owns package/CI integration.",
+  "sourceFiles": [
+    {
+      "path": "apps/web/src/lib/directArweave/client.ts",
+      "sha256": "255af10ca876eae08f0b68d05278f4995e4465e26ade37c60e9b6f4be3e2622b"
+    },
+    {
+      "path": "apps/web/src/lib/directArweave/network.ts",
+      "sha256": "abe9b9f9b167d629c015208380ff1287071835222922b96770283fc62516fee8"
+    },
+    {
+      "path": "apps/web/src/lib/directArweave/protocolBoundaries.selftest.ts",
+      "sha256": "8a7de474378ab90dad217f8a0cd7aedb31cb030f56e4434783252c4fe21de6c7"
+    }
+  ],
+  "confirmedDefects": [
+    {
+      "id": "unconfirmed-resume-after-node-loss",
+      "before": "After header/chunk ACK and status202, confirming resume never re-sent the saved transaction to a replacement node.",
+      "after": "Explicit resume may replay exactly the existing header and chunks while unconfirmed; ID, signature, ciphertext, parent, owner and signed fee remain unchanged; one wallet signing request.",
+      "file": "apps/web/src/lib/directArweave/client.ts",
+      "beforeLog": "/workspace/scratch/0aa608872e5d/sejire-deep-validation/.cache/audit-20261118/protocol-before-replay.tool.log"
+    },
+    {
+      "id": "unread-rejected-response-body",
+      "before": "An oversized or invalid Content-Length failed before acquiring a reader but left the response body uncancelled; observed cancel count was zero.",
+      "after": "Cancel the unread response body before returning archive_integrity_failed.",
+      "file": "apps/web/src/lib/directArweave/network.ts",
+      "beforeLog": "/workspace/scratch/0aa608872e5d/sejire-deep-validation/.cache/audit-20261118/protocol-before-body-cancel.tool.log"
+    }
+  ],
+  "stickyIntegrityGuard": {
+    "file": "apps/web/src/lib/directArweave/client.ts",
+    "behavior": "Validate an available header even while status is pending. Preserve a mismatched-header integrity error across later unavailable nodes unless another node provides the exact confirmed header. No unconfirmed replay is initiated for an integrity failure.",
+    "readOnlyCheck": true,
+    "historicalCompleteStateIsNotDowngraded": true
+  },
+  "newTestGroups": 10,
+  "newFixedCases": 36,
+  "groups": [
+    {
+      "name": "unconfirmed same-ID replacement-node resume",
+      "cases": 1
+    },
+    {
+      "name": "conflicting header with pending/confirmed status and subsequent unavailable node",
+      "cases": 2
+    },
+    {
+      "name": "durable intent and signed-result transaction aborts",
+      "cases": 2
+    },
+    {
+      "name": "node selection, header ACK, chunk ACK, confirming and complete commit aborts",
+      "cases": 5
+    },
+    {
+      "name": "concurrent sign/resume across two module instances",
+      "cases": 1
+    },
+    {
+      "name": "late definitive rejection and late ambiguous transport result",
+      "cases": 2
+    },
+    {
+      "name": "expired/future quote and exact fee above 2^53",
+      "cases": 3
+    },
+    {
+      "name": "valid native signatures that violate the recorded signing intent",
+      "cases": 9
+    },
+    {
+      "name": "Merkle proofs, byte offsets and native chunk boundary sizes",
+      "cases": 7
+    },
+    {
+      "name": "unread oversized/malformed length, streamed overflow and in-progress abort",
+      "cases": 4
+    }
+  ],
+  "fixtureSeed": "0x18112026",
+  "cryptographicRandomness": "RSA private key and AES IVs are ephemeral in-memory values; the seed controls synthetic payload text, not wallet key generation.",
+  "nativeSizeMatrix": [
+    {
+      "bytes": 262137,
+      "chunks": 1
+    },
+    {
+      "bytes": 262153,
+      "chunks": 2
+    },
+    {
+      "bytes": 294905,
+      "chunks": 2
+    },
+    {
+      "bytes": 294921,
+      "chunks": 2
+    },
+    {
+      "bytes": 524281,
+      "chunks": 2
+    },
+    {
+      "bytes": 524297,
+      "chunks": 3
+    },
+    {
+      "bytes": 10485753,
+      "chunks": 40
+    }
+  ],
+  "commands": [
+    {
+      "command": "node --import ./apps/web/node_modules/tsx/dist/loader.mjs apps/web/src/lib/directArweave/protocolBoundaries.selftest.ts",
+      "exitCode": 0,
+      "groups": 10,
+      "cases": 36,
+      "log": "/workspace/scratch/0aa608872e5d/sejire-deep-validation/.cache/audit-20261118/protocol-boundaries-after.tool.log"
+    },
+    {
+      "command": "node --import ./apps/web/node_modules/tsx/dist/loader.mjs apps/web/src/lib/directArweave/direct.selftest.ts",
+      "exitCode": 0,
+      "checks": 21,
+      "log": "/workspace/scratch/0aa608872e5d/sejire-deep-validation/.cache/audit-20261118/protocol-baseline-after.tool.log"
+    },
+    {
+      "command": "node --import ./apps/web/node_modules/tsx/dist/loader.mjs apps/web/src/lib/directArweave/nodePreference.selftest.ts",
+      "exitCode": 0,
+      "checks": 9,
+      "log": "/workspace/scratch/0aa608872e5d/sejire-deep-validation/.cache/audit-20261118/protocol-baseline-after.tool.log"
+    },
+    {
+      "command": "node apps/web/node_modules/typescript/bin/tsc --project apps/web/tsconfig.app.json --incremental false",
+      "exitCode": 0,
+      "log": "/workspace/scratch/0aa608872e5d/sejire-deep-validation/.cache/audit-20261118/protocol-baseline-after.tool.log"
+    },
+    {
+      "command": "git diff --check",
+      "exitCode": 0,
+      "log": "/workspace/scratch/0aa608872e5d/sejire-deep-validation/.cache/audit-20261118/protocol-baseline-after.tool.log"
+    }
+  ],
+  "logCapture": "Named .tool.log files are transparent transcripts/excerpts of completed tool executions. No pre-fix source was restored and no tests were rerun to create the transcripts.",
+  "crossReviewFinding": {
+    "file": "apps/web/src/lib/independentFinalization.ts",
+    "owner": "reaudit_recovery",
+    "issue": "Background finalization of an old complete operation could replace an exact newer prepared full vault while the tab session retained its old network parent.",
+    "status": "Reported to recovery reviewer; reproduced and guarded in that reviewer scope. Reviewed the guard without changing their files."
+  },
+  "limitations": [
+    "No real network requests, actual wallet-extension approvals, uploads, payments, ArNS edits, Worker calls or blocked Rigel access were performed.",
+    "Web Locks and IndexedDB behavior are controlled local models; actual multi-tab browser behavior and Node22 acceptance belong to final root CI.",
+    "Commit-abort tests exercise request success followed by IndexedDB transaction abort, not physical power-loss durability.",
+    "If the signed-result commit is lost, the stored signing intent remains unresolved and another wallet prompt is blocked; automatic recovery of the missing response is not claimed.",
+    "Six Merkle sizes exercise the actual client mock POST path; the near-10MiB case checks all 40 proofs without adding a second full mock-server archive copy.",
+    "Quote/network assertions do not prove real fee acceptance, delivery or settlement.",
+    "Changed source requires a fresh exact CI artifact before publication; the historical 17 Nov accepted ZIP does not contain these fixes."
+  ]
+}

@@ -1,0 +1,56 @@
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> sejire@0.3.0 test:permaweb-prepare
+> node scripts/prepare-permaweb.selftest.mjs && node --test scripts/permaweb-release.test.mjs scripts/independent-pdf-build.test.mjs scripts/permaweb-host-base.test.mjs
+
+PASS deterministic static manifest, relative entry, no release overwrite
+✔ the installed jsPDF external viewer is removed while ordinary PDF bytes and blobs still work (513.459455ms)
+✔ an unknown upstream viewer shape stops the build instead of keeping a CDN loader (2.067148ms)
+✔ entry keeps the correct asset and recovery root at https://sejire.ar.io/unknown/deep/route (5.540237ms)
+✔ entry keeps the correct asset and recovery root at https://sejire.ar.io/CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC/unknown/deep/route (1.323088ms)
+✔ entry keeps the correct asset and recovery root at https://sejire.arweave.net/CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC/unknown/deep/route (1.344129ms)
+✔ entry keeps the correct asset and recovery root at https://arweave.net/CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC/unknown/deep/route (1.243309ms)
+✔ entry keeps the correct asset and recovery root at https://aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.arweave.net/CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC/unknown/deep/route (1.143212ms)
+✔ entry keeps the correct asset and recovery root at https://turbo-gateway.com/CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC (1.328305ms)
+✔ entry keeps the correct asset and recovery root at https://aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.turbo-gateway.com/CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC/unknown/deep/route (1.313583ms)
+✔ entry keeps the correct asset and recovery root at https://another-gateway.example/CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC/unknown/deep/route (1.21015ms)
+✔ entry keeps the correct asset and recovery root at https://azovskaya.github.io/sejire_arweave_solana/ (1.295106ms)
+✔ entry keeps the correct asset and recovery root at http://127.0.0.1:5193/local/subdirectory/ (1.289828ms)
+✔ manual feature-branch request is mandatory; malformed release inputs fail closed (2.191081ms)
+✔ a fresh runner cannot repeat an upload when GitHub reruns an earlier dispatch (0.363688ms)
+✔ exact CI, attempt, all steps and current feature head are checked before artifact use (12.47712ms)
+✔ artifact ZIP is hashed, extracted without overwrite, and gets CI-bound public provenance (242.133506ms)
+/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/zipfile/__init__.py:1625: UserWarning: Duplicate name: 'index.html'
+  return self._open_to_write(zinfo, force_zip64=force_zip64)
+✔ ZIP traversal, unlisted credentials, symlinks, duplicates and digest mismatch cannot publish (427.860943ms)
+✔ release preparation rejects source symlinks before copying or overwriting outside files (119.373676ms)
+✔ release preparation refuses an existing destination without merging or changing its contents (45.660532ms)
+✔ artifact recovery rejects a valid ZIP whose actual length contradicts GitHub metadata (79.314967ms)
+✔ artifact pagination cannot hide missing, duplicate or changing evidence behind a valid first page (2.781905ms)
+✔ release verification binds all bytes, source SHA, fallback, file set and independent profile (56.601717ms)
+✔ legacy funded profile remains verifiable but cannot become the independent release (16.816539ms)
+✔ a Worker endpoint or legacy lazy module cannot hide behind an independent manifest (22.408691ms)
+✔ Cloudflare resources cannot hide in entry HTML, a stylesheet or the standalone recovery page (63.360943ms)
+✔ independent package requires offline recovery and exact evidence for every dynamic chunk (24.139902ms)
+✔ boundary hashes final emitted bytes after a late bundler transform while preserving the module map (32.692335ms)
+✔ bounded reads reject overlong streams and dishonest Content-Length (1.335075ms)
+✔ quote includes each file, signed-item overhead and fallback manifest; budget and own balance fail closed (47.69189ms)
+✔ upload adapter pins existing-balance funding, own payer, one file at a time, and explicit fallback (45.31159ms)
+✔ the installed pinned Turbo SDK actually constructs a v0.2 manifest with 404 fallback (mocked transport) (1036.535973ms)
+✔ a lost upload ACK does not cause the pinned SDK to sign a second randomized item (779.915902ms)
+✔ the real SDK folder queue stops before signing later files after the first failed upload (74.763005ms)
+✔ an interrupted SDK upload cannot be called again with the same evidence to sign an ambiguous item twice (116.579193ms)
+✔ concurrent upload calls sharing one evidence directory cannot both enter the SDK (27.282212ms)
+✔ older partial-upload journals block a new attempt and preserve their contents (34.442439ms)
+✔ public verification checks every byte and real fallback, rejects wrong bodies, HTTP errors and off-origin redirects (50.759519ms)
+✔ plan mode cannot read an upload key and produces only public metadata (118.000165ms)
+✔ owner browser-upload verification fetches only a bounded public raw path manifest (1.013309ms)
+✔ ArNS readiness never passes a 503/disabled policy or a broken paid authorization preflight (0.695149ms)
+ℹ tests 40
+ℹ suites 0
+ℹ pass 40
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 3693.62296

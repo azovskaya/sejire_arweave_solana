@@ -1,0 +1,26 @@
+{
+  "checkedAt": "2026-11-18T06:34:24.160849+00:00",
+  "kind": "read-only root patch cross-review",
+  "files": [
+    "apps/web/src/components/RestoreSeed.independent.tsx",
+    "apps/web/tests/independent.spec.mjs",
+    "apps/web/playwright.independent.config.ts",
+    ".github/workflows/checks.yml"
+  ],
+  "result": "No production correctness blocker found in reviewed root edits; final browser CI still required",
+  "findings": [
+    "Restore operation is serial; its own controller is attached before work, cleanup aborts it, and unmounted flows suppress error/finally state updates.",
+    "finish checks liveness both on entry and after asynchronous local decryption before any prompt/session/cache adoption; explicit-ID, receipt and file callers reach that check after their awaits.",
+    "Default words discovery, selected-node reads and direct receipt/ID paths receive the operation signal; post-await UI discovery/file updates check liveness.",
+    "The delayed-read regex has literal gateway dots, anchors both ends, safely interpolates a base64url ID and covers /raw/id plus /id. The production reader tries /raw/id first; the requested promise prevents a silently unused fixture.",
+    "Wrong-word test preserves selected encrypted file, cache, draft and session and excludes any network/signature/write fallback, then deliberately corrects the words.",
+    "IndexedDB test denies only the direct journal namespace and verifies no new save/signing flow or network calls while preserving the draft.",
+    "Known Wander decline test checks that the same prepared operation and ciphertext survive, no POST occurs until a second explicit action, then exactly one /tx occurs.",
+    "Browser executable/channel overrides are scoped to Chromium; Firefox and WebKit use their own project engines. Workflow installs all three and invokes the same independent suite."
+  ],
+  "caveats": [
+    "The delayed-read browser case observes for a fixed 1000 ms after releasing the response; this is a bounded observation, not deterministic proof against an arbitrarily slow late decryption. Production liveness checks were reviewed independently.",
+    "No actual browser or wallet-extension execution occurred in this cross-review. node --check of independent.spec.mjs passed.",
+    "Historical accepted 17 Nov bundle-boundary.json contains no picomatch module. The final 18 Nov emitted module map must be checked independently; no claim is made that every transitive advisory-parent package is absent."
+  ]
+}

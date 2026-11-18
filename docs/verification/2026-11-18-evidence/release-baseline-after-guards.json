@@ -1,0 +1,14 @@
+{
+  "checkedAt": "2026-11-18T06:31:00.405Z",
+  "node": "v24.22.3",
+  "status": "PASS",
+  "evidenceFreshness": "historical 17 Nov metadata; no new remote HEAD query",
+  "sourceCommit": "3ed64d14738a2c7080de2007bb34f2df13dd7e1f",
+  "files": 41,
+  "totalFileBytes": 2900136,
+  "releaseManifestSha256": "b51e46a891c41ab8cb7d23a7b6ecaef50e4a5829528ffbcbb19fee9eeacbf613",
+  "acceptedCI": 44040950008,
+  "attempt": 1,
+  "artifactId": 14309427569,
+  "checks": "18 Nov strengthened source validators accept the immutable 17 Nov exact package without rebuilding"
+}

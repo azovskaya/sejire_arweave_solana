@@ -1,0 +1,138 @@
+{
+  "result": "PASS",
+  "scope": "Local decoding and byte/PDA comparisons of previously captured public snapshots only. No RPC request or independent ledger proof.",
+  "runtime": "v24.22.3",
+  "web3Version": "1.99.0",
+  "replayedFinalizedSlots": [
+    470840042,
+    470840274,
+    470840816
+  ],
+  "typed": {
+    "nftOwner": {
+      "value": "F8XB2iSMf8mB6fPhtwGRDjuT8wTypfARN5pscu3fjqKN",
+      "source": "Metaplex Core documented key:u8 then owner:32 bytes; source core-owner-layout in sources.json",
+      "offset": 1,
+      "length": 32,
+      "onCurve": true
+    },
+    "rpcProgramOwners": {
+      "antAsset": "CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZNhX7d",
+      "registry": "2yCUx5edFvUrkibYaUa2ZXWyx9kuJkS8CwyzsgHPWdZZ",
+      "baseRecord": "2MWexMHfMhGJwMHv9Qm9YAVCqjUFUJwDJAysW4oCUGk5",
+      "controllers": "2MWexMHfMhGJwMHv9Qm9YAVCqjUFUJwDJAysW4oCUGk5"
+    }
+  },
+  "derivedPdas": {
+    "registry": {
+      "address": "AzMhXzwRKBAeC5jBJnkwzbXefDaLuK3gddU9Ga9vY8Ze",
+      "bump": 253
+    },
+    "baseRecord": {
+      "address": "2yzkJFEQkbRyVhGifnYtQxLGWyjoDcsEju6FE2834BBW",
+      "bump": 252
+    },
+    "controllers": {
+      "address": "2caRpPkmJ6Ra6sqS8NkopLMxkahxrpC6UPyJs7MWVXZ3",
+      "bump": 254
+    },
+    "standardEscrow": {
+      "address": "DiPBfw1aVjT2Sgo1XKJM2yMu4wocFo3HvsdrgKFmPAJe",
+      "bump": 253
+    },
+    "anchorIdl": {
+      "address": "4HHXTmPjSgdQRDc3X2wUQCsKqmbpDc7Rw5BwqumKnzKC",
+      "accountObserved": null
+    }
+  },
+  "byteMatches": {
+    "registry": {
+      "discriminator": "359e2a7d078468bc",
+      "nameHashOffset": 8,
+      "nameHashAlgorithm": "sha256(utf8 sejire)",
+      "nftOwnerBytesOffset": 40,
+      "antMintBytesOffset": 72,
+      "unparsedTailFrom104Hex": "0142ad686a00000000000a007450298e0b000000fd0600000073656a6972650100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+    },
+    "baseRecord": {
+      "discriminator": "e15e46f0522d8751",
+      "mintBytesOffset": 8,
+      "targetUtf8": "UVtbBWxU9HK5gD21Pq0qc3I4adRREFbOQpU4F0NXik8",
+      "targetByteOffset": 49,
+      "ownerBytesOffset": 103,
+      "caveat": "Target/mint/owner are byte matches, not a full typed AntRecord decode"
+    },
+    "controllers": {
+      "discriminator": "0a86759560c606d4",
+      "mintBytesOffset": 8,
+      "nftOwnerBytesOffset": 44,
+      "caveat": "No typed ACL/controller-list or effective permission claim"
+    },
+    "nftText": {
+      "10": 209,
+      "sejire": 70,
+      "ArNS Name": 147,
+      "Type": 170,
+      "permabuy": 178,
+      "Undername Limit": 190,
+      "ANT Program": 215,
+      "2MWexMHfMhGJwMHv9Qm9YAVCqjUFUJwDJAysW4oCUGk5": 230
+    }
+  },
+  "accountByteIntegrity": {
+    "antAsset": {
+      "bytes": 293,
+      "sha256": "70f864fe620980d532bac29a11aa52e80078d3d0603a33d91450115c53065c47"
+    },
+    "registry": {
+      "bytes": 191,
+      "sha256": "207bfb12330061d6159ea8ab47fd743b53da07e76d9b380419a485bd9be5ea11"
+    },
+    "baseRecord": {
+      "bytes": 316,
+      "sha256": "bb1e42072ddc5e5d0caec6bc251567643417cc932eec27c9c647c4e36630d9dd"
+    },
+    "controllers": {
+      "bytes": 176,
+      "sha256": "a1797d7d78182c7e59f8f915a1c7bf3a153115af9d19e2ac42d9d1d6c637c9d5"
+    }
+  },
+  "fileIntegrity": {
+    "ant-asset.rpc.raw.json": {
+      "bytes": 670,
+      "sha256": "ea470e1e29573e098a7971cb8a41bb57c9361a4e4278031805837a71daea8a80"
+    },
+    "arns-record.rpc.raw.json": {
+      "bytes": 539,
+      "sha256": "d2917663488650cf8c531c6964304fc97d6079bf989089c158860d86bb6599b5"
+    },
+    "ant-record-controllers.rpc.parsed-snapshot.json": {
+      "bytes": 1566,
+      "sha256": "4cfa164cde9fdd1645c39d5eff246f1bd54c4350bd137138fb3fc2894588e8ac"
+    },
+    "rpc-captures.json": {
+      "bytes": 3885,
+      "sha256": "e90ee0a630847dcd85a2f39a9965fc582db38bcb9c48a719071a38bf1a5d2a65"
+    },
+    "sources.json": {
+      "bytes": 3219,
+      "sha256": "2241b1a00bb5d03eed915c66ba9fa51a8874e2d143397f03331c6cfcef7e7829"
+    },
+    "verify-saved-evidence.cjs": {
+      "bytes": 7413,
+      "sha256": "7af57e236c1c69195a2b7c43b2e8d1d8534763b898e5770b2bf7a5ae998b239e"
+    }
+  },
+  "unresolved": [
+    "typed registry purchase-type enum",
+    "typed registry expiry/endTimestamp",
+    "typed controllers and effective ACL",
+    "user wallet ownership/private-key access",
+    "actual wallet acceptance/signature/update"
+  ],
+  "caveats": [
+    "NFT permabuy text is an attribute, not independently typed registry proof",
+    "Third saved RPC result is a parsed stdout snapshot; rentEpoch precision was lost before capture and is ignored",
+    "RPC finalized commitment is the endpoint report, not a locally verified Solana ledger proof"
+  ]
+}

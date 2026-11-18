@@ -1,0 +1,77 @@
+{
+  "checkedAt": "2026-11-18T06:43:13.856Z",
+  "sourceCommit": "6add1826929ee6ce9f08c59ff11108d8b903a06d",
+  "runId": 44252796058,
+  "attempt": 1,
+  "jobId": 134627271684,
+  "workflow": ".github/workflows/checks.yml",
+  "url": "https://github.com/azovskaya/sejire_arweave_solana/actions/runs/44252796058",
+  "status": "completed",
+  "conclusion": "failure",
+  "completedAt": "2026-11-18T06:40:48Z",
+  "currentBranchHead": "6add1826929ee6ce9f08c59ff11108d8b903a06d",
+  "steps": {
+    "success": 29,
+    "failure": 1,
+    "skipped": 47
+  },
+  "failure": {
+    "step": "Standalone recovery HTML offline in Chromium, Firefox and WebKit (synthetic data)",
+    "case": "webkit: standalone HTML recovers current production vaults and rejects changed inputs without stale plaintext, storage or network",
+    "message": "page.goto: WebKit encountered an internal error",
+    "location": "tools/recovery/browser.test.mjs:45",
+    "stage": "Navigating to a local file recovery.html, waiting until load; before recovery assertions",
+    "engines": {
+      "chromium": "PASS",
+      "firefox": "PASS",
+      "webkit": "FAIL"
+    },
+    "passed": 2,
+    "failed": 1
+  },
+  "verifiedEarlierCounts": {
+    "workerReleaseGate": {
+      "passed": 53,
+      "failed": 0
+    },
+    "offlineRecoveryCore": {
+      "passed": 12,
+      "failed": 0
+    },
+    "offlineCurrentEnvelopeInterop": "PASS; see completed job log"
+  },
+  "artifacts": {
+    "total": 0,
+    "permawebStaticRelease": null,
+    "dependencyAuditEvidence": null
+  },
+  "pagination": {
+    "jobsTotal": 1,
+    "jobsRetrieved": 1,
+    "artifactsTotal": 0,
+    "artifactsRetrieved": 0,
+    "duplicateIds": false
+  },
+  "acceptance": {
+    "status": "REJECTED",
+    "error": "release_ci_not_successful",
+    "newAcceptedPackageCreated": false,
+    "picomatchFinalModuleMap": "NOT_AVAILABLE: independent build and artifact stages skipped"
+  },
+  "log": {
+    "file": ".cache/audit-20261118/ci/44252796058-job-134627271684.log",
+    "sha256": "bb39f5d9dad159474da2d4cd8308aa67783e16ba5947d2ae0e26db8cf24446eb",
+    "bytes": 291393,
+    "retention": "ignored local cache only; do not publish raw runner environment logs"
+  },
+  "actions": {
+    "dispatch": false,
+    "rerun": false,
+    "cancel": false,
+    "upload": false,
+    "sign": false,
+    "pay": false,
+    "arnsChange": false,
+    "sourceEdits": false
+  }
+}

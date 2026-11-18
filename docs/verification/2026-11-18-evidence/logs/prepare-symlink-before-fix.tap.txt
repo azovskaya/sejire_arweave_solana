@@ -1,0 +1,30 @@
+✖ release preparation rejects source symlinks before copying or overwriting outside files (70.970879ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 259.692647
+
+✖ failing tests:
+
+test at scripts/permaweb-release.test.mjs:149:1
+✖ release preparation rejects source symlinks before copying or overwriting outside files (70.970879ms)
+  AssertionError [ERR_ASSERTION]: 404.html
+  + actual - expected
+  
+  + '<!doctype html><script type="module" src="./assets/app.js"></script>'
+  - 'outside release: keep these exact bytes'
+  
+      at TestContext.<anonymous> (file:///workspace/scratch/0aa608872e5d/sejire-deep-validation/scripts/permaweb-release.test.mjs:156:12)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: '<!doctype html><script type="module" src="./assets/app.js"></script>',
+    expected: 'outside release: keep these exact bytes',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

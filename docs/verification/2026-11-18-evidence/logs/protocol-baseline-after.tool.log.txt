@@ -1,0 +1,23 @@
+This is a transcript of previously observed local tool output, not a new test execution or a stdout redirect.
+Runtime: Node.js v24.22.3
+
+Command: node --import ./apps/web/node_modules/tsx/dist/loader.mjs apps/web/src/lib/directArweave/direct.selftest.ts
+Original exec session: 42600
+Exit: 0
+PASS 21 direct Arweave tests: synthetic wallet, mocked HTTP, no live signatures, uploads or payments.
+The intentionally invalid public-header fixture also emitted ArweaveJS's expected Transaction Verification Failed diagnostic.
+
+Command: node --import ./apps/web/node_modules/tsx/dist/loader.mjs apps/web/src/lib/directArweave/nodePreference.selftest.ts
+Original exec result chunk: 758b56
+Exit: 0
+native node preference: 9 local checks passed; no live network, signatures or uploads
+
+Command: node apps/web/node_modules/typescript/bin/tsc --project apps/web/tsconfig.app.json --incremental false
+Original exec session: 41665
+Exit: 0
+No diagnostic output.
+
+Command: git diff --check
+Original exec result chunk: 4f113a
+Exit: 0
+No diagnostic output.

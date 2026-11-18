@@ -1,0 +1,80 @@
+{
+  "auditDate": "2026-11-18",
+  "runtime": "Node.js v24.22.3",
+  "sourceBase": "3ed64d14738a2c7080de2007bb34f2df13dd7e1f",
+  "branch": "test/prepublication-20261118",
+  "changes": "local, uncommitted",
+  "seed": "0x5e171118",
+  "offlineDecoder": {
+    "tests": 12,
+    "passed": 12,
+    "log": "recovery-decoder-baseline.log"
+  },
+  "productionOfflineInterop": {
+    "newGroups": 7,
+    "passed": 7,
+    "fullVaultCases": 16,
+    "malformedEnvelopes": 54,
+    "authenticatedMutations": 51,
+    "wrongValidPhrases": 16,
+    "invalidKitsAndReceipts": 41,
+    "truncatedOrMalformedFiles": 22,
+    "copiedCliRoundTrips": 4,
+    "overwriteProtections": 2,
+    "networkCalls": 0,
+    "log": "recovery-deep-interop.log"
+  },
+  "independentFinalization": {
+    "tests": 17,
+    "passed": 17,
+    "newGroups": 5,
+    "log": "independent-finalization-after-fix.log"
+  },
+  "independentNativeVault": {
+    "tests": 14,
+    "passed": 14,
+    "newGroups": 4,
+    "malformedSelectedLocalCases": 11,
+    "seededFullVaultPreparationCases": 3,
+    "log": "independent-native-deep.log"
+  },
+  "browser": {
+    "status": "prepared, not executed by recovery agent",
+    "engines": [
+      "chromium",
+      "firefox",
+      "webkit"
+    ],
+    "testCases": 3,
+    "perEngine": {
+      "downloads": 6,
+      "freshProductionKits": 4,
+      "negativeCases": 5,
+      "expectHttpRequests": 0,
+      "expectStorageWrites": 0
+    }
+  },
+  "typescript": {
+    "command": "node apps/web/node_modules/typescript/bin/tsc --project apps/web/tsconfig.app.json --incremental false",
+    "finalExitCode": 0,
+    "note": "Initial recovery-typescript.log records 4 in-progress readonly errors in another agent test; final re-run exited 0 with no output."
+  },
+  "syntaxAndReproducibility": {
+    "browserNodeCheckExitCode": 0,
+    "offlineHtmlCheckExitCode": 0,
+    "gitDiffCheckExitCode": 0
+  },
+  "findings": [
+    {
+      "id": "finalization_partial_persistence",
+      "fixed": true,
+      "reproducer": "independent-finalization-before-fix.log"
+    },
+    {
+      "id": "background_completion_replaces_pending_full_cache",
+      "fixed": true,
+      "reproducer": "independent-background-cache-before-fix.log"
+    }
+  ],
+  "noWalletNoNetworkPostNoSpendNoDeploy": true
+}

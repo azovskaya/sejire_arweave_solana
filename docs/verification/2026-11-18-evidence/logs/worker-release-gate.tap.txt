@@ -1,0 +1,328 @@
+TAP version 13
+# Subtest: exact production SHA, completed CI and deliberate confirmation are accepted
+ok 1 - exact production SHA, completed CI and deliberate confirmation are accepted
+  ---
+  duration_ms: 2.370647
+  type: 'test'
+  ...
+# Subtest: push cannot deploy
+ok 2 - push cannot deploy
+  ---
+  duration_ms: 0.372351
+  type: 'test'
+  ...
+# Subtest: PR cannot deploy
+ok 3 - PR cannot deploy
+  ---
+  duration_ms: 0.095372
+  type: 'test'
+  ...
+# Subtest: other repository
+ok 4 - other repository
+  ---
+  duration_ms: 0.145705
+  type: 'test'
+  ...
+# Subtest: main branch
+ok 5 - main branch
+  ---
+  duration_ms: 1.237701
+  type: 'test'
+  ...
+# Subtest: test branch
+ok 6 - test branch
+  ---
+  duration_ms: 0.142812
+  type: 'test'
+  ...
+# Subtest: tag
+ok 7 - tag
+  ---
+  duration_ms: 0.113018
+  type: 'test'
+  ...
+# Subtest: missing confirmation
+ok 8 - missing confirmation
+  ---
+  duration_ms: 0.125435
+  type: 'test'
+  ...
+# Subtest: partial SHA
+ok 9 - partial SHA
+  ---
+  duration_ms: 0.455063
+  type: 'test'
+  ...
+# Subtest: missing SHA
+ok 10 - missing SHA
+  ---
+  duration_ms: 0.275458
+  type: 'test'
+  ...
+# Subtest: non numeric run
+ok 11 - non numeric run
+  ---
+  duration_ms: 0.124444
+  type: 'test'
+  ...
+# Subtest: non positive run
+ok 12 - non positive run
+  ---
+  duration_ms: 0.102962
+  type: 'test'
+  ...
+# Subtest: unsafe run number
+ok 13 - unsafe run number
+  ---
+  duration_ms: 0.151234
+  type: 'test'
+  ...
+# Subtest: non positive attempt
+ok 14 - non positive attempt
+  ---
+  duration_ms: 0.089202
+  type: 'test'
+  ...
+# Subtest: different run id
+ok 15 - different run id
+  ---
+  duration_ms: 0.177933
+  type: 'test'
+  ...
+# Subtest: run from another repository
+ok 16 - run from another repository
+  ---
+  duration_ms: 0.095972
+  type: 'test'
+  ...
+# Subtest: fork run
+ok 17 - fork run
+  ---
+  duration_ms: 0.066839
+  type: 'test'
+  ...
+# Subtest: wrong workflow
+ok 18 - wrong workflow
+  ---
+  duration_ms: 0.117554
+  type: 'test'
+  ...
+# Subtest: wrong workflow name
+ok 19 - wrong workflow name
+  ---
+  duration_ms: 0.118416
+  type: 'test'
+  ...
+# Subtest: PR merge evidence
+ok 20 - PR merge evidence
+  ---
+  duration_ms: 0.072177
+  type: 'test'
+  ...
+# Subtest: untrusted event
+ok 21 - untrusted event
+  ---
+  duration_ms: 0.065958
+  type: 'test'
+  ...
+# Subtest: other source branch
+ok 22 - other source branch
+  ---
+  duration_ms: 0.058256
+  type: 'test'
+  ...
+# Subtest: older successful SHA
+ok 23 - older successful SHA
+  ---
+  duration_ms: 0.062393
+  type: 'test'
+  ...
+# Subtest: CI still running
+ok 24 - CI still running
+  ---
+  duration_ms: 0.100869
+  type: 'test'
+  ...
+# Subtest: CI cancelled
+ok 25 - CI cancelled
+  ---
+  duration_ms: 0.066278
+  type: 'test'
+  ...
+# Subtest: CI failed
+ok 26 - CI failed
+  ---
+  duration_ms: 0.056383
+  type: 'test'
+  ...
+# Subtest: rerun changed attempt
+ok 27 - rerun changed attempt
+  ---
+  duration_ms: 0.055432
+  type: 'test'
+  ...
+# Subtest: production head moved
+ok 28 - production head moved
+  ---
+  duration_ms: 0.059588
+  type: 'test'
+  ...
+# Subtest: wrong branch ref
+ok 29 - wrong branch ref
+  ---
+  duration_ms: 0.090324
+  type: 'test'
+  ...
+# Subtest: missing jobs
+ok 30 - missing jobs
+  ---
+  duration_ms: 0.09486
+  type: 'test'
+  ...
+# Subtest: missing verify job
+ok 31 - missing verify job
+  ---
+  duration_ms: 0.114279
+  type: 'test'
+  ...
+# Subtest: duplicate verify job
+ok 32 - duplicate verify job
+  ---
+  duration_ms: 0.091095
+  type: 'test'
+  ...
+# Subtest: wrong job SHA
+ok 33 - wrong job SHA
+  ---
+  duration_ms: 0.098426
+  type: 'test'
+  ...
+# Subtest: wrong job run
+ok 34 - wrong job run
+  ---
+  duration_ms: 0.111945
+  type: 'test'
+  ...
+# Subtest: wrong job attempt
+ok 35 - wrong job attempt
+  ---
+  duration_ms: 0.094831
+  type: 'test'
+  ...
+# Subtest: verify skipped
+ok 36 - verify skipped
+  ---
+  duration_ms: 0.065337
+  type: 'test'
+  ...
+# Subtest: verify still running
+ok 37 - verify still running
+  ---
+  duration_ms: 0.058517
+  type: 'test'
+  ...
+# Subtest: missing step evidence
+ok 38 - missing step evidence
+  ---
+  duration_ms: 0.059818
+  type: 'test'
+  ...
+# Subtest: skipped required step
+ok 39 - skipped required step
+  ---
+  duration_ms: 0.059458
+  type: 'test'
+  ...
+# Subtest: failed nonblocking step
+ok 40 - failed nonblocking step
+  ---
+  duration_ms: 0.093879
+  type: 'test'
+  ...
+# Subtest: successful workflow_dispatch CI is accepted
+ok 41 - successful workflow_dispatch CI is accepted
+  ---
+  duration_ms: 0.177954
+  type: 'test'
+  ...
+# Subtest: network adapter reads only fixed GitHub GET evidence and binds run attempt
+ok 42 - network adapter reads only fixed GitHub GET evidence and binds run attempt
+  ---
+  duration_ms: 0.70968
+  type: 'test'
+  ...
+# Subtest: missing token and invalid request make zero network requests
+ok 43 - missing token and invalid request make zero network requests
+  ---
+  duration_ms: 0.421854
+  type: 'test'
+  ...
+# Subtest: HTTP 401 fails closed without body leak
+ok 44 - HTTP 401 fails closed without body leak
+  ---
+  duration_ms: 0.460351
+  type: 'test'
+  ...
+# Subtest: HTTP 403 fails closed without body leak
+ok 45 - HTTP 403 fails closed without body leak
+  ---
+  duration_ms: 0.122841
+  type: 'test'
+  ...
+# Subtest: HTTP 404 fails closed without body leak
+ok 46 - HTTP 404 fails closed without body leak
+  ---
+  duration_ms: 0.074691
+  type: 'test'
+  ...
+# Subtest: HTTP 429 fails closed without body leak
+ok 47 - HTTP 429 fails closed without body leak
+  ---
+  duration_ms: 0.083053
+  type: 'test'
+  ...
+# Subtest: HTTP 500 fails closed without body leak
+ok 48 - HTTP 500 fails closed without body leak
+  ---
+  duration_ms: 0.063064
+  type: 'test'
+  ...
+# Subtest: transport failure does not expose its error details
+ok 49 - transport failure does not expose its error details
+  ---
+  duration_ms: 0.207897
+  type: 'test'
+  ...
+# Subtest: malformed JSON fails closed
+ok 50 - malformed JSON fails closed
+  ---
+  duration_ms: 0.190311
+  type: 'test'
+  ...
+# Subtest: incomplete job pagination is rejected
+ok 51 - incomplete job pagination is rejected
+  ---
+  duration_ms: 2.714997
+  type: 'test'
+  ...
+# Subtest: duplicate job pages are rejected
+ok 52 - duplicate job pages are rejected
+  ---
+  duration_ms: 0.388885
+  type: 'test'
+  ...
+# Subtest: workflow keeps deployment manual, rechecks gate, and audits without continue-on-error
+ok 53 - workflow keeps deployment manual, rechecks gate, and audits without continue-on-error
+  ---
+  duration_ms: 25.93477
+  type: 'test'
+  ...
+1..53
+# tests 53
+# suites 0
+# pass 53
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 214.655164

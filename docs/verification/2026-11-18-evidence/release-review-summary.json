@@ -1,0 +1,156 @@
+{
+  "checkedAt": "2026-11-18T06:31:57.742552+00:00",
+  "scope": "Release validators, exact historical delivery ZIP, adversarial preparation and mocked upload behavior",
+  "worktree": "sejire-deep-validation",
+  "branch": "test/prepublication-20261118",
+  "baseSourceCommit": "3ed64d14738a2c7080de2007bb34f2df13dd7e1f",
+  "sourceState": "local edits only; no commit, push, dispatch or publication by this reviewer",
+  "node": "v24.22.3; Node22 is not locally installed at the prior path; final CI22 still required",
+  "baseline": {
+    "sourceCommit": "3ed64d14738a2c7080de2007bb34f2df13dd7e1f",
+    "deliveryZipSha256": "29204dda9130c30baeade6dca07fdadfe4c643d67acf5a6c7f034626beab2d96",
+    "deliveryZipBytes": 1256285,
+    "files": 41,
+    "totalFileBytes": 2900136,
+    "byteComparison": "PASS: delivery ZIP == official prepare accepted pack == accepted directory",
+    "releaseManifestSha256": "b51e46a891c41ab8cb7d23a7b6ecaef50e4a5829528ffbcbb19fee9eeacbf613",
+    "provenance": {
+      "schema": "sejire/permaweb-provenance/v1",
+      "artifact": "permaweb-static-release",
+      "run": 44040950008,
+      "attempt": 1,
+      "artifactId": 14309427569,
+      "sourceCommit": "3ed64d14738a2c7080de2007bb34f2df13dd7e1f",
+      "publishedByCommit": "3ed64d14738a2c7080de2007bb34f2df13dd7e1f",
+      "profile": "decentralized-direct-arweave",
+      "zipSha256": "d613cbb11412843772f0f17b0ba4ea9ab0a1168b3634d51c55044fe2281a94b1",
+      "releaseManifestSha256": "b51e46a891c41ab8cb7d23a7b6ecaef50e4a5829528ffbcbb19fee9eeacbf613"
+    }
+  },
+  "baselineAfterGuards": {
+    "checkedAt": "2026-11-18T06:31:00.405Z",
+    "node": "v24.22.3",
+    "status": "PASS",
+    "evidenceFreshness": "historical 17 Nov metadata; no new remote HEAD query",
+    "sourceCommit": "3ed64d14738a2c7080de2007bb34f2df13dd7e1f",
+    "files": 41,
+    "totalFileBytes": 2900136,
+    "releaseManifestSha256": "b51e46a891c41ab8cb7d23a7b6ecaef50e4a5829528ffbcbb19fee9eeacbf613",
+    "acceptedCI": 44040950008,
+    "attempt": 1,
+    "artifactId": 14309427569,
+    "checks": "18 Nov strengthened source validators accept the immutable 17 Nov exact package without rebuilding"
+  },
+  "commands": [
+    {
+      "command": "node --test --test-name-pattern='release preparation|contradicts GitHub|Cloudflare resources|interrupted SDK' scripts/permaweb-release.test.mjs",
+      "report": "release-negative-before-fixes.tap",
+      "exit": 1,
+      "pass": 1,
+      "fail": 4,
+      "note": "First symlink result stopped on error-code mismatch; separate reproduction below proves external overwrite."
+    },
+    {
+      "command": "node --test --test-name-pattern='rejects source symlinks' scripts/permaweb-release.test.mjs",
+      "report": "prepare-symlink-before-fix.tap",
+      "exit": 1,
+      "pass": 0,
+      "fail": 1,
+      "note": "Shows outside synthetic file overwritten with index HTML before unsafe-path rejection."
+    },
+    {
+      "command": "node --test --test-reporter=tap scripts/permaweb-release.test.mjs",
+      "report": "permaweb-release-after-fixes.tap",
+      "exit": 0,
+      "pass": 28,
+      "fail": 0
+    },
+    {
+      "command": "npm run test:permaweb-prepare",
+      "report": "permaweb-prepare-suite.log",
+      "exit": 0,
+      "pass": 40,
+      "fail": 0,
+      "note": "Includes deterministic preparation selftest and release/PDF/base-host suites."
+    },
+    {
+      "command": "node --test --test-reporter=tap scripts/worker-release-gate.test.mjs",
+      "report": "worker-release-gate.tap",
+      "exit": 0,
+      "pass": 53,
+      "fail": 0
+    },
+    {
+      "command": "Historical validateReleaseEvidence + acceptedArtifact + verifyAcceptedRelease with strengthened current validators",
+      "report": "release-baseline-after-guards.json",
+      "exit": 0,
+      "files": 41
+    },
+    {
+      "command": "git diff --check -- scripts/prepare-permaweb.mjs scripts/permaweb-release.mjs scripts/permaweb-release.test.mjs scripts/static-release-profile.mjs scripts/upload-permaweb.mjs",
+      "exit": 0
+    }
+  ],
+  "confirmedFindingsFixed": [
+    {
+      "issue": "source 404 symlink followed before validation could overwrite an external file",
+      "fix": "lstat root plus full source path-type preflight before any destination copy/write",
+      "files": [
+        "scripts/prepare-permaweb.mjs",
+        "scripts/permaweb-release.test.mjs"
+      ]
+    },
+    {
+      "issue": "correct-digest artifact could contradict GitHub size_in_bytes and still be recovered",
+      "fix": "require exact downloaded ZIP length before extraction",
+      "files": [
+        "scripts/permaweb-release.mjs",
+        "scripts/permaweb-release.test.mjs"
+      ]
+    },
+    {
+      "issue": "literal Cloudflare resources in HTML, CSS or standalone recovery executable text bypassed JS-only guard",
+      "fix": "apply forbidden-endpoint/secret fixture guard to every HTML/CSS/SVG/js/mjs asset while retaining exact JS boundary hash and module validation",
+      "files": [
+        "scripts/static-release-profile.mjs",
+        "scripts/permaweb-release.test.mjs"
+      ]
+    },
+    {
+      "issue": "same evidence directory after interrupted/ambiguous SDK call could sign and send again",
+      "fix": "exclusive public attempt marker before SDK, block concurrent/repeated calls and prior partial journals; completed upload remains verify-only",
+      "files": [
+        "scripts/upload-permaweb.mjs",
+        "scripts/permaweb-release.test.mjs"
+      ]
+    }
+  ],
+  "newRegressionCount": 8,
+  "newRegressionCoverage": [
+    "source symlink at 404/assets/root before writes",
+    "existing destination preservation",
+    "GitHub artifact size contradiction",
+    "artifact pagination missing/duplicate/changing total",
+    "Cloudflare entry/CSS/recovery resources",
+    "actual pinned SDK lost ACK and partial second-file interruption without repeat signing",
+    "concurrent callers limited to one SDK entry",
+    "older partial journal preservation without new requests"
+  ],
+  "existingCoverageReviewed": [
+    "ZIP traversal/symlink/duplicate/unlisted files/digest mismatch",
+    "manifest/provenance/source SHA/file list/fallback corruption",
+    "stale CI attempt/current ref and skipped/failed mandatory gates",
+    "missing recovery and unknown/external lazy chunks",
+    "legacy funded profile cannot pass independent release",
+    "quote limits/balance/staleness/existing own funding",
+    "SDK retry count and queued task abort",
+    "published exact bytes and fallback mapping"
+  ],
+  "residualRisks": [
+    "Fresh manual GitHub dispatch starts a new filesystem. The new local marker cannot reconcile a different run automatically; prior partial evidence still requires owner/operator review. GitHub reruns after attempt1 remain blocked.",
+    "Turbo budget remains a conservative preflight quote, not a provider-enforced spending cap. No automatic top-up is enabled.",
+    "Literal forbidden-endpoint and captured module guards are not a proof against arbitrary obfuscated hostile source or infrastructure operated by third parties.",
+    "No actual upload, private key access, wallet signature, payment, ArNS change, Worker deployment, public API probe, or blocked Rigel request occurred in this review.",
+    "Historical 17 Nov CI/provenance verifies the immutable baseline only. All local 18 Nov source changes require a fresh final CI22 and exact new accepted artifact before publication."
+  ]
+}

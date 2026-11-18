@@ -1,0 +1,48 @@
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> sejire@0.3.0 arns:build
+> bash scripts/build-arns-independent.sh
+
+vite v8.1.6 building client environment for production...
+[2Ktransforming...✓ 345 modules transformed.
+rendering chunks...
+computing gzip size...
+apps/web/dist/release-profile.json                                     0.29 kB │ gzip:   0.19 kB
+apps/web/dist/index.html                                               2.13 kB │ gzip:   1.08 kB
+apps/web/dist/assets/work-sans-vietnamese-400-normal-BxGuknnG.woff2    5.02 kB
+apps/web/dist/assets/work-sans-vietnamese-700-normal-CqjC4WOy.woff2    5.39 kB
+apps/web/dist/assets/work-sans-vietnamese-400-normal-DFZk_KN_.woff     7.08 kB
+apps/web/dist/assets/work-sans-vietnamese-700-normal-BYAoORCv.woff     7.54 kB
+apps/web/dist/assets/work-sans-latin-ext-400-normal-zfQnhXzv.woff2    15.29 kB
+apps/web/dist/assets/work-sans-latin-ext-700-normal-Bc0iTajH.woff2    16.16 kB
+apps/web/dist/assets/work-sans-latin-400-normal-jUejSri3.woff2        19.90 kB
+apps/web/dist/assets/work-sans-latin-700-normal-CEeo_t6l.woff2        20.84 kB
+apps/web/dist/assets/work-sans-latin-ext-400-normal-j7TZlk-s.woff     21.11 kB
+apps/web/dist/assets/work-sans-latin-ext-700-normal-BP8nCPzd.woff     22.10 kB
+apps/web/dist/assets/work-sans-latin-400-normal-DE1_0GuN.woff         25.24 kB
+apps/web/dist/assets/work-sans-latin-700-normal-mDs79oer.woff         26.17 kB
+apps/web/dist/assets/NotoSans-Regular-Dpf_lrdO.ttf                   569.20 kB
+apps/web/dist/assets/NotoSans-Bold-axMicgqH.ttf                      575.74 kB
+apps/web/dist/assets/index-C0vTJ_5C.css                               41.31 kB │ gzip:   9.08 kB
+apps/web/dist/assets/rolldown-runtime-BgaNhQyE.js                      0.78 kB │ gzip:   0.47 kB
+apps/web/dist/assets/classicTreePdf-Blh-tUPy.js                        3.75 kB │ gzip:   1.84 kB
+apps/web/dist/assets/poster-CQ3h2TDb.js                                5.69 kB │ gzip:   2.52 kB
+apps/web/dist/assets/shezhirePdf-gGMSprgq.js                          13.46 kB │ gzip:   4.70 kB
+apps/web/dist/assets/purify.es-Cu8FNuDu.js                            28.56 kB │ gzip:  11.43 kB
+apps/web/dist/assets/wallet-DZ-AkEcU.js                               78.93 kB │ gzip:  26.39 kB
+apps/web/dist/assets/index.es-NR5AbxfW.js                            151.39 kB │ gzip:  48.89 kB
+apps/web/dist/assets/html2canvas-B0nUEnH5.js                         199.56 kB │ gzip:  46.78 kB
+apps/web/dist/assets/pdf-vendor-DHCs3J6V.js                          400.36 kB │ gzip: 130.14 kB
+apps/web/dist/assets/index-B7dfJ1K8.js                               498.98 kB │ gzip: 159.49 kB
+
+✓ built in 575ms
+{
+  "status": "PASS",
+  "profile": "decentralized-direct-arweave",
+  "jsAssets": 10,
+  "renderedModules": 339,
+  "recoveryFiles": 8,
+  "mandatorySejireService": false,
+  "dist": "/workspace/scratch/0aa608872e5d/sejire-deep-validation/apps/web/dist",
+  "note": "Local static build only; no network payment, archive upload, deployment or ArNS change."
+}

@@ -1,0 +1,233 @@
+{
+  "format": "sejire-public-arns-summary/v1",
+  "savedAt": "2026-11-18T06:57:48.878Z",
+  "name": "sejire",
+  "evidenceDirectory": "/workspace/scratch/0aa608872e5d/sejire-deep-validation/.cache/audit-20261118/arns",
+  "purpose": "Read-only public ArNS state and cutover requirements; this step only saved and locally replayed previously retrieved tool outputs.",
+  "externalRequestsDuringEvidenceSaving": 0,
+  "originalReadOnlyRpcRequests": 3,
+  "endpoint": "https://api.mainnet-beta.solana.com",
+  "snapshotTimesAndSlots": [
+    {
+      "startedAt": "2026-11-18T06:47:45.110Z",
+      "finishedAt": "2026-11-18T06:47:53.089Z",
+      "finalizedSlotReportedByRpc": 470840042,
+      "httpStatus": 200,
+      "method": "getAccountInfo",
+      "file": "ant-asset.rpc.raw.json"
+    },
+    {
+      "startedAt": "2026-11-18T06:48:33.345Z",
+      "finishedAt": "2026-11-18T06:48:41.945Z",
+      "finalizedSlotReportedByRpc": 470840274,
+      "httpStatus": 200,
+      "method": "getAccountInfo",
+      "file": "arns-record.rpc.raw.json"
+    },
+    {
+      "startedAt": "2026-11-18T06:50:31.506Z",
+      "finishedAt": "2026-11-18T06:50:38.706Z",
+      "finalizedSlotReportedByRpc": 470840816,
+      "httpStatus": 200,
+      "method": "getMultipleAccounts",
+      "file": "ant-record-controllers.rpc.parsed-snapshot.json"
+    }
+  ],
+  "sourceCatalog": "sources.json",
+  "requestAndCaptureMetadata": "rpc-captures.json",
+  "confidenceBoundaries": {
+    "typedFromPublishedPrimaryLayout": {
+      "nftOwner": {
+        "value": "F8XB2iSMf8mB6fPhtwGRDjuT8wTypfARN5pscu3fjqKN",
+        "source": "Metaplex Core documented key:u8 then owner:32 bytes; source core-owner-layout in sources.json",
+        "offset": 1,
+        "length": 32,
+        "onCurve": true
+      },
+      "note": "Typed NFT owner is a public address read from a Core asset, not an assertion about user identity or control of its key."
+    },
+    "reportedByPublicRpc": {
+      "commitment": "finalized",
+      "accountProgramOwners": {
+        "antAsset": "CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZNhX7d",
+        "registry": "2yCUx5edFvUrkibYaUa2ZXWyx9kuJkS8CwyzsgHPWdZZ",
+        "baseRecord": "2MWexMHfMhGJwMHv9Qm9YAVCqjUFUJwDJAysW4oCUGk5",
+        "controllers": "2MWexMHfMhGJwMHv9Qm9YAVCqjUFUJwDJAysW4oCUGk5"
+      },
+      "note": "No independent Solana ledger proof, second RPC quorum or signed-state verification performed."
+    },
+    "locallyMatchedBytesAndDerivedAddresses": {
+      "registry": {
+        "discriminator": "359e2a7d078468bc",
+        "nameHashOffset": 8,
+        "nameHashAlgorithm": "sha256(utf8 sejire)",
+        "nftOwnerBytesOffset": 40,
+        "antMintBytesOffset": 72,
+        "unparsedTailFrom104Hex": "0142ad686a00000000000a007450298e0b000000fd0600000073656a6972650100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+      },
+      "baseRecord": {
+        "discriminator": "e15e46f0522d8751",
+        "mintBytesOffset": 8,
+        "targetUtf8": "UVtbBWxU9HK5gD21Pq0qc3I4adRREFbOQpU4F0NXik8",
+        "targetByteOffset": 49,
+        "ownerBytesOffset": 103,
+        "caveat": "Target/mint/owner are byte matches, not a full typed AntRecord decode"
+      },
+      "controllers": {
+        "discriminator": "0a86759560c606d4",
+        "mintBytesOffset": 8,
+        "nftOwnerBytesOffset": 44,
+        "caveat": "No typed ACL/controller-list or effective permission claim"
+      },
+      "nftText": {
+        "10": 209,
+        "sejire": 70,
+        "ArNS Name": 147,
+        "Type": 170,
+        "permabuy": 178,
+        "Undername Limit": 190,
+        "ANT Program": 215,
+        "2MWexMHfMhGJwMHv9Qm9YAVCqjUFUJwDJAysW4oCUGk5": 230
+      }
+    },
+    "gatewayAgreement": {
+      "target": "UVtbBWxU9HK5gD21Pq0qc3I4adRREFbOQpU4F0NXik8",
+      "source": "../public-site/health.json (separate parent probe; not repeated by this agent)",
+      "typedAntRecordDecode": false
+    },
+    "nftAttributeObservation": {
+      "typeText": "permabuy",
+      "undernameLimitText": "10",
+      "status": "Observed byte strings in NFT attributes, not an authoritative typed decode of the ArnsRecord purchase-type/expiry."
+    },
+    "userWalletOwnership": "unknown",
+    "currentEffectiveControllerPermissions": "not fully decoded or wallet-verified"
+  },
+  "derivation": {
+    "implementation": "@solana/web3.js PublicKey.findProgramAddressSync with SHA-256 from node:crypto; no new dependency installed",
+    "seedNamespacePrimarySource": "state-model in sources.json",
+    "encoding": "UTF-8 for seed literals and name/undername hash input; raw 32-byte decoded Solana pubkey for mint seeds",
+    "hashChoiceStatus": "SHA-256(name) was selected for the documented name_hash seed and independently matched against bytes 8..39 of the fetched canonical ArnsRecord. Full current ar.io decoder schema was not retrieved.",
+    "registry": {
+      "program": "2yCUx5edFvUrkibYaUa2ZXWyx9kuJkS8CwyzsgHPWdZZ",
+      "seeds": [
+        "utf8(arns_record)",
+        "sha256(utf8(sejire))"
+      ],
+      "address": "AzMhXzwRKBAeC5jBJnkwzbXefDaLuK3gddU9Ga9vY8Ze",
+      "bump": 253
+    },
+    "baseRecord": {
+      "program": "2MWexMHfMhGJwMHv9Qm9YAVCqjUFUJwDJAysW4oCUGk5",
+      "seeds": [
+        "utf8(ant_record)",
+        "base58Decode(997oV9UJDwKzmfCs2wFVLd4mML4hmJ6K3z71UMxUb2H8)",
+        "sha256(utf8(@))"
+      ],
+      "address": "2yzkJFEQkbRyVhGifnYtQxLGWyjoDcsEju6FE2834BBW",
+      "bump": 252
+    },
+    "controllers": {
+      "program": "2MWexMHfMhGJwMHv9Qm9YAVCqjUFUJwDJAysW4oCUGk5",
+      "seeds": [
+        "utf8(ant_controllers)",
+        "base58Decode(997oV9UJDwKzmfCs2wFVLd4mML4hmJ6K3z71UMxUb2H8)"
+      ],
+      "address": "2caRpPkmJ6Ra6sqS8NkopLMxkahxrpC6UPyJs7MWVXZ3",
+      "bump": 254
+    },
+    "standardEscrowComparisonOnly": {
+      "program": "5HZhe9UqKL5zAsdz81nuuaxV41h8bFhudzxxBigAQndM",
+      "seeds": [
+        "utf8(escrow_ant)",
+        "base58Decode(997oV9UJDwKzmfCs2wFVLd4mML4hmJ6K3z71UMxUb2H8)"
+      ],
+      "address": "DiPBfw1aVjT2Sgo1XKJM2yMu4wocFo3HvsdrgKFmPAJe",
+      "bump": 253,
+      "fetched": false,
+      "equalsNftOwner": false,
+      "inferenceLimit": "Does not establish who owns the key, or establish any user claim requirements."
+    },
+    "conventionalAnchorIdlLookup": {
+      "formula": "PublicKey.createWithSeed(findProgramAddressSync([], arnsProgram)[0], anchor:idl, arnsProgram)",
+      "address": "4HHXTmPjSgdQRDc3X2wUQCsKqmbpDc7Rw5BwqumKnzKC",
+      "accountObserved": null,
+      "inferenceLimit": "Only this conventional address returned null; this is not a claim that no schema exists anywhere."
+    },
+    "discriminatorChecks": "First 8 bytes of sha256(utf8(account:ArnsRecord)), sha256(utf8(account:AntRecord)), sha256(utf8(account:AntControllers)) matched the respective captured accounts."
+  },
+  "notFullyDecoded": [
+    "ArnsRecord purchase-type enum",
+    "ArnsRecord expiry/endTimestamp",
+    "AntControllers complete list and effective permissions",
+    "Full AntRecord target/protocol/TTL schema"
+  ],
+  "accessLimitationsObservedEarlier": [
+    {
+      "url": "https://turbo-gateway.com/ar-io/resolver/sejire",
+      "ref": "turn192960843view0",
+      "outcome": "Web tool: not accessible; no HTTP code supplied. No retry of endpoint."
+    },
+    {
+      "url": "https://github.com/ar-io/ar-io-sdk/blob/develop/src/solana/constants.ts",
+      "ref": "turn519379249view0",
+      "outcome": "Web tool DisabledError. No retry of endpoint."
+    },
+    {
+      "url": "https://github.com/ar-io/specs/blob/main/arns/arns-core-1.md",
+      "ref": "turn369231570view1",
+      "outcome": "Web tool DisabledError. No retry of endpoint."
+    },
+    {
+      "url": "https://www.npmjs.com/package/%40ar.io/solana-contracts",
+      "ref": "turn996323823view1",
+      "outcome": "HTTP403 on official documentation link. No retry or alternative package-download route used."
+    }
+  ],
+  "captureLimitations": [
+    "First two raw JSON bodies were transcribed from their exact string values in completed tool stdout; no original HTTP headers or wire/compression capture was retained.",
+    "Third response was printed after JSON.parse and selected-field JSON.stringify. The saved file is that parsed stdout snapshot, not an original HTTP body; original outer jsonrpc/id were not printed.",
+    "Third snapshot rentEpoch is rounded by JavaScript Number; it is excluded from all verification and conclusions. Account base64 strings are retained and byte lengths checked.",
+    "Source documents and RPC snapshots were retrieved before this save request; no research was resumed and no inaccessible endpoint was retried."
+  ],
+  "localReplay": {
+    "command": "node .cache/audit-20261118/arns/verify-saved-evidence.cjs > .cache/audit-20261118/arns/local-replay.json",
+    "cwd": "/workspace/scratch/0aa608872e5d/sejire-deep-validation",
+    "runtime": "v24.22.3",
+    "web3Version": "1.99.0",
+    "exitCode": 0,
+    "result": "PASS",
+    "toolChunk": "8b4b03",
+    "outputFile": "local-replay.json",
+    "networkCalls": 0
+  },
+  "accountByteIntegrity": {
+    "antAsset": {
+      "bytes": 293,
+      "sha256": "70f864fe620980d532bac29a11aa52e80078d3d0603a33d91450115c53065c47"
+    },
+    "registry": {
+      "bytes": 191,
+      "sha256": "207bfb12330061d6159ea8ab47fd743b53da07e76d9b380419a485bd9be5ea11"
+    },
+    "baseRecord": {
+      "bytes": 316,
+      "sha256": "bb1e42072ddc5e5d0caec6bc251567643417cc932eec27c9c647c4e36630d9dd"
+    },
+    "controllers": {
+      "bytes": 176,
+      "sha256": "a1797d7d78182c7e59f8f915a1c7bf3a153115af9d19e2ac42d9d1d6c637c9d5"
+    }
+  },
+  "conclusion": {
+    "currentModel": "Public account evidence agrees with current Solana ArNS/Metaplex Core model and canonical mainnet programs.",
+    "instructionAssessment": "Current docs/INDEPENDENT_RELEASE.md lines 144-150 already distinguish name owner/controller from the AR upload wallet and instruct changing only @. No source change needed for this point.",
+    "stillRequiredBeforeCutover": [
+      "Review authoritative typed registry type/expiry in current owner-management flow",
+      "Confirm the actual connected wallet is the NFT owner or an authorized controller",
+      "Upload and read back the reviewed exact release package before setting @ to its manifest ID",
+      "Review the specific Solana name-update operation and fee, retain previous target, then verify public resolution and file bytes"
+    ],
+    "noAcceptanceClaim": "No real wallet, signature, update, upload, spending or user-key ownership was tested."
+  }
+}

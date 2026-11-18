@@ -1,0 +1,9 @@
+PASS independent recovery: production BIP39/HKDF/AES-GCM, fresh nonce, parser boundaries, two trees/history and legacy JSON preserved.
+PASS seeded full vaults preserve every tree, generation, commit, dirty draft, Unicode and unknown field
+PASS production and standalone envelope readers reject the same bounded malformed field matrix
+PASS seeded ciphertext flips, every nonce byte, truncation and appended bytes never authenticate
+PASS each generated archive rejects a different valid public phrase without returning data
+PASS kit and optional receipt mutations are rejected by both readers with exact original bytes retained
+PASS truncated envelope and kit files fail closed at JSON and nested archive boundaries
+PASS current production kits recover through a copied standalone CLI with no npm or network
+deep recovery: 7 groups; seed=0x5e171118; 16 full-vault cases; 54 malformed envelopes; 51 authenticated mutations; 16 wrong phrases; 41 invalid kits/receipts; 22 truncated/malformed files; 4 copied-CLI round trips + 2 overwrite protections; network=0

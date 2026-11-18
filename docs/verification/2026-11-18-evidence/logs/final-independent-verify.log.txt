@@ -1,0 +1,13 @@
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> sejire@0.3.0 arns:verify
+> node scripts/verify-arns-independent.mjs apps/web/dist
+
+{
+  "status": "PASS",
+  "profile": "decentralized-direct-arweave",
+  "jsAssets": 10,
+  "renderedModules": 339,
+  "recoveryFiles": 8,
+  "mandatorySejireService": false
+}

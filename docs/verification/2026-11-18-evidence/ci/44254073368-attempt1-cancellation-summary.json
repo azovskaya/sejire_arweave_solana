@@ -1,0 +1,24 @@
+{
+  "checkedAt": "2026-11-18T07:06:38.714Z",
+  "request": {
+    "sha": "0f5bcfd53cd5287a972e13618c59576789c2d471",
+    "runId": 44254073368,
+    "attempt": 1
+  },
+  "status": "completed",
+  "conclusion": "cancelled",
+  "jobId": 134631426189,
+  "completedAt": "2026-11-18T07:05:03Z",
+  "steps": {
+    "success": 26,
+    "cancelled": 1,
+    "skipped": 50
+  },
+  "artifacts": 0,
+  "reason": "Root manually cancelled an unusually slow apt dependency download; source and test assertions were unchanged.",
+  "observedTerminalLog": "apt package downloads progressed through Get:81 libavfilter9 at07:04:07UTC; cancellation at07:04:59UTC. No specific download error or product assertion failure established.",
+  "browserAssertionsStarted": false,
+  "acceptedPackageCreated": false,
+  "log": "44254073368-attempt1-job-134631426189.log",
+  "nextAttempt": "Root alone requested one same-source workflow-job rerun; keep its evidence separate."
+}

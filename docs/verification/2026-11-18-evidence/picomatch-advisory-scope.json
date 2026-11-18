@@ -1,0 +1,235 @@
+{
+  "checkedAt": "2026-11-18T06:37:21.707779+00:00",
+  "advisory": {
+    "id": "GHSA-fc5q-39xc-vjpf",
+    "cve": "CVE-2026-112366",
+    "url": "https://github.com/advisories/GHSA-fc5q-39xc-vjpf",
+    "sourceKind": "official GitHub Reviewed advisory, fetched through public web tool; fields below are a transcription, not raw API JSON",
+    "title": "picomatch vulnerable to ReDoS through single-branch repeated extglobs",
+    "affectedVersions": "<=4.0.7",
+    "patchedVersions": null,
+    "githubPublishedDate": "2026-10-19",
+    "githubReviewedDate": "2026-11-17",
+    "githubUpdatedDate": "2026-11-17",
+    "severity": "high",
+    "cwe": [
+      "CWE-1333"
+    ],
+    "mechanism": "Attacker-controlled repeated extglob patterns can cause exponential regex backtracking and block a Node.js event loop."
+  },
+  "registry": {
+    "url": "https://registry.npmjs.org/picomatch",
+    "command": "npm view picomatch versions dist-tags time --json",
+    "exit": 0,
+    "rawEvidence": "picomatch-registry-versions.json",
+    "rawSha256": "25e16619008a413a9eb0addd0768dca7a629ca22dcec49a033c742258ef67ecf",
+    "latest": "4.0.7",
+    "publishedVersionCount": 35,
+    "highestPublishedVersion": "4.0.7",
+    "latestPublishedAt": "2026-08-24T14:36:23.690Z",
+    "registryModifiedAt": "2026-08-24T14:36:23.879Z"
+  },
+  "scope": {
+    "webFullAudit": {
+      "info": 0,
+      "low": 17,
+      "moderate": 11,
+      "high": 8,
+      "critical": 0,
+      "total": 36
+    },
+    "webProductionAudit": {
+      "info": 0,
+      "low": 13,
+      "moderate": 10,
+      "high": 0,
+      "critical": 0,
+      "total": 23
+    },
+    "highPackageEntries": [
+      {
+        "name": "@rollup/plugin-inject",
+        "isDirect": false,
+        "via": [
+          "@rollup/pluginutils"
+        ],
+        "installed": [
+          {
+            "path": "node_modules/@rollup/plugin-inject",
+            "version": "5.0.5",
+            "dev": true,
+            "devOptional": false
+          }
+        ],
+        "fixAvailable": {
+          "name": "vite-plugin-node-polyfills",
+          "version": "0.2.0",
+          "isSemVerMajor": true
+        }
+      },
+      {
+        "name": "@rollup/pluginutils",
+        "isDirect": false,
+        "via": [
+          "picomatch"
+        ],
+        "installed": [
+          {
+            "path": "node_modules/@rollup/pluginutils",
+            "version": "5.4.0",
+            "dev": true,
+            "devOptional": false
+          }
+        ],
+        "fixAvailable": {
+          "name": "vite-plugin-node-polyfills",
+          "version": "0.2.0",
+          "isSemVerMajor": true
+        }
+      },
+      {
+        "name": "@vitejs/plugin-react",
+        "isDirect": true,
+        "via": [
+          "vite"
+        ],
+        "installed": [
+          {
+            "path": "node_modules/@vitejs/plugin-react",
+            "version": "6.0.4",
+            "dev": true,
+            "devOptional": false
+          }
+        ],
+        "fixAvailable": {
+          "name": "@vitejs/plugin-react",
+          "version": "5.2.0",
+          "isSemVerMajor": true
+        }
+      },
+      {
+        "name": "fdir",
+        "isDirect": false,
+        "via": [
+          "picomatch"
+        ],
+        "installed": [
+          {
+            "path": "node_modules/fdir",
+            "version": "6.5.0",
+            "dev": true,
+            "devOptional": false
+          }
+        ],
+        "fixAvailable": true
+      },
+      {
+        "name": "picomatch",
+        "isDirect": false,
+        "via": [
+          {
+            "source": 1247710,
+            "name": "picomatch",
+            "dependency": "picomatch",
+            "title": "picomatch vulnerable to ReDoS through single-branch repeated extglobs",
+            "url": "https://github.com/advisories/GHSA-fc5q-39xc-vjpf",
+            "severity": "high",
+            "cwe": [
+              "CWE-1333"
+            ],
+            "cvss": {
+              "score": 7.5,
+              "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
+            },
+            "range": "<=4.0.7"
+          }
+        ],
+        "installed": [
+          {
+            "path": "node_modules/picomatch",
+            "version": "4.0.5",
+            "dev": true,
+            "devOptional": false
+          }
+        ],
+        "fixAvailable": {
+          "name": "vite",
+          "version": "6.2.7",
+          "isSemVerMajor": true
+        }
+      },
+      {
+        "name": "tinyglobby",
+        "isDirect": false,
+        "via": [
+          "fdir",
+          "picomatch"
+        ],
+        "installed": [
+          {
+            "path": "node_modules/tinyglobby",
+            "version": "0.2.17",
+            "dev": true,
+            "devOptional": false
+          }
+        ],
+        "fixAvailable": true
+      },
+      {
+        "name": "vite",
+        "isDirect": true,
+        "via": [
+          "picomatch",
+          "tinyglobby"
+        ],
+        "installed": [
+          {
+            "path": "node_modules/vite",
+            "version": "8.1.6",
+            "dev": true,
+            "devOptional": false
+          }
+        ],
+        "fixAvailable": {
+          "name": "vite",
+          "version": "6.2.7",
+          "isSemVerMajor": true
+        }
+      },
+      {
+        "name": "vite-plugin-node-polyfills",
+        "isDirect": true,
+        "via": [
+          "@rollup/plugin-inject",
+          "node-stdlib-browser"
+        ],
+        "installed": [
+          {
+            "path": "node_modules/vite-plugin-node-polyfills",
+            "version": "0.28.0",
+            "dev": true,
+            "devOptional": false
+          }
+        ],
+        "fixAvailable": {
+          "name": "vite-plugin-node-polyfills",
+          "version": "0.2.0",
+          "isSemVerMajor": true
+        }
+      }
+    ],
+    "distinctUnderlyingHighAdvisories": [
+      "GHSA-fc5q-39xc-vjpf"
+    ],
+    "conclusion": "Eight high package entries are the picomatch advisory plus affected build-tool parents; this is not eight independent high flaws. Production omit-dev audit has zero high/critical.",
+    "bundleProof": "Historical accepted 17 Nov module map had no picomatch. Final 18 Nov emitted module map has not yet been reviewed; do not claim all advisory-parent paths are absent."
+  },
+  "decision": {
+    "status": "OPEN: no published patched picomatch release at check time",
+    "dependencyChangesMade": false,
+    "forceAuditFixRun": false,
+    "reason": "Registry latest4.0.7 remains within the official affected range. audit fixAvailable includes semver-major downgrades (Vite6.2.7, plugin-react5.2.0, polyfills0.2.0); those are not evidence of a patched picomatch release.",
+    "nextEvidence": "Check final exact CI module map for picomatch and preserve separate full-dev versus production audit counts.",
+    "riskBoundary": "Retain as a known build/development-tool vulnerability. Neither production omit-dev counts nor absence from historical JS proves the whole repository vulnerability-free."
+  }
+}

@@ -1,0 +1,67 @@
+{
+  "checkedAt": "2026-11-18T07:29:54.424Z",
+  "request": {
+    "sha": "0f46170d6cad88bdf53655464dd7b4b614be8973",
+    "runId": 44258693808,
+    "attempt": 1
+  },
+  "status": "completed",
+  "conclusion": "failure",
+  "jobId": 134646484739,
+  "completedAt": "2026-11-18T07:27:53Z",
+  "currentBranchHead": "0f46170d6cad88bdf53655464dd7b4b614be8973",
+  "steps": {
+    "success": 29,
+    "failure": 1,
+    "skipped": 47
+  },
+  "failure": {
+    "step": "Standalone recovery HTML with OS network isolation in Chromium, Firefox and WebKit (synthetic data)",
+    "location": "tools/recovery/browser.test.mjs:30:50",
+    "cause": "IPv4 route table read yielded empty string after trim; isolation preflight required a literal /proc/net/route header.",
+    "enginesListed": [
+      "chromium",
+      "firefox",
+      "webkit"
+    ],
+    "browserLaunchReached": false,
+    "standaloneAssertionsReached": false,
+    "webkitABProbeReached": false,
+    "passed": 0,
+    "failed": 3,
+    "scope": "Preflight parser/harness; no evidence of browser decoder failure or success in this run."
+  },
+  "artifacts": {
+    "total": 0,
+    "permawebStaticRelease": null,
+    "dependencyAuditEvidence": null,
+    "directArweaveApiReadiness": null,
+    "independentStaticScreens": null
+  },
+  "acceptance": {
+    "status": "REJECTED",
+    "error": "release_ci_not_successful",
+    "newAcceptedPackageCreated": false,
+    "finalModuleMap": "NOT_AVAILABLE: subsequent stages skipped"
+  },
+  "pagination": {
+    "jobsRetrieved": 1,
+    "jobsTotal": 1,
+    "artifactsRetrieved": 0,
+    "artifactsTotal": 0,
+    "duplicateIds": false
+  },
+  "log": {
+    "file": ".cache/audit-20261118/ci/44258693808-attempt1-job-134646484739.log",
+    "bytes": 294558,
+    "sha256": "b3b689ade605af1bad48a6f38012add66f90b11058da3e2e4fe7014ab9ac4095",
+    "storage": "ignored local cache only"
+  },
+  "actionsByReviewer": {
+    "dispatch": false,
+    "rerun": false,
+    "cancel": false,
+    "deploy": false,
+    "sourceEdits": false
+  }
+}

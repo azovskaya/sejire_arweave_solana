@@ -1,0 +1,13 @@
+This is a transcript of previously observed local tool output, not a new test execution or a stdout redirect.
+Original exec session: 83391
+Command: node --import ./apps/web/node_modules/tsx/dist/loader.mjs apps/web/src/lib/directArweave/protocolBoundaries.selftest.ts
+Exit: 1
+Runtime: Node.js v24.22.3
+
+The preceding nine protocol groups passed.
+AssertionError [ERR_ASSERTION]: invalid declared length 33 must cancel the unread body
+
+0 !== 1
+
+Location at the time of execution: protocolBoundaries.selftest.ts:402:14
+This run preceded the network.ts unread response-body cancellation fix.

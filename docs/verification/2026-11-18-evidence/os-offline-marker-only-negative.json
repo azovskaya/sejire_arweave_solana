@@ -1,0 +1,10 @@
+{
+  "expectedRejection": true,
+  "exitCode": 1,
+  "kernelGuardMatched": [
+    "offline marker alone is insufficient"
+  ],
+  "browserLaunched": false,
+  "logSHA256": "d8e0e27ce107fd2914fbc0475dbaef973102400362d257b5bd353038f757ea12",
+  "scope": "negative guard check only; not browser functional PASS"
+}

@@ -1,0 +1,180 @@
+{
+  "schema": "sejire/readiness-summary/v1",
+  "asOfDate": "2026-11-17",
+  "timezone": "Asia/Almaty",
+  "verdict": "READY_FOR_CONTROLLED_PUBLICATION_WITH_OWNER_ACCEPTANCE_REMAINING",
+  "repository": "azovskaya/sejire_arweave_solana",
+  "sourceCommit": "3ed64d14738a2c7080de2007bb34f2df13dd7e1f",
+  "sourceBranch": "feat/decentralized-arweave-20261116",
+  "evidenceBranch": "docs/readiness-evidence-20261117",
+  "ci": {
+    "runId": 44040950008,
+    "attempt": 1,
+    "jobId": 133895132554,
+    "conclusion": "success",
+    "completedAt": "2026-11-17T07:57:31Z",
+    "successfulSteps": 74,
+    "allowedFailureOnlyDiagnosticStepsSkipped": 1,
+    "url": "https://github.com/azovskaya/sejire_arweave_solana/actions/runs/44040950008"
+  },
+  "prepare": {
+    "workflowRunId": 44042817147,
+    "workflowAttempt": 1,
+    "workflowJobId": 133901254014,
+    "conclusion": "success",
+    "mode": "prepare",
+    "maxQuoteWinc": "0",
+    "ciRunId": 44040950008,
+    "ciAttempt": 1,
+    "sourceCommit": "3ed64d14738a2c7080de2007bb34f2df13dd7e1f",
+    "uploadStep": "skipped",
+    "completedAt": "2026-11-17T07:59:05Z"
+  },
+  "staticRelease": {
+    "profile": "decentralized-direct-arweave",
+    "provenance": {
+      "schema": "sejire/permaweb-provenance/v1",
+      "artifact": "permaweb-static-release",
+      "run": 44040950008,
+      "attempt": 1,
+      "artifactId": 14309427569,
+      "sourceCommit": "3ed64d14738a2c7080de2007bb34f2df13dd7e1f",
+      "publishedByCommit": "3ed64d14738a2c7080de2007bb34f2df13dd7e1f",
+      "profile": "decentralized-direct-arweave",
+      "zipSha256": "d613cbb11412843772f0f17b0ba4ea9ab0a1168b3634d51c55044fe2281a94b1",
+      "releaseManifestSha256": "b51e46a891c41ab8cb7d23a7b6ecaef50e4a5829528ffbcbb19fee9eeacbf613"
+    },
+    "files": 41,
+    "fileBytes": 2900136,
+    "jsChunks": 10,
+    "renderedModules": 339,
+    "recoveryFiles": 8,
+    "mandatorySejireService": false,
+    "mandatorySolana": false,
+    "mandatoryBundler": false
+  },
+  "delivery": {
+    "path": "releases/sejire-independent-3ed64d1.zip",
+    "sha256": "29204dda9130c30baeade6dca07fdadfe4c643d67acf5a6c7f034626beab2d96",
+    "bytes": 1256285,
+    "crc": "PASS",
+    "exactFileComparisonToAcceptedCi": "PASS",
+    "exactFileComparisonToOfficialPrepare": "PASS",
+    "zipRootContainsSiteFiles": true
+  },
+  "prepareArtifacts": [
+    {
+      "id": 14310351076,
+      "name": "permaweb-upload-evidence",
+      "zipSha256": "902877f005832c8cfeb0a9c82cc769d00842ecf2f6b79058035771d5c93bd1a8",
+      "zipBytes": 1330,
+      "extractedDirectory": ".cache/audit-20261117/prepare-44042817147-upload-evidence",
+      "files": 2
+    },
+    {
+      "id": 14310087297,
+      "name": "permaweb-accepted-pack",
+      "zipSha256": "9460ce3d23c01d55c8e71ecc23bd6cd458c5f0b116a9a39db31e40bb7409f5f1",
+      "zipBytes": 1265748,
+      "extractedDirectory": ".cache/audit-20261117/prepare-44042817147-accepted-pack",
+      "files": 41
+    }
+  ],
+  "publicationQuote": {
+    "quotedAt": "2026-11-17T07:59:00.014Z",
+    "quotedWinc": "39042965855",
+    "maxQuoteWinc": "0",
+    "withinBudget": false,
+    "items": 42,
+    "autoTopUp": false,
+    "providerHardCap": false,
+    "limitKind": "preflight-quote-only",
+    "fundingAuthorized": false
+  },
+  "networkReadiness": {
+    "checkedAt": "2026-11-17T07:46:28.252Z",
+    "nodes": [
+      "https://arweave.net",
+      "https://turbo-gateway.com"
+    ],
+    "ready": 2,
+    "required": 2,
+    "readOnly": true,
+    "walletChecked": false,
+    "uploadAttempted": false
+  },
+  "publicSite": {
+    "observedAt": "2026-11-17T07:14:39Z",
+    "url": "https://sejire.ar.io/",
+    "observedGatewayTarget": "UVtbBWxU9HK5gD21Pq0qc3I4adRREFbOQpU4F0NXik8",
+    "newIndependentReleasePublished": false,
+    "newManifestId": null,
+    "arnsTargetChanged": false,
+    "ownerControllerAndRegistrationVerified": false,
+    "registrationReadLimit": "Documented resolver exposes target/ANT/TTL, not expiry/permissions. One web-tool resolver request was unavailable through that tool; no conclusion that the API or name is down.",
+    "ttlIsRegistrationExpiry": false,
+    "arnsArchitectureSource": "https://docs.ar.io/learn/protocol-architecture/"
+  },
+  "legacyPaidArchive": {
+    "id": "AtwLYx509C9jWIFKUNg7dy1GSgiaDbXVK1YEQbBWfHY",
+    "observedAt": "2026-11-17T06:56:51Z",
+    "statusHttp": 200,
+    "blockHeight": 2035774,
+    "confirmations": 8229,
+    "metadataBytes": 25269,
+    "rawHttp": 404,
+    "actualBytesRetrieved": false,
+    "ownerRecoveryConfirmed": false,
+    "originalPreservationKitCompletenessVerified": false,
+    "replaceWithNewPayment": false
+  },
+  "dependencyAudit": {
+    "webProduction": {
+      "low": 13,
+      "moderate": 10,
+      "high": 0,
+      "critical": 0
+    },
+    "webIncludingDev": {
+      "low": 18,
+      "moderate": 11,
+      "high": 0,
+      "critical": 0
+    },
+    "legacySponsorProduction": {
+      "low": 13,
+      "moderate": 1,
+      "high": 0,
+      "critical": 0
+    },
+    "legacySponsorIncludingDev": {
+      "low": 13,
+      "moderate": 1,
+      "high": 3,
+      "critical": 0
+    },
+    "legacySponsorHighPackageEntries": [
+      "sharp",
+      "undici",
+      "miniflare"
+    ],
+    "webProductionAffectedPackagePathsInAcceptedBundle": 0,
+    "scopeNote": "Package-level findings; no claim of zero vulnerabilities in the repository or third-party security certification."
+  },
+  "remainingAcceptance": [
+    "Owner approves a fresh quote and publication funding; no signer/key/balance verified here.",
+    "Publish exact site files and path manifest; verify public bytes, routing and receipts.",
+    "Verify ArNS owner/controller/registration, then perform owner-authorized @ Target cutover and verify.",
+    "Real Arweave wallet reject/sign/reload/resume and same-ID readback on synthetic data.",
+    "Restore complete vault in a clean context and separately offline with saved encrypted kit.",
+    "Physical Safari/iOS/Android coverage where these platforms are promised.",
+    "Resolve the previous paid archive without an automatic replacement payment."
+  ],
+  "longTermLimits": [
+    "No guarantee of service or network survival for 200 years.",
+    "Gateway operator infrastructure may include Cloudflare; endpoints are replaceable.",
+    "Offline recovery needs actual encrypted bytes, archive words and compatible format/decoder.",
+    "External media URLs do not archive media bytes.",
+    "Unsupported historical ANS-104 items require the original encrypted file."
+  ]
+}

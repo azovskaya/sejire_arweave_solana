@@ -1,0 +1,79 @@
+[
+  {
+    "id": "canonical-programs",
+    "url": "https://docs.ar.io/learn/token/",
+    "ref": "turn949910334view1",
+    "lines": "35-52",
+    "supports": "Canonical mainnet ario-arns, ario-ant, ario-ant-escrow program IDs",
+    "retrievedDate": "2026-11-18"
+  },
+  {
+    "id": "state-model",
+    "url": "https://docs.ar.io/learn/protocol-architecture/",
+    "ref": "turn519379249view1",
+    "lines": "75-120",
+    "supports": "Solana registry/ANT state model and seed namespaces arns_record, ant_record, ant_controllers, escrow_ant. The page does not specify every binary field layout or hash encoding.",
+    "retrievedDate": "2026-11-18"
+  },
+  {
+    "id": "core-owner-layout",
+    "url": "https://www.metaplex.com/docs/smart-contracts/core/what-is-an-asset",
+    "ref": "turn380084256view0",
+    "lines": "104-110",
+    "supports": "Core account starts with key:u8 followed by owner:pubKey (32 bytes). This is the primary source for the typed NFT-owner decoding.",
+    "retrievedDate": "2026-11-18"
+  },
+  {
+    "id": "core-program",
+    "url": "https://www.metaplex.com/docs/smart-contracts/core",
+    "ref": "turn346476220search8",
+    "supports": "MPL Core program address CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZNhX7d",
+    "retrievedDate": "2026-11-18"
+  },
+  {
+    "id": "solana-ant-init",
+    "url": "https://docs.ar.io/sdks/ar-io-sdk/initialize/",
+    "ref": "turn369231570view2",
+    "lines": "43-68",
+    "supports": "Current read-only ANT init uses a Solana RPC; compatibility field processId denotes an MPL Core asset pubkey, not proof of an AO process",
+    "retrievedDate": "2026-11-18"
+  },
+  {
+    "id": "registry-read-api",
+    "url": "https://docs.ar.io/sdks/ar-io-sdk/ar-io-name-system-arns/",
+    "ref": "turn519379249view2",
+    "lines": "150-166",
+    "supports": "Documented getArNSRecord public-read shape includes type and timestamps. Examples are not evidence of sejire values.",
+    "retrievedDate": "2026-11-18"
+  },
+  {
+    "id": "attributes-not-registry",
+    "url": "https://github.com/ar-io/ar-io-solana-contracts/blob/develop/docs/FEATURE_MATRIX.md",
+    "ref": "turn349981897search1",
+    "supports": "NFT Attributes plugin reflects name/type/limit; ArnsRecord PDA is source of truth and attribute synchronization can be deferred",
+    "retrievedDate": "2026-11-18",
+    "retrieval": "search result; no blocked direct-source endpoint retried"
+  },
+  {
+    "id": "resolver-api",
+    "url": "https://docs.ar.io/apis/ar-io-node/arns/",
+    "ref": "turn367591393view0",
+    "lines": "23-69",
+    "supports": "Documented GET /ar-io/resolver/{name} contains target/ANT/TTL but not ownership or registration expiry",
+    "retrievedDate": "2026-11-18"
+  },
+  {
+    "id": "rpc-read-semantics",
+    "url": "https://solana.com/docs/rpc/http/getaccountinfo",
+    "ref": "turn369231570view0",
+    "supports": "getAccountInfo reads account state and metadata; supports finalized commitment and base64 data",
+    "retrievedDate": "2026-11-18"
+  },
+  {
+    "id": "migration",
+    "url": "https://ar.io/solana-migration/",
+    "ref": "turn915902168view1",
+    "supports": "Current official Solana migration context; no claim/connect/write action was invoked",
+    "retrievedDate": "2026-11-18"
+  }
+]

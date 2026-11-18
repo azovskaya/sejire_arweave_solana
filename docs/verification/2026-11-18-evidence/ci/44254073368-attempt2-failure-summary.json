@@ -1,0 +1,63 @@
+{
+  "checkedAt": "2026-11-18T07:12:04.244Z",
+  "request": {
+    "sha": "0f5bcfd53cd5287a972e13618c59576789c2d471",
+    "runId": 44254073368,
+    "attempt": 2
+  },
+  "status": "completed",
+  "conclusion": "failure",
+  "jobId": 134638482165,
+  "completedAt": "2026-11-18T07:09:53Z",
+  "currentBranchHead": "0f5bcfd53cd5287a972e13618c59576789c2d471",
+  "steps": {
+    "success": 29,
+    "failure": 1,
+    "skipped": 47
+  },
+  "failure": {
+    "step": "Standalone recovery HTML offline in Chromium, Firefox and WebKit (synthetic data)",
+    "engine": "webkit",
+    "message": "locator.waitFor: Timeout30000ms exceeded; the private JSON download link did not become visible",
+    "location": "tools/recovery/browser.test.mjs:70:85",
+    "fileNavigationAndOfflineAssertion": "PASS: diagnostic confirms actual file:// with HTTP denied and offline emulation enabled after local navigation",
+    "fixtureIndex": "NOT_REPORTED",
+    "pageAlert": "NOT_REPORTED",
+    "rootCause": "Not established from available log; further focused diagnosis required"
+  },
+  "engines": {
+    "chromium": "PASS",
+    "firefox": "PASS",
+    "webkit": "FAIL"
+  },
+  "tests": {
+    "pass": 2,
+    "fail": 1
+  },
+  "artifacts": {
+    "total": 0,
+    "permawebStaticRelease": null,
+    "dependencyAuditEvidence": null,
+    "directApiReadiness": null,
+    "independentScreens": null
+  },
+  "acceptance": {
+    "status": "REJECTED",
+    "error": "release_ci_not_successful",
+    "newAcceptedPackageCreated": false,
+    "finalModuleMap": "NOT_AVAILABLE: later stages skipped"
+  },
+  "log": {
+    "file": ".cache/audit-20261118/ci/44254073368-attempt2-job-134638482165.log",
+    "bytes": 291851,
+    "sha256": "01d243b0a4395ca9ee020a6db9262f5303f801a7280c39033e5f520ee264f271",
+    "retention": "ignored local cache; do not publish raw runner logs"
+  },
+  "actionsByReviewer": {
+    "dispatch": false,
+    "rerun": false,
+    "cancel": false,
+    "deploy": false,
+    "sourceEdit": false
+  }
+}

@@ -1,0 +1,528 @@
+{
+  "status": "PASS",
+  "gate": {
+    "schema": "sejire/worker-release-gate/v1",
+    "sourceCommit": "3ed64d14738a2c7080de2007bb34f2df13dd7e1f",
+    "ciRunId": 44040950008,
+    "ciAttempt": 1,
+    "repository": "azovskaya/sejire_arweave_solana",
+    "branch": "feat/decentralized-arweave-20261116"
+  },
+  "checkedAt": "2026-11-17T07:57:58.872Z",
+  "evidence": {
+    "request": {
+      "sha": "3ed64d14738a2c7080de2007bb34f2df13dd7e1f",
+      "runId": 44040950008,
+      "attempt": 1
+    },
+    "artifact": {
+      "id": 14309427569,
+      "node_id": "MDg6QXJ0aWZhY3QxNDMwOTQyNzU2OQ==",
+      "name": "permaweb-static-release",
+      "size_in_bytes": 1265313,
+      "url": "https://api.github.com/repos/azovskaya/sejire_arweave_solana/actions/artifacts/14309427569",
+      "archive_download_url": "https://api.github.com/repos/azovskaya/sejire_arweave_solana/actions/artifacts/14309427569/zip",
+      "expired": false,
+      "digest": "sha256:d613cbb11412843772f0f17b0ba4ea9ab0a1168b3634d51c55044fe2281a94b1",
+      "created_at": "2026-11-17T07:47:04Z",
+      "updated_at": "2026-11-17T07:47:04Z",
+      "expires_at": "2026-12-01T07:47:03Z",
+      "workflow_run": {
+        "id": 44040950008,
+        "repository_id": 1393130716,
+        "head_repository_id": 1393130716,
+        "head_branch": "feat/decentralized-arweave-20261116",
+        "head_sha": "3ed64d14738a2c7080de2007bb34f2df13dd7e1f"
+      }
+    }
+  },
+  "files": 41,
+  "totalBytes": 2900136,
+  "releaseManifestSha256": "b51e46a891c41ab8cb7d23a7b6ecaef50e4a5829528ffbcbb19fee9eeacbf613",
+  "directory": ".cache/permaweb-accepted-3ed64d1",
+  "provenance": {
+    "schema": "sejire/permaweb-provenance/v1",
+    "artifact": "permaweb-static-release",
+    "run": 44040950008,
+    "attempt": 1,
+    "artifactId": 14309427569,
+    "sourceCommit": "3ed64d14738a2c7080de2007bb34f2df13dd7e1f",
+    "publishedByCommit": "3ed64d14738a2c7080de2007bb34f2df13dd7e1f",
+    "profile": "decentralized-direct-arweave",
+    "zipSha256": "d613cbb11412843772f0f17b0ba4ea9ab0a1168b3634d51c55044fe2281a94b1",
+    "releaseManifestSha256": "b51e46a891c41ab8cb7d23a7b6ecaef50e4a5829528ffbcbb19fee9eeacbf613"
+  },
+  "plan": {
+    "schema": "sejire/permaweb-upload-plan/v1",
+    "sourceCommit": "3ed64d14738a2c7080de2007bb34f2df13dd7e1f",
+    "profile": "decentralized-direct-arweave",
+    "files": [
+      {
+        "path": "404.html",
+        "bytes": 2132,
+        "sha256": "8f373c48cd392e01b300e805051763aebd2336d16fa54bdd33b3ce389a36ee20"
+      },
+      {
+        "path": "assets/NotoSans-Bold-axMicgqH.ttf",
+        "bytes": 575740,
+        "sha256": "c976e4b1b99edc88775377fcc21692ca4bfa46b6d6ca6522bfda505b28ff9d6a"
+      },
+      {
+        "path": "assets/NotoSans-Regular-Dpf_lrdO.ttf",
+        "bytes": 569208,
+        "sha256": "b85c38ecea8a7cfb39c24e395a4007474fa5a4fc864f6ee33309eb4948d232d5"
+      },
+      {
+        "path": "assets/classicTreePdf-CJDoGpTp.js",
+        "bytes": 3756,
+        "sha256": "d247784b2d57fb7d26c9c1858bb1e1f8d1ce6a73b8977ec5f1578c9ccc6d5afe"
+      },
+      {
+        "path": "assets/html2canvas-B0nUEnH5.js",
+        "bytes": 199565,
+        "sha256": "b55f1740bf047d76f728b4b073eeace6337890cf7302ed3929fcfe8f21cb8780"
+      },
+      {
+        "path": "assets/index-C0vTJ_5C.css",
+        "bytes": 41317,
+        "sha256": "548574629cda8992026e5c2447526f5bfa63daef2c9fec4896403b7e38d4f50a"
+      },
+      {
+        "path": "assets/index-O7OIfsnW.js",
+        "bytes": 498112,
+        "sha256": "bc05821bbb048e3b4150405f67cd2987cdd91ebc86918f44f32087d918dedc6f"
+      },
+      {
+        "path": "assets/index.es-dO1MPbuv.js",
+        "bytes": 151395,
+        "sha256": "d857c990562da7cb61bbd27ecb86a19e5a498ac72a5fe643fa1820ddff9b98c8"
+      },
+      {
+        "path": "assets/pdf-vendor-kxEw6BGF.js",
+        "bytes": 400365,
+        "sha256": "2ee3c5af85060c2481a5c241a493c6de82aeb4fa7e504f9184fbdc2ff00b077b"
+      },
+      {
+        "path": "assets/poster-DAxTq35K.js",
+        "bytes": 5699,
+        "sha256": "a7312a1ba373c267bb74b373d0eff8604f396eec92f6e3e91b8baaf74037ab95"
+      },
+      {
+        "path": "assets/purify.es-Cu8FNuDu.js",
+        "bytes": 28568,
+        "sha256": "921ac83a891f9a98b36a542556701dc1fa0d63e6eb9fdcaafd908e4bf9c909cd"
+      },
+      {
+        "path": "assets/rolldown-runtime-BgaNhQyE.js",
+        "bytes": 785,
+        "sha256": "d43d78cdecb2fcc96488c7cf92e38b917085a254a60ff17a554163ace62c541c"
+      },
+      {
+        "path": "assets/shezhirePdf-Dn8f_uTD.js",
+        "bytes": 13468,
+        "sha256": "52061185ef26a047f18fb332bd84d28032192563616568e0a99a2304eec1ecb5"
+      },
+      {
+        "path": "assets/wallet-DZ-AkEcU.js",
+        "bytes": 78937,
+        "sha256": "a5e79cd5b4b1c81ccb6ed9b37bf0e7a09b483cb76593ca1c97333ccb02636e8e"
+      },
+      {
+        "path": "assets/work-sans-latin-400-normal-DE1_0GuN.woff",
+        "bytes": 25240,
+        "sha256": "facad8d73150d94fa019a8535f4e7dfc18424e31f4510e78f415778a25b753c0"
+      },
+      {
+        "path": "assets/work-sans-latin-400-normal-jUejSri3.woff2",
+        "bytes": 19900,
+        "sha256": "418b06936717d2e9b6c7a1fb61acb7e2f40030be4b230452f96505230e7b6b41"
+      },
+      {
+        "path": "assets/work-sans-latin-700-normal-CEeo_t6l.woff2",
+        "bytes": 20840,
+        "sha256": "c1e51267967030c3d8893931aa3b2e087b9caf44332cf7c384f4f4c22da0dadc"
+      },
+      {
+        "path": "assets/work-sans-latin-700-normal-mDs79oer.woff",
+        "bytes": 26176,
+        "sha256": "74d2b77da25670bf239c8f53d3ff76247fcf744dfabccf90d611d8bc0b6d962d"
+      },
+      {
+        "path": "assets/work-sans-latin-ext-400-normal-j7TZlk-s.woff",
+        "bytes": 21116,
+        "sha256": "f6a1556cade62e1d995df243b82c1dfa3c16dd37e23308916c12accaf17ea06a"
+      },
+      {
+        "path": "assets/work-sans-latin-ext-400-normal-zfQnhXzv.woff2",
+        "bytes": 15296,
+        "sha256": "7b2538119da8724c4678021a93a1b1959c0d9c99444e3c6871381ec89fba5949"
+      },
+      {
+        "path": "assets/work-sans-latin-ext-700-normal-BP8nCPzd.woff",
+        "bytes": 22100,
+        "sha256": "f4bdf60df3cf569e3f57126e83dedab7e529665a065599e77a1855b00c2de68e"
+      },
+      {
+        "path": "assets/work-sans-latin-ext-700-normal-Bc0iTajH.woff2",
+        "bytes": 16168,
+        "sha256": "b7c35cff11db7f3ad72fe2176036f4c9c084656fbc3615acb87767b5fdc0b00c"
+      },
+      {
+        "path": "assets/work-sans-vietnamese-400-normal-BxGuknnG.woff2",
+        "bytes": 5020,
+        "sha256": "dd780ff7f679354e436b1e5b52c89e4843500e7ec36bb237e5c1d73fc89ef149"
+      },
+      {
+        "path": "assets/work-sans-vietnamese-400-normal-DFZk_KN_.woff",
+        "bytes": 7088,
+        "sha256": "f4b34f20778063e19036c016e01db2098c0e4a8efb06056d0a1e6e7fd41e7a3c"
+      },
+      {
+        "path": "assets/work-sans-vietnamese-700-normal-BYAoORCv.woff",
+        "bytes": 7544,
+        "sha256": "f318057308e7d5c25572232713674f8b773116bf1bf4662432909df254947439"
+      },
+      {
+        "path": "assets/work-sans-vietnamese-700-normal-CqjC4WOy.woff2",
+        "bytes": 5392,
+        "sha256": "4e9c8f3d4c7f0a450e6b6a44267703df393b072cb11f02f3dd141e95c18effda"
+      },
+      {
+        "path": "build-provenance.json",
+        "bytes": 508,
+        "sha256": "bae8532dbf75e982cfd31947dd11403be2d5d238a4af6fbd9cd4deb3e2045bd0"
+      },
+      {
+        "path": "bundle-boundary.json",
+        "bytes": 24747,
+        "sha256": "8efdefd1249b63e86dfd538b7c42c6a24f053562be1304a3c40f4f75ff931b77"
+      },
+      {
+        "path": "favicon.ico",
+        "bytes": 148,
+        "sha256": "e2392a49b4c011153e7d79eae34a145adbb521c006976e95818594fffaeb4db3"
+      },
+      {
+        "path": "favicon.svg",
+        "bytes": 148,
+        "sha256": "e2392a49b4c011153e7d79eae34a145adbb521c006976e95818594fffaeb4db3"
+      },
+      {
+        "path": "index.html",
+        "bytes": 2132,
+        "sha256": "8f373c48cd392e01b300e805051763aebd2336d16fa54bdd33b3ce389a36ee20"
+      },
+      {
+        "path": "recovery/FORMAT.md",
+        "bytes": 9372,
+        "sha256": "420b47f94a27e84c0daacd052e1bfc599faa34b938aff38604abbe050a44bedc"
+      },
+      {
+        "path": "recovery/LICENSES.txt",
+        "bytes": 2413,
+        "sha256": "f97a6c3404d8a2c46fad2e9ec82734f2fabef0aea9decf6dfc0ad42ed97bcfff"
+      },
+      {
+        "path": "recovery/README.md",
+        "bytes": 7438,
+        "sha256": "ba43e35448326f94371ee24f8c8453b068f61c596cd864c5eb3b3937e4b2d1bf"
+      },
+      {
+        "path": "recovery/english.txt",
+        "bytes": 13116,
+        "sha256": "2f5eed53a4727b4bf8880d8f3f199efc90e58503646d9ff8eff3a2ed3b24dbda"
+      },
+      {
+        "path": "recovery/envelope-v1.schema.json",
+        "bytes": 960,
+        "sha256": "d778054b4d58c50bfe3404342911f4ac94b1952b3bb2615d114b59a737610989"
+      },
+      {
+        "path": "recovery/public-vectors.json",
+        "bytes": 18534,
+        "sha256": "ac75d9a6cb3ed9b5fded300ce43db7457dcbe844d1198f302554e0008403a75e"
+      },
+      {
+        "path": "recovery/recover.mjs",
+        "bytes": 25285,
+        "sha256": "f841b4e0ec4c86b65476b869aa0f8a5f703fe44f8703ce1cfb2822e695980996"
+      },
+      {
+        "path": "recovery/recovery.html",
+        "bytes": 29644,
+        "sha256": "cec4fdd7ea9733583d86788689e4cc0bbe63c40b4116b1aaf75242e56be54385"
+      },
+      {
+        "path": "release-manifest.json",
+        "bytes": 4471,
+        "sha256": "b51e46a891c41ab8cb7d23a7b6ecaef50e4a5829528ffbcbb19fee9eeacbf613"
+      },
+      {
+        "path": "release-profile.json",
+        "bytes": 293,
+        "sha256": "bcef16a7d2fed8ef843d9de3b45ac5eb0e3b7dc6da1dadc3d0f3838acace67a7"
+      }
+    ],
+    "totalFileBytes": 2900136,
+    "manifestBytes": 3733,
+    "quotedItemBytes": [
+      6228,
+      579836,
+      573304,
+      7852,
+      203661,
+      45413,
+      502208,
+      155491,
+      404461,
+      9795,
+      32664,
+      4881,
+      17564,
+      83033,
+      29336,
+      23996,
+      24936,
+      30272,
+      25212,
+      19392,
+      26196,
+      20264,
+      9116,
+      11184,
+      11640,
+      9488,
+      4604,
+      28843,
+      4244,
+      4244,
+      6228,
+      13468,
+      6509,
+      11534,
+      17212,
+      5056,
+      22630,
+      29381,
+      33740,
+      8567,
+      4389,
+      7829
+    ],
+    "sdk": "@ardrive/turbo-sdk@2.1.0",
+    "uploadOrigin": "https://upload.ardrive.io",
+    "paymentOrigin": "https://payment.ardrive.io",
+    "funding": "existing-own-balance",
+    "autoTopUp": false,
+    "arnsTargetChange": false
+  },
+  "boundary": {
+    "jsAssets": 10,
+    "renderedModules": 339
+  },
+  "dependencies": {
+    "lockfileSha256": "daab8369e0c4323765a6641ed99c6b547050596085e2b684942e98d8fd6cc88d",
+    "audit": {
+      "info": 0,
+      "low": 13,
+      "moderate": 10,
+      "high": 0,
+      "critical": 0,
+      "total": 23
+    },
+    "findings": [
+      {
+        "package": "@ardrive/turbo-sdk",
+        "severity": "moderate",
+        "paths": [
+          "node_modules/@ardrive/turbo-sdk"
+        ],
+        "includedModulePaths": []
+      },
+      {
+        "package": "@dha-team/arbundles",
+        "severity": "low",
+        "paths": [
+          "node_modules/@dha-team/arbundles"
+        ],
+        "includedModulePaths": []
+      },
+      {
+        "package": "@ethersproject/abstract-provider",
+        "severity": "low",
+        "paths": [
+          "node_modules/@ethersproject/abstract-provider"
+        ],
+        "includedModulePaths": []
+      },
+      {
+        "package": "@ethersproject/abstract-signer",
+        "severity": "low",
+        "paths": [
+          "node_modules/@ethersproject/abstract-signer"
+        ],
+        "includedModulePaths": []
+      },
+      {
+        "package": "@ethersproject/hash",
+        "severity": "low",
+        "paths": [
+          "node_modules/@ethersproject/hash",
+          "node_modules/@ethersproject/wordlists/node_modules/@ethersproject/hash"
+        ],
+        "includedModulePaths": []
+      },
+      {
+        "package": "@ethersproject/hdnode",
+        "severity": "low",
+        "paths": [
+          "node_modules/@ethersproject/hdnode"
+        ],
+        "includedModulePaths": []
+      },
+      {
+        "package": "@ethersproject/json-wallets",
+        "severity": "low",
+        "paths": [
+          "node_modules/@ethersproject/json-wallets"
+        ],
+        "includedModulePaths": []
+      },
+      {
+        "package": "@ethersproject/providers",
+        "severity": "low",
+        "paths": [
+          "node_modules/@ethersproject/providers"
+        ],
+        "includedModulePaths": []
+      },
+      {
+        "package": "@ethersproject/signing-key",
+        "severity": "low",
+        "paths": [
+          "node_modules/@ethersproject/abstract-provider/node_modules/@ethersproject/signing-key",
+          "node_modules/@ethersproject/hdnode/node_modules/@ethersproject/signing-key",
+          "node_modules/@ethersproject/json-wallets/node_modules/@ethersproject/signing-key",
+          "node_modules/@ethersproject/signing-key"
+        ],
+        "includedModulePaths": []
+      },
+      {
+        "package": "@ethersproject/transactions",
+        "severity": "low",
+        "paths": [
+          "node_modules/@ethersproject/abstract-provider/node_modules/@ethersproject/transactions",
+          "node_modules/@ethersproject/hdnode/node_modules/@ethersproject/transactions",
+          "node_modules/@ethersproject/json-wallets/node_modules/@ethersproject/transactions",
+          "node_modules/@ethersproject/transactions"
+        ],
+        "includedModulePaths": []
+      },
+      {
+        "package": "@ethersproject/wallet",
+        "severity": "low",
+        "paths": [
+          "node_modules/@ethersproject/wallet"
+        ],
+        "includedModulePaths": []
+      },
+      {
+        "package": "@ethersproject/wordlists",
+        "severity": "low",
+        "paths": [
+          "node_modules/@ethersproject/wordlists"
+        ],
+        "includedModulePaths": []
+      },
+      {
+        "package": "@solana/buffer-layout-utils",
+        "severity": "moderate",
+        "paths": [
+          "node_modules/@solana/buffer-layout-utils"
+        ],
+        "includedModulePaths": []
+      },
+      {
+        "package": "@solana/spl-token",
+        "severity": "moderate",
+        "paths": [
+          "node_modules/@solana/spl-token"
+        ],
+        "includedModulePaths": []
+      },
+      {
+        "package": "@solana/spl-token-group",
+        "severity": "moderate",
+        "paths": [
+          "node_modules/@solana/spl-token-group"
+        ],
+        "includedModulePaths": []
+      },
+      {
+        "package": "@solana/spl-token-metadata",
+        "severity": "moderate",
+        "paths": [
+          "node_modules/@solana/spl-token-metadata"
+        ],
+        "includedModulePaths": []
+      },
+      {
+        "package": "@solana/web3.js",
+        "severity": "moderate",
+        "paths": [
+          "node_modules/@solana/web3.js"
+        ],
+        "includedModulePaths": []
+      },
+      {
+        "package": "elliptic",
+        "severity": "low",
+        "paths": [
+          "node_modules/elliptic"
+        ],
+        "includedModulePaths": []
+      },
+      {
+        "package": "jayson",
+        "severity": "moderate",
+        "paths": [
+          "node_modules/jayson"
+        ],
+        "includedModulePaths": []
+      },
+      {
+        "package": "qs",
+        "severity": "moderate",
+        "paths": [
+          "node_modules/qs"
+        ],
+        "includedModulePaths": []
+      },
+      {
+        "package": "secp256k1",
+        "severity": "low",
+        "paths": [
+          "node_modules/secp256k1"
+        ],
+        "includedModulePaths": []
+      },
+      {
+        "package": "stream-json",
+        "severity": "moderate",
+        "paths": [
+          "node_modules/stream-json"
+        ],
+        "includedModulePaths": []
+      },
+      {
+        "package": "uuid",
+        "severity": "moderate",
+        "paths": [
+          "node_modules/uuid"
+        ],
+        "includedModulePaths": []
+      }
+    ],
+    "scope": "Exact accepted CI bundle module map against the patched web production npm audit; not a proof of absence of all vulnerabilities."
+  }
+}

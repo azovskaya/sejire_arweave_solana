@@ -1,0 +1,66 @@
+[
+  {
+    "url": "https://sejire.ar.io/",
+    "checkedAt": "2026-11-18T06:43:10.603280+00:00",
+    "status": 200,
+    "finalUrl": "https://sejire.ar.io/",
+    "headers": {
+      "server": "envoy",
+      "date": "Wed, 18 Nov 2026 06:43:18 GMT",
+      "content-type": "text/html; charset=utf-8",
+      "x-arns-name": "sejire",
+      "x-arns-resolved-id": "UVtbBWxU9HK5gD21Pq0qc3I4adRREFbOQpU4F0NXik8",
+      "x-arns-basename": "sejire",
+      "x-arns-record": "@",
+      "x-arns-ttl-seconds": "900",
+      "x-arns-ant-program-id": "2MWexMHfMhGJwMHv9Qm9YAVCqjUFUJwDJAysW4oCUGk5",
+      "x-arns-ant-id": "997oV9UJDwKzmfCs2wFVLd4mML4hmJ6K3z71UMxUb2H8",
+      "x-arns-resolved-at": "1794899679071",
+      "x-arns-undername-limit": "10",
+      "x-arns-record-index": "0",
+      "cache-control": "public, max-age=900"
+    },
+    "bytes": 1231,
+    "sha256": "c39617148fa157ce4d71608bd80cfb225611c0e673fd29b290d6d863160a36cc"
+  },
+  {
+    "url": "https://sejire.ar.io/runtime-profile.json",
+    "checkedAt": "2026-11-18T06:43:18.184972+00:00",
+    "status": 404,
+    "headers": {
+      "server": "envoy",
+      "date": "Wed, 18 Nov 2026 06:43:24 GMT",
+      "content-type": "text/html; charset=utf-8",
+      "x-arns-name": "sejire",
+      "x-arns-resolved-id": "UVtbBWxU9HK5gD21Pq0qc3I4adRREFbOQpU4F0NXik8",
+      "x-arns-basename": "sejire",
+      "x-arns-record": "@",
+      "x-arns-ttl-seconds": "900",
+      "x-arns-ant-program-id": "2MWexMHfMhGJwMHv9Qm9YAVCqjUFUJwDJAysW4oCUGk5",
+      "x-arns-ant-id": "997oV9UJDwKzmfCs2wFVLd4mML4hmJ6K3z71UMxUb2H8",
+      "x-arns-resolved-at": "1794984204833",
+      "x-arns-undername-limit": "10",
+      "x-arns-record-index": "0"
+    }
+  },
+  {
+    "url": "https://sejire.ar.io/build-provenance.json",
+    "checkedAt": "2026-11-18T06:43:24.900450+00:00",
+    "status": 404,
+    "headers": {
+      "server": "envoy",
+      "date": "Wed, 18 Nov 2026 06:43:31 GMT",
+      "content-type": "text/html; charset=utf-8",
+      "x-arns-name": "sejire",
+      "x-arns-resolved-id": "UVtbBWxU9HK5gD21Pq0qc3I4adRREFbOQpU4F0NXik8",
+      "x-arns-basename": "sejire",
+      "x-arns-record": "@",
+      "x-arns-ttl-seconds": "900",
+      "x-arns-ant-program-id": "2MWexMHfMhGJwMHv9Qm9YAVCqjUFUJwDJAysW4oCUGk5",
+      "x-arns-ant-id": "997oV9UJDwKzmfCs2wFVLd4mML4hmJ6K3z71UMxUb2H8",
+      "x-arns-resolved-at": "1794984198196",
+      "x-arns-undername-limit": "10",
+      "x-arns-record-index": "0"
+    }
+  }
+]

@@ -1,0 +1,14 @@
+This is a transcript of previously observed local tool output, not a new test execution or a stdout redirect.
+Original exec session: 70671
+Command: node --import ./apps/web/node_modules/tsx/dist/loader.mjs apps/web/src/lib/directArweave/protocolBoundaries.selftest.ts
+Exit: 1
+Runtime: Node.js v24.22.3
+
+AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
++ actual - expected
+
++ 'confirming'
+- 'complete'
+
+Location at the time of execution: protocolBoundaries.selftest.ts:154:12
+This run preceded the client.ts explicit unconfirmed replay fix.

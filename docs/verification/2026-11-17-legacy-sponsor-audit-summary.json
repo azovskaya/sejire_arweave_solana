@@ -1,0 +1,109 @@
+{
+  "schema": "sejire/ci-audit-summary/v1",
+  "sourceFormat": "Derived summary of npm audit plain-text log; not raw npm audit --json output",
+  "ciRunId": 44040950008,
+  "ciAttempt": 1,
+  "jobId": 133895132554,
+  "sourceCommit": "3ed64d14738a2c7080de2007bb34f2df13dd7e1f",
+  "jobUrl": "https://github.com/azovskaya/sejire_arweave_solana/actions/runs/44040950008/job/133895132554",
+  "command": "npm audit --prefix apps/sponsor",
+  "scope": "apps/sponsor including development tools",
+  "commandExitCode": 1,
+  "continueOnError": true,
+  "workflowConclusion": "success",
+  "counts": {
+    "low": 13,
+    "moderate": 1,
+    "high": 3,
+    "critical": 0,
+    "total": 17
+  },
+  "countMeaning": "Affected package entries including inherited parent findings, not distinct vulnerabilities or CVEs",
+  "highPackages": [
+    {
+      "name": "sharp",
+      "severity": "high",
+      "affectedRange": "<0.35.5",
+      "path": "node_modules/sharp",
+      "advisories": [
+        {
+          "id": "GHSA-wq5f-xc86-pv6w",
+          "url": "https://github.com/advisories/GHSA-wq5f-xc86-pv6w",
+          "title": "sharp: vulnerability in librsvg dependency CVE-2026-96889"
+        }
+      ]
+    },
+    {
+      "name": "undici",
+      "severity": "high",
+      "affectedRange": "7.0.0 - 7.30.0",
+      "path": "node_modules/undici",
+      "advisories": [
+        {
+          "id": "GHSA-4qv8-2p9j-2685",
+          "url": "https://github.com/advisories/GHSA-4qv8-2p9j-2685",
+          "title": "Denial of service via unbounded memory in EventSource parser"
+        },
+        {
+          "id": "GHSA-f72v-6w45-q472",
+          "url": "https://github.com/advisories/GHSA-f72v-6w45-q472",
+          "title": "Subresource Integrity bypass via non-lowercase algorithm tokens"
+        },
+        {
+          "id": "GHSA-xjj6-f33q-929c",
+          "url": "https://github.com/advisories/GHSA-xjj6-f33q-929c",
+          "title": "Denial of service via unhandled error on excessive content-encodings"
+        },
+        {
+          "id": "GHSA-4w7w-5xrc-9h26",
+          "url": "https://github.com/advisories/GHSA-4w7w-5xrc-9h26",
+          "title": "Cache poisoning and cross-user disclosure via cross-origin redirects"
+        },
+        {
+          "id": "GHSA-2m5v-pch6-74hx",
+          "url": "https://github.com/advisories/GHSA-2m5v-pch6-74hx",
+          "title": "TLS certificate validation bypass via dropped tls options in Agent"
+        },
+        {
+          "id": "GHSA-qrxm-fqhp-jwvm",
+          "url": "https://github.com/advisories/GHSA-qrxm-fqhp-jwvm",
+          "title": "Denial of service via TLS 1.2 certificate-changing renegotiation"
+        },
+        {
+          "id": "GHSA-9fm3-97px-rjf6",
+          "url": "https://github.com/advisories/GHSA-9fm3-97px-rjf6",
+          "title": "WebSocket denial of service via unbounded automatic PONG buffering"
+        },
+        {
+          "id": "GHSA-55wc-3pg8-jfw6",
+          "url": "https://github.com/advisories/GHSA-55wc-3pg8-jfw6",
+          "title": "Denial of service via unhandled exception in decompress interceptor"
+        }
+      ]
+    },
+    {
+      "name": "miniflare",
+      "severity": "high",
+      "path": "node_modules/miniflare",
+      "viaPackages": [
+        "sharp",
+        "undici"
+      ],
+      "inheritedFinding": true
+    }
+  ],
+  "auditSuggestedRemediation": {
+    "command": "npm audit fix --force",
+    "proposedMiniflareVersion": "4.20250508.2",
+    "breakingChange": true,
+    "executed": false
+  },
+  "rawLogExcerpt": {
+    "file": "2026-11-17-legacy-sponsor-audit.txt",
+    "sourceLog": "ci-44040950008-job-133895132554.log",
+    "startLine": 4256,
+    "endLine": 4371,
+    "sourceFileInAuditWorkspace": "sponsor-full-audit-ci-44040950008.txt"
+  },
+  "changesPerformed": false
+}

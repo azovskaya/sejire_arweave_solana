@@ -1,0 +1,90 @@
+✖ release preparation rejects source symlinks before copying or overwriting outside files (52.538117ms)
+✔ release preparation refuses an existing destination without merging or changing its contents (38.510049ms)
+✖ artifact recovery rejects a valid ZIP whose actual length contradicts GitHub metadata (184.28934ms)
+✖ Cloudflare resources cannot hide in entry HTML, a stylesheet or the standalone recovery page (24.859666ms)
+✖ an interrupted SDK upload cannot be called again with the same evidence to sign an ambiguous item twice (1798.464562ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 1
+ℹ fail 4
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2270.819108
+
+✖ failing tests:
+
+test at scripts/permaweb-release.test.mjs:149:1
+✖ release preparation rejects source symlinks before copying or overwriting outside files (52.538117ms)
+  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /unsafe_static_asset/. Input:
+  
+  'Error: independent_unsafe_static_path'
+  
+      at async TestContext.<anonymous> (file:///workspace/scratch/0aa608872e5d/sejire-deep-validation/scripts/permaweb-release.test.mjs:155:5)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: Error: independent_unsafe_static_path
+        at fail (file:///workspace/scratch/0aa608872e5d/sejire-deep-validation/scripts/static-release-profile.mjs:25:59)
+        at staticFiles (file:///workspace/scratch/0aa608872e5d/sejire-deep-validation/scripts/static-release-profile.mjs:61:7)
+        at async verifyIndependentBuild (file:///workspace/scratch/0aa608872e5d/sejire-deep-validation/scripts/static-release-profile.mjs:93:44)
+        at async preparePermaweb (file:///workspace/scratch/0aa608872e5d/sejire-deep-validation/scripts/prepare-permaweb.mjs:33:5)
+        at async waitForActual (node:assert:646:5)
+        at async strict.rejects (node:assert:769:25)
+        at async TestContext.<anonymous> (file:///workspace/scratch/0aa608872e5d/sejire-deep-validation/scripts/permaweb-release.test.mjs:155:5)
+        at async Test.run (node:internal/test_runner/test:1409:7)
+        at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3),
+    expected: /unsafe_static_asset/,
+    operator: 'rejects',
+    diff: 'simple'
+  }
+
+test at scripts/permaweb-release.test.mjs:174:1
+✖ artifact recovery rejects a valid ZIP whose actual length contradicts GitHub metadata (184.28934ms)
+  AssertionError [ERR_ASSERTION]: Missing expected rejection.
+      at async TestContext.<anonymous> (file:///workspace/scratch/0aa608872e5d/sejire-deep-validation/scripts/permaweb-release.test.mjs:182:3)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: /artifact_size_mismatch/,
+    operator: 'rejects',
+    diff: 'simple'
+  }
+
+test at scripts/permaweb-release.test.mjs:237:1
+✖ Cloudflare resources cannot hide in entry HTML, a stylesheet or the standalone recovery page (24.859666ms)
+  AssertionError [ERR_ASSERTION]: Missing expected rejection: entry
+      at async TestContext.<anonymous> (file:///workspace/scratch/0aa608872e5d/sejire-deep-validation/scripts/permaweb-release.test.mjs:250:5)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: /independent_(?:cloudflare_endpoint_in_bundle|nonportable_entry)/,
+    operator: 'rejects',
+    diff: 'simple'
+  }
+
+test at scripts/permaweb-release.test.mjs:390:1
+✖ an interrupted SDK upload cannot be called again with the same evidence to sign an ambiguous item twice (1798.464562ms)
+  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /upload_attempt_requires_review/. Input:
+  
+  'FailedRequestError: Failed request: Failed to upload file after 2 attempts\n' +
+    'synthetic ambiguous upload ACK'
+  
+      at async TestContext.<anonymous> (file:///workspace/scratch/0aa608872e5d/sejire-deep-validation/scripts/permaweb-release.test.mjs:415:5)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: FailedRequestError: Failed request: Failed to upload file after 2 attempts
+    synthetic ambiguous upload ACK
+        at TurboAuthenticatedUploadService.uploadFile (/workspace/scratch/0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ardrive/turbo-sdk/lib/cjs/common/upload.js:534:15)
+        at async uploadFile (/workspace/scratch/0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ardrive/turbo-sdk/lib/cjs/common/upload.js:865:32),
+    expected: /upload_attempt_requires_review/,
+    operator: 'rejects',
+    diff: 'simple'
+  }

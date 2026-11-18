@@ -1,0 +1,180 @@
+TAP version 13
+# Subtest: manual feature-branch request is mandatory; malformed release inputs fail closed
+ok 1 - manual feature-branch request is mandatory; malformed release inputs fail closed
+  ---
+  duration_ms: 2.386981
+  type: 'test'
+  ...
+# Subtest: a fresh runner cannot repeat an upload when GitHub reruns an earlier dispatch
+ok 2 - a fresh runner cannot repeat an upload when GitHub reruns an earlier dispatch
+  ---
+  duration_ms: 0.460251
+  type: 'test'
+  ...
+# Subtest: exact CI, attempt, all steps and current feature head are checked before artifact use
+ok 3 - exact CI, attempt, all steps and current feature head are checked before artifact use
+  ---
+  duration_ms: 12.103815
+  type: 'test'
+  ...
+# Subtest: artifact ZIP is hashed, extracted without overwrite, and gets CI-bound public provenance
+ok 4 - artifact ZIP is hashed, extracted without overwrite, and gets CI-bound public provenance
+  ---
+  duration_ms: 233.418715
+  type: 'test'
+  ...
+# /opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/zipfile/__init__.py:1625: UserWarning: Duplicate name: 'index.html'
+#   return self._open_to_write(zinfo, force_zip64=force_zip64)
+# Subtest: ZIP traversal, unlisted credentials, symlinks, duplicates and digest mismatch cannot publish
+ok 5 - ZIP traversal, unlisted credentials, symlinks, duplicates and digest mismatch cannot publish
+  ---
+  duration_ms: 331.573496
+  type: 'test'
+  ...
+# Subtest: release preparation rejects source symlinks before copying or overwriting outside files
+ok 6 - release preparation rejects source symlinks before copying or overwriting outside files
+  ---
+  duration_ms: 74.582446
+  type: 'test'
+  ...
+# Subtest: release preparation refuses an existing destination without merging or changing its contents
+ok 7 - release preparation refuses an existing destination without merging or changing its contents
+  ---
+  duration_ms: 23.778074
+  type: 'test'
+  ...
+# Subtest: artifact recovery rejects a valid ZIP whose actual length contradicts GitHub metadata
+ok 8 - artifact recovery rejects a valid ZIP whose actual length contradicts GitHub metadata
+  ---
+  duration_ms: 55.214646
+  type: 'test'
+  ...
+# Subtest: artifact pagination cannot hide missing, duplicate or changing evidence behind a valid first page
+ok 9 - artifact pagination cannot hide missing, duplicate or changing evidence behind a valid first page
+  ---
+  duration_ms: 2.056384
+  type: 'test'
+  ...
+# Subtest: release verification binds all bytes, source SHA, fallback, file set and independent profile
+ok 10 - release verification binds all bytes, source SHA, fallback, file set and independent profile
+  ---
+  duration_ms: 40.113834
+  type: 'test'
+  ...
+# Subtest: legacy funded profile remains verifiable but cannot become the independent release
+ok 11 - legacy funded profile remains verifiable but cannot become the independent release
+  ---
+  duration_ms: 11.78669
+  type: 'test'
+  ...
+# Subtest: a Worker endpoint or legacy lazy module cannot hide behind an independent manifest
+ok 12 - a Worker endpoint or legacy lazy module cannot hide behind an independent manifest
+  ---
+  duration_ms: 22.58677
+  type: 'test'
+  ...
+# Subtest: Cloudflare resources cannot hide in entry HTML, a stylesheet or the standalone recovery page
+ok 13 - Cloudflare resources cannot hide in entry HTML, a stylesheet or the standalone recovery page
+  ---
+  duration_ms: 79.837355
+  type: 'test'
+  ...
+# Subtest: independent package requires offline recovery and exact evidence for every dynamic chunk
+ok 14 - independent package requires offline recovery and exact evidence for every dynamic chunk
+  ---
+  duration_ms: 26.140481
+  type: 'test'
+  ...
+# Subtest: boundary hashes final emitted bytes after a late bundler transform while preserving the module map
+ok 15 - boundary hashes final emitted bytes after a late bundler transform while preserving the module map
+  ---
+  duration_ms: 22.400615
+  type: 'test'
+  ...
+# Subtest: bounded reads reject overlong streams and dishonest Content-Length
+ok 16 - bounded reads reject overlong streams and dishonest Content-Length
+  ---
+  duration_ms: 0.919231
+  type: 'test'
+  ...
+# Subtest: quote includes each file, signed-item overhead and fallback manifest; budget and own balance fail closed
+ok 17 - quote includes each file, signed-item overhead and fallback manifest; budget and own balance fail closed
+  ---
+  duration_ms: 31.103239
+  type: 'test'
+  ...
+# Subtest: upload adapter pins existing-balance funding, own payer, one file at a time, and explicit fallback
+ok 18 - upload adapter pins existing-balance funding, own payer, one file at a time, and explicit fallback
+  ---
+  duration_ms: 31.808112
+  type: 'test'
+  ...
+# Subtest: the installed pinned Turbo SDK actually constructs a v0.2 manifest with 404 fallback (mocked transport)
+ok 19 - the installed pinned Turbo SDK actually constructs a v0.2 manifest with 404 fallback (mocked transport)
+  ---
+  duration_ms: 919.997713
+  type: 'test'
+  ...
+# Subtest: a lost upload ACK does not cause the pinned SDK to sign a second randomized item
+ok 20 - a lost upload ACK does not cause the pinned SDK to sign a second randomized item
+  ---
+  duration_ms: 747.912708
+  type: 'test'
+  ...
+# Subtest: the real SDK folder queue stops before signing later files after the first failed upload
+ok 21 - the real SDK folder queue stops before signing later files after the first failed upload
+  ---
+  duration_ms: 63.030998
+  type: 'test'
+  ...
+# Subtest: an interrupted SDK upload cannot be called again with the same evidence to sign an ambiguous item twice
+ok 22 - an interrupted SDK upload cannot be called again with the same evidence to sign an ambiguous item twice
+  ---
+  duration_ms: 83.614613
+  type: 'test'
+  ...
+# Subtest: concurrent upload calls sharing one evidence directory cannot both enter the SDK
+ok 23 - concurrent upload calls sharing one evidence directory cannot both enter the SDK
+  ---
+  duration_ms: 27.782132
+  type: 'test'
+  ...
+# Subtest: older partial-upload journals block a new attempt and preserve their contents
+ok 24 - older partial-upload journals block a new attempt and preserve their contents
+  ---
+  duration_ms: 32.856449
+  type: 'test'
+  ...
+# Subtest: public verification checks every byte and real fallback, rejects wrong bodies, HTTP errors and off-origin redirects
+ok 25 - public verification checks every byte and real fallback, rejects wrong bodies, HTTP errors and off-origin redirects
+  ---
+  duration_ms: 50.406538
+  type: 'test'
+  ...
+# Subtest: plan mode cannot read an upload key and produces only public metadata
+ok 26 - plan mode cannot read an upload key and produces only public metadata
+  ---
+  duration_ms: 171.248957
+  type: 'test'
+  ...
+# Subtest: owner browser-upload verification fetches only a bounded public raw path manifest
+ok 27 - owner browser-upload verification fetches only a bounded public raw path manifest
+  ---
+  duration_ms: 1.030926
+  type: 'test'
+  ...
+# Subtest: ArNS readiness never passes a 503/disabled policy or a broken paid authorization preflight
+ok 28 - ArNS readiness never passes a 503/disabled policy or a broken paid authorization preflight
+  ---
+  duration_ms: 0.827395
+  type: 'test'
+  ...
+1..28
+# tests 28
+# suites 0
+# pass 28
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 3268.80164

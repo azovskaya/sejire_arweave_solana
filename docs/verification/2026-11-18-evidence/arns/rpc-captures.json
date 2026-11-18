@@ -1,0 +1,113 @@
+{
+  "format": "sejire-public-arns-evidence/v1",
+  "scope": "Existing tool outputs captured into files after retrieval. No external requests made by this evidence-saving step.",
+  "network": "Solana mainnet-beta",
+  "endpoint": "https://api.mainnet-beta.solana.com",
+  "transport": "POST with read-only JSON-RPC methods; no transactions, signatures or fees",
+  "sourcesOfTruth": "RPC-reported finalized account snapshots; no independent ledger proof or RPC quorum verification",
+  "requests": [
+    {
+      "bodyFile": "ant-asset.rpc.raw.json",
+      "representation": "Original UTF-8 HTTP JSON body transcribed from the exact body string retained in completed exec output. Includes original trailing LF; large JSON integer text preserved.",
+      "toolOutput": {
+        "execSession": 37139,
+        "finalChunk": "f22ac4"
+      },
+      "startedAt": "2026-11-18T06:47:45.110Z",
+      "finishedAt": "2026-11-18T06:47:53.089Z",
+      "status": 200,
+      "request": {
+        "jsonrpc": "2.0",
+        "id": "sejire-public-ant-read",
+        "method": "getAccountInfo",
+        "params": [
+          "997oV9UJDwKzmfCs2wFVLd4mML4hmJ6K3z71UMxUb2H8",
+          {
+            "commitment": "finalized",
+            "encoding": "jsonParsed"
+          }
+        ]
+      },
+      "responseEncoding": "base64 (program did not return jsonParsed account data)",
+      "limits": {
+        "timeoutMs": 15000,
+        "maxResponseBytes": 131072
+      },
+      "slot": 470840042
+    },
+    {
+      "bodyFile": "arns-record.rpc.raw.json",
+      "representation": "Original UTF-8 HTTP JSON body transcribed from the exact body string retained in completed exec output. Includes original trailing LF; large JSON integer text preserved.",
+      "toolOutput": {
+        "execSession": 52594,
+        "finalChunk": "ff3533"
+      },
+      "startedAt": "2026-11-18T06:48:33.345Z",
+      "finishedAt": "2026-11-18T06:48:41.945Z",
+      "status": 200,
+      "request": {
+        "jsonrpc": "2.0",
+        "id": "sejire-public-registry-read",
+        "method": "getAccountInfo",
+        "params": [
+          "AzMhXzwRKBAeC5jBJnkwzbXefDaLuK3gddU9Ga9vY8Ze",
+          {
+            "commitment": "finalized",
+            "encoding": "base64"
+          }
+        ]
+      },
+      "limits": {
+        "timeoutMs": 15000,
+        "maxResponseBytes": 131072
+      },
+      "slot": 470840274
+    },
+    {
+      "snapshotFile": "ant-record-controllers.rpc.parsed-snapshot.json",
+      "representation": "Exact captured stdout snapshot after the original command parsed JSON and selected response fields; NOT the original HTTP body. Account base64 strings preserved. rentEpoch was rounded by JavaScript Number and is not used in any conclusion.",
+      "originalRawHttpBodyAvailable": false,
+      "toolOutput": {
+        "execSession": 44564,
+        "finalChunk": "9b9f2f"
+      },
+      "startedAt": "2026-11-18T06:50:31.506Z",
+      "finishedAt": "2026-11-18T06:50:38.706Z",
+      "status": 200,
+      "request": {
+        "jsonrpc": "2.0",
+        "id": "sejire-public-cutover-state",
+        "method": "getMultipleAccounts",
+        "params": [
+          [
+            "4HHXTmPjSgdQRDc3X2wUQCsKqmbpDc7Rw5BwqumKnzKC",
+            "2yzkJFEQkbRyVhGifnYtQxLGWyjoDcsEju6FE2834BBW",
+            "2caRpPkmJ6Ra6sqS8NkopLMxkahxrpC6UPyJs7MWVXZ3"
+          ],
+          {
+            "commitment": "finalized",
+            "encoding": "base64"
+          }
+        ]
+      },
+      "limits": {
+        "timeoutMs": 15000,
+        "maxResponseBytes": 1048576
+      },
+      "slot": 470840816
+    }
+  ],
+  "forbiddenActionsPerformed": [],
+  "notPerformed": [
+    "wallet login",
+    "wallet signature",
+    "transaction broadcast",
+    "spend",
+    "ArNS mutation",
+    "new dependency installation",
+    "Worker request",
+    "Rigel request",
+    "user archive read",
+    "new external request while saving evidence"
+  ]
+}

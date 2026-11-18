@@ -1,0 +1,122 @@
+{
+  "format": "sejire-focused-cross-review/v1",
+  "reviewedAt": "2026-11-18T07:25:19.414Z",
+  "reviewer": "/root/reaudit_protocol",
+  "scope": "Read-only focused review of the offline WebKit browser harness and its CI/documented launch commands. No source edits, tests, browser launches, CI dispatches, installs or network requests performed by reviewer.",
+  "verdict": "NO_BLOCKING_FINDINGS_FOR_CI_VALIDATION",
+  "blockingFindings": [],
+  "sourceState": "Working-tree file hashes identify the exact reviewed content; runtime success of these changes is still for CI to establish.",
+  "reviewedFiles": {
+    "tools/recovery/browser.test.mjs": {
+      "bytes": 18245,
+      "sha256": "af4906dfe7f6c505655458a00615674cf1daa816b014cab32010c0fbbb888449"
+    },
+    "tools/recovery/README.md": {
+      "bytes": 9879,
+      "sha256": "d212d9bd990eac3fafdaf84192cd2c9b1fda4e2bf1313020e107f49484ca0a32"
+    },
+    ".github/workflows/checks.yml": {
+      "bytes": 9718,
+      "sha256": "08d4ead13f91106c6a2043b3a0dc251543cec9dcb71cf84fa9d009595cb5022d"
+    },
+    "docs/INDEPENDENT_RELEASE.md": {
+      "bytes": 15746,
+      "sha256": "fdbe4871a97871c89181c4868ef4c89bcfd382176d4ce11af9b31f1ce6db562c"
+    }
+  },
+  "confirmedByCodeInspection": [
+    {
+      "concern": "Fail-closed OS offline guard",
+      "location": "tools/recovery/browser.test.mjs:14-40,121,242",
+      "finding": "Requires explicit marker AND Linux AND a netns distinct from /proc/1, no non-loopback devices even when down, only internal addresses, no IPv4 default and no usable IPv6 default. Reads and format failures fail the test. Checked before browser launch and after all cases; no skipped engine or online fallback."
+    },
+    {
+      "concern": "IPv6 sentinels and missing IPv6 support",
+      "location": "tools/recovery/browser.test.mjs:19-20,33-40",
+      "finding": "Only ENOENT reading ipv6_route is tolerated. Route shape/hex flags are checked; RTF_REJECT default entries are excluded because they reject packets. Any non-lo device independently fails the earlier guard, so filtering defaults is not the sole isolation test."
+    },
+    {
+      "concern": "WebKit offline emulation exception",
+      "location": "tools/recovery/browser.test.mjs:121,139-164",
+      "finding": "WebKit uses offline:false only after the OS guard succeeds. File navigation stays actual file://. HTTP interception and request counting are installed before navigation. Chromium/Firefox retain offline emulation and navigator.onLine false assertion."
+    },
+    {
+      "concern": "Bounded A/B diagnostic probe",
+      "location": "tools/recovery/browser.test.mjs:73-116",
+      "finding": "Only public synthetic files and fixed byte arrays are used. setInputFiles runs before toggling the requested flag, separating automation file assignment from File.text. File.text and PBKDF2/HKDF/AES-GCM branches each have a 3000ms Promise.race timer. The offline:false branch must pass both APIs. Error outputs are whitelisted names; no exception text, words, ciphertext or plaintext is logged. Timed-out underlying promises are not cancelled but only touch synthetic values and have no decoder/storage mutations."
+    },
+    {
+      "concern": "Recovery diagnostic privacy",
+      "location": "tools/recovery/browser.test.mjs:43-70",
+      "finding": "A 10000ms wait settles on download or error and reports only engine, fixture identifier, boolean status and a fixed UI-text allowlist. Unexpected text is replaced with its length. No raw page status/error string is placed in the custom diagnostic."
+    },
+    {
+      "concern": "Coverage is preserved",
+      "location": "tools/recovery/browser.test.mjs:135-136,167-241",
+      "finding": "Pins 2 public vectors and fixture indices [0,3,10,15], inputs.length6, exactly6 successful downloads and5 rejection cases per engine. Download bytes are still compared with expected plaintext. Cases remain wrong phrase, modified ciphertext, truncated JSON, unsupported protocol and corrupted kit size."
+    },
+    {
+      "concern": "Privacy and stale plaintext checks preserved",
+      "location": "tools/recovery/browser.test.mjs:186-240",
+      "finding": "Words are cleared after recovery; changing inputs hides/removes the previous download URL; blob creation/revocation totals match; Storage.setItem remains0; page and console content assertions, HTTP-request count0 and pageerror count0 remain. No actual user data or wallet state enters this suite."
+    },
+    {
+      "concern": "sudo/root browser cache and runtime",
+      "location": ".github/workflows/checks.yml:52-61; tools/recovery/README.md:81-82; docs/INDEPENDENT_RELEASE.md:94-95",
+      "finding": "Browser dependencies are installed first as runner. The runner shell expands its cache path before sudo. Explicit PLAYWRIGHT_BROWSERS_PATH survives root HOME. sudo -H gives Firefox a root-owned HOME; Node is resolved to its absolute path before sudo. unshare --net executes Node and all child browsers inside the new namespace. CI step timeout is5minutes; each engine test is90seconds."
+    },
+    {
+      "concern": "Documentation scope",
+      "location": "tools/recovery/README.md:85-106; docs/INDEPENDENT_RELEASE.md:107-112",
+      "finding": "Documents Linux/network namespace requirements for the developer gate, custom browser-cache paths, WebKit emulation exception and distinction from physical Safari/iOS. Does not make Linux/admin rights a requirement for ordinary use of the portable decoder."
+    }
+  ],
+  "supplementalPrimaryCodeRead": [
+    {
+      "file": "apps/web/node_modules/playwright-core/lib/server/registry/index.js",
+      "lines": "472-493",
+      "finding": "Explicit PLAYWRIGHT_BROWSERS_PATH takes precedence over homedir cache discovery."
+    },
+    {
+      "file": "apps/web/node_modules/playwright-core/lib/server/firefox/firefox.js",
+      "lines": "62-69",
+      "finding": "Firefox launch diagnostics explicitly identify root with non-root-owned HOME as unsupported; sudo -H addresses this."
+    },
+    {
+      "file": "apps/web/node_modules/playwright-core/lib/server/chromium/chromium.js",
+      "lines": "291-292",
+      "finding": "Default Chromium launch supplies --no-sandbox unless chromiumSandbox:true is requested."
+    }
+  ],
+  "resolvedRecommendations": [
+    {
+      "topic": "Root HOME",
+      "status": "resolved",
+      "resolution": "Root added sudo -H in workflow; matching README and release documentation commands now inspected."
+    }
+  ],
+  "nonBlockingFindings": [],
+  "parentPerformedEvidenceRead": {
+    "path": ".cache/audit-20261118/os-offline-marker-only-negative.json",
+    "result": {
+      "expectedRejection": true,
+      "exitCode": 1,
+      "kernelGuardMatched": [
+        "offline marker alone is insufficient"
+      ],
+      "browserLaunched": false,
+      "logSHA256": "d8e0e27ce107fd2914fbc0475dbaef973102400362d257b5bd353038f757ea12",
+      "scope": "negative guard check only; not browser functional PASS"
+    },
+    "attribution": "Performed by root, not rerun by reviewer. This demonstrates marker-only fail-closed behavior; it is not browser functional PASS."
+  },
+  "reviewerTestsExecuted": [],
+  "reviewerBrowserLaunches": 0,
+  "reviewerExternalRequests": 0,
+  "limitations": [
+    "Review establishes code and launch-command consistency, not successful execution of the new positive namespace browser path.",
+    "All three engines still need the fresh CI result for the exact candidate.",
+    "A/B diagnostics record outcomes; no specific previously failing WebKit API is claimed without observing those results.",
+    "No physical Safari/iOS, real owner archive, wallet, upload, spending or ArNS update was tested."
+  ]
+}

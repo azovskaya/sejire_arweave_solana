@@ -1,0 +1,59 @@
+{
+  "schema": "sejire/deep-validation-evidence/v1",
+  "date": "2026-11-18",
+  "timezone": "Asia/Almaty",
+  "baselineSource": "3ed64d14738a2c7080de2007bb34f2df13dd7e1f",
+  "currentCandidate": "58474a6cad690de206412dfcb48c8ebbed84fa24",
+  "status": "pending exact CI44259578185; previous failed cases separately preserved",
+  "failedRuns": [
+    44252796058,
+    44254073368,
+    44258693808
+  ],
+  "runtimePublication": false,
+  "ownerWalletSigning": false,
+  "spending": false,
+  "arnsChanged": false,
+  "preservedEvidence": [
+    "protocol-summary.json",
+    "recovery-summary.json",
+    "release-review-summary.json",
+    "release-baseline-after-guards.json",
+    "release-cross-review.json",
+    "picomatch-advisory-scope.json",
+    "picomatch-registry-versions.json",
+    "web-production-audit.json",
+    "web-full-audit.json",
+    "public-site/health.json",
+    "ci/44252796058-github-evidence-final.json",
+    "ci/44252796058-failure-summary.json",
+    "ci/44252796058-offline-html-diagnosis.json",
+    "offline-browser-cross-review.json",
+    "os-offline-marker-only-negative.json"
+  ],
+  "attempts": [
+    {
+      "run": 44252796058,
+      "attempt": 1,
+      "conclusion": "failure"
+    },
+    {
+      "run": 44254073368,
+      "attempt": 1,
+      "conclusion": "cancelled"
+    },
+    {
+      "run": 44254073368,
+      "attempt": 2,
+      "conclusion": "failure"
+    },
+    {
+      "run": 44258693808,
+      "attempt": 1,
+      "conclusion": "failure",
+      "browserEnginesLaunched": 0
+    }
+  ],
+  "pendingRun": 44259578185,
+  "pendingAttempt": 1
+}

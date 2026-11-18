@@ -1,0 +1,15 @@
+PASS shared native reader retains all trees and history and leaves caller-owned keys unchanged
+PASS save preparation reads the exact known native HEAD without changing the selected cache
+PASS a stale parent prop cannot replace the selected HEAD, while matching and omitted parents use it
+PASS missing known-HEAD metadata stops preparation and preserves the full local vault
+PASS discovered IDs use the same native reader before becoming a save parent
+PASS an unavailable discovered archive never becomes an empty new vault
+PASS explicit file and local snapshots remain authoritative even when metadata is unavailable
+PASS a newer free preparation retains every tree when the local session update was unavailable
+PASS a shared local preparation from another parent stops a stale tab without discarding its full vault
+PASS fresh words can prepare offline while an empty discovery preserves an existing local vault
+PASS unreadable journal fails closed without replacing a selected complete local vault
+PASS a corrupted exact cached journal digest cannot silently fall back to an older native HEAD
+PASS malformed selected local vaults never become empty new archives or network replacements
+PASS seeded multi-generation local vaults reach the next preparation with every tree and snapshot intact
+independent native vault: 14 local fixture checks passed; no live signatures, uploads or payments
