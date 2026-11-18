@@ -52,13 +52,6 @@ jobs:
       - run: npm exec --prefix apps/web -- playwright install --with-deps chromium firefox webkit
       - name: Offline recovery format, standalone decoder and current-envelope compatibility
         run: npm run test:offline-recovery
-      - name: Standalone recovery HTML with OS network isolation in Chromium, Firefox and WebKit (synthetic data)
-        timeout-minutes: 5
-        run: |
-          SEJIRE_TEST_NODE="$(command -v node)"
-          sudo -H env PLAYWRIGHT_BROWSERS_PATH="$HOME/.cache/ms-playwright" \
-            SEJIRE_TEST_OS_OFFLINE=1 \
-            unshare --net "$SEJIRE_TEST_NODE" --test tools/recovery/browser.test.mjs
       - name: Direct Arweave signing, exact resume and chunk delivery (synthetic network)
         run: npm run test:direct --prefix apps/web
       - name: Read-only direct Arweave API and CORS readiness
@@ -79,8 +72,19 @@ jobs:
       - name: Independent recovery kit, complete local vault and legacy journal boundary
         run: npm run test:independent-unit --prefix apps/web
       - name: Build independent direct-Arweave application and every emitted chunk boundary
+        id: independent_build
         run: npm run arns:build && npm run arns:verify
+      - name: Standalone recovery HTML with OS network isolation in Chromium, Firefox and WebKit (synthetic data)
+        timeout-minutes: 5
+        run: |
+          SEJIRE_TEST_NODE="$(command -v node)"
+          sudo -H env PLAYWRIGHT_BROWSERS_PATH="$HOME/.cache/ms-playwright" \
+            SEJIRE_TEST_OS_OFFLINE=1 \
+            unshare --net "$SEJIRE_TEST_NODE" --test tools/recovery/browser.test.mjs
       - name: Independent static app in Chromium, Firefox and WebKit (synthetic network)
+        # Independent of standalone recovery: collect both outcomes. Any failed
+        # step still fails this job and prevents release-pack preparation.
+        if: ${{ !cancelled() && steps.independent_build.outcome == 'success' }}
         run: npm run test:independent-browser
       - name: Preserve independent desktop and mobile screens (synthetic family, no recovery words)
         uses: actions/upload-artifact@v4

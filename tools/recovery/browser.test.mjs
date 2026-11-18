@@ -5,11 +5,65 @@ import { createRequire } from 'node:module';
 import { spawnSync } from 'node:child_process';
 import { mkdtemp, readFile, readlink, rm, copyFile, writeFile } from 'node:fs/promises';
 import { networkInterfaces, tmpdir } from 'node:os';
+import { isIPv4 } from 'node:net';
 import { join } from 'node:path';
 import { pathToFileURL, fileURLToPath } from 'node:url';
 const require = createRequire(new URL('../../apps/web/package.json', import.meta.url));
 const { chromium, firefox, webkit } = require('@playwright/test');
 const { vectors } = JSON.parse(await readFile(new URL('./public-vectors.json', import.meta.url), 'utf8'));
+
+const v4Header = 'Iface Destination Gateway Flags RefCnt Use Metric Mask MTU Window IRTT';
+function verifyIPv4Routes(procText, readAllRoutes) {
+  const text = procText.trim();
+  if (!text) {
+    // Some isolated runners expose zero bytes rather than the header in procfs.
+    // Require an independent successful netlink query; an absent/malformed or
+    // failed command must never be interpreted as an empty routing table.
+    const result = readAllRoutes();
+    assert.equal(result.error, undefined, 'could not query kernel IPv4 routes through iproute2');
+    assert.equal(result.signal, null, 'IPv4 route query terminated'); assert.equal(result.status, 0, 'IPv4 route query failed');
+    const routes = JSON.parse(result.stdout);
+    assert(Array.isArray(routes), 'unexpected netlink IPv4 route list');
+    for (const route of routes) {
+      assert(route && typeof route === 'object' && !Array.isArray(route) && typeof route.dst === 'string', 'malformed netlink IPv4 route');
+      assert(!['default', '0.0.0.0/0', '0/0'].includes(route.dst), 'isolated namespace must have no IPv4 default route');
+      const [address, prefix, ...extra] = route.dst.split('/');
+      assert(isIPv4(address) && !extra.length && (prefix === undefined || /^(?:[1-9]|[12]\d|3[0-2])$/.test(prefix)),
+        'invalid netlink IPv4 routing destination');
+      if (route.dev !== undefined) assert.equal(route.dev, 'lo', 'IPv4 route uses a non-loopback device');
+    }
+    return;
+  }
+  const [header, ...rows] = text.split('\n');
+  assert.equal(header.trim().split(/\s+/).join(' '), v4Header, 'unexpected kernel IPv4 route header');
+  for (const row of rows) {
+    const fields = row.trim().split(/\s+/);
+    assert.equal(fields.length, 11, 'unexpected kernel IPv4 route row');
+    assert.equal(fields[0], 'lo', 'IPv4 route uses a non-loopback device');
+    for (const index of [1, 2, 7]) assert.match(fields[index], /^[\da-f]{8}$/i, 'invalid IPv4 destination, gateway or mask');
+    assert.match(fields[3], /^[\da-f]{4,8}$/i, 'invalid kernel IPv4 flags');
+    for (const index of [4, 5, 6, 8, 9, 10]) assert.match(fields[index], /^\d+$/, 'invalid kernel IPv4 numeric field');
+    assert(!(fields[1] === '00000000' && fields[7] === '00000000'), 'isolated namespace must have no IPv4 default route');
+  }
+}
+
+test('IPv4 isolation parser: empty procfs needs valid netlink proof; bad rows and default routes fail closed', () => {
+  const reply = (stdout, changes = {}) => ({ status: 0, signal: null, stdout, ...changes });
+  const notCalled = () => assert.fail('a nonempty procfs table must be checked directly');
+  const local = 'lo 0000007F 00000000 0001 0 0 0 000000FF 0 0 0';
+  verifyIPv4Routes('', () => reply('[]'));
+  verifyIPv4Routes(' \n', () => reply('[{"type":"local","dst":"127.0.0.1","dev":"lo"}]'));
+  verifyIPv4Routes(v4Header, notCalled); verifyIPv4Routes(`${v4Header}\n${local}`, notCalled);
+  for (const invalid of [local, `${v4Header}\ntruncated`, `${v4Header}\n${local.replace('0000007F', 'invalid')}`,
+    `${v4Header}\nlo 00000000 00000000 0001 0 0 0 00000000 0 0 0`]) {
+    assert.throws(() => verifyIPv4Routes(invalid, notCalled));
+  }
+  for (const invalid of [reply('[]', { status: 1 }), reply('[]', { signal: 'SIGTERM' }), reply('[]', { error: new Error('ENOENT') }),
+    reply(''), reply('{}'), reply('[{}]'), reply('[{"dst":"bad"}]'), reply('[{"dst":"default"}]'),
+    reply('[{"dst":"0.0.0.0/0"}]'), reply('[{"dst":"127.0.0.1","dev":"external"}]')]) {
+    assert.throws(() => verifyIPv4Routes('', () => invalid));
+  }
+});
 
 async function verifyNetworkIsolation() {
   assert.equal(process.env.SEJIRE_TEST_OS_OFFLINE, '1', 'run this gate in a Linux network namespace with SEJIRE_TEST_OS_OFFLINE=1');
@@ -27,9 +81,8 @@ async function verifyNetworkIsolation() {
   const names = deviceRows.slice(2).filter(Boolean).map(row => row.split(':')[0].trim());
   assert(names.every(name => name === 'lo'), 'isolated namespace must contain no non-loopback devices, even if down');
   assert(Object.values(networkInterfaces()).flat().every(address => address.internal), 'isolated namespace must contain no external addresses');
-  const v4Rows = ipv4.trim().split('\n'); assert.match(v4Rows[0], /^Iface\s+Destination\s+Gateway\s+Flags/);
-  const v4Defaults = v4Rows.slice(1).filter(Boolean).map(row => row.trim().split(/\s+/)).filter(row => row[1] === '00000000');
-  assert.equal(v4Defaults.length, 0, 'isolated namespace must have no IPv4 default route');
+  verifyIPv4Routes(ipv4, () => spawnSync('ip', ['-j', '-4', 'route', 'show', 'table', 'all'],
+    { encoding: 'utf8', timeout: 3000, maxBuffer: 64 * 1024 }));
   const v6Defaults = ipv6.trim().split('\n').filter(Boolean).map(row => row.trim().split(/\s+/)).filter(row => {
     assert.equal(row.length, 10, 'unexpected kernel IPv6 route format');
     assert.match(row[0], /^[0-9a-f]{32}$/i); assert.match(row[1], /^[0-9a-f]{2}$/i); assert.match(row[8], /^[0-9a-f]{8}$/i);
