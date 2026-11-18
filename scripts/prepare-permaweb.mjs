@@ -1,11 +1,13 @@
 import {createHash} from 'node:crypto';
-import {cp,mkdir,readFile,readdir,stat,writeFile} from 'node:fs/promises';
+import {cp,lstat,mkdir,readFile,readdir,stat,writeFile} from 'node:fs/promises';
 import {resolve,relative,join,dirname} from 'node:path';
 import {execFileSync} from 'node:child_process';
 import {FUNDED_PROFILE, INDEPENDENT_PROFILE, PROFILE_FILE, verifyIndependentBuild} from './static-release-profile.mjs';
 
 const sha256=bytes=>createHash('sha256').update(bytes).digest('hex');
 async function files(root,dir=root){
+  const info=await lstat(dir);
+  if(!info.isDirectory()||info.isSymbolicLink())throw Error('unsafe_static_asset');
   const entries=[];
   for(const item of await readdir(dir,{withFileTypes:true})){
     const path=join(dir,item.name);
@@ -20,6 +22,9 @@ export async function preparePermaweb(source,out,sourceCommit){
   if(!/^[a-f0-9]{40}$/.test(sourceCommit))throw Error('invalid_source_commit');
   const src=resolve(source),dst=resolve(out);
   if(src===dst||dst.startsWith(src+'/'))throw Error('invalid_release_path');
+  // Reject links before copying: writing the generated 404 fallback through a
+  // copied symlink could otherwise overwrite a file outside the release.
+  await files(src);
   await mkdir(dirname(dst),{recursive:true});
   await cp(src,dst,{recursive:true,force:false,errorOnExist:true});
   const html=await readFile(join(dst,'index.html'),'utf8');

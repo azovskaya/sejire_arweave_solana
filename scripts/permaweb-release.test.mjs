@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { execFileSync } from 'node:child_process';
 import { createHash, generateKeyPairSync } from 'node:crypto';
-import { cp, mkdtemp, mkdir, readFile, rm, symlink, writeFile } from 'node:fs/promises';
+import { cp, lstat, mkdtemp, mkdir, readFile, rm, symlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { Readable } from 'node:stream';
@@ -146,6 +146,56 @@ test('ZIP traversal, unlisted credentials, symlinks, duplicates and digest misma
   await assert.rejects(() => recoverPermawebRelease(env, { fetcher, directory: join(f.root, 'never'), evidenceDirectory: join(f.root, 'evidence') }), /zip_digest_mismatch/);
 });
 
+test('release preparation rejects source symlinks before copying or overwriting outside files', async t => {
+  for (const entry of ['404.html', 'assets/linked.js']) {
+    const f = await fixture(t), protectedPath = join(f.root, 'outside.txt');
+    const output = join(f.root, 'untrusted-release');
+    await writeFile(protectedPath, 'outside release: keep these exact bytes');
+    await symlink(protectedPath, join(f.source, entry));
+    await assert.rejects(() => preparePermaweb(f.source, output, sha), /unsafe_static_asset|independent_unsafe_static_path/);
+    assert.equal(await readFile(protectedPath, 'utf8'), 'outside release: keep these exact bytes', entry);
+    await assert.rejects(() => lstat(output), { code: 'ENOENT' });
+  }
+  const f = await fixture(t), sourceAlias = join(f.root, 'source-alias'), output = join(f.root, 'linked-root-release');
+  await symlink(f.source, sourceAlias);
+  await assert.rejects(() => preparePermaweb(sourceAlias, output, sha), /unsafe_static_asset/);
+  await assert.rejects(() => lstat(output), { code: 'ENOENT' });
+  await assert.rejects(() => lstat(join(f.source, '404.html')), { code: 'ENOENT' });
+});
+
+test('release preparation refuses an existing destination without merging or changing its contents', async t => {
+  const f = await fixture(t), output = join(f.root, 'existing-release');
+  await mkdir(output); await writeFile(join(output, 'keep.txt'), 'do not merge');
+  await assert.rejects(() => preparePermaweb(f.source, output, sha), /EEXIST/);
+  assert.equal(await readFile(join(output, 'keep.txt'), 'utf8'), 'do not merge');
+  await assert.rejects(() => lstat(join(output, 'index.html')), { code: 'ENOENT' });
+});
+
+test('artifact recovery rejects a valid ZIP whose actual length contradicts GitHub metadata', async t => {
+  const f = await fixture(t), entries = await Promise.all(f.release.files.map(async file => [file.path, await readFile(join(f.output, file.path))]));
+  const zip = zipFrom(entries), checked = { ...artifact, digest: 'sha256:' + digest(zip), size_in_bytes: zip.length + 1 };
+  const api = apiFetch({ artifacts: [checked] });
+  const fetcher = async (url, options) => url.endsWith('/artifacts/123/zip')
+    ? new Response(null, { status: 302, headers: { location: 'https://storage.example/archive.zip' } })
+    : url === 'https://storage.example/archive.zip' ? new Response(zip) : api(url, options);
+  const directory = join(f.root, 'contradictory-size');
+  await assert.rejects(() => recoverPermawebRelease(env, { fetcher, directory, evidenceDirectory: join(f.root, 'evidence') }), /artifact_size_mismatch/);
+  await assert.rejects(() => lstat(directory), { code: 'ENOENT' });
+});
+
+test('artifact pagination cannot hide missing, duplicate or changing evidence behind a valid first page', async () => {
+  for (const kind of ['missing', 'duplicate', 'changed-total']) {
+    const base = apiFetch();
+    const fetcher = async (url, options) => {
+      if (!url.includes('/artifacts?')) return base(url, options);
+      const first = new URL(url).searchParams.get('page') === '1';
+      return json({ total_count: kind === 'changed-total' && !first ? 3 : 2,
+        artifacts: first || kind !== 'missing' ? [artifact] : [] });
+    };
+    await assert.rejects(() => checkPermawebRelease(env, fetcher), /permaweb_evidence_(?:incomplete|changed)/, kind);
+  }
+});
+
 test('release verification binds all bytes, source SHA, fallback, file set and independent profile', async t => {
   const f = await fixture(t);
   await assert.rejects(() => verifyRelease(f.output, 'c'.repeat(40)), /manifest_mismatch/);
@@ -182,6 +232,23 @@ test('a Worker endpoint or legacy lazy module cannot hide behind an independent 
   await writeFile(auditPath, JSON.stringify(report));
   await writeFile(join(f.output, 'assets/app.js'), code);
   await assert.rejects(() => verifyIndependentBuild(f.output), /worker_endpoint_in_bundle/);
+});
+
+test('Cloudflare resources cannot hide in entry HTML, a stylesheet or the standalone recovery page', async t => {
+  for (const surface of ['entry', 'css', 'recovery']) {
+    const f = await fixture(t);
+    if (surface === 'entry') {
+      // An unquoted HTML attribute is valid browser syntax, too.
+      const html = await readFile(join(f.output, 'index.html'), 'utf8') +
+        '<script src=https://cdnjs.cloudflare.com/ajax/libs/remote.js></script>';
+      await writeFile(join(f.output, 'index.html'), html); await writeFile(join(f.output, '404.html'), html);
+    } else if (surface === 'css') {
+      await writeFile(join(f.output, 'assets/extra.css'), '@import url("https://cdnjs.cloudflare.com/fonts.css");');
+    } else {
+      await writeFile(join(f.output, 'recovery/recovery.html'), '<script src="https://static.cloudflareinsights.com/beacon.min.js"></script>');
+    }
+    await assert.rejects(() => verifyIndependentBuild(f.output), /independent_(?:cloudflare_endpoint_in_bundle|nonportable_entry)/, surface);
+  }
 });
 
 test('independent package requires offline recovery and exact evidence for every dynamic chunk', async t => {
@@ -318,6 +385,69 @@ test('the real SDK folder queue stops before signing later files after the first
   // Allow the SDK's already queued promises to observe the abort, without network or a sleep.
   await new Promise(resolve => setImmediate(resolve));
   assert.equal(signatures, 1); assert.equal(sends, 1);
+});
+
+test('an interrupted SDK upload cannot be called again with the same evidence to sign an ambiguous item twice', async t => {
+  for (const acceptedFirstFile of [false, true]) {
+    const f = await fixture(t), sdk = await loadTurboSdk(), release = await withProvenance(f);
+    const quote = await quoteUpload({ getUploadCosts: async ({ bytes }) => bytes.map(() => ({ winc: '1' })) }, uploadPlan(release), '100000', () => 1000);
+    let signatures = 0, sends = 0;
+    const signer = { signDataItem: async () => {
+      signatures++;
+      return { dataItemStreamFactory: () => Readable.from(Buffer.from('synthetic')), dataItemSizeFactory: () => 9 };
+    } };
+    const config = turboServiceConfig();
+    const service = new sdk.TurboAuthenticatedUploadService({ ...config.uploadServiceConfig, token: config.token, signer, paymentService: {},
+      logger: { debug() {}, info() {}, warn() {}, error() {} } });
+    service.uploadSignedDataItem = async () => {
+      sends++;
+      if (acceptedFirstFile && sends === 1) return { id: 'B'.repeat(43), owner: id, winc: '1' };
+      throw Error('synthetic ambiguous upload ACK');
+    };
+    const client = { getBalance: async () => ({ winc: '100000' }), uploadFolder: service.uploadFolder.bind(service) };
+    const evidenceDirectory = join(f.root, 'interrupted-evidence');
+    const options = { client, sdk, release, quote, uploadAddress: id, evidenceDirectory, now: () => 1001 };
+    await assert.rejects(() => uploadAcceptedRelease(options), /synthetic ambiguous upload ACK/);
+    await new Promise(resolve => setImmediate(resolve));
+    const firstSignatures = signatures, firstSends = sends;
+    assert.equal(signatures, acceptedFirstFile ? 2 : 1);
+    if (acceptedFirstFile) assert.equal(JSON.parse((await readFile(join(evidenceDirectory, 'completed-files.jsonl'), 'utf8')).trim()).id, 'B'.repeat(43));
+    await assert.rejects(() => uploadAcceptedRelease(options), /upload_attempt_requires_review/);
+    await new Promise(resolve => setImmediate(resolve));
+    assert.equal(signatures, firstSignatures); assert.equal(sends, firstSends);
+  }
+});
+
+test('concurrent upload calls sharing one evidence directory cannot both enter the SDK', async t => {
+  const f = await fixture(t), release = await withProvenance(f);
+  const quote = await quoteUpload({ getUploadCosts: async ({ bytes }) => bytes.map(() => ({ winc: '1' })) }, uploadPlan(release), '100000', () => 1000);
+  let uploads = 0;
+  const client = { getBalance: async () => ({ winc: '100000' }), uploadFolder: async () => {
+    uploads++; throw Error('synthetic interrupted attempt');
+  } };
+  const sdk = { ExistingBalanceFunding: class {}, createFileFolderIndex: () => ({ get() {}, set() {} }) };
+  const options = { client, sdk, release, quote, uploadAddress: id, evidenceDirectory: join(f.root, 'racing-evidence'), now: () => 1001 };
+  const outcomes = await Promise.allSettled([uploadAcceptedRelease(options), uploadAcceptedRelease(options)]);
+  assert.equal(uploads, 1);
+  assert(outcomes.every(value => value.status === 'rejected'));
+  assert.deepEqual(outcomes.map(value => value.reason.message).sort(), ['permaweb_upload_attempt_requires_review', 'synthetic interrupted attempt']);
+});
+
+test('older partial-upload journals block a new attempt and preserve their contents', async t => {
+  const f = await fixture(t), release = await withProvenance(f);
+  const quote = await quoteUpload({ getUploadCosts: async ({ bytes }) => bytes.map(() => ({ winc: '1' })) }, uploadPlan(release), '100000', () => 1000);
+  for (const journal of ['folder-index.jsonl', 'completed-files.jsonl']) {
+    const evidenceDirectory = join(f.root, journal + '-evidence');
+    await mkdir(evidenceDirectory);
+    const prior = JSON.stringify({ id: 'B'.repeat(43), path: '404.html' }) + '\n';
+    await writeFile(join(evidenceDirectory, journal), prior);
+    const client = { getBalance: async () => assert.fail('prior upload must be reviewed before new account requests'),
+      uploadFolder: async () => assert.fail('prior upload must not be repeated') };
+    await assert.rejects(() => uploadAcceptedRelease({ client, sdk: {}, release, quote, uploadAddress: id,
+      evidenceDirectory, now: () => 1001 }), /upload_attempt_requires_review/);
+    assert.equal(await readFile(join(evidenceDirectory, journal), 'utf8'), prior);
+    await assert.rejects(() => lstat(join(evidenceDirectory, 'upload-attempt.json')), { code: 'ENOENT' });
+  }
 });
 
 test('public verification checks every byte and real fallback, rejects wrong bodies, HTTP errors and off-origin redirects', async t => {

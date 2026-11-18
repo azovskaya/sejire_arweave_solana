@@ -223,6 +223,7 @@ export async function recoverPermawebRelease(env, { fetcher = fetch, directory =
   requireValue(downloaded.ok, 'permaweb_artifact_download_failed');
   const bytes = await boundedBytes(downloaded, MAX_RELEASE_BYTES);
   requireValue(digest(bytes) === evidence.artifact.digest.slice(7), 'permaweb_zip_digest_mismatch');
+  requireValue(bytes.length === evidence.artifact.size_in_bytes, 'permaweb_artifact_size_mismatch');
   extractAcceptedZip(bytes, directory);
   const release = await verifyRelease(directory, evidence.request.sha, { expectedProfile: INDEPENDENT_PROFILE });
   await writeFile(join(release.root, 'build-provenance.json'), JSON.stringify(buildProvenance(evidence, release), null, 2) + '\n', { flag: 'wx' });

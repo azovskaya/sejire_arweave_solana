@@ -29,7 +29,7 @@ async function install(context, page, { draft = false, wallet = false, unavailab
   if (wallet) {
     await page.exposeBinding('__syntheticDirectSignature', async (_source, raw) => {
       state.signs++;
-      if (state.reject) throw Error('Synthetic wallet unavailable');
+      if (state.reject) throw Error(typeof state.reject === 'string' ? state.reject : 'Synthetic wallet unavailable');
       const tx = ar.transactions.fromRaw(raw);
       await ar.transactions.sign(tx, jwk);
       const signed = tx.toJSON();
@@ -509,4 +509,111 @@ test('a chosen custom node remains usable through restore, versions, preparation
   expect(state.external.length).toBeGreaterThan(0);
   expect(state.external.every(request => request.split(' ')[1].startsWith(custom + '/'))).toBe(true);
   expect(state.denied).toEqual([]); expect(state.signs).toBe(0); expect(state.posts).toEqual([]);
+});
+
+test('a valid but wrong archive phrase cannot replace any local state or trigger a network fallback', async ({ page, context }) => {
+  const state = await install(context, page);
+  await page.goto('/#/restore');
+  const before = await selectionState(page);
+  await page.getByLabel('Зашифрованный архив, комплект или квитанция', { exact: true }).setInputFiles({
+    name: 'synthetic-kit.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(kit)),
+  });
+  await page.getByLabel('12 слов SEJIRE', { exact: true }).fill(vectors[1].words);
+  await page.getByRole('button', { name: 'Открыть архив', exact: true }).click();
+  await expect(page.getByRole('alert')).toContainText('не относится к этим словам');
+  expect(await selectionState(page)).toEqual(before);
+  expect(state.external).toEqual([]); expect(state.signs).toBe(0); expect(state.posts).toEqual([]);
+  // The selected encrypted bytes remain available for a deliberate correction.
+  await expect(page.getByText('synthetic-kit.json', { exact: true })).toBeVisible();
+  await page.getByLabel('12 слов SEJIRE', { exact: true }).fill(vector.words);
+  await page.getByRole('button', { name: 'Открыть архив', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Сохранить', exact: true })).toBeVisible();
+  const after = await selectionState(page);
+  expect(JSON.parse(after.cache)).toEqual(JSON.parse(vector.archiveText));
+  expect(JSON.stringify(after)).not.toContain(vector.words);
+  expect(state.external).toEqual([]); expect(state.signs).toBe(0); expect(state.posts).toEqual([]);
+});
+
+test('leaving restoration while a verified network archive is delayed cannot later replace the draft or session', async ({ page, context }) => {
+  const state = await install(context, page, { draft: true });
+  const remote = await syntheticNativeVersion(vault);
+  state.header = remote.header; state.raw = remote.raw;
+  let releaseResponse, sawRequest, navigationDone = false, prompts = 0;
+  const gate = new Promise(resolve => { releaseResponse = resolve; });
+  const requested = new Promise(resolve => { sawRequest = resolve; });
+  const matcher = new RegExp('^https://(?:arweave\\.net|turbo-gateway\\.com)/(?:raw/)?' + remote.header.id + '$');
+  await context.route(matcher, async route => {
+    sawRequest(); await gate;
+    try { await text(route, remote.raw); }
+    catch (error) { if (!navigationDone) throw error; } // An aborted read may already be gone.
+  });
+  page.on('dialog', async dialog => { prompts++; await dialog.accept(); });
+  try {
+    await page.goto('/#/restore');
+    const before = await selectionState(page);
+    await page.getByLabel('12 слов SEJIRE', { exact: true }).fill(vector.words);
+    await page.getByLabel('ID транзакции Arweave (необязательно)', { exact: true }).fill(remote.header.id);
+    await page.getByRole('button', { name: 'Открыть архив', exact: true }).click();
+    await requested;
+    await page.evaluate(() => { location.hash = ''; });
+    await expect(page.locator('.independent-restore')).toHaveCount(0);
+    navigationDone = true; releaseResponse();
+    // Observe beyond completion of the small, deliberately delayed response.
+    // No subsequent screen action may be caused by an unmounted restore flow.
+    await page.waitForTimeout(1_000);
+    expect(prompts).toBe(0);
+    expect(await selectionState(page)).toEqual(before);
+    expect(state.signs).toBe(0); expect(state.posts).toEqual([]); expect(state.denied).toEqual([]);
+  } finally { releaseResponse(); await context.unrouteAll({ behavior: 'wait' }); }
+});
+
+test('an unavailable IndexedDB journal blocks preparation and wallet access while preserving the editor draft', async ({ page, context }) => {
+  const state = await install(context, page, { draft: true, wallet: true });
+  await context.addInitScript(() => {
+    const open = IDBFactory.prototype.open;
+    window.__deniedDirectJournal = 0;
+    IDBFactory.prototype.open = function (name, ...args) {
+      if (name === 'sejire-direct-arweave-v1') {
+        window.__deniedDirectJournal++;
+        throw new DOMException('Synthetic journal access denied', 'SecurityError');
+      }
+      return open.call(this, name, ...args);
+    };
+  });
+  await page.goto('/');
+  const before = await selectionState(page);
+  await page.getByRole('button', { name: 'Сохранить', exact: true }).click();
+  await expect(page.getByRole('alert')).toContainText('Не удалось проверить прежние заказы');
+  await expect(page.getByRole('button', { name: /Создать 12 слов SEJIRE|Подключить кошелёк|Подписать и отправить/ })).toHaveCount(0);
+  expect(await page.evaluate(() => window.__deniedDirectJournal)).toBeGreaterThan(0);
+  expect(await selectionState(page)).toEqual(before);
+  expect(state.signs).toBe(0); expect(state.posts).toEqual([]); expect(state.external).toEqual([]);
+});
+
+test('a definitive Wander decline keeps the same encrypted backup and requires an explicit second signing action', async ({ page, context }) => {
+  const state = await install(context, page, { draft: true, wallet: true });
+  await prepareNew(page);
+  await page.getByRole('button', { name: 'Подключить кошелёк и узнать цену', exact: true }).click();
+  const before = (await journal(page))[0];
+  state.reject = 'User failed to sign the transaction manually';
+  await page.getByRole('button', { name: /Подписать и отправить/ }).click();
+  await expect(page.getByRole('alert')).toContainText('Кошелёк отклонил запрос');
+  await expect(page.getByRole('button', { name: /Подписать и отправить/ })).toBeEnabled();
+  const declined = (await journal(page))[0];
+  expect(declined.state).toBe('prepared'); expect(declined.signingIntent).toBeNull();
+  expect(declined.archiveText).toBe(before.archiveText); expect(declined.id).toBe(before.id);
+  expect(state.signs).toBe(1); expect(state.posts).toEqual([]);
+  const downloadEvent = page.waitForEvent('download');
+  await page.getByRole('button', { name: 'Скачать комплект восстановления', exact: true }).click();
+  const download = await downloadEvent;
+  expect(await download.failure()).toBeNull();
+  expect(JSON.parse(await readFile(await download.path(), 'utf8')).archiveText).toBe(before.archiveText);
+  expect(state.signs).toBe(1); expect(state.posts).toEqual([]);
+  state.reject = false;
+  await page.getByRole('button', { name: /Подписать и отправить/ }).click();
+  await expect(page.getByText('Подтверждено и проверено', { exact: true })).toBeVisible();
+  const completed = (await journal(page))[0];
+  expect(completed.id).toBe(before.id); expect(completed.archiveText).toBe(before.archiveText);
+  expect(state.signs).toBe(2); expect(state.posts.filter(path => path === '/tx')).toHaveLength(1);
+  expect(state.denied).toEqual([]);
 });

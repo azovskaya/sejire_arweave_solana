@@ -54,7 +54,12 @@ export async function nodeRequest(node: string, path: string, options: { signal?
       return { status: response.status, bytes: new Uint8Array(), text: '' };
     }
     const maximum = options.maxBytes ?? 16_384, declared = response.headers.get('content-length');
-    requireDirect(declared === null || /^[0-9]+$/.test(declared) && Number(declared) <= maximum, 'archive_integrity_failed');
+    if (declared !== null && (!/^[0-9]+$/.test(declared) || Number(declared) > maximum)) {
+      // Reject before acquiring a reader, but still close the unread body.
+      // Otherwise an oversized response can outlive this bounded request.
+      void response.body?.cancel().catch(() => {});
+      throw new DirectError('archive_integrity_failed');
+    }
     const chunks: Uint8Array[] = []; let length = 0;
     if (response.body) {
       reader = response.body.getReader();

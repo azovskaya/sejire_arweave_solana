@@ -100,6 +100,11 @@ export async function verifyIndependentBuild(directory) {
   const html = await readFile(join(root, 'index.html'), 'utf8');
   fail(html.includes('./assets/') && !/<(?:script|link)[^>]+(?:src|href)=["'](?:https?:|\/\/|\/)/i.test(html), 'independent_nonportable_entry');
   fail(html === await readFile(join(root, '404.html'), 'utf8'), 'independent_fallback_mismatch');
+  // Entry pages, stylesheets, SVG and the standalone recovery program can load
+  // services without appearing in Vite's JavaScript module graph.
+  for (const name of names.filter(name => /\.(?:html|css|svg|m?js)$/.test(name))) {
+    assertIndependentCode(await readFile(join(root, name), 'utf8'));
+  }
   const report = await smallJson(join(root, BOUNDARY_FILE));
   fail(report.schema === 'sejire/browser-boundary/v1' && report.profile === INDEPENDENT_PROFILE &&
     Array.isArray(report.chunks) && report.chunks.length > 0 && report.chunks.length <= 256, 'independent_boundary_missing');
@@ -120,7 +125,6 @@ export async function verifyIndependentBuild(directory) {
     }
     const bytes = await readFile(join(root, chunk.file));
     fail(hash(bytes) === chunk.sha256, 'independent_boundary_digest_mismatch');
-    assertIndependentCode(bytes.toString('utf8'));
   }
   fail([...modules].some(module => module.startsWith('apps/web/src/lib/directArweave/')), 'independent_direct_writer_missing');
   return { profile: INDEPENDENT_PROFILE, jsAssets: jsFiles.length, renderedModules: modules.size,

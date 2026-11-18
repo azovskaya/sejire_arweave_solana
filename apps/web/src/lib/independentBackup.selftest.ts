@@ -9,7 +9,7 @@ import { deriveKeysFromMnemonic } from './crypto/keys';
 import { encryptJson } from './crypto/encrypt';
 import { putTree, type VaultV1 } from './crypto/vault';
 import { createTree, setDraftPerson, commitDraft } from './treeEngine';
-import { clearVaultSession, getVaultSession, setVaultSession } from './vaultSession/session';
+import { clearVaultSession, getSessionMnemonic, getVaultSession, setVaultSession, VAULT_SESSION_META_KEY } from './vaultSession/session';
 import { finalizeIndependentOperation, reconcileIndependentCompletions } from './independentFinalization';
 import { cancelDirectOperation, readDirectOperation, writeDirectOperation } from './directArweave/journal';
 import { sha256, directTags } from './directArweave/format';
@@ -212,6 +212,107 @@ try {
     assert.equal(calls, 0); assert.equal(loaded.parentTxId, v0);
     assert.deepEqual(withB.trees[a.meta.id], aNew); assert.deepEqual(withB.trees[b.meta.id], b);
     assert.equal((await readDirectOperation(prepared.id))?.archiveText, prepared.archiveText);
+  });
+  await finalizationTest('session failure rolls back the full cache and retry finalizes the same immutable operation', async () => {
+    for (const failure of ['throw', 'drop'] as const) {
+      const operation = await completedFixture(vault, 'R'.repeat(43), v0);
+      const cacheKey = 'sejire.envelope.' + keys.vaultId, previous = JSON.stringify(envelope, null, 2);
+      localStorage.setItem(cacheKey, previous);
+      setVaultSession({ vaultId: keys.vaultId, headTxId: v0, source: 'network' }, words);
+      const session = getVaultSession(), journal = await readDirectOperation(operation.id), write = sessionStorage.setItem;
+      sessionStorage.setItem = (key, value) => {
+        if (key === VAULT_SESSION_META_KEY) {
+          if (failure === 'throw') throw new DOMException('Synthetic write failure', 'QuotaExceededError');
+          return;
+        }
+        write(key, value);
+      };
+      try { await assert.rejects(() => finalizeIndependentOperation(operation.id), /storage_unavailable/); }
+      finally { sessionStorage.setItem = write; }
+      assert.deepEqual(getVaultSession(), session);
+      assert.equal(localStorage.getItem(cacheKey), previous, 'failed HEAD persistence must not replace the selected full cache');
+      assert.equal(getSessionMnemonic(), words);
+      assert.deepEqual(await readDirectOperation(operation.id), journal);
+      assert.equal((await finalizeIndependentOperation(operation.id)).advanced, true);
+      assert.equal(getVaultSession()?.headTxId, operation.txId);
+      assert.deepEqual(JSON.parse(localStorage.getItem(cacheKey)!), JSON.parse(operation.archiveText));
+      assert.equal((await finalizeIndependentOperation(operation.id)).advanced, false);
+    }
+  });
+  await finalizationTest('cache failure or a silently dropped write never advances HEAD or changes the signed journal', async () => {
+    for (const failure of ['throw', 'drop'] as const) {
+      const operation = await completedFixture(vault, 'W'.repeat(43), v0), cacheKey = 'sejire.envelope.' + keys.vaultId;
+      const previous = JSON.stringify(envelope), write = localStorage.setItem;
+      localStorage.setItem(cacheKey, previous);
+      setVaultSession({ vaultId: keys.vaultId, headTxId: v0, source: 'network' }, words);
+      const session = getVaultSession(), journal = await readDirectOperation(operation.id);
+      localStorage.setItem = (key, value) => {
+        if (key === cacheKey) {
+          if (failure === 'throw') throw new DOMException('Synthetic write failure', 'QuotaExceededError');
+          return;
+        }
+        write(key, value);
+      };
+      try { await assert.rejects(() => finalizeIndependentOperation(operation.id), /storage_unavailable/); }
+      finally { localStorage.setItem = write; }
+      assert.deepEqual(getVaultSession(), session); assert.equal(localStorage.getItem(cacheKey), previous);
+      assert.deepEqual(await readDirectOperation(operation.id), journal);
+      assert.equal((await finalizeIndependentOperation(operation.id)).advanced, true);
+    }
+  });
+  await finalizationTest('cache read failure leaves the previous selection and immutable journal intact', async () => {
+    const operation = await completedFixture(vault, 'G'.repeat(43), v0), cacheKey = 'sejire.envelope.' + keys.vaultId;
+    localStorage.setItem(cacheKey, operation.archiveText);
+    setVaultSession({ vaultId: keys.vaultId, headTxId: v0, source: 'network' }, words);
+    const before = getVaultSession(), journal = await readDirectOperation(operation.id), read = localStorage.getItem;
+    localStorage.getItem = key => { if (key === cacheKey) throw new DOMException('Synthetic access denied', 'SecurityError'); return read(key); };
+    try { await assert.rejects(() => finalizeIndependentOperation(operation.id), /storage_unavailable/); }
+    finally { localStorage.getItem = read; }
+    assert.deepEqual(getVaultSession(), before); assert.equal(localStorage.getItem(cacheKey), operation.archiveText);
+    assert.deepEqual(await readDirectOperation(operation.id), journal);
+  });
+  await finalizationTest('background completion preserves a newer exact journaled cache despite a stale network session', async () => {
+    const old = await completedFixture(singleA, 'O'.repeat(43), v0), full = putTree(putTree(singleA, b), c);
+    for (const state of ['prepared', 'cancelled', 'signing', 'signed'] as const) {
+      const unsigned = state === 'prepared' || state === 'cancelled';
+      const pending = await completedFixture(full, 'N'.repeat(43), v0, {
+        state, verification: null, ...(unsigned ? { ownerAddress: null, quote: null, signingIntent: null } : {}),
+        ...(state !== 'signed' ? { signedTx: null, txId: null } : {}),
+        uploadProgress: { node: null, headerAccepted: false, uploadedChunks: 0, totalChunks: 0 },
+      });
+      localStorage.setItem('sejire.envelope.' + keys.vaultId, pending.archiveText);
+      // Another tab, or a failed session update, still points at the old parent.
+      setVaultSession({ vaultId: keys.vaultId, headTxId: v0, source: 'network' }, words);
+      const before = getVaultSession(), saved = await readDirectOperation(pending.id);
+      assert.equal((await finalizeIndependentOperation(old.id)).advanced, false, `must preserve ${state} full cache`);
+      assert.equal(localStorage.getItem('sejire.envelope.' + keys.vaultId), pending.archiveText);
+      assert.deepEqual(getVaultSession(), before); assert.deepEqual(await readDirectOperation(pending.id), saved);
+      assert.deepEqual(await readDirectOperation(old.id), old);
+    }
+  });
+  await finalizationTest('out-of-order concurrent completions replay the parent chain without losing a tree or history', async () => {
+    const previousDb = indexedDB;
+    Object.defineProperty(globalThis, 'indexedDB', { configurable: true, value: new IDBFactory() });
+    const beforeFetch = globalThis.fetch; let requests = 0;
+    globalThis.fetch = async () => { requests++; throw Error('Synthetic completion replay must remain offline'); };
+    try {
+      const first = await completedFixture(singleA, '1'.repeat(43), v0);
+      const second = await completedFixture(putTree(singleA, b), '2'.repeat(43), first.txId);
+      const thirdVault = putTree(putTree(singleA, b), c), third = await completedFixture(thirdVault, '3'.repeat(43), second.txId);
+      const originals = await Promise.all([first, second, third].map(operation => readDirectOperation(operation.id)));
+      localStorage.setItem('sejire.envelope.' + keys.vaultId, first.archiveText);
+      setVaultSession({ vaultId: keys.vaultId, headTxId: v0, source: 'network' }, words);
+      await Promise.all([third, first, second].map(operation => finalizeIndependentOperation(operation.id)));
+      await reconcileIndependentCompletions(keys.vaultId); await reconcileIndependentCompletions(keys.vaultId);
+      const loaded = await loadIndependentVaultForPublish(keys);
+      assert.equal(loaded.parentTxId, third.txId); assert.deepEqual(loaded.vault, thirdVault);
+      assert.deepEqual(loaded.vault.trees[a.meta.id].commits, aNew.commits);
+      assert.deepEqual(await Promise.all([first, second, third].map(operation => readDirectOperation(operation.id))), originals);
+      assert.equal(requests, 0);
+    } finally {
+      globalThis.fetch = beforeFetch;
+      Object.defineProperty(globalThis, 'indexedDB', { configurable: true, value: previousDb });
+    }
   });
 } finally { globalThis.fetch = originalFetch; }
 console.log(`independent backup/finalization: ${3 + finalizationChecks} synthetic checks passed; no payments or uploads`);

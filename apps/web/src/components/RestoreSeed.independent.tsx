@@ -1,4 +1,4 @@
-import { useRef, useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { isValidMnemonic, normalizeMnemonic } from '../lib/crypto/bip39';
 import { deriveKeysFromMnemonic } from '../lib/crypto/keys';
 import { MAX_BACKUP_BYTES, parseEnvelope, serializeEnvelope } from '../lib/crypto/envelope';
@@ -41,12 +41,22 @@ export function RestoreSeed({ onRestored, onBack }: Props) {
   const [versions, setVersions] = useState<VerifiedVersion[]>([]);
   const [local, setLocal] = useState<VaultV1 | null>(null);
   const running = useRef(false);
+  const alive = useRef(false), operationAbort = useRef<AbortController | null>(null);
+  useEffect(() => {
+    alive.current = true;
+    return () => { alive.current = false; operationAbort.current?.abort(); };
+  }, []);
+  function ensureActive() {
+    if (!alive.current || operationAbort.current?.signal.aborted) throw Error('aborted');
+  }
   function options() {
+    ensureActive();
     const selected = saveDirectNodePreference(gateway);
-    return selected ? { nodes: [selected] } : {};
+    return { ...(selected ? { nodes: [selected] } : {}), signal: operationAbort.current?.signal };
   }
 
   async function finish(vault: VaultV1, envelope: EnvelopeV1 | null, head: string | null, parent: string | null, phrase: string) {
+    ensureActive();
     const keys = deriveKeysFromMnemonic(phrase);
     if (!envelope) {
       // The button opens the current local copy. Read and decrypt the same
@@ -57,6 +67,9 @@ export function RestoreSeed({ onRestored, onBack }: Props) {
       envelope = parseEnvelope(JSON.parse(cached));
       vault = await openEnvelope(keys, envelope);
     }
+    // Navigation can unmount this screen while a fetch or decryption is still
+    // pending. Its late result must not prompt, select a vault, or replace edits.
+    ensureActive();
     if (!vault || vault.schema !== 'sejire/vault/v1' || vault.vault_id !== keys.vaultId ||
       !vault.trees || typeof vault.trees !== 'object' || Array.isArray(vault.trees) ||
       Object.entries(vault.trees).some(([id, tree]) => id === '__proto__' || id === 'constructor' || !coerceTreeStore(tree)) ||
@@ -101,19 +114,26 @@ export function RestoreSeed({ onRestored, onBack }: Props) {
     }
   }
   async function run(action: () => Promise<void>) {
-    if (running.current) return;
+    if (running.current || !alive.current) return;
+    const controller = new AbortController(); operationAbort.current = controller;
     running.current = true; setBusy(true); setError('');
     try { await action(); }
     catch (e) {
+      if (!alive.current || controller.signal.aborted) return;
       const code = e instanceof Error ? e.message : '';
       setError(code === 'invalid_node' ? nodeError : /storage/.test(code) ? copy.localQuota : /network|unavailable|confirmation|receipt/.test(code) ? copy.noArchive : copy.badFile);
-    } finally { running.current = false; setBusy(false); setStatus(''); }
+    } finally {
+      if (operationAbort.current === controller) operationAbort.current = null;
+      running.current = false;
+      if (alive.current) { setBusy(false); setStatus(''); }
+    }
   }
   async function choose(selected?: File) {
     if (!selected) return;
     await run(async () => {
       if (selected.size > MAX_BACKUP_BYTES * 2 + 16_384) throw Error('invalid_backup');
       const backup = await parseIndependentBackup(await selected.text());
+      ensureActive();
       if (backup.kind === 'words') { setWords(backup.mnemonic); return; }
       setFile({ name: selected.name, backup }); setVersions([]); setLocal(null);
     });
@@ -144,6 +164,7 @@ export function RestoreSeed({ onRestored, onBack }: Props) {
       setStatus(copy.search);
       const selectedOptions = options(), selected = selectedOptions.nodes?.[0];
       const localVault = await openLocalVault(keys);
+      ensureActive();
       setLocal(localVault);
       if (selected) {
         const verified: VerifiedVersion[] = [];
@@ -158,12 +179,14 @@ export function RestoreSeed({ onRestored, onBack }: Props) {
             } catch { active(scopedOptions.signal); }
           }
         }).catch(() => { /* Keep any verified versions and the separately selectable local file. */ });
+        ensureActive();
         if (verified.length) { setVersions(verified); setStatus(copy.partial); }
         else if (!localVault) throw Error('archive_unavailable');
         else setError(copy.noArchive);
         return;
       }
-      const found = await recoverVaultFromWords(phrase);
+      const found = await recoverVaultFromWords(phrase, { signal: selectedOptions.signal });
+      ensureActive();
       if (found.ok) {
         // Searching can be incomplete or contain forks. The owner chooses the
         // version; openId verifies its signed header before adopting its HEAD.

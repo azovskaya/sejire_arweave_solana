@@ -6,12 +6,12 @@ import { loadIndependentVaultForPublish } from './independentVault';
 import { retrieveNativeVault } from './recovery/historicalNative';
 import { deriveKeysFromMnemonic } from './crypto/keys';
 import { encryptJson } from './crypto/encrypt';
-import { emptyVault, putTree } from './crypto/vault';
+import { emptyVault, openEnvelope, putTree } from './crypto/vault';
 import { createTree, commitDraft, setDraftPerson } from './treeEngine';
 import { clearVaultSession, getVaultSession, setVaultSession } from './vaultSession/session';
 import { directCrypto } from './directArweave/transaction';
 import { directTags, sha256 } from './directArweave/format';
-import { cancelDirectOperation, createDirectOperation } from './directArweave/journal';
+import { cancelDirectOperation, createDirectOperation, readDirectOperation } from './directArweave/journal';
 
 const memoryStorage = (): Storage => {
   const values = new Map<string, string>();
@@ -157,6 +157,81 @@ try {
     discovered = false;
     const local = await loadIndependentVaultForPublish(keys);
     assert.deepEqual(local.vault, vault); assert.equal(local.parentTxId, null);
+  });
+  await test('unreadable journal fails closed without replacing a selected complete local vault', async () => {
+    localStorage.setItem('sejire.envelope.' + keys.vaultId, archiveText);
+    setVaultSession({ vaultId: keys.vaultId, headTxId: txId, source: 'file' });
+    const before = getVaultSession(), factory = indexedDB;
+    Object.defineProperty(globalThis, 'indexedDB', { configurable: true, value: {
+      open: () => { throw new DOMException('Synthetic journal denied', 'SecurityError'); },
+    } });
+    try { await assert.rejects(() => loadIndependentVaultForPublish(keys), /storage_unavailable/); }
+    finally { Object.defineProperty(globalThis, 'indexedDB', { configurable: true, value: factory }); }
+    assert.deepEqual(getVaultSession(), before);
+    assert.equal(localStorage.getItem('sejire.envelope.' + keys.vaultId), archiveText);
+    assert.equal(calls.length, 0);
+  });
+  await test('a corrupted exact cached journal digest cannot silently fall back to an older native HEAD', async () => {
+    const newer = await encryptJson(keys.encKey, keys.vaultId, putTree(vault, createTree('Synthetic integrity boundary')));
+    const original = await createDirectOperation({ envelope: newer, parentTxId: txId });
+    const preparation = await cancelDirectOperation(original.id);
+    const db = await new Promise<IDBDatabase>((resolve, reject) => {
+      const request = indexedDB.open('sejire-direct-arweave-v1', 1);
+      request.onsuccess = () => resolve(request.result); request.onerror = () => reject(request.error);
+    });
+    // Deliberate persisted-bit corruption bypasses the writer; the reader must
+    // detect it before using the cache, choosing a parent, or making a request.
+    const replace = (value: unknown) => new Promise<void>((resolve, reject) => {
+      const transaction = db.transaction('operations', 'readwrite'); transaction.objectStore('operations').put(value);
+      transaction.oncomplete = () => resolve(); transaction.onerror = transaction.onabort = () => reject(transaction.error);
+    });
+    localStorage.setItem('sejire.envelope.' + keys.vaultId, preparation.archiveText);
+    setVaultSession({ vaultId: keys.vaultId, headTxId: txId, source: 'network' });
+    const before = getVaultSession();
+    try {
+      await replace({ ...preparation, archiveDigest: '0'.repeat(64) });
+      await assert.rejects(() => loadIndependentVaultForPublish(keys), /archive_integrity_failed/);
+      assert.deepEqual(getVaultSession(), before);
+      assert.equal(localStorage.getItem('sejire.envelope.' + keys.vaultId), preparation.archiveText);
+      assert.equal(calls.length, 0);
+    } finally { await replace(preparation); db.close(); }
+    assert.deepEqual(await readDirectOperation(preparation.id), preparation);
+    assert.deepEqual((await loadIndependentVaultForPublish(keys)).vault, await openEnvelope(keys, newer));
+    assert.equal(calls.length, 0);
+  });
+  await test('malformed selected local vaults never become empty new archives or network replacements', async () => {
+    setVaultSession({ vaultId: keys.vaultId, headTxId: null, source: 'file' });
+    const before = getVaultSession();
+    const unsafeTrees = JSON.parse('{"__proto__":' + JSON.stringify(first) + '}');
+    const invalidPayloads = [null, [], {}, { ...vault, schema: 'sejire/vault/future' },
+      { ...vault, vault_id: '0'.repeat(32) }, { ...vault, trees: [] }, { ...vault, trees: {} },
+      { ...vault, trees: { invalid: {} }, active_tree_id: 'invalid' },
+      { ...vault, trees: unsafeTrees, active_tree_id: null }, { ...vault, active_tree_id: 'missing-tree' }];
+    for (const value of invalidPayloads) {
+      const encrypted = await encryptJson(keys.encKey, keys.vaultId, value), cached = JSON.stringify(encrypted);
+      localStorage.setItem('sejire.envelope.' + keys.vaultId, cached);
+      await assert.rejects(() => loadIndependentVaultForPublish(keys), /invalid_archive/);
+      assert.deepEqual(getVaultSession(), before); assert.equal(localStorage.getItem('sejire.envelope.' + keys.vaultId), cached);
+    }
+    localStorage.setItem('sejire.envelope.' + keys.vaultId, '{truncated');
+    await assert.rejects(() => loadIndependentVaultForPublish(keys), /invalid_archive/);
+    assert.equal(localStorage.getItem('sejire.envelope.' + keys.vaultId), '{truncated');
+    assert.equal(calls.length, 0);
+  });
+  await test('seeded multi-generation local vaults reach the next preparation with every tree and snapshot intact', async () => {
+    const { productionFixture } = await import('../../../../tools/recovery/fixtures.test-helper.mts');
+    for (const index of [3, 10, 15]) {
+      const fixture = await productionFixture(index), fixtureKeys = deriveKeysFromMnemonic(fixture.words);
+      try {
+        localStorage.setItem('sejire.envelope.' + fixtureKeys.vaultId, fixture.archiveText);
+        setVaultSession({ vaultId: fixtureKeys.vaultId, headTxId: null, source: 'local' });
+        const before = getVaultSession(), loaded = await loadIndependentVaultForPublish(fixtureKeys);
+        assert.deepEqual(loaded.vault, fixture.vault); assert.equal(loaded.parentTxId, null);
+        assert.deepEqual(getVaultSession(), before);
+        assert.equal(localStorage.getItem('sejire.envelope.' + fixtureKeys.vaultId), fixture.archiveText);
+      } finally { fixtureKeys.seed.fill(0); fixtureKeys.master.fill(0); fixtureKeys.encKey.fill(0); }
+    }
+    assert.equal(calls.length, 0);
   });
   console.log(`independent native vault: ${passed} local fixture checks passed; no live signatures, uploads or payments`);
 } finally { globalThis.fetch = originalFetch; }

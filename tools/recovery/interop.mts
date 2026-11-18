@@ -54,3 +54,5 @@ for (const oldPayload of historicalPayloads) {
   assert.equal(new TextDecoder().decode((await recoverText(JSON.stringify(oldEnvelope), first.words)).plaintext), JSON.stringify(oldPayload));
 }
 console.log('PASS independent recovery: production BIP39/HKDF/AES-GCM, fresh nonce, parser boundaries, two trees/history and legacy JSON preserved.');
+
+await import('./adversarial-interop.mts');

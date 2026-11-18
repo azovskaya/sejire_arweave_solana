@@ -49,10 +49,10 @@ jobs:
       - run: npm run archive:measure
       - run: npm run solana:build
       - run: npm run checkout:build
-      - run: npm exec --prefix apps/web -- playwright install --with-deps chromium
+      - run: npm exec --prefix apps/web -- playwright install --with-deps chromium firefox webkit
       - name: Offline recovery format, standalone decoder and current-envelope compatibility
         run: npm run test:offline-recovery
-      - name: Standalone recovery HTML in an offline browser (synthetic data)
+      - name: Standalone recovery HTML offline in Chromium, Firefox and WebKit (synthetic data)
         run: npm run test:offline-recovery-browser
       - name: Direct Arweave signing, exact resume and chunk delivery (synthetic network)
         run: npm run test:direct --prefix apps/web
@@ -75,7 +75,7 @@ jobs:
         run: npm run test:independent-unit --prefix apps/web
       - name: Build independent direct-Arweave application and every emitted chunk boundary
         run: npm run arns:build && npm run arns:verify
-      - name: Independent static app, self-custody save and offline recovery (synthetic network)
+      - name: Independent static app in Chromium, Firefox and WebKit (synthetic network)
         run: npm run test:independent-browser
       - name: Preserve independent desktop and mobile screens (synthetic family, no recovery words)
         uses: actions/upload-artifact@v4
@@ -168,13 +168,25 @@ jobs:
           retention-days: 14
       - name: Web dependency audit (non-blocking; release review required)
         continue-on-error: true
-        run: npm audit --prefix apps/web --omit=dev
+        run: |
+          mkdir -p .cache/dependency-audit
+          npm audit --prefix apps/web --omit=dev --json | tee .cache/dependency-audit/web-production.json
+      - name: Web build-tool dependency audit (non-blocking; release review required)
+        continue-on-error: true
+        run: npm audit --prefix apps/web --json | tee .cache/dependency-audit/web-full.json
       - name: Sponsor dependency audit (non-blocking; release review required)
         continue-on-error: true
-        run: npm audit --prefix apps/sponsor --omit=dev
+        run: npm audit --prefix apps/sponsor --omit=dev --json | tee .cache/dependency-audit/sponsor-production.json
       - name: Sponsor test-tool dependency audit (non-blocking; release review required)
         continue-on-error: true
-        run: npm audit --prefix apps/sponsor
+        run: npm audit --prefix apps/sponsor --json | tee .cache/dependency-audit/sponsor-full.json
+      - name: Preserve complete dependency audit evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependency-audit-evidence
+          path: .cache/dependency-audit/
+          if-no-files-found: error
+          retention-days: 14
       - name: Preserve checkout failure diagnostics
         if: failure()
         uses: actions/upload-artifact@v4

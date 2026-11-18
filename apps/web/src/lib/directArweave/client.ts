@@ -112,6 +112,7 @@ async function checkUnlocked(operation: DirectOperation, options: DirectOptions)
   if (!operation.signedTx || !operation.txId) return operation;
   await verifyDirectSigned(operation);
   let confirmed = false, confirmations: number | null = null, statusNode: string | null = null;
+  let integrityFailed = false;
   let last: DirectError = new DirectError('confirmation_pending');
   for (const node of directNodes(options)) {
     active(options.signal);
@@ -121,15 +122,19 @@ async function checkUnlocked(operation: DirectOperation, options: DirectOptions)
         nodeRequest(node, `/tx/${operation.txId}/status`, { signal: options.signal }),
         nodeRequest(node, `/tx/${operation.txId}`, { signal: options.signal, maxBytes: 32_768 + Math.ceil(operation.archiveBytes * 4 / 3) }),
       ]);
+      if (header.status === 200) requireDirect(matchesPublicHeader(JSON.parse(header.text), operation.signedTx), 'archive_integrity_failed');
       if (status.status !== 200 || header.status !== 200) continue;
-      requireDirect(matchesPublicHeader(JSON.parse(header.text), operation.signedTx), 'archive_integrity_failed');
       const proof = JSON.parse(status.text) as { number_of_confirmations?: number; block_height?: number; block_indep_hash?: string };
       requireDirect(Number.isSafeInteger(proof.number_of_confirmations) && proof.number_of_confirmations! >= 1 &&
         Number.isSafeInteger(proof.block_height) && proof.block_height! >= 0 && typeof proof.block_indep_hash === 'string' &&
         /^[A-Za-z0-9_-]{43,64}$/.test(proof.block_indep_hash), 'confirmation_pending');
       confirmed = true; confirmations = proof.number_of_confirmations!; statusNode = node; break;
-    } catch (error) { last = new DirectError(directErrorCode(error)); }
+    } catch (error) {
+      const code = directErrorCode(error);
+      integrityFailed ||= code === 'archive_integrity_failed'; last = new DirectError(code);
+    }
   }
+  if (!confirmed && integrityFailed) last = new DirectError('archive_integrity_failed');
   let bytesVerified = false;
   if (confirmed) {
     try { await fetchArchiveBytes(operation.txId, { bytes: operation.archiveBytes, sha256: operation.archiveDigest }, options); bytesVerified = true; }
@@ -159,9 +164,15 @@ export async function resumeDirectOperation(id: string, options: DirectOptions =
       // Explicit resume may repair missing bytes of this already paid native tx.
       // A mere read/check never writes chunks. Require a fresh exact-header proof.
       replay = operation.lastError === 'archive_unavailable' && operation.verification?.confirmed === true;
-      if (!replay) return operation;
+      // An ACK is not durable network propagation. If the accepting node loses
+      // an unconfirmed transaction, an explicit resume can send the exact signed
+      // header and bytes again, including to a replacement node. Never turn an
+      // integrity failure or a historically complete operation into this retry.
+      const retryUnconfirmed = !historicallyComplete && operation.verification?.confirmed === false &&
+        ['confirmation_pending', 'network_unavailable', 'network_rate_limited'].includes(operation.lastError ?? '');
+      if (!replay && !retryUnconfirmed) return operation;
       operation = await writeDirectOperation(operation, { ...operation,
-        uploadProgress: { node: null, headerAccepted: true, uploadedChunks: 0, totalChunks } });
+        uploadProgress: { node: null, headerAccepted: replay, uploadedChunks: 0, totalChunks } });
     }
     const nodes = directNodes(signalOptions), previousNode = operation.uploadProgress.node;
     const ordered = previousNode && nodes.includes(previousNode) ? [previousNode, ...nodes.filter(node => node !== previousNode)] : nodes;

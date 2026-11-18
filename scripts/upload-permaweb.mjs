@@ -78,11 +78,28 @@ function receipt(value) {
     .filter(key => value[key] !== undefined).map(key => [key, value[key]]));
 }
 
+function requireFreshUploadEvidence(directory) {
+  requireValue(!existsSync(join(directory, 'upload-result.json')), 'permaweb_already_uploaded_verify_instead');
+  requireValue(!['upload-attempt.json', 'folder-index.jsonl', 'completed-files.jsonl'].some(name => existsSync(join(directory, name))),
+    'permaweb_upload_attempt_requires_review');
+}
+
 export async function uploadAcceptedRelease({ client, sdk, release, quote, uploadAddress, evidenceDirectory = EVIDENCE_DIR, now = Date.now }) {
   requireValue(TX.test(uploadAddress ?? ''), 'permaweb_upload_address_invalid');
-  requireValue(!existsSync(join(evidenceDirectory, 'upload-result.json')), 'permaweb_already_uploaded_verify_instead');
+  requireFreshUploadEvidence(evidenceDirectory);
   checkFunding(quote, await client.getBalance(), now());
   await mkdir(evidenceDirectory, { recursive: true });
+  // Claim this evidence directory before the SDK can sign or send anything.
+  // A lost ACK or process interruption leaves an ambiguous attempt even when no
+  // completed file was recorded. Review its evidence instead of signing again.
+  const attempt = { schema: 'sejire/permaweb-upload-attempt/v1', sourceCommit: release.manifest.sourceCommit,
+    releaseManifestSha256: release.manifestSha256, uploadAddress, startedAt: new Date(now()).toISOString(),
+    quotedWinc: quote.quotedWinc, maxQuoteWinc: quote.maxQuoteWinc };
+  try { await writeFile(join(evidenceDirectory, 'upload-attempt.json'), JSON.stringify(attempt, null, 2) + '\n', { flag: 'wx' }); }
+  catch (error) {
+    if (error?.code === 'EEXIST') throw Error('permaweb_upload_attempt_requires_review');
+    throw error;
+  }
   await writeFile(join(evidenceDirectory, 'upload-plan.json'), JSON.stringify(uploadPlan(release), null, 2) + '\n');
   await writeFile(join(evidenceDirectory, 'upload-quote.json'), JSON.stringify(quote, null, 2) + '\n');
   // Index writes happen after every accepted file; the evidence artifact preserves partial progress.
@@ -126,6 +143,7 @@ async function main(env) {
   if (mode === '--upload') {
     requireValue(env.PERMAWEB_MODE === 'upload', 'permaweb_explicit_upload_mode_required');
     requireValue(env.GITHUB_RUN_ATTEMPT === '1', 'permaweb_upload_rerun_requires_prior_evidence');
+    requireFreshUploadEvidence(EVIDENCE_DIR);
   }
   // Plans and public price quotes never read a private key or sign anything.
   const provenance = JSON.parse(await readFile(join(ACCEPTED_DIR, 'build-provenance.json'), 'utf8'));
