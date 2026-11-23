@@ -260,6 +260,7 @@ test('fragment navigation before the first route subscription still opens restor
         window.addEventListener = add;
         // Deliver a real fragment event immediately before the first listener
         // is attached, modeling navigation while the app is still mounting.
+        window.__draftBeforeEarlyFragment = localStorage.getItem('sejire.draft.tree.v1');
         const oldURL = location.href;
         history.replaceState(null, '', location.pathname + location.search + '#/restore');
         window.dispatchEvent(new HashChangeEvent('hashchange', { oldURL, newURL: location.href }));
@@ -270,8 +271,14 @@ test('fragment navigation before the first route subscription still opens restor
   await page.goto('/');
   await expect(page).toHaveURL(/\/#\/restore$/);
   await expect(page.getByLabel('12 слов SEJIRE', { exact: true })).toBeVisible();
-  expect(JSON.parse((await selectionState(page)).draft)).toEqual(tree);
-  expect((await selectionState(page)).session).toBeNull();
+  // Booting an old draft fills optional empty fields before navigation. Keep
+  // every original field and compare the actual stored bytes across the event.
+  const before = await page.evaluate(() => window.__draftBeforeEarlyFragment);
+  expect(typeof before).toBe('string');
+  expect(JSON.parse(before)).toMatchObject(tree);
+  const after = await selectionState(page);
+  expect(after.draft).toBe(before);
+  expect(after.session).toBeNull();
   expect(state.signs).toBe(0); expect(state.posts).toEqual([]); expect(state.external).toEqual([]);
   expect(state.denied).toEqual([]); expect(errors).toEqual([]);
 });
