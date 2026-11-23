@@ -1,0 +1,113 @@
+{
+  "collectedAt": "2026-11-23T05:17:48.439077+00:00",
+  "sourceCommitBeforeFix": "604ae45fbcd4d7eca9efae5022c742bd7b43b72e",
+  "sourceState": "Local working tree with reviewed publication and import fixes; not final CI evidence.",
+  "sourceSha256": {
+    "apps/web/src/lib/treeJson.ts": "04bf95939023e07cf6c07d3cf2388781a4732ebb01e7a7a4ff2c46bc935fbbf5",
+    "apps/web/src/lib/pdf/classicTreePdf.ts": "56dfaf73644f97a502d9285933c70521613d2fe9461039e3359828199c5c3f24",
+    "apps/web/src/lib/pdf/shezhirePdf.ts": "6c137e8de0a06e5865c17be7a6f72e3f3c6e9a02ed2a412130e841b40d157863",
+    "apps/web/scripts/export-layout-stress.mjs": "dc32fab7e2459faadc573eb3b344c08f4db38eda8940271443222e43727b4499",
+    "apps/web/scripts/check-layout-pdfs.py": "38a934604db53d580c6b44b35d9e127dd6513e2df3c696828febfe4ddf394f70"
+  },
+  "syntheticDataOnly": true,
+  "scope": "Existing PDF stress matrix, including its 14 generation-boundary fixtures; no matrix or PDF-source changes.",
+  "cwd": "apps/web",
+  "commands": [
+    {
+      "command": "node scripts/export-layout-stress.mjs /workspace/scratch/0aa608872e5d/sejire-publication-ready-20261123/.cache/audit-20261123/layout --boundaries",
+      "exitCode": 0,
+      "log": "layout-export.log"
+    },
+    {
+      "command": "python3 scripts/check-layout-pdfs.py /workspace/scratch/0aa608872e5d/sejire-publication-ready-20261123/.cache/audit-20261123/layout",
+      "exitCode": 0,
+      "log": "layout-check.log"
+    }
+  ],
+  "pyMuPdfVersion": "1.26.6",
+  "fixtureCount": 20,
+  "pdfCount": 89,
+  "pageCount": 779,
+  "passingFiles": 89,
+  "findings": {},
+  "cellsMeasured": 2482,
+  "connectorSegments": 1060,
+  "textLines": 33074,
+  "maxFixturePeople": 8191,
+  "maxPaternalGenerations": 103,
+  "pdfBytes": 10031476,
+  "largestPdfByPages": [
+    {
+      "filename": "full-thirteen-classic.pdf",
+      "pages": 483
+    },
+    {
+      "filename": "edge-103-classic.pdf",
+      "pages": 19
+    },
+    {
+      "filename": "edge-41-classic.pdf",
+      "pages": 12
+    },
+    {
+      "filename": "middle-peak-classic.pdf",
+      "pages": 10
+    },
+    {
+      "filename": "edge-103-manuscript.pdf",
+      "pages": 10
+    },
+    {
+      "filename": "edge-103-registry.pdf",
+      "pages": 10
+    },
+    {
+      "filename": "edge-103-cascade.pdf",
+      "pages": 9
+    },
+    {
+      "filename": "line-forty-classic.pdf",
+      "pages": 8
+    }
+  ],
+  "visualReview": {
+    "status": "PASS",
+    "reviewedAt": "2026-11-23T05:19:13.187566+00:00",
+    "method": "Poppler render and visual inspection",
+    "pages": [
+      {
+        "file": "full-thirteen-classic.pdf",
+        "page": 1
+      },
+      {
+        "file": "full-thirteen-classic.pdf",
+        "page": 2
+      },
+      {
+        "file": "full-thirteen-classic.pdf",
+        "page": 483
+      },
+      {
+        "file": "edge-103-classic.pdf",
+        "page": 1
+      },
+      {
+        "file": "edge-103-manuscript.pdf",
+        "page": 2
+      },
+      {
+        "file": "edge-103-registry.pdf",
+        "page": 2
+      },
+      {
+        "file": "edge-103-cascade.pdf",
+        "page": 2
+      },
+      {
+        "file": "edge-41-classic.pdf",
+        "page": 12
+      }
+    ],
+    "observations": "No clipped frames/text, crossing through cards, garbled Kazakh/Cyrillic glyphs or footer collisions in the sampled pages. Automated geometric/content checks cover all89PDF; visual inspection is a sample."
+  }
+}

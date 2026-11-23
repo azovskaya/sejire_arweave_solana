@@ -1,0 +1,132 @@
+{
+  "schema": "sejire/prepublication-local-evidence/v1",
+  "sourceCommit": "17a254eb13bb999127d9f7b3ecd54905f317e02d",
+  "sourceTree": "38dc06bd1eec7b06bdd21fea450d86e21aa236e4",
+  "date": "2026-11-23",
+  "syntheticDataOnly": true,
+  "tests": [
+    {
+      "scope": "web npm test source entrypoints",
+      "result": "PASS",
+      "entrypoints": 35,
+      "command": "node --import tsx for each original web test entrypoint",
+      "limitation": "Local npm test CLI cannot create its IPC pipe (EPERM); full original commands are independently run by GitHub CI."
+    },
+    {
+      "scope": "direct native Arweave transport and journal",
+      "result": "PASS",
+      "checks": 21
+    },
+    {
+      "scope": "direct native Arweave protocol boundaries",
+      "result": "PASS",
+      "groups": 10,
+      "fixedCases": 36,
+      "largestArchiveBytes": 10485753,
+      "largestArchiveChunks": 40
+    },
+    {
+      "scope": "custom node preference",
+      "result": "PASS",
+      "checks": 9
+    },
+    {
+      "scope": "explicit vault selection",
+      "result": "PASS",
+      "checks": 9
+    },
+    {
+      "scope": "complete native vault loading",
+      "result": "PASS",
+      "checks": 16
+    },
+    {
+      "scope": "backup and local finalization",
+      "result": "PASS",
+      "checks": 18
+    },
+    {
+      "scope": "release, Worker gate, PDF plugin and host base",
+      "result": "PASS",
+      "tests": 94
+    },
+    {
+      "scope": "deterministic permaweb prepare selftest",
+      "result": "PASS"
+    },
+    {
+      "scope": "JSON import and immutable history",
+      "result": "PASS",
+      "includesDuplicateIdRegression": true
+    },
+    {
+      "scope": "direct network test suite",
+      "result": "PASS",
+      "tests": 4,
+      "regression": "No overlapping requests to one origin; two origins remain concurrent, all10checks execute once."
+    },
+    {
+      "scope": "independent build, TypeScript and emitted boundary",
+      "result": "PASS",
+      "renderedModules": 340,
+      "jsAssets": 10,
+      "recoveryFiles": 8
+    },
+    {
+      "scope": "lint",
+      "result": "PASS_WITH_EXISTING_WARNINGS",
+      "newWarnings": 0
+    },
+    {
+      "scope": "real installed wallet extension and owner-authorized paid mainnet roundtrip",
+      "result": "NOT_EXECUTED"
+    },
+    {
+      "scope": "route subscription regression",
+      "result": "PASS_IN_FINAL_CI",
+      "browserExecutions": 72,
+      "unchangedTwoTabRegression": true,
+      "newDeterministicEarlyFragmentCase": true,
+      "ciRun": 45122610001,
+      "ciAttempt": 1
+    },
+    {
+      "scope": "static host test route draining",
+      "result": "PASS",
+      "tests": 4,
+      "lateRequestsBlocked": true,
+      "handlerFailuresPreserved": true,
+      "runtimeChanged": false
+    }
+  ],
+  "financialActions": {
+    "walletApprovals": 0,
+    "newPaymentSubmissions": 0,
+    "newArchiveUploads": 0,
+    "siteUploads": 0,
+    "arnsWrites": 0
+  },
+  "review": "Root reviewed final source; independent protocol agent reviewed cache/session/finalizer integration; release agent reviewed release verification.",
+  "releaseGate": "Satisfied: complete exact-source CI45122610001 attempt1 and official prepare45124482606 attempt1 succeeded; independent final accepted-ZIP verification passed. No publication or real-wallet acceptance was performed.",
+  "localToolVersions": {
+    "node": "24.22.3",
+    "pyMuPDF": "1.26.6"
+  },
+  "ciToolchain": "Node22 on ubuntu-24.04; full run45122610001 attempt1 passed for the stated source SHA",
+  "sourceHashes": {
+    "apps/web/src/components/Workspace.tsx": "04c044a0e30e8108f46bc2f9835616e01ef5ab642aa9b39ef8ed04e063c7005b",
+    "apps/web/src/components/PublishSeedModal.independent.tsx": "ba53efefa30b27912c96bc7f826bba5598418ea8ac62b5c87abe9b6300a009c2",
+    "apps/web/src/lib/treeJson.ts": "c7ceda978df1174f98b6b99d5297ba3f1300d0879c223135b722b268aa7c5a64",
+    "apps/web/src/lib/vaultSession/session.ts": "0e921f1b9e2dc855f3c305318bb872efbb041f43b4358553824083728dd9d7fd",
+    "apps/web/src/lib/independentVault.ts": "b078c4a78c091bd3054eb53843bcc0515005a3d148dfe3df2791427edfef1347",
+    "apps/web/src/lib/independentFinalization.ts": "859efda7aacfbcc4c17b4e2f3795f0c74ac891a1bd9a6b95ef4e3b57b40b9acc",
+    "scripts/verify-arns-published.mjs": "cb06b747ea700603c1479b269abe10e761117dfd927740384f15a3d7955212e5",
+    "apps/web/src/App.independent.tsx": "49cfb9261cf3af817c00f1948c66b97e85ee6a99fdc63ede751d435405ef6fc4"
+  },
+  "lintExistingWarnings": 22,
+  "appSourceTestedAt": "eb2590943a28c32ffc1619a427e993535c3eaa88",
+  "appSourceUnchangedAfterLocalTests": false,
+  "changesAfterLocalUnitMatrix": "Route subscription reconciles missed fragment changes; build, TypeScript, emitted boundary and lint repeated successfully; complete exact-source CI45122610001 attempt1 subsequently passed.",
+  "lastLocalBuildSource": "3c509fe83582d68e0e7dee6fa6a39d4ac808252c",
+  "runtimeUnchangedSinceLastLocalBuild": true
+}

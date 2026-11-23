@@ -1,0 +1,28 @@
+{
+  "checkedAt": "2026-11-23T05:07:26.273658+00:00",
+  "transaction": "AtwLYx509C9jWIFKUNg7dy1GSgiaDbXVK1YEQbBWfHY",
+  "readOnly": true,
+  "results": [
+    {
+      "path": "/tx/AtwLYx509C9jWIFKUNg7dy1GSgiaDbXVK1YEQbBWfHY",
+      "status": 200,
+      "bytes": 2237,
+      "sha256": "4ee9f563449d911a139b5f8674eb8b390401daf97ab389c21766a7ee8ba979b4"
+    },
+    {
+      "path": "/tx/AtwLYx509C9jWIFKUNg7dy1GSgiaDbXVK1YEQbBWfHY/status",
+      "status": 200,
+      "bytes": 142,
+      "sha256": "6c3298d8da1bbe3815614014aa684eb0ece6b0fa5ecfdf050528d09d53558c0c",
+      "chainStatus": {
+        "block_height": 2035774,
+        "block_indep_hash": "-E5bSBGNPn68qPncdHM333I5QVNOmtkpgPkulreaH7ME34KYy4kNUHpe9n8WBe86",
+        "number_of_confirmations": 12242
+      }
+    },
+    {
+      "path": "/raw/AtwLYx509C9jWIFKUNg7dy1GSgiaDbXVK1YEQbBWfHY",
+      "status": 404
+    }
+  ]
+}

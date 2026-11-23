@@ -1,0 +1,8 @@
+{
+  "date": "2026-11-23",
+  "scope": "This local execution environment only",
+  "host": "https://turbo-gateway.com",
+  "httpStatus": 403,
+  "observedHeader": "x-openai-site-blocked: true",
+  "interpretation": "Access denied by the local environment; not evidence of a gateway outage. No attempt to bypass this restriction. The existing read-only native-network check is part of the standard accepted CI workflow."
+}

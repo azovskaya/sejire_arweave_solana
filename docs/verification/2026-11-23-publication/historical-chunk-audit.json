@@ -1,0 +1,38 @@
+{
+  "checkedAt": "2026-11-23T05:43:50.215621+00:00",
+  "transaction": "AtwLYx509C9jWIFKUNg7dy1GSgiaDbXVK1YEQbBWfHY",
+  "readOnly": true,
+  "networkHost": "arweave.net",
+  "requestsAttempted": 1,
+  "offset": {
+    "size": "25269",
+    "endInclusive": "392934894928811",
+    "start": "392934894903543"
+  },
+  "sdkReference": "arweave@1.15.7 Chunks.firstChunkOffset/downloadChunkedData: endOffset - size + 1",
+  "request": {
+    "method": "GET",
+    "url": "https://arweave.net/chunk/392934894903543",
+    "redirects": "denied",
+    "maxResponseBytes": 524288
+  },
+  "response": {
+    "status": 404,
+    "reason": "Not Found",
+    "blocked": null
+  },
+  "outcome": {
+    "ciphertextBytesObtained": false,
+    "dataPathAndHeaderVerification": "not performed: the only authorized native chunk request returned HTTP 404",
+    "stoppedAfterFirstChunkRequest": true,
+    "otherNodesOrRetriesUsed": false
+  },
+  "sdkSource": {
+    "package": "arweave",
+    "version": "1.15.7",
+    "file": "arweave/node/chunks.js",
+    "sha256": "8f1321d1fa8cce9030c5b3e8f33919c1013e2b2852121b7f5d1fbe46db6fa316",
+    "method": "Chunks.firstChunkOffset / downloadChunkedData",
+    "formula": "endOffset - size + 1"
+  }
+}

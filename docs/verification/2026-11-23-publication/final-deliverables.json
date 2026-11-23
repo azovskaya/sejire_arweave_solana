@@ -1,0 +1,15 @@
+{
+  "sourceCommit": "17a254eb13bb999127d9f7b3ecd54905f317e02d",
+  "files": [
+    {
+      "file": "sejire-independent-release-2026-11-23-17a254e.zip",
+      "bytes": 1269962,
+      "sha256": "f897aa1172986b595e39b76a7a8535da94b4a5be1886d21a7362cd099bcc5b60"
+    },
+    {
+      "file": "sejire-pdf-stress-2026-11-23.zip",
+      "bytes": 9118154,
+      "sha256": "c8b41fd4ea55927c8ea05a242c19e8388607618bd63691ffb04a67098b838a33"
+    }
+  ]
+}

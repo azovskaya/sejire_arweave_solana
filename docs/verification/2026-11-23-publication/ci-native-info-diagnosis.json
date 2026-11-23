@@ -1,0 +1,130 @@
+{
+  "schema": "sejire/native-readiness-diagnosis/v1",
+  "readOnly": true,
+  "releaseAcceptance": false,
+  "branch": "diagnose/native-info-20261123",
+  "runs": [
+    {
+      "run": 45118772841,
+      "job": 137507514404,
+      "sourceCommit": "37868c2c72b3a3d5d3c043271f3f85fed1a57d87",
+      "records": [
+        {
+          "timestamp": "2026-11-23T05:35:57.6110771Z",
+          "scope": "Read-only public native /info diagnostic; no wallet, upload, payment or release acceptance",
+          "checkedAt": "2026-11-23T05:35:57.606Z",
+          "node": "v22.23.5"
+        },
+        {
+          "timestamp": "2026-11-23T05:35:59.2504922Z",
+          "redirect": "error",
+          "status": 200,
+          "url": "https://arweave.net/info",
+          "location": null,
+          "contentType": null,
+          "cors": "*"
+        },
+        {
+          "timestamp": "2026-11-23T05:36:00.6126877Z",
+          "redirect": "manual",
+          "status": 200,
+          "url": "https://arweave.net/info",
+          "location": null,
+          "contentType": null,
+          "cors": "*"
+        }
+      ]
+    },
+    {
+      "run": 45119006938,
+      "job": 137508240587,
+      "sourceCommit": "66e37797677c889e81226f9a40eb5d2988626c9d",
+      "records": [
+        {
+          "timestamp": "2026-11-23T05:38:15.7390395Z",
+          "scope": "Read-only public native /info diagnostic; no wallet, upload, payment or release acceptance",
+          "checkedAt": "2026-11-23T05:38:15.734Z",
+          "node": "v22.23.5"
+        },
+        {
+          "timestamp": "2026-11-23T05:38:16.0746935Z",
+          "path": "/tx",
+          "method": "OPTIONS",
+          "redirect": "error",
+          "status": 204,
+          "url": "https://arweave.net/tx",
+          "location": null,
+          "contentType": null,
+          "cors": "*"
+        },
+        {
+          "timestamp": "2026-11-23T05:38:16.3711792Z",
+          "path": "/tx_anchor",
+          "method": "GET",
+          "redirect": "error",
+          "status": 200,
+          "url": "https://arweave.net/tx_anchor",
+          "location": null,
+          "contentType": null,
+          "cors": "*"
+        },
+        {
+          "timestamp": "2026-11-23T05:38:16.9845133Z",
+          "path": "/info",
+          "method": "GET",
+          "redirect": "error",
+          "error": "TypeError",
+          "message": "fetch failed",
+          "causeName": "Error",
+          "causeMessage": "Client network socket disconnected before secure TLS connection was established",
+          "causeCode": "ECONNRESET"
+        },
+        {
+          "timestamp": "2026-11-23T05:38:17.2392068Z",
+          "path": "/chunk",
+          "method": "OPTIONS",
+          "redirect": "error",
+          "status": 204,
+          "url": "https://arweave.net/chunk",
+          "location": null,
+          "contentType": null,
+          "cors": "*"
+        },
+        {
+          "timestamp": "2026-11-23T05:38:17.4595062Z",
+          "path": "/price/25269",
+          "method": "GET",
+          "redirect": "error",
+          "status": 200,
+          "url": "https://arweave.net/price/25269",
+          "location": null,
+          "contentType": null,
+          "cors": "*"
+        },
+        {
+          "timestamp": "2026-11-23T05:38:17.9317054Z",
+          "path": "/info",
+          "method": "GET",
+          "redirect": "error",
+          "status": 200,
+          "url": "https://arweave.net/info",
+          "location": null,
+          "contentType": null,
+          "cors": "*"
+        },
+        {
+          "timestamp": "2026-11-23T05:38:18.4406835Z",
+          "path": "/info",
+          "method": "GET",
+          "redirect": "manual",
+          "status": 200,
+          "url": "https://arweave.net/info",
+          "location": null,
+          "contentType": null,
+          "cors": "*"
+        }
+      ]
+    }
+  ],
+  "conclusion": "Five concurrent cold requests to one origin reproduced an ECONNRESET during the /info TLS handshake; sequential strict-redirect requests on the same runner succeeded. The release probe will keep all ten checks and the two-ready-node requirement while permitting one in-flight request per node, with no retries or TLS/CORS relaxation."
+}

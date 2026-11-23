@@ -1,0 +1,24 @@
+{
+  "schema": "sejire/static-host-drain-regression/v1",
+  "failedCiRun": 45121248842,
+  "attempt": 1,
+  "sourceCommit": "501e64b54a30aad7ec543f80c8b3bfbacbd70d8d",
+  "passedBeforeFailure": {
+    "independentBrowser": 72,
+    "editorBrowser": 7,
+    "checkoutBrowser": 5,
+    "protocolCheckoutBrowser": 5,
+    "legacyArnsBrowser": 8
+  },
+  "failedScenario": "manifest fallback loads the application and assets below a deep path (another gateway transaction path)",
+  "error": "route.fulfill: Route is already handled!",
+  "fixSourceCommit": "17a254eb13bb999127d9f7b3ecd54905f317e02d",
+  "nextCiRun": 45122610001,
+  "fix": "Permanent test interceptor with closing guard and explicit wait for all tracked handlers; retained errors are rethrown; no interception replacement during teardown.",
+  "unitTestsPassed": 4,
+  "appRuntimeChanged": false,
+  "assertionsRemoved": false,
+  "errorsSuppressed": false,
+  "retriesAdded": false,
+  "diagnosisScope": "Interceptor lifecycle race in test teardown; exact client/server route stack was not available."
+}

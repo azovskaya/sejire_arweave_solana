@@ -1,0 +1,1129 @@
+{
+  "fixtures": [
+    {
+      "id": "family-seven",
+      "jsonFile": "family-seven.json",
+      "people": 13,
+      "ancestorsIncludingFocus": 13,
+      "paternalIncludingFocus": 7
+    },
+    {
+      "id": "line-forty",
+      "jsonFile": "line-forty.json",
+      "people": 40,
+      "ancestorsIncludingFocus": 40,
+      "paternalIncludingFocus": 40
+    },
+    {
+      "id": "full-thirteen",
+      "jsonFile": "full-thirteen.json",
+      "people": 8191,
+      "ancestorsIncludingFocus": 8191,
+      "paternalIncludingFocus": 13
+    },
+    {
+      "id": "middle-peak",
+      "jsonFile": "middle-peak.json",
+      "people": 139,
+      "ancestorsIncludingFocus": 139,
+      "paternalIncludingFocus": 19
+    },
+    {
+      "id": "sparse-cluster",
+      "jsonFile": "sparse-cluster.json",
+      "people": 24,
+      "ancestorsIncludingFocus": 24,
+      "paternalIncludingFocus": 13
+    },
+    {
+      "id": "shared-ancestor",
+      "jsonFile": "shared-ancestor.json",
+      "people": 7,
+      "ancestorsIncludingFocus": 5,
+      "paternalIncludingFocus": 3
+    },
+    {
+      "id": "edge-1",
+      "jsonFile": "edge-1.json",
+      "people": 1,
+      "ancestorsIncludingFocus": 1,
+      "paternalIncludingFocus": 1
+    },
+    {
+      "id": "edge-2",
+      "jsonFile": "edge-2.json",
+      "people": 3,
+      "ancestorsIncludingFocus": 3,
+      "paternalIncludingFocus": 2
+    },
+    {
+      "id": "edge-5",
+      "jsonFile": "edge-5.json",
+      "people": 5,
+      "ancestorsIncludingFocus": 5,
+      "paternalIncludingFocus": 5
+    },
+    {
+      "id": "edge-8",
+      "jsonFile": "edge-8.json",
+      "people": 17,
+      "ancestorsIncludingFocus": 17,
+      "paternalIncludingFocus": 8
+    },
+    {
+      "id": "edge-12",
+      "jsonFile": "edge-12.json",
+      "people": 12,
+      "ancestorsIncludingFocus": 12,
+      "paternalIncludingFocus": 12
+    },
+    {
+      "id": "edge-13",
+      "jsonFile": "edge-13.json",
+      "people": 29,
+      "ancestorsIncludingFocus": 29,
+      "paternalIncludingFocus": 13
+    },
+    {
+      "id": "edge-14",
+      "jsonFile": "edge-14.json",
+      "people": 14,
+      "ancestorsIncludingFocus": 14,
+      "paternalIncludingFocus": 14
+    },
+    {
+      "id": "edge-24",
+      "jsonFile": "edge-24.json",
+      "people": 53,
+      "ancestorsIncludingFocus": 53,
+      "paternalIncludingFocus": 24
+    },
+    {
+      "id": "edge-26",
+      "jsonFile": "edge-26.json",
+      "people": 26,
+      "ancestorsIncludingFocus": 26,
+      "paternalIncludingFocus": 26
+    },
+    {
+      "id": "edge-27",
+      "jsonFile": "edge-27.json",
+      "people": 61,
+      "ancestorsIncludingFocus": 61,
+      "paternalIncludingFocus": 27
+    },
+    {
+      "id": "edge-39",
+      "jsonFile": "edge-39.json",
+      "people": 39,
+      "ancestorsIncludingFocus": 39,
+      "paternalIncludingFocus": 39
+    },
+    {
+      "id": "edge-41",
+      "jsonFile": "edge-41.json",
+      "people": 93,
+      "ancestorsIncludingFocus": 93,
+      "paternalIncludingFocus": 41
+    },
+    {
+      "id": "edge-52",
+      "jsonFile": "edge-52.json",
+      "people": 52,
+      "ancestorsIncludingFocus": 52,
+      "paternalIncludingFocus": 52
+    },
+    {
+      "id": "edge-103",
+      "jsonFile": "edge-103.json",
+      "people": 235,
+      "ancestorsIncludingFocus": 235,
+      "paternalIncludingFocus": 103
+    }
+  ],
+  "fileCount": 89,
+  "pageCount": 779,
+  "passingFiles": 89,
+  "findings": {},
+  "files": [
+    {
+      "filename": "family-seven-classic.pdf",
+      "pages": 1,
+      "peopleExpected": 13,
+      "distinctNamesExpected": 13,
+      "cellsMeasured": 13,
+      "connectorSegments": 24,
+      "textLines": 47,
+      "findings": {},
+      "examples": {}
+    },
+    {
+      "filename": "family-seven-manuscript.pdf",
+      "pages": 1,
+      "peopleExpected": 7,
+      "distinctNamesExpected": 7,
+      "cellsMeasured": 14,
+      "connectorSegments": 0,
+      "textLines": 30,
+      "findings": {},
+      "examples": {}
+    },
+    {
+      "filename": "family-seven-registry.pdf",
+      "pages": 1,
+      "peopleExpected": 7,
+      "distinctNamesExpected": 7,
+      "cellsMeasured": 7,
+      "connectorSegments": 0,
+      "textLines": 30,
+      "findings": {},
+      "examples": {}
+    },
+    {
+      "filename": "family-seven-cascade.pdf",
+      "pages": 1,
+      "peopleExpected": 7,
+      "distinctNamesExpected": 7,
+      "cellsMeasured": 7,
+      "connectorSegments": 0,
+      "textLines": 37,
+      "findings": {},
+      "examples": {}
+    },
+    {
+      "filename": "line-forty-classic.pdf",
+      "pages": 8,
+      "peopleExpected": 40,
+      "distinctNamesExpected": 40,
+      "cellsMeasured": 13,
+      "connectorSegments": 24,
+      "textLines": 378,
+      "findings": {},
+      "examples": {}
+    },
+    {
+      "filename": "line-forty-manuscript.pdf",
+      "pages": 8,
+      "peopleExpected": 40,
+      "distinctNamesExpected": 40,
+      "cellsMeasured": 80,
+      "connectorSegments": 0,
+      "textLines": 375,
+      "findings": {},
+      "examples": {}
+    },
+    {
+      "filename": "line-forty-manuscript-limit-1.pdf",
+      "pages": 2,
+      "peopleExpected": 1,
+      "distinctNamesExpected": 1,
+      "cellsMeasured": 2,
+      "connectorSegments": 0,
+      "textLines": 23,
+      "findings": {},
+      "examples": {}
+    },
+    {
+      "filename": "line-forty-manuscript-limit-7.pdf",
+      "pages": 2,
+      "peopleExpected": 7,
+      "distinctNamesExpected": 7,
+      "cellsMeasured": 14,
+      "connectorSegments": 0,
+      "textLines": 72,
+      "findings": {},
+      "examples": {}
+    },
+    {
+      "filename": "line-forty-manuscript-limit-13.pdf",
+      "pages": 3,
+      "peopleExpected": 13,
+      "distinctNamesExpected": 13,
+      "cellsMeasured": 26,
+      "connectorSegments": 0,
+      "textLines": 109,
+      "findings": {},
+      "examples": {}
+    },
+    {
+      "filename": "line-forty-registry.pdf",
+      "pages": 8,
+      "peopleExpected": 40,
+      "distinctNamesExpected": 40,
+      "cellsMeasured": 40,
+      "connectorSegments": 0,
+      "textLines": 351,
+      "findings": {},
+      "examples": {}
+    },
+    {
+      "filename": "line-forty-registry-limit-1.pdf",
+      "pages": 2,
+      "peopleExpected": 1,
+      "distinctNamesExpected": 1,
+      "cellsMeasured": 1,
+      "connectorSegments": 0,
+      "textLines": 23,
+      "findings": {},
+      "examples": {}
+    },
+    {
+      "filename": "line-forty-registry-limit-7.pdf",
+      "pages": 2,
+      "peopleExpected": 7,
+      "distinctNamesExpected": 7,
+      "cellsMeasured": 7,
+      "connectorSegments": 0,
+      "textLines": 69,
+      "findings": {},
+      "examples": {}
+    },
+    {
+      "filename": "line-forty-registry-limit-13.pdf",
+      "pages": 3,
+      "peopleExpected": 13,
+      "distinctNamesExpected": 13,
+      "cellsMeasured": 13,
+      "connectorSegments": 0,
+      "textLines": 117,
+      "findings": {},
+      "examples": {}
+    },
+    {
+      "filename": "line-forty-cascade.pdf",
+      "pages": 5,
+      "peopleExpected": 40,
+      "distinctNamesExpected": 40,
+      "cellsMeasured": 40,
+      "connectorSegments": 0,
+      "textLines": 812,
+      "findings": {},
+      "examples": {}
+    },
+    {
+      "filename": "line-forty-cascade-limit-1.pdf",
+      "pages": 2,
+      "peopleExpected": 1,
+      "distinctNamesExpected": 1,
+      "cellsMeasured": 1,
+      "connectorSegments": 0,
+      "textLines": 24,
+      "findings": {},
+      "examples": {}
+    },
+    {
+      "filename": "line-forty-cascade-limit-7.pdf",
+      "pages": 2,
+      "peopleExpected": 7,
+      "distinctNamesExpected": 7,
+      "cellsMeasured": 7,
+      "connectorSegments": 0,
+      "textLines": 130,
+      "findings": {},
+      "examples": {}
+    },
+    {
+      "filename": "line-forty-cascade-limit-13.pdf",
+      "pages": 2,
+      "peopleExpected": 13,
+      "distinctNamesExpected": 13,
+      "cellsMeasured": 13,
+      "connectorSegments": 0,
+      "textLines": 370,
+      "findings": {},
+      "examples": {}
+    },
+    {
+      "filename": "full-thirteen-classic.pdf",
+      "pages": 483,
+      "peopleExpected": 8191,
+      "distinctNamesExpected": 8191,
+      "cellsMeasured": 127,
+      "connectorSegments": 252,
+      "textLines": 18572,
+      "findings": {},
+      "examples": {}
+    },
+    {
+      "filename": "full-thirteen-manuscript.pdf",
+      "pages": 1,
+      "peopleExpected": 13,
+      "distinctNamesExpected": 13,
+      "cellsMeasured": 26,
+      "connectorSegments": 0,
+      "textLines": 48,
+      "findings": {},
+      "examples": {}
+    },
+    {
+      "filename": "full-thirteen-registry.pdf",
+      "pages": 1,
+      "peopleExpected": 13,
+      "distinctNamesExpected": 13,
+      "cellsMeasured": 13,
+      "connectorSegments": 0,
+      "textLines": 48,
+      "findings": {},
+      "examples": {}
+    },
+    {
+      "filename": "full-thirteen-cascade.pdf",
+      "pages": 1,
+      "peopleExpected": 13,
+      "distinctNamesExpected": 13,
+      "cellsMeasured": 13,
+      "connectorSegments": 0,
+      "textLines": 83,
+      "findings": {},
+      "examples": {}
+    },
+    {
+      "filename": "middle-peak-classic.pdf",
+      "pages": 10,
+      "peopleExpected": 139,
+      "distinctNamesExpected": 79,
+      "cellsMeasured": 133,
+      "connectorSegments": 265,
+      "textLines": 800,
+      "findings": {},
+      "examples": {}
+    },
+    {
+      "filename": "middle-peak-manuscript.pdf",
+      "pages": 2,
+      "peopleExpected": 19,
+      "distinctNamesExpected": 19,
+      "cellsMeasured": 38,
+      "connectorSegments": 0,
+      "textLines": 77,
+      "findings": {},
+      "examples": {}
+    },
+    {
+      "filename": "middle-peak-registry.pdf",
+      "pages": 2,
+      "peopleExpected": 19,
+      "distinctNamesExpected": 19,
+      "cellsMeasured": 19,
+      "connectorSegments": 0,
+      "textLines": 77,
+      "findings": {},
+      "examples": {}
+    },
+    {
+      "filename": "middle-peak-cascade.pdf",
+      "pages": 2,
+      "peopleExpected": 19,
+      "distinctNamesExpected": 19,
+      "cellsMeasured": 19,
+      "connectorSegments": 0,
+      "textLines": 100,
+      "findings": {},
+      "examples": {}
+    },
+    {
+      "filename": "sparse-cluster-classic.pdf",
+      "pages": 3,
+      "peopleExpected": 24,
+      "distinctNamesExpected": 21,
+      "cellsMeasured": 24,
+      "connectorSegments": 46,
+      "textLines": 125,
+      "findings": {},
+      "examples": {}
+    },
+    {
+      "filename": "sparse-cluster-manuscript.pdf",
+      "pages": 1,
+      "peopleExpected": 13,
+      "distinctNamesExpected": 10,
+      "cellsMeasured": 26,
+      "connectorSegments": 0,
+      "textLines": 48,
+      "findings": {},
+      "examples": {}
+    },
+    {
+      "filename": "sparse-cluster-registry.pdf",
+      "pages": 1,
+      "peopleExpected": 13,
+      "distinctNamesExpected": 10,
+      "cellsMeasured": 13,
+      "connectorSegments": 0,
+      "textLines": 48,
+      "findings": {},
+      "examples": {}
+    },
+    {
+      "filename": "sparse-cluster-cascade.pdf",
+      "pages": 1,
+      "peopleExpected": 13,
+      "distinctNamesExpected": 10,
+      "cellsMeasured": 13,
+      "connectorSegments": 0,
+      "textLines": 78,
+      "findings": {},
+      "examples": {}
+    },
+    {
+      "filename": "shared-ancestor-classic.pdf",
+      "pages": 1,
+      "peopleExpected": 5,
+      "distinctNamesExpected": 5,
+      "cellsMeasured": 5,
+      "connectorSegments": 7,
+      "textLines": 23,
+      "findings": {},
+      "examples": {}
+    },
+    {
+      "filename": "shared-ancestor-manuscript.pdf",
+      "pages": 1,
+      "peopleExpected": 3,
+      "distinctNamesExpected": 3,
+      "cellsMeasured": 6,
+      "connectorSegments": 0,
+      "textLines": 18,
+      "findings": {},
+      "examples": {}
+    },
+    {
+      "filename": "shared-ancestor-registry.pdf",
+      "pages": 1,
+      "peopleExpected": 3,
+      "distinctNamesExpected": 3,
+      "cellsMeasured": 3,
+      "connectorSegments": 0,
+      "textLines": 18,
+      "findings": {},
+      "examples": {}
+    },
+    {
+      "filename": "shared-ancestor-cascade.pdf",
+      "pages": 1,
+      "peopleExpected": 3,
+      "distinctNamesExpected": 3,
+      "cellsMeasured": 3,
+      "connectorSegments": 0,
+      "textLines": 20,
+      "findings": {},
+      "examples": {}
+    },
+    {
+      "filename": "edge-1-classic.pdf",
+      "pages": 2,
+      "peopleExpected": 1,
+      "distinctNamesExpected": 1,
+      "cellsMeasured": 1,
+      "connectorSegments": 0,
+      "textLines": 24,
+      "findings": {},
+      "examples": {}
+    },
+    {
+      "filename": "edge-1-manuscript.pdf",
+      "pages": 1,
+      "peopleExpected": 1,
+      "distinctNamesExpected": 1,
+      "cellsMeasured": 2,
+      "connectorSegments": 0,
+      "textLines": 13,
+      "findings": {},
+      "examples": {}
+    },
+    {
+      "filename": "edge-1-registry.pdf",
+      "pages": 1,
+      "peopleExpected": 1,
+      "distinctNamesExpected": 1,
+      "cellsMeasured": 1,
+      "connectorSegments": 0,
+      "textLines": 13,
+      "findings": {},
+      "examples": {}
+    },
+    {
+      "filename": "edge-1-cascade.pdf",
+      "pages": 1,
+      "peopleExpected": 1,
+      "distinctNamesExpected": 1,
+      "cellsMeasured": 1,
+      "connectorSegments": 0,
+      "textLines": 17,
+      "findings": {},
+      "examples": {}
+    },
+    {
+      "filename": "edge-2-classic.pdf",
+      "pages": 2,
+      "peopleExpected": 3,
+      "distinctNamesExpected": 3,
+      "cellsMeasured": 3,
+      "connectorSegments": 4,
+      "textLines": 29,
+      "findings": {},
+      "examples": {}
+    },
+    {
+      "filename": "edge-2-manuscript.pdf",
+      "pages": 2,
+      "peopleExpected": 2,
+      "distinctNamesExpected": 2,
+      "cellsMeasured": 4,
+      "connectorSegments": 0,
+      "textLines": 36,
+      "findings": {},
+      "examples": {}
+    },
+    {
+      "filename": "edge-2-registry.pdf",
+      "pages": 2,
+      "peopleExpected": 2,
+      "distinctNamesExpected": 2,
+      "cellsMeasured": 2,
+      "connectorSegments": 0,
+      "textLines": 36,
+      "findings": {},
+      "examples": {}
+    },
+    {
+      "filename": "edge-2-cascade.pdf",
+      "pages": 2,
+      "peopleExpected": 2,
+      "distinctNamesExpected": 2,
+      "cellsMeasured": 2,
+      "connectorSegments": 0,
+      "textLines": 41,
+      "findings": {},
+      "examples": {}
+    },
+    {
+      "filename": "edge-5-classic.pdf",
+      "pages": 2,
+      "peopleExpected": 5,
+      "distinctNamesExpected": 5,
+      "cellsMeasured": 5,
+      "connectorSegments": 8,
+      "textLines": 37,
+      "findings": {},
+      "examples": {}
+    },
+    {
+      "filename": "edge-5-manuscript.pdf",
+      "pages": 1,
+      "peopleExpected": 5,
+      "distinctNamesExpected": 5,
+      "cellsMeasured": 10,
+      "connectorSegments": 0,
+      "textLines": 26,
+      "findings": {},
+      "examples": {}
+    },
+    {
+      "filename": "edge-5-registry.pdf",
+      "pages": 1,
+      "peopleExpected": 5,
+      "distinctNamesExpected": 5,
+      "cellsMeasured": 5,
+      "connectorSegments": 0,
+      "textLines": 25,
+      "findings": {},
+      "examples": {}
+    },
+    {
+      "filename": "edge-5-cascade.pdf",
+      "pages": 1,
+      "peopleExpected": 5,
+      "distinctNamesExpected": 5,
+      "cellsMeasured": 5,
+      "connectorSegments": 0,
+      "textLines": 37,
+      "findings": {},
+      "examples": {}
+    },
+    {
+      "filename": "edge-8-classic.pdf",
+      "pages": 2,
+      "peopleExpected": 17,
+      "distinctNamesExpected": 17,
+      "cellsMeasured": 17,
+      "connectorSegments": 32,
+      "textLines": 84,
+      "findings": {},
+      "examples": {}
+    },
+    {
+      "filename": "edge-8-manuscript.pdf",
+      "pages": 2,
+      "peopleExpected": 8,
+      "distinctNamesExpected": 8,
+      "cellsMeasured": 16,
+      "connectorSegments": 0,
+      "textLines": 53,
+      "findings": {},
+      "examples": {}
+    },
+    {
+      "filename": "edge-8-registry.pdf",
+      "pages": 2,
+      "peopleExpected": 8,
+      "distinctNamesExpected": 8,
+      "cellsMeasured": 8,
+      "connectorSegments": 0,
+      "textLines": 52,
+      "findings": {},
+      "examples": {}
+    },
+    {
+      "filename": "edge-8-cascade.pdf",
+      "pages": 2,
+      "peopleExpected": 8,
+      "distinctNamesExpected": 8,
+      "cellsMeasured": 8,
+      "connectorSegments": 0,
+      "textLines": 67,
+      "findings": {},
+      "examples": {}
+    },
+    {
+      "filename": "edge-12-classic.pdf",
+      "pages": 2,
+      "peopleExpected": 12,
+      "distinctNamesExpected": 12,
+      "cellsMeasured": 12,
+      "connectorSegments": 22,
+      "textLines": 61,
+      "findings": {},
+      "examples": {}
+    },
+    {
+      "filename": "edge-12-manuscript.pdf",
+      "pages": 2,
+      "peopleExpected": 12,
+      "distinctNamesExpected": 12,
+      "cellsMeasured": 24,
+      "connectorSegments": 0,
+      "textLines": 52,
+      "findings": {},
+      "examples": {}
+    },
+    {
+      "filename": "edge-12-registry.pdf",
+      "pages": 2,
+      "peopleExpected": 12,
+      "distinctNamesExpected": 12,
+      "cellsMeasured": 12,
+      "connectorSegments": 0,
+      "textLines": 52,
+      "findings": {},
+      "examples": {}
+    },
+    {
+      "filename": "edge-12-cascade.pdf",
+      "pages": 1,
+      "peopleExpected": 12,
+      "distinctNamesExpected": 12,
+      "cellsMeasured": 12,
+      "connectorSegments": 0,
+      "textLines": 96,
+      "findings": {},
+      "examples": {}
+    },
+    {
+      "filename": "edge-13-classic.pdf",
+      "pages": 2,
+      "peopleExpected": 29,
+      "distinctNamesExpected": 29,
+      "cellsMeasured": 29,
+      "connectorSegments": 56,
+      "textLines": 119,
+      "findings": {},
+      "examples": {}
+    },
+    {
+      "filename": "edge-13-manuscript.pdf",
+      "pages": 2,
+      "peopleExpected": 13,
+      "distinctNamesExpected": 13,
+      "cellsMeasured": 26,
+      "connectorSegments": 0,
+      "textLines": 64,
+      "findings": {},
+      "examples": {}
+    },
+    {
+      "filename": "edge-13-registry.pdf",
+      "pages": 2,
+      "peopleExpected": 13,
+      "distinctNamesExpected": 13,
+      "cellsMeasured": 13,
+      "connectorSegments": 0,
+      "textLines": 65,
+      "findings": {},
+      "examples": {}
+    },
+    {
+      "filename": "edge-13-cascade.pdf",
+      "pages": 2,
+      "peopleExpected": 13,
+      "distinctNamesExpected": 13,
+      "cellsMeasured": 13,
+      "connectorSegments": 0,
+      "textLines": 120,
+      "findings": {},
+      "examples": {}
+    },
+    {
+      "filename": "edge-14-classic.pdf",
+      "pages": 3,
+      "peopleExpected": 14,
+      "distinctNamesExpected": 14,
+      "cellsMeasured": 13,
+      "connectorSegments": 24,
+      "textLines": 89,
+      "findings": {},
+      "examples": {}
+    },
+    {
+      "filename": "edge-14-manuscript.pdf",
+      "pages": 2,
+      "peopleExpected": 14,
+      "distinctNamesExpected": 14,
+      "cellsMeasured": 28,
+      "connectorSegments": 0,
+      "textLines": 61,
+      "findings": {},
+      "examples": {}
+    },
+    {
+      "filename": "edge-14-registry.pdf",
+      "pages": 2,
+      "peopleExpected": 14,
+      "distinctNamesExpected": 14,
+      "cellsMeasured": 14,
+      "connectorSegments": 0,
+      "textLines": 61,
+      "findings": {},
+      "examples": {}
+    },
+    {
+      "filename": "edge-14-cascade.pdf",
+      "pages": 2,
+      "peopleExpected": 14,
+      "distinctNamesExpected": 14,
+      "cellsMeasured": 14,
+      "connectorSegments": 0,
+      "textLines": 83,
+      "findings": {},
+      "examples": {}
+    },
+    {
+      "filename": "edge-24-classic.pdf",
+      "pages": 6,
+      "peopleExpected": 53,
+      "distinctNamesExpected": 53,
+      "cellsMeasured": 29,
+      "connectorSegments": 56,
+      "textLines": 252,
+      "findings": {},
+      "examples": {}
+    },
+    {
+      "filename": "edge-24-manuscript.pdf",
+      "pages": 3,
+      "peopleExpected": 24,
+      "distinctNamesExpected": 24,
+      "cellsMeasured": 48,
+      "connectorSegments": 0,
+      "textLines": 111,
+      "findings": {},
+      "examples": {}
+    },
+    {
+      "filename": "edge-24-registry.pdf",
+      "pages": 3,
+      "peopleExpected": 24,
+      "distinctNamesExpected": 24,
+      "cellsMeasured": 24,
+      "connectorSegments": 0,
+      "textLines": 113,
+      "findings": {},
+      "examples": {}
+    },
+    {
+      "filename": "edge-24-cascade.pdf",
+      "pages": 3,
+      "peopleExpected": 24,
+      "distinctNamesExpected": 24,
+      "cellsMeasured": 24,
+      "connectorSegments": 0,
+      "textLines": 199,
+      "findings": {},
+      "examples": {}
+    },
+    {
+      "filename": "edge-26-classic.pdf",
+      "pages": 4,
+      "peopleExpected": 26,
+      "distinctNamesExpected": 26,
+      "cellsMeasured": 13,
+      "connectorSegments": 24,
+      "textLines": 134,
+      "findings": {},
+      "examples": {}
+    },
+    {
+      "filename": "edge-26-manuscript.pdf",
+      "pages": 3,
+      "peopleExpected": 26,
+      "distinctNamesExpected": 26,
+      "cellsMeasured": 52,
+      "connectorSegments": 0,
+      "textLines": 107,
+      "findings": {},
+      "examples": {}
+    },
+    {
+      "filename": "edge-26-registry.pdf",
+      "pages": 3,
+      "peopleExpected": 26,
+      "distinctNamesExpected": 26,
+      "cellsMeasured": 26,
+      "connectorSegments": 0,
+      "textLines": 110,
+      "findings": {},
+      "examples": {}
+    },
+    {
+      "filename": "edge-26-cascade.pdf",
+      "pages": 2,
+      "peopleExpected": 26,
+      "distinctNamesExpected": 26,
+      "cellsMeasured": 26,
+      "connectorSegments": 0,
+      "textLines": 244,
+      "findings": {},
+      "examples": {}
+    },
+    {
+      "filename": "edge-27-classic.pdf",
+      "pages": 6,
+      "peopleExpected": 61,
+      "distinctNamesExpected": 61,
+      "cellsMeasured": 29,
+      "connectorSegments": 56,
+      "textLines": 272,
+      "findings": {},
+      "examples": {}
+    },
+    {
+      "filename": "edge-27-manuscript.pdf",
+      "pages": 4,
+      "peopleExpected": 27,
+      "distinctNamesExpected": 27,
+      "cellsMeasured": 54,
+      "connectorSegments": 0,
+      "textLines": 133,
+      "findings": {},
+      "examples": {}
+    },
+    {
+      "filename": "edge-27-registry.pdf",
+      "pages": 4,
+      "peopleExpected": 27,
+      "distinctNamesExpected": 27,
+      "cellsMeasured": 27,
+      "connectorSegments": 0,
+      "textLines": 138,
+      "findings": {},
+      "examples": {}
+    },
+    {
+      "filename": "edge-27-cascade.pdf",
+      "pages": 4,
+      "peopleExpected": 27,
+      "distinctNamesExpected": 27,
+      "cellsMeasured": 27,
+      "connectorSegments": 0,
+      "textLines": 195,
+      "findings": {},
+      "examples": {}
+    },
+    {
+      "filename": "edge-39-classic.pdf",
+      "pages": 5,
+      "peopleExpected": 39,
+      "distinctNamesExpected": 39,
+      "cellsMeasured": 13,
+      "connectorSegments": 24,
+      "textLines": 182,
+      "findings": {},
+      "examples": {}
+    },
+    {
+      "filename": "edge-39-manuscript.pdf",
+      "pages": 4,
+      "peopleExpected": 39,
+      "distinctNamesExpected": 39,
+      "cellsMeasured": 78,
+      "connectorSegments": 0,
+      "textLines": 170,
+      "findings": {},
+      "examples": {}
+    },
+    {
+      "filename": "edge-39-registry.pdf",
+      "pages": 4,
+      "peopleExpected": 39,
+      "distinctNamesExpected": 39,
+      "cellsMeasured": 39,
+      "connectorSegments": 0,
+      "textLines": 180,
+      "findings": {},
+      "examples": {}
+    },
+    {
+      "filename": "edge-39-cascade.pdf",
+      "pages": 3,
+      "peopleExpected": 39,
+      "distinctNamesExpected": 39,
+      "cellsMeasured": 39,
+      "connectorSegments": 0,
+      "textLines": 402,
+      "findings": {},
+      "examples": {}
+    },
+    {
+      "filename": "edge-41-classic.pdf",
+      "pages": 12,
+      "peopleExpected": 93,
+      "distinctNamesExpected": 93,
+      "cellsMeasured": 29,
+      "connectorSegments": 56,
+      "textLines": 550,
+      "findings": {},
+      "examples": {}
+    },
+    {
+      "filename": "edge-41-manuscript.pdf",
+      "pages": 8,
+      "peopleExpected": 41,
+      "distinctNamesExpected": 41,
+      "cellsMeasured": 82,
+      "connectorSegments": 0,
+      "textLines": 366,
+      "findings": {},
+      "examples": {}
+    },
+    {
+      "filename": "edge-41-registry.pdf",
+      "pages": 8,
+      "peopleExpected": 41,
+      "distinctNamesExpected": 41,
+      "cellsMeasured": 41,
+      "connectorSegments": 0,
+      "textLines": 369,
+      "findings": {},
+      "examples": {}
+    },
+    {
+      "filename": "edge-41-cascade.pdf",
+      "pages": 8,
+      "peopleExpected": 41,
+      "distinctNamesExpected": 41,
+      "cellsMeasured": 41,
+      "connectorSegments": 0,
+      "textLines": 508,
+      "findings": {},
+      "examples": {}
+    },
+    {
+      "filename": "edge-52-classic.pdf",
+      "pages": 5,
+      "peopleExpected": 52,
+      "distinctNamesExpected": 52,
+      "cellsMeasured": 13,
+      "connectorSegments": 24,
+      "textLines": 210,
+      "findings": {},
+      "examples": {}
+    },
+    {
+      "filename": "edge-52-manuscript.pdf",
+      "pages": 5,
+      "peopleExpected": 52,
+      "distinctNamesExpected": 52,
+      "cellsMeasured": 104,
+      "connectorSegments": 0,
+      "textLines": 199,
+      "findings": {},
+      "examples": {}
+    },
+    {
+      "filename": "edge-52-registry.pdf",
+      "pages": 5,
+      "peopleExpected": 52,
+      "distinctNamesExpected": 52,
+      "cellsMeasured": 52,
+      "connectorSegments": 0,
+      "textLines": 208,
+      "findings": {},
+      "examples": {}
+    },
+    {
+      "filename": "edge-52-cascade.pdf",
+      "pages": 4,
+      "peopleExpected": 52,
+      "distinctNamesExpected": 52,
+      "cellsMeasured": 52,
+      "connectorSegments": 0,
+      "textLines": 457,
+      "findings": {},
+      "examples": {}
+    },
+    {
+      "filename": "edge-103-classic.pdf",
+      "pages": 19,
+      "peopleExpected": 235,
+      "distinctNamesExpected": 235,
+      "cellsMeasured": 29,
+      "connectorSegments": 56,
+      "textLines": 800,
+      "findings": {},
+      "examples": {}
+    },
+    {
+      "filename": "edge-103-manuscript.pdf",
+      "pages": 10,
+      "peopleExpected": 103,
+      "distinctNamesExpected": 103,
+      "cellsMeasured": 206,
+      "connectorSegments": 0,
+      "textLines": 417,
+      "findings": {},
+      "examples": {}
+    },
+    {
+      "filename": "edge-103-registry.pdf",
+      "pages": 10,
+      "peopleExpected": 103,
+      "distinctNamesExpected": 103,
+      "cellsMeasured": 103,
+      "connectorSegments": 0,
+      "textLines": 441,
+      "findings": {},
+      "examples": {}
+    },
+    {
+      "filename": "edge-103-cascade.pdf",
+      "pages": 9,
+      "peopleExpected": 103,
+      "distinctNamesExpected": 103,
+      "cellsMeasured": 103,
+      "connectorSegments": 0,
+      "textLines": 914,
+      "findings": {},
+      "examples": {}
+    }
+  ]
+}

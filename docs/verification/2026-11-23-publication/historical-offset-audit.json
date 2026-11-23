@@ -1,0 +1,19 @@
+{
+  "checkedAt": "2026-11-23T05:29:30.213683+00:00",
+  "transaction": "AtwLYx509C9jWIFKUNg7dy1GSgiaDbXVK1YEQbBWfHY",
+  "readOnly": true,
+  "networkHost": "arweave.net",
+  "result": {
+    "path": "/tx/AtwLYx509C9jWIFKUNg7dy1GSgiaDbXVK1YEQbBWfHY/offset",
+    "url": "https://arweave.net/tx/AtwLYx509C9jWIFKUNg7dy1GSgiaDbXVK1YEQbBWfHY/offset",
+    "status": 200,
+    "bytes": 43,
+    "sha256": "a1a753b0f1b29f8f426c6cf346d8632c4a79eed898a838afb01b890115b4ab52",
+    "contentType": "application/json; charset=utf-8",
+    "blocked": null,
+    "response": {
+      "size": "25269",
+      "offset": "392934894928811"
+    }
+  }
+}

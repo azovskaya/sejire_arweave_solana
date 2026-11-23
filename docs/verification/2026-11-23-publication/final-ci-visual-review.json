@@ -1,0 +1,26 @@
+{
+  "schema": "sejire/independent-visual-review/v1",
+  "sourceCommit": "501e64b54a30aad7ec543f80c8b3bfbacbd70d8d",
+  "ciRun": 45121248842,
+  "attempt": 1,
+  "artifactId": 14794131059,
+  "artifactSha256": "14129984f997778e45fe9a6a1f74599b66346584334a2ce347b847165cc2b12b",
+  "artifactDigestVerified": true,
+  "reviewed": [
+    {
+      "file": "independent-independent-la-de6e1-nal-runtime-calls-at-1280px-chromium/independent-1280.png",
+      "sha256": "a09e71fcaba341aa45a1e62b0459c82837da023f0bb9120b6059a20293c441cf"
+    },
+    {
+      "file": "independent-independent-la-76680-rnal-runtime-calls-at-390px-webkit/independent-390.png",
+      "sha256": "1178e48562143255625c85b84d645e81aede6b4a3c9dcabf7cfc77ce081584a3"
+    }
+  ],
+  "observations": [
+    "Desktop editor controls and synthetic cards render legibly.",
+    "Mobile header wraps within viewport and primary actions remain visible.",
+    "The mobile tree canvas shows a viewport of the wider pannable graph; the Fit control is visible."
+  ],
+  "scope": "Visual sample: two of six CI screenshots. All six desktop/mobile browser executions separately assert no document horizontal overflow. No assertion that the entire graph is initially visible on a phone.",
+  "blockerObserved": false
+}

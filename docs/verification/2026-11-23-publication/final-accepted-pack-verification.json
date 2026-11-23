@@ -1,0 +1,97 @@
+{
+  "schema": "sejire/offline-accepted-pack-check/v1",
+  "status": "PASS",
+  "checkedAt": "2026-11-23T06:31:39.453Z",
+  "scope": "Offline bytes and provenance check of an already prepared artifact using externally supplied metadata. It does not independently authenticate workflow metadata.",
+  "expectations": {
+    "sourceCommit": "17a254eb13bb999127d9f7b3ecd54905f317e02d",
+    "ciRun": 45122610001,
+    "ciAttempt": 1,
+    "sourceArtifactId": 14794163773,
+    "sourceArtifactZipSha256": "6a7e9b3015ab4cfab5701d1cdcfeb1f619cf4d990d85ddcd7ed0a5aa26054e05",
+    "prepareRun": 45124482606,
+    "prepareAttempt": 1,
+    "acceptedArtifactId": 14795146925,
+    "acceptedArtifactZipSha256": "f897aa1172986b595e39b76a7a8535da94b4a5be1886d21a7362cd099bcc5b60",
+    "acceptedArtifactBytes": 1269962
+  },
+  "expectedBranch": "feat/decentralized-arweave-20261116",
+  "acceptedArtifact": {
+    "name": "permaweb-accepted-pack",
+    "id": 14795146925,
+    "prepareRun": 45124482606,
+    "prepareAttempt": 1,
+    "bytes": 1269962,
+    "sha256": "f897aa1172986b595e39b76a7a8535da94b4a5be1886d21a7362cd099bcc5b60"
+  },
+  "sourceArtifact": {
+    "name": "permaweb-static-release",
+    "id": 14794163773,
+    "zipSha256": "6a7e9b3015ab4cfab5701d1cdcfeb1f619cf4d990d85ddcd7ed0a5aa26054e05",
+    "originalZipRehashedHere": false,
+    "note": "Original CI ZIP digest is bound by official prepare and compared with external CI artifact metadata here."
+  },
+  "provenance": {
+    "schema": "sejire/permaweb-provenance/v1",
+    "artifact": "permaweb-static-release",
+    "run": 45122610001,
+    "attempt": 1,
+    "artifactId": 14794163773,
+    "sourceCommit": "17a254eb13bb999127d9f7b3ecd54905f317e02d",
+    "publishedByCommit": "17a254eb13bb999127d9f7b3ecd54905f317e02d",
+    "profile": "decentralized-direct-arweave",
+    "zipSha256": "6a7e9b3015ab4cfab5701d1cdcfeb1f619cf4d990d85ddcd7ed0a5aa26054e05",
+    "releaseManifestSha256": "341aaa16feb2ad32557ee323efa03c96bdbddf9986c758502b5d8ce247e8a6b2"
+  },
+  "releaseManifestSha256": "341aaa16feb2ad32557ee323efa03c96bdbddf9986c758502b5d8ce247e8a6b2",
+  "files": 41,
+  "staticFiles": 39,
+  "totalBytes": 2908857,
+  "archiveAllowlistVerified": true,
+  "exactFileSetVerified": true,
+  "everyFileHashVerified": true,
+  "localEntry": {
+    "file": "index.html",
+    "relativeAssetsVerified": true
+  },
+  "localFallback": {
+    "file": "404.html",
+    "identicalToEntry": true
+  },
+  "independent": {
+    "profile": "decentralized-direct-arweave",
+    "chunks": 10,
+    "renderedModules": 340,
+    "recoveryFiles": 8,
+    "noForbiddenRuntimeModuleOrEndpoint": true
+  },
+  "auditSnapshot": {
+    "file": "/workspace/scratch/0aa608872e5d/sejire-publication-ready-20261123/.cache/audit-20261123/web-production-audit.json",
+    "sha256": "83635e1795167afa8ec9c910a23d0b96918eed9e6c3baf0d69ffaf892d4b33d7",
+    "counts": {
+      "info": 0,
+      "low": 13,
+      "moderate": 10,
+      "high": 0,
+      "critical": 0,
+      "total": 23
+    },
+    "affectedPackagesPresentInEmittedModules": [],
+    "scope": "Supplied npm production-audit snapshot only; package presence is not a reachability or exploitability finding. No fresh npm audit was run."
+  },
+  "uploadPlan": {
+    "files": 41,
+    "totalFileBytes": 2908857,
+    "manifestBytes": 3737,
+    "funding": "existing-own-balance",
+    "autoTopUp": false,
+    "arnsTargetChange": false
+  },
+  "networkAccessed": false,
+  "walletAccessed": false,
+  "uploadAttempted": false,
+  "publicRootChecked": false,
+  "publicFallbackChecked": false,
+  "publicMimeChecked": false,
+  "settlementVerified": false
+}

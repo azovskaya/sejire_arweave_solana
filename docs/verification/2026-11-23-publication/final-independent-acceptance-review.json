@@ -1,0 +1,78 @@
+{
+  "schema": "sejire/final-independent-acceptance-review/v1",
+  "status": "ACCEPT_PACKAGE_READY_FOR_OWNER_AUTHORIZED_PUBLICATION",
+  "checkedAt": "2026-11-23T06:35:19.056225+00:00",
+  "scope": "Independent local artifact/provenance review. Both original and accepted ZIPs rehashed; byte identity and manifest/boundary checked directly. Workflow status reviewed from supplied evidence; no new network authentication or browser tests.",
+  "checks": {
+    "source": {
+      "artifactId": 14794163773,
+      "bytes": 1269525,
+      "sha256": "6a7e9b3015ab4cfab5701d1cdcfeb1f619cf4d990d85ddcd7ed0a5aa26054e05",
+      "metadataMatches": true
+    },
+    "accepted": {
+      "artifactId": 14795146925,
+      "bytes": 1269962,
+      "sha256": "f897aa1172986b595e39b76a7a8535da94b4a5be1886d21a7362cd099bcc5b60",
+      "metadataMatches": true
+    },
+    "bundle": {
+      "sourceCommit": "17a254eb13bb999127d9f7b3ecd54905f317e02d",
+      "sourceCiRun": 45122610001,
+      "sourceCiAttempt": 1,
+      "prepareRun": 45124482606,
+      "prepareAttempt": 1,
+      "allOriginalFilesByteIdentical": 40,
+      "onlyAddedFile": "build-provenance.json",
+      "allFiles": 41,
+      "manifestStaticFiles": 39,
+      "allManifestHashesMatch": true,
+      "releaseManifestSha256": "341aaa16feb2ad32557ee323efa03c96bdbddf9986c758502b5d8ce247e8a6b2",
+      "entryEqualsFallback": true,
+      "jsChunks": 10,
+      "renderedModules": 340,
+      "recoveryFiles": 8,
+      "forbiddenModuleMatches": [],
+      "forbiddenEndpointOrFixtureMatches": [],
+      "productionAuditAffectedPackageModules": [],
+      "mandatorySejireService": false,
+      "mandatorySolana": false,
+      "mandatoryBundler": false,
+      "legacySponsorDevPackageModules": {
+        "miniflare": [],
+        "sharp": [],
+        "undici": []
+      }
+    }
+  },
+  "quote": {
+    "quotedWinc": "39659195787",
+    "maxQuoteWinc": "0",
+    "withinBudget": false,
+    "sumOf42ItemsVerified": true,
+    "interpretation": "A read-only preparation estimate with no approved spending budget. This does not fail static package acceptance and does not authorize upload. A later paid action requires owner authorization and a fresh checked quote.",
+    "providerHardCap": false,
+    "autoTopUp": false,
+    "officialUploadStepSkipped": true
+  },
+  "remainingLaunchConditions": [
+    "Owner review of package, wallet and fresh cost before paid publication.",
+    "Validate published files and MIME by manifest ID, then confirm owner/controller authority and approved ArNS Target change.",
+    "Real wallet acceptance including exact ciphertext readback and complete recovery in a clean context remains required before claiming the pilot works.",
+    "Preserve old browser payload, signed transaction and journals; historical archive recovery remains unresolved.",
+    "Low/moderate dependency advisories and three high findings in the full legacy sponsor dev tooling audit remain. The affected legacy miniflare/sharp/undici packages are absent from the accepted independent browser module graph; this does not assert a zero-advisory repository or toolchain and does not block the accepted independent profile."
+  ],
+  "networkAccessed": false,
+  "walletAccessed": false,
+  "uploadAttempted": false,
+  "publicAvailabilityVerified": false,
+  "appSourceModified": false,
+  "dependencyScopeNote": {
+    "legacySponsorFullDevHighFindings": 3,
+    "findingCountSource": "Root-reported final CI sponsor full dev audit",
+    "packageAbsenceVerification": "Independently read the accepted ZIP bundle-boundary.json: miniflare, sharp and undici are absent from all 340 rendered modules.",
+    "sponsorProductionHighFindings": 0,
+    "webHighFindings": 0,
+    "dependencyChangesAfterAcceptance": false
+  }
+}

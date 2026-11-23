@@ -1,0 +1,574 @@
+{
+  "collectedAt": "2026-11-23T05:13:54.178202+00:00",
+  "commandBase": "npm audit --prefix apps/<scope> [--omit=dev] --json",
+  "sourceCommitBeforeFix": "604ae45fbcd4d7eca9efae5022c742bd7b43b72e",
+  "lockfilesChanged": false,
+  "scopes": [
+    {
+      "scope": "web-production",
+      "vulnerabilities": {
+        "info": 0,
+        "low": 13,
+        "moderate": 10,
+        "high": 0,
+        "critical": 0,
+        "total": 23
+      },
+      "findings": {
+        "@ardrive/turbo-sdk": {
+          "severity": "moderate",
+          "direct": true,
+          "fixAvailable": {
+            "name": "@ardrive/turbo-sdk",
+            "version": "1.17.0",
+            "isSemVerMajor": true
+          }
+        },
+        "@dha-team/arbundles": {
+          "severity": "low",
+          "direct": true,
+          "fixAvailable": {
+            "name": "@ardrive/turbo-sdk",
+            "version": "1.17.0",
+            "isSemVerMajor": true
+          }
+        },
+        "@ethersproject/abstract-provider": {
+          "severity": "low",
+          "direct": false,
+          "fixAvailable": {
+            "name": "@ardrive/turbo-sdk",
+            "version": "1.17.0",
+            "isSemVerMajor": true
+          }
+        },
+        "@ethersproject/abstract-signer": {
+          "severity": "low",
+          "direct": false,
+          "fixAvailable": {
+            "name": "@ardrive/turbo-sdk",
+            "version": "1.17.0",
+            "isSemVerMajor": true
+          }
+        },
+        "@ethersproject/hash": {
+          "severity": "low",
+          "direct": false,
+          "fixAvailable": {
+            "name": "@ardrive/turbo-sdk",
+            "version": "1.17.0",
+            "isSemVerMajor": true
+          }
+        },
+        "@ethersproject/hdnode": {
+          "severity": "low",
+          "direct": false,
+          "fixAvailable": {
+            "name": "@ardrive/turbo-sdk",
+            "version": "1.17.0",
+            "isSemVerMajor": true
+          }
+        },
+        "@ethersproject/json-wallets": {
+          "severity": "low",
+          "direct": false,
+          "fixAvailable": {
+            "name": "@ardrive/turbo-sdk",
+            "version": "1.17.0",
+            "isSemVerMajor": true
+          }
+        },
+        "@ethersproject/providers": {
+          "severity": "low",
+          "direct": false,
+          "fixAvailable": {
+            "name": "@ardrive/turbo-sdk",
+            "version": "1.17.0",
+            "isSemVerMajor": true
+          }
+        },
+        "@ethersproject/signing-key": {
+          "severity": "low",
+          "direct": false,
+          "fixAvailable": {
+            "name": "@ardrive/turbo-sdk",
+            "version": "1.17.0",
+            "isSemVerMajor": true
+          }
+        },
+        "@ethersproject/transactions": {
+          "severity": "low",
+          "direct": false,
+          "fixAvailable": {
+            "name": "@ardrive/turbo-sdk",
+            "version": "1.17.0",
+            "isSemVerMajor": true
+          }
+        },
+        "@ethersproject/wallet": {
+          "severity": "low",
+          "direct": false,
+          "fixAvailable": {
+            "name": "@ardrive/turbo-sdk",
+            "version": "1.17.0",
+            "isSemVerMajor": true
+          }
+        },
+        "@ethersproject/wordlists": {
+          "severity": "low",
+          "direct": false,
+          "fixAvailable": {
+            "name": "@ardrive/turbo-sdk",
+            "version": "1.17.0",
+            "isSemVerMajor": true
+          }
+        },
+        "@solana/buffer-layout-utils": {
+          "severity": "moderate",
+          "direct": false,
+          "fixAvailable": {
+            "name": "@ardrive/turbo-sdk",
+            "version": "1.17.0",
+            "isSemVerMajor": true
+          }
+        },
+        "@solana/spl-token": {
+          "severity": "moderate",
+          "direct": false,
+          "fixAvailable": {
+            "name": "@ardrive/turbo-sdk",
+            "version": "1.17.0",
+            "isSemVerMajor": true
+          }
+        },
+        "@solana/spl-token-group": {
+          "severity": "moderate",
+          "direct": false,
+          "fixAvailable": {
+            "name": "@ardrive/turbo-sdk",
+            "version": "1.17.0",
+            "isSemVerMajor": true
+          }
+        },
+        "@solana/spl-token-metadata": {
+          "severity": "moderate",
+          "direct": false,
+          "fixAvailable": {
+            "name": "@ardrive/turbo-sdk",
+            "version": "1.17.0",
+            "isSemVerMajor": true
+          }
+        },
+        "@solana/web3.js": {
+          "severity": "moderate",
+          "direct": true,
+          "fixAvailable": {
+            "name": "@solana/web3.js",
+            "version": "3.2.1",
+            "isSemVerMajor": true
+          }
+        },
+        "elliptic": {
+          "severity": "low",
+          "direct": false,
+          "fixAvailable": {
+            "name": "@ardrive/turbo-sdk",
+            "version": "1.17.0",
+            "isSemVerMajor": true
+          }
+        },
+        "jayson": {
+          "severity": "moderate",
+          "direct": false,
+          "fixAvailable": {
+            "name": "@solana/web3.js",
+            "version": "3.2.1",
+            "isSemVerMajor": true
+          }
+        },
+        "qs": {
+          "severity": "moderate",
+          "direct": false,
+          "fixAvailable": true
+        },
+        "secp256k1": {
+          "severity": "low",
+          "direct": false,
+          "fixAvailable": {
+            "name": "@ardrive/turbo-sdk",
+            "version": "1.17.0",
+            "isSemVerMajor": true
+          }
+        },
+        "stream-json": {
+          "severity": "moderate",
+          "direct": false,
+          "fixAvailable": {
+            "name": "@solana/web3.js",
+            "version": "3.2.1",
+            "isSemVerMajor": true
+          }
+        },
+        "uuid": {
+          "severity": "moderate",
+          "direct": false,
+          "fixAvailable": {
+            "name": "@solana/web3.js",
+            "version": "3.2.1",
+            "isSemVerMajor": true
+          }
+        }
+      }
+    },
+    {
+      "scope": "web-full",
+      "vulnerabilities": {
+        "info": 0,
+        "low": 18,
+        "moderate": 11,
+        "high": 0,
+        "critical": 0,
+        "total": 29
+      },
+      "findings": {
+        "@ardrive/turbo-sdk": {
+          "severity": "moderate",
+          "direct": true,
+          "fixAvailable": {
+            "name": "@ardrive/turbo-sdk",
+            "version": "1.17.0",
+            "isSemVerMajor": true
+          }
+        },
+        "@dha-team/arbundles": {
+          "severity": "low",
+          "direct": true,
+          "fixAvailable": {
+            "name": "@ardrive/turbo-sdk",
+            "version": "1.17.0",
+            "isSemVerMajor": true
+          }
+        },
+        "@ethersproject/abstract-provider": {
+          "severity": "low",
+          "direct": false,
+          "fixAvailable": {
+            "name": "@ardrive/turbo-sdk",
+            "version": "1.17.0",
+            "isSemVerMajor": true
+          }
+        },
+        "@ethersproject/abstract-signer": {
+          "severity": "low",
+          "direct": false,
+          "fixAvailable": {
+            "name": "@ardrive/turbo-sdk",
+            "version": "1.17.0",
+            "isSemVerMajor": true
+          }
+        },
+        "@ethersproject/hash": {
+          "severity": "low",
+          "direct": false,
+          "fixAvailable": {
+            "name": "@ardrive/turbo-sdk",
+            "version": "1.17.0",
+            "isSemVerMajor": true
+          }
+        },
+        "@ethersproject/hdnode": {
+          "severity": "low",
+          "direct": false,
+          "fixAvailable": {
+            "name": "@ardrive/turbo-sdk",
+            "version": "1.17.0",
+            "isSemVerMajor": true
+          }
+        },
+        "@ethersproject/json-wallets": {
+          "severity": "low",
+          "direct": false,
+          "fixAvailable": {
+            "name": "@ardrive/turbo-sdk",
+            "version": "1.17.0",
+            "isSemVerMajor": true
+          }
+        },
+        "@ethersproject/providers": {
+          "severity": "low",
+          "direct": false,
+          "fixAvailable": {
+            "name": "@ardrive/turbo-sdk",
+            "version": "1.17.0",
+            "isSemVerMajor": true
+          }
+        },
+        "@ethersproject/signing-key": {
+          "severity": "low",
+          "direct": false,
+          "fixAvailable": {
+            "name": "@ardrive/turbo-sdk",
+            "version": "1.17.0",
+            "isSemVerMajor": true
+          }
+        },
+        "@ethersproject/transactions": {
+          "severity": "low",
+          "direct": false,
+          "fixAvailable": {
+            "name": "@ardrive/turbo-sdk",
+            "version": "1.17.0",
+            "isSemVerMajor": true
+          }
+        },
+        "@ethersproject/wallet": {
+          "severity": "low",
+          "direct": false,
+          "fixAvailable": {
+            "name": "@ardrive/turbo-sdk",
+            "version": "1.17.0",
+            "isSemVerMajor": true
+          }
+        },
+        "@ethersproject/wordlists": {
+          "severity": "low",
+          "direct": false,
+          "fixAvailable": {
+            "name": "@ardrive/turbo-sdk",
+            "version": "1.17.0",
+            "isSemVerMajor": true
+          }
+        },
+        "@solana/buffer-layout-utils": {
+          "severity": "moderate",
+          "direct": false,
+          "fixAvailable": {
+            "name": "@ardrive/turbo-sdk",
+            "version": "1.17.0",
+            "isSemVerMajor": true
+          }
+        },
+        "@solana/spl-token": {
+          "severity": "moderate",
+          "direct": false,
+          "fixAvailable": {
+            "name": "@ardrive/turbo-sdk",
+            "version": "1.17.0",
+            "isSemVerMajor": true
+          }
+        },
+        "@solana/spl-token-group": {
+          "severity": "moderate",
+          "direct": false,
+          "fixAvailable": {
+            "name": "@ardrive/turbo-sdk",
+            "version": "1.17.0",
+            "isSemVerMajor": true
+          }
+        },
+        "@solana/spl-token-metadata": {
+          "severity": "moderate",
+          "direct": false,
+          "fixAvailable": {
+            "name": "@ardrive/turbo-sdk",
+            "version": "1.17.0",
+            "isSemVerMajor": true
+          }
+        },
+        "@solana/web3.js": {
+          "severity": "moderate",
+          "direct": true,
+          "fixAvailable": {
+            "name": "@solana/web3.js",
+            "version": "3.2.1",
+            "isSemVerMajor": true
+          }
+        },
+        "browserify-sign": {
+          "severity": "low",
+          "direct": false,
+          "fixAvailable": {
+            "name": "vite-plugin-node-polyfills",
+            "version": "0.2.0",
+            "isSemVerMajor": true
+          }
+        },
+        "create-ecdh": {
+          "severity": "low",
+          "direct": false,
+          "fixAvailable": {
+            "name": "vite-plugin-node-polyfills",
+            "version": "0.2.0",
+            "isSemVerMajor": true
+          }
+        },
+        "crypto-browserify": {
+          "severity": "low",
+          "direct": false,
+          "fixAvailable": {
+            "name": "vite-plugin-node-polyfills",
+            "version": "0.2.0",
+            "isSemVerMajor": true
+          }
+        },
+        "elliptic": {
+          "severity": "low",
+          "direct": false,
+          "fixAvailable": {
+            "name": "@ardrive/turbo-sdk",
+            "version": "1.17.0",
+            "isSemVerMajor": true
+          }
+        },
+        "jayson": {
+          "severity": "moderate",
+          "direct": false,
+          "fixAvailable": {
+            "name": "@solana/web3.js",
+            "version": "3.2.1",
+            "isSemVerMajor": true
+          }
+        },
+        "node-stdlib-browser": {
+          "severity": "low",
+          "direct": false,
+          "fixAvailable": {
+            "name": "vite-plugin-node-polyfills",
+            "version": "0.2.0",
+            "isSemVerMajor": true
+          }
+        },
+        "pbkdf2": {
+          "severity": "moderate",
+          "direct": false,
+          "fixAvailable": true
+        },
+        "qs": {
+          "severity": "moderate",
+          "direct": false,
+          "fixAvailable": true
+        },
+        "secp256k1": {
+          "severity": "low",
+          "direct": false,
+          "fixAvailable": {
+            "name": "@ardrive/turbo-sdk",
+            "version": "1.17.0",
+            "isSemVerMajor": true
+          }
+        },
+        "stream-json": {
+          "severity": "moderate",
+          "direct": false,
+          "fixAvailable": {
+            "name": "@solana/web3.js",
+            "version": "3.2.1",
+            "isSemVerMajor": true
+          }
+        },
+        "uuid": {
+          "severity": "moderate",
+          "direct": false,
+          "fixAvailable": {
+            "name": "@solana/web3.js",
+            "version": "3.2.1",
+            "isSemVerMajor": true
+          }
+        },
+        "vite-plugin-node-polyfills": {
+          "severity": "low",
+          "direct": true,
+          "fixAvailable": {
+            "name": "vite-plugin-node-polyfills",
+            "version": "0.2.0",
+            "isSemVerMajor": true
+          }
+        }
+      }
+    },
+    {
+      "scope": "sponsor-production",
+      "vulnerabilities": {
+        "info": 0,
+        "low": 13,
+        "moderate": 1,
+        "high": 0,
+        "critical": 0,
+        "total": 14
+      },
+      "findings": {
+        "@dha-team/arbundles": {
+          "severity": "low",
+          "direct": true,
+          "fixAvailable": false
+        },
+        "@ethersproject/abstract-provider": {
+          "severity": "low",
+          "direct": false,
+          "fixAvailable": false
+        },
+        "@ethersproject/abstract-signer": {
+          "severity": "low",
+          "direct": false,
+          "fixAvailable": false
+        },
+        "@ethersproject/hash": {
+          "severity": "low",
+          "direct": false,
+          "fixAvailable": false
+        },
+        "@ethersproject/hdnode": {
+          "severity": "low",
+          "direct": false,
+          "fixAvailable": false
+        },
+        "@ethersproject/json-wallets": {
+          "severity": "low",
+          "direct": false,
+          "fixAvailable": false
+        },
+        "@ethersproject/providers": {
+          "severity": "low",
+          "direct": false,
+          "fixAvailable": false
+        },
+        "@ethersproject/signing-key": {
+          "severity": "low",
+          "direct": false,
+          "fixAvailable": false
+        },
+        "@ethersproject/transactions": {
+          "severity": "low",
+          "direct": false,
+          "fixAvailable": false
+        },
+        "@ethersproject/wallet": {
+          "severity": "low",
+          "direct": false,
+          "fixAvailable": false
+        },
+        "@ethersproject/wordlists": {
+          "severity": "low",
+          "direct": false,
+          "fixAvailable": false
+        },
+        "elliptic": {
+          "severity": "low",
+          "direct": false,
+          "fixAvailable": false
+        },
+        "qs": {
+          "severity": "moderate",
+          "direct": false,
+          "fixAvailable": true
+        },
+        "secp256k1": {
+          "severity": "low",
+          "direct": false,
+          "fixAvailable": false
+        }
+      }
+    }
+  ],
+  "note": "Counts include transitively affected parent packages. Zero high/critical does not mean no dependency findings. Legacy sponsor/Turbo/Solana packages are not in the independent browser runtime; the exact emitted boundary is rechecked in the final build."
+}

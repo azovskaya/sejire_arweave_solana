@@ -1,0 +1,29 @@
+{
+  "checkedAt": "2026-11-23T05:06:51.439381+00:00",
+  "results": [
+    {
+      "path": "/",
+      "status": 200,
+      "bytes": 1231,
+      "sha256": "c39617148fa157ce4d71608bd80cfb225611c0e673fd29b290d6d863160a36cc",
+      "contentType": "text/html; charset=utf-8",
+      "target": "UVtbBWxU9HK5gD21Pq0qc3I4adRREFbOQpU4F0NXik8",
+      "bodyStart": "<!doctype html>\n<html lang=\"ru\">\n  <head>\n    <meta charset=\"UTF-8\" />\n    <link rel=\"icon\" type=\"image/svg+xml\" href=\"./favicon.svg\" />\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, viewport-"
+    },
+    {
+      "path": "/build-provenance.json",
+      "status": 404,
+      "bodyStart": "Not found"
+    },
+    {
+      "path": "/release-profile.json",
+      "status": 404,
+      "bodyStart": "Not found"
+    },
+    {
+      "path": "/recovery/recovery.html",
+      "status": 404,
+      "bodyStart": "Not found"
+    }
+  ]
+}

@@ -1,0 +1,48 @@
+{
+  "checkedAt": "2026-11-23T05:12:43.888Z",
+  "kind": "read-only primary source contract review",
+  "walletRoundtripPerformed": false,
+  "realSignaturesUploadsPaymentsPerformed": false,
+  "scope": "Reviewed public native injected sign API return shape, added tags, and default fee behavior against Sejire's existing strict verifier. This does not test an installed wallet extension.",
+  "documentation": {
+    "url": "https://github.com/wanderwallet/wander-docs/blob/main/api/sign.md",
+    "finding": "Native sign requires SIGN_TRANSACTION and returns a signed transaction instance."
+  },
+  "sourceTree": {
+    "url": "https://api.github.com/repos/wanderwallet/Wander/git/trees/production?recursive=1",
+    "sha": "4828cf173ef4b183a442b738ad349148c9edf60f"
+  },
+  "sources": [
+    {
+      "path": "src/api/modules/sign/sign.foreground.ts",
+      "finding": "The sign finalizer returns a reconstructed Arweave Transaction, restoring original transaction.data and original tags plus the wallet tags.",
+      "url": "https://github.com/wanderwallet/Wander/blob/production/src/api/modules/sign/sign.foreground.ts",
+      "blobSha": "ee24fdeef29a0bc298120e8310dfe7289d2c5354"
+    },
+    {
+      "path": "src/api/modules/sign/sign.background.ts",
+      "finding": "The native signer applies the wallet fee multiplier and Signing-Client tags, asks for signing authorization, signs locally, and returns the transaction for foreground reconstruction.",
+      "url": "https://github.com/wanderwallet/Wander/blob/production/src/api/modules/sign/sign.background.ts",
+      "blobSha": "0fbd1bbc8f6c656fe4825e441469a5477cf019b5"
+    },
+    {
+      "path": "src/api/modules/sign/tags.ts",
+      "finding": "The added tags are Signing-Client and Signing-Client-Version; the Sejire verifier permits exactly these extra tag names.",
+      "url": "https://github.com/wanderwallet/Wander/blob/production/src/api/modules/sign/tags.ts",
+      "blobSha": "fa9a40d33d75452671be00621c0a68338a967a7f"
+    },
+    {
+      "path": "src/api/modules/sign/utils.ts",
+      "finding": "calculateReward preserves the requested reward when fee_multiplier equals 1; different user-selected multipliers change the reward.",
+      "url": "https://github.com/wanderwallet/Wander/blob/production/src/api/modules/sign/utils.ts",
+      "blobSha": "49dc959a7338a286936a4d8bba82cc2995f0bfcc"
+    },
+    {
+      "path": "src/settings/index.ts",
+      "finding": "The default fee_multiplier value is 1.",
+      "url": "https://github.com/wanderwallet/Wander/blob/production/src/settings/index.ts",
+      "blobSha": "3c1f8c2f35c5fd3e4dab5242e6971486bc1b5e2c"
+    }
+  ],
+  "limitation": "Sejire intentionally rejects a valid signature if the wallet changes the authorized exact reward; default multiplier=1 is compatible by inspected source. Installed extension version, user settings, and a live wallet roundtrip remain unverified."
+}

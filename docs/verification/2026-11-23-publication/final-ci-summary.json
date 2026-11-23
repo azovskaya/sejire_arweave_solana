@@ -1,0 +1,935 @@
+{
+  "schema": "sejire/final-ci-review/v1",
+  "reviewedAt": "2026-11-23T06:36:38.492Z",
+  "repository": "azovskaya/sejire_arweave_solana",
+  "run": {
+    "id": 45122610001,
+    "attempt": 1,
+    "number": 425,
+    "url": "https://github.com/azovskaya/sejire_arweave_solana/actions/runs/45122610001",
+    "workflow": ".github/workflows/checks.yml",
+    "event": "push",
+    "branch": "feat/decentralized-arweave-20261116",
+    "sourceCommit": "17a254eb13bb999127d9f7b3ecd54905f317e02d",
+    "sourceTree": "38dc06bd1eec7b06bdd21fea450d86e21aa236e4",
+    "status": "completed",
+    "conclusion": "success",
+    "startedAt": "2026-11-23T06:12:54Z",
+    "updatedAt": "2026-11-23T06:28:19Z"
+  },
+  "jobs": [
+    {
+      "id": 137519610795,
+      "name": "verify",
+      "status": "completed",
+      "conclusion": "success",
+      "stepCounts": {
+        "total": 78,
+        "success": 77,
+        "skipped": 1,
+        "failed": 0,
+        "active": 0
+      },
+      "skippedSteps": [
+        {
+          "name": "Preserve checkout failure diagnostics",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 75
+        }
+      ],
+      "successfulSteps": [
+        {
+          "number": 1,
+          "name": "Set up job"
+        },
+        {
+          "number": 2,
+          "name": "Run actions/checkout@v4"
+        },
+        {
+          "number": 3,
+          "name": "Run actions/setup-node@v4"
+        },
+        {
+          "number": 4,
+          "name": "Worker release gate regressions (offline, no deployment)"
+        },
+        {
+          "number": 5,
+          "name": "Run npm ci --prefix apps/web"
+        },
+        {
+          "number": 6,
+          "name": "Run npm ci --prefix apps/sponsor"
+        },
+        {
+          "number": 7,
+          "name": "Run npm test"
+        },
+        {
+          "number": 8,
+          "name": "Stress-test family tree and шежіре PDF exports"
+        },
+        {
+          "number": 9,
+          "name": "Run npm run check --prefix apps/sponsor"
+        },
+        {
+          "number": 10,
+          "name": "Run npm run test:fund-runtime"
+        },
+        {
+          "number": 11,
+          "name": "Paid SOL archive, durable continuation and mainnet adapters (synthetic network)"
+        },
+        {
+          "number": 12,
+          "name": "Linux checkout adapter, SQLite writer and idempotent order (synthetic network)"
+        },
+        {
+          "number": 13,
+          "name": "Run npm run test:checkout"
+        },
+        {
+          "number": 14,
+          "name": "Run npm run test:rpc"
+        },
+        {
+          "number": 15,
+          "name": "Run npm run test:sqlite"
+        },
+        {
+          "number": 16,
+          "name": "Run npm run test:api"
+        },
+        {
+          "number": 17,
+          "name": "Run npm run test:protocol"
+        },
+        {
+          "number": 18,
+          "name": "AO readiness signer selftest (offline, no secrets or network)"
+        },
+        {
+          "number": 19,
+          "name": "Local Lua boundary checks (not a live AO process)"
+        },
+        {
+          "number": 20,
+          "name": "Run npm run test:preservation"
+        },
+        {
+          "number": 21,
+          "name": "Run npm run lint --prefix apps/web"
+        },
+        {
+          "number": 22,
+          "name": "Run npm run archive:measure"
+        },
+        {
+          "number": 23,
+          "name": "Run npm run solana:build"
+        },
+        {
+          "number": 24,
+          "name": "Run npm run checkout:build"
+        },
+        {
+          "number": 25,
+          "name": "Run npm exec --prefix apps/web -- playwright install --with-deps chromium firefox webkit"
+        },
+        {
+          "number": 26,
+          "name": "Offline recovery format, standalone decoder and current-envelope compatibility"
+        },
+        {
+          "number": 27,
+          "name": "Direct Arweave signing, exact resume and chunk delivery (synthetic network)"
+        },
+        {
+          "number": 28,
+          "name": "Read-only direct Arweave API and CORS readiness"
+        },
+        {
+          "number": 29,
+          "name": "Preserve direct Arweave API readiness evidence (read-only)"
+        },
+        {
+          "number": 30,
+          "name": "Historical native archives retain signature, Merkle and encryption verification"
+        },
+        {
+          "number": 31,
+          "name": "Independent recovery kit, complete local vault and legacy journal boundary"
+        },
+        {
+          "number": 32,
+          "name": "Build independent direct-Arweave application and every emitted chunk boundary"
+        },
+        {
+          "number": 33,
+          "name": "Standalone recovery HTML with OS network isolation in Chromium, Firefox and WebKit (synthetic data)"
+        },
+        {
+          "number": 34,
+          "name": "Independent static app in Chromium, Firefox and WebKit (synthetic network)"
+        },
+        {
+          "number": 35,
+          "name": "Preserve independent desktop and mobile screens (synthetic family, no recovery words)"
+        },
+        {
+          "number": 36,
+          "name": "Prepare independent static pack without upload or payment"
+        },
+        {
+          "number": 37,
+          "name": "Run actions/upload-artifact@v4"
+        },
+        {
+          "number": 38,
+          "name": "Editor safety regressions (synthetic data, no wallets or external writes)"
+        },
+        {
+          "number": 39,
+          "name": "Run npm run test:checkout-browser"
+        },
+        {
+          "number": 40,
+          "name": "Run npm run test:protocol-browser"
+        },
+        {
+          "number": 41,
+          "name": "Run VITE_FUND_API_URL=https://sejire-sponsor.azovskaya-alissa.workers.dev npm run native:build"
+        },
+        {
+          "number": 42,
+          "name": "Run npm run security:fund"
+        },
+        {
+          "number": 43,
+          "name": "Verify built static ArNS client and mocked promo completion"
+        },
+        {
+          "number": 44,
+          "name": "Portable admin verifier is copied into the static build"
+        },
+        {
+          "number": 45,
+          "name": "Pages root publisher and smoke syntax"
+        },
+        {
+          "number": 46,
+          "name": "Native V2 bundle dependency boundary (all dynamic chunks)"
+        },
+        {
+          "number": 47,
+          "name": "Run actions/upload-artifact@v4"
+        },
+        {
+          "number": 48,
+          "name": "Run actions/upload-artifact@v4"
+        },
+        {
+          "number": 49,
+          "name": "Run npm run test:permaweb-prepare"
+        },
+        {
+          "number": 50,
+          "name": "Wallet history timeout regression (read-only, balance preserved)"
+        },
+        {
+          "number": 51,
+          "name": "Run npm run test:native-browser"
+        },
+        {
+          "number": 52,
+          "name": "Run npm run test:native-pilot-browser --prefix apps/web"
+        },
+        {
+          "number": 53,
+          "name": "Run npm run test:v2-browser --prefix apps/web"
+        },
+        {
+          "number": 54,
+          "name": "Run npm run test:admin-browser --prefix apps/web"
+        },
+        {
+          "number": 55,
+          "name": "Run npm run test:v2-recovery-browser --prefix apps/web"
+        },
+        {
+          "number": 56,
+          "name": "Promo save, reload recovery and automatic editor completion (mocked network)"
+        },
+        {
+          "number": 57,
+          "name": "Paid SOL save, cross-method recovery and editor completion (mocked network)"
+        },
+        {
+          "number": 58,
+          "name": "Read-only Arweave recovery gateway and CORS acceptance"
+        },
+        {
+          "number": 59,
+          "name": "Run npm run test:native-journey --prefix apps/web"
+        },
+        {
+          "number": 60,
+          "name": "Preserve synthetic MVP screens (no recovery words or wallet secrets)"
+        },
+        {
+          "number": 61,
+          "name": "Read-only live Solana requests from public Pages browser"
+        },
+        {
+          "number": 62,
+          "name": "Run actions/upload-artifact@v4"
+        },
+        {
+          "number": 63,
+          "name": "Run npm run continuation:package"
+        },
+        {
+          "number": 64,
+          "name": "Run npm run test:continuation"
+        },
+        {
+          "number": 65,
+          "name": "Run actions/upload-artifact@v4"
+        },
+        {
+          "number": 66,
+          "name": "Run npm run preview:package"
+        },
+        {
+          "number": 67,
+          "name": "Preserve preview build for owner review (no deployment)"
+        },
+        {
+          "number": 68,
+          "name": "Run npm run security:reachability"
+        },
+        {
+          "number": 69,
+          "name": "Preserve static security evidence (no site publication)"
+        },
+        {
+          "number": 70,
+          "name": "Web dependency audit (non-blocking; release review required)"
+        },
+        {
+          "number": 71,
+          "name": "Web build-tool dependency audit (non-blocking; release review required)"
+        },
+        {
+          "number": 72,
+          "name": "Sponsor dependency audit (non-blocking; release review required)"
+        },
+        {
+          "number": 73,
+          "name": "Sponsor test-tool dependency audit (non-blocking; release review required)"
+        },
+        {
+          "number": 74,
+          "name": "Preserve complete dependency audit evidence"
+        },
+        {
+          "number": 149,
+          "name": "Post Run actions/setup-node@v4"
+        },
+        {
+          "number": 150,
+          "name": "Post Run actions/checkout@v4"
+        },
+        {
+          "number": 151,
+          "name": "Complete job"
+        }
+      ]
+    }
+  ],
+  "browserTests": {
+    "invocations": [
+      {
+        "command": "npm run test:independent-browser",
+        "passed": 72,
+        "evidence": "2026-11-23T06:18:25.7605704Z   72 passed (1.2m)"
+      },
+      {
+        "command": "npx --no-install playwright test --config playwright.editor.config.ts",
+        "passed": 7,
+        "evidence": "2026-11-23T06:18:43.6682642Z   7 passed (11.6s)"
+      },
+      {
+        "command": "npm run test:checkout-browser",
+        "passed": 5,
+        "evidence": "2026-11-23T06:19:03.3503183Z   5 passed (18.8s)"
+      },
+      {
+        "command": "npm run test:protocol-browser",
+        "passed": 5,
+        "evidence": "2026-11-23T06:19:23.2783557Z   5 passed (19.0s)"
+      },
+      {
+        "command": "npm run arns:verify:funded && npm run test:arns-browser",
+        "passed": 9,
+        "evidence": "2026-11-23T06:19:44.9412326Z   9 passed (12.9s)"
+      },
+      {
+        "command": "npm run test:native-browser --prefix apps/web -- --grep 'public balances never wait for history'",
+        "passed": 1,
+        "evidence": "2026-11-23T06:20:07.7285845Z   1 passed (14.7s)"
+      },
+      {
+        "command": "npm run test:native-browser",
+        "passed": 21,
+        "evidence": "2026-11-23T06:21:18.9052490Z   21 passed (1.2m)"
+      },
+      {
+        "command": "npm run test:native-pilot-browser --prefix apps/web",
+        "passed": 3,
+        "evidence": "2026-11-23T06:21:24.5725544Z   3 passed (4.8s)"
+      },
+      {
+        "command": "npm run test:v2-browser --prefix apps/web",
+        "passed": 15,
+        "evidence": "2026-11-23T06:21:46.2562714Z   15 passed (20.8s)"
+      },
+      {
+        "command": "npm run test:admin-browser --prefix apps/web",
+        "passed": 14,
+        "evidence": "2026-11-23T06:21:58.8392894Z   14 passed (11.7s)"
+      },
+      {
+        "command": "npm run test:v2-recovery-browser --prefix apps/web",
+        "passed": 35,
+        "evidence": "2026-11-23T06:22:51.7704940Z   35 passed (52.1s)"
+      },
+      {
+        "command": "npm run test:fund-browser --prefix apps/web",
+        "passed": 25,
+        "evidence": "2026-11-23T06:23:46.9763274Z   25 passed (54.3s)"
+      },
+      {
+        "command": "npm run test:paid-browser",
+        "passed": 48,
+        "evidence": "2026-11-23T06:26:19.6982475Z   48 passed (2.5m)"
+      },
+      {
+        "command": "npm run test:native-journey --prefix apps/web",
+        "passed": 48,
+        "evidence": "2026-11-23T06:27:57.4116636Z   48 passed (1.6m)"
+      }
+    ],
+    "totalCompletedExecutions": 308,
+    "countingNote": "Executions across 14 Playwright invocations, including the separately repeated wallet-history timeout filter; not a count of distinct test definitions.",
+    "independent": {
+      "passed": 72,
+      "perProject": {
+        "chromium": 24,
+        "firefox": 24,
+        "webkit": 24
+      },
+      "syntheticNetwork": true
+    },
+    "legacyArns": {
+      "passed": 9,
+      "syntheticNetwork": true
+    },
+    "failed": 0,
+    "flaky": 0,
+    "skipped": 0
+  },
+  "pdfLayout": {
+    "fixtures": 20,
+    "files": 89,
+    "pages": 779,
+    "passingFiles": 89,
+    "findings": {},
+    "maxFixturePeople": 8191,
+    "maxLineageGenerations": 103,
+    "boundaryMatrix": true,
+    "evidence": "2026-11-23T06:14:55.6159372Z files: 89 pages: 779 passing: 89 findings: {}"
+  },
+  "keyNodeAndProtocolTests": [
+    {
+      "name": "Worker release gate",
+      "passed": 53,
+      "evidence": "2026-11-23T06:13:17.0896379Z # tests 53"
+    },
+    {
+      "name": "Static route drain",
+      "passed": 4,
+      "evidence": "2026-11-23T06:13:26.3444104Z # Subtest: draining waits for a running response and blocks later requests without changing interception"
+    },
+    {
+      "name": "Admin password input",
+      "passed": 7,
+      "evidence": "2026-11-23T06:13:26.4958258Z # tests 7"
+    },
+    {
+      "name": "Offline recovery format",
+      "passed": 12,
+      "evidence": "2026-11-23T06:16:30.9662259Z # tests 12"
+    },
+    {
+      "name": "Offline production interoperability",
+      "passedGroups": 8,
+      "evidence": "2026-11-23T06:16:32.8367902Z PASS current production kits recover through a copied standalone CLI with no npm or network"
+    },
+    {
+      "name": "Direct Arweave transactions",
+      "passed": 21,
+      "evidence": "2026-11-23T06:16:33.8420392Z PASS 21 direct Arweave tests: synthetic wallet, mocked HTTP, no live signatures, uploads or payments."
+    },
+    {
+      "name": "Direct node preference",
+      "passed": 9,
+      "evidence": "2026-11-23T06:16:33.9932820Z native node preference: 9 local checks passed; no live network, signatures or uploads"
+    },
+    {
+      "name": "Direct protocol boundaries",
+      "passedCases": 36,
+      "groups": 10,
+      "evidence": "2026-11-23T06:16:39.5944857Z PASS 10 direct protocol boundary groups (36 fixed cases); payload seed 0x18112026; synthetic keys and transport only."
+    },
+    {
+      "name": "Native readiness probe transport",
+      "passed": 4,
+      "evidence": "2026-11-23T06:16:39.8231727Z # Subtest: checks each node sequentially while keeping the two nodes concurrent"
+    },
+    {
+      "name": "Historical native recovery",
+      "passed": 14,
+      "evidence": "2026-11-23T06:16:45.3086305Z historical native recovery: 14 synthetic checks passed; no network writes or real payments"
+    },
+    {
+      "name": "Independent backup and finalization",
+      "passed": 18,
+      "evidence": "2026-11-23T06:16:45.9920498Z independent backup/finalization: 18 synthetic checks passed; no payments or uploads"
+    },
+    {
+      "name": "Independent native vault",
+      "passed": 16,
+      "evidence": "2026-11-23T06:16:46.6983035Z independent native vault: 16 local fixture checks passed; no live signatures, uploads or payments"
+    },
+    {
+      "name": "OS-isolated standalone recovery",
+      "passed": 4,
+      "browsers": [
+        "chromium",
+        "firefox",
+        "webkit"
+      ],
+      "parserTests": 1,
+      "verifiedKernelNetworkIsolation": true,
+      "evidence": [
+        "2026-11-23T06:17:02.3371119Z # chromium: kernel network isolation verified (different namespace, loopback only, no usable default routes)",
+        "2026-11-23T06:17:05.7567130Z # firefox: kernel network isolation verified (different namespace, loopback only, no usable default routes)",
+        "2026-11-23T06:17:13.6290980Z # webkit: kernel network isolation verified (different namespace, loopback only, no usable default routes)"
+      ]
+    },
+    {
+      "name": "Permaweb release preparation and publication verifier",
+      "passed": 41,
+      "evidence": "2026-11-23T06:19:52.1525629Z # tests 41"
+    }
+  ],
+  "independentBuild": {
+    "profile": "decentralized-direct-arweave",
+    "status": "PASS",
+    "jsAssets": 10,
+    "renderedModules": 340,
+    "recoveryFiles": 8,
+    "mandatorySejireService": false,
+    "evidence": [
+      "2026-11-23T06:16:57.1784386Z   \"status\": \"PASS\",",
+      "2026-11-23T06:16:57.1784696Z   \"profile\": \"decentralized-direct-arweave\",",
+      "2026-11-23T06:16:57.1785006Z   \"jsAssets\": 10,",
+      "2026-11-23T06:16:57.1785231Z   \"renderedModules\": 340,",
+      "2026-11-23T06:16:57.1785457Z   \"recoveryFiles\": 8,",
+      "2026-11-23T06:16:57.1785669Z   \"mandatorySejireService\": false"
+    ]
+  },
+  "directNetworkReadiness": {
+    "artifact": {
+      "id": 14794631894,
+      "name": "direct-arweave-api-readiness",
+      "bytes": 874,
+      "digest": "sha256:365e22f8e8b2a6b98d6fba652b6b3ffa9d95df762a4192dcac1dcf5c7e75b191",
+      "runId": 45122610001,
+      "sourceCommit": "17a254eb13bb999127d9f7b3ecd54905f317e02d",
+      "createdAt": "2026-11-23T06:16:44Z",
+      "expired": false
+    },
+    "downloadedZipSha256": "365e22f8e8b2a6b98d6fba652b6b3ffa9d95df762a4192dcac1dcf5c7e75b191",
+    "downloadedZipBytes": 874,
+    "metadataDigestAndSizeMatched": true,
+    "zipEntry": "readiness.json",
+    "reportFile": "final-ci-network-readiness.json",
+    "reportSha256": "93c9ab42d636648daaa34ed9208d9ae58c27b0d46b18da0323159eeff759842d",
+    "checkedAt": "2026-11-23T06:16:39.907Z",
+    "status": "PASS",
+    "readyNodes": 2,
+    "configuredNodes": 2,
+    "requiredReadyNodes": 2,
+    "readyEndpointChecks": 10,
+    "totalEndpointChecks": 10,
+    "readOnly": true,
+    "walletChecked": false,
+    "uploadAttempted": false,
+    "scope": "Native API and CORS preflight snapshot; actual upload, archive readback, settlement and distinct operator ownership are not tested."
+  },
+  "readOnlyRecoveryGateways": {
+    "status": "PASS",
+    "evidence": [
+      "2026-11-23T06:26:20.1927980Z arweave.net: metadata/raw/CORS OK",
+      "2026-11-23T06:26:21.1583499Z turbo-gateway.com: metadata/raw/CORS OK"
+    ]
+  },
+  "artifacts": {
+    "sourceStaticRelease": {
+      "id": 14794163773,
+      "name": "permaweb-static-release",
+      "bytes": 1269525,
+      "digest": "sha256:6a7e9b3015ab4cfab5701d1cdcfeb1f619cf4d990d85ddcd7ed0a5aa26054e05",
+      "runId": 45122610001,
+      "sourceCommit": "17a254eb13bb999127d9f7b3ecd54905f317e02d",
+      "createdAt": "2026-11-23T06:18:30Z",
+      "expired": false
+    },
+    "dependencyAudit": {
+      "id": 14795390336,
+      "name": "dependency-audit-evidence",
+      "bytes": 8245,
+      "digest": "sha256:ccf0592c898c6e45a6dfbb384f189b69026ba2e4b4419ac966092fd3d6deed09",
+      "runId": 45122610001,
+      "sourceCommit": "17a254eb13bb999127d9f7b3ecd54905f317e02d",
+      "createdAt": "2026-11-23T06:28:15Z",
+      "expired": false
+    }
+  },
+  "dependencyAudits": {
+    "commands": {
+      "webProduction": "npm audit --prefix apps/web --omit=dev --json",
+      "webFull": "npm audit --prefix apps/web --json",
+      "sponsorProduction": "npm audit --prefix apps/sponsor --omit=dev --json",
+      "sponsorFull": "npm audit --prefix apps/sponsor --json"
+    },
+    "counts": {
+      "webProduction": {
+        "vulnerabilities": {
+          "info": 0,
+          "low": 13,
+          "moderate": 10,
+          "high": 0,
+          "critical": 0,
+          "total": 23
+        },
+        "dependencies": {
+          "prod": 250,
+          "dev": 207,
+          "optional": 129,
+          "peer": 2,
+          "peerOptional": 0,
+          "total": 508
+        }
+      },
+      "webFull": {
+        "vulnerabilities": {
+          "info": 0,
+          "low": 18,
+          "moderate": 11,
+          "high": 0,
+          "critical": 0,
+          "total": 29
+        },
+        "dependencies": {
+          "prod": 250,
+          "dev": 207,
+          "optional": 129,
+          "peer": 2,
+          "peerOptional": 0,
+          "total": 508
+        }
+      },
+      "sponsorProduction": {
+        "vulnerabilities": {
+          "info": 0,
+          "low": 13,
+          "moderate": 1,
+          "high": 0,
+          "critical": 0,
+          "total": 14
+        },
+        "dependencies": {
+          "prod": 91,
+          "dev": 89,
+          "optional": 129,
+          "peer": 3,
+          "peerOptional": 0,
+          "total": 247
+        }
+      },
+      "sponsorFull": {
+        "vulnerabilities": {
+          "info": 0,
+          "low": 13,
+          "moderate": 1,
+          "high": 3,
+          "critical": 0,
+          "total": 17
+        },
+        "dependencies": {
+          "prod": 91,
+          "dev": 89,
+          "optional": 129,
+          "peer": 3,
+          "peerOptional": 0,
+          "total": 247
+        }
+      }
+    },
+    "auditStepsAreNonBlocking": true,
+    "sponsorFullHigh": [
+      {
+        "name": "miniflare",
+        "severity": "high",
+        "isDirect": true,
+        "via": [
+          "sharp",
+          "undici"
+        ],
+        "effects": [],
+        "range": "<=0.0.0-fec45ed61 || 4.20250508.3 - 5.20261019.2-beta",
+        "nodes": [
+          "node_modules/miniflare"
+        ],
+        "fixAvailable": {
+          "name": "miniflare",
+          "version": "4.20250508.2",
+          "isSemVerMajor": true
+        },
+        "lockedVersion": "4.20260730.0",
+        "dev": true
+      },
+      {
+        "name": "sharp",
+        "severity": "high",
+        "isDirect": false,
+        "via": [
+          {
+            "source": 1241331,
+            "name": "sharp",
+            "dependency": "sharp",
+            "title": "sharp : Vulnerability in librsvg dependency CVE-2026-96889",
+            "url": "https://github.com/advisories/GHSA-wq5f-xc86-pv6w",
+            "severity": "high",
+            "cwe": [
+              "CWE-416",
+              "CWE-1395"
+            ],
+            "cvss": {
+              "score": 0,
+              "vectorString": null
+            },
+            "range": "<0.35.5"
+          }
+        ],
+        "effects": [
+          "miniflare"
+        ],
+        "range": "<0.35.5",
+        "nodes": [
+          "node_modules/sharp"
+        ],
+        "fixAvailable": {
+          "name": "miniflare",
+          "version": "4.20250508.2",
+          "isSemVerMajor": true
+        },
+        "lockedVersion": "0.35.4",
+        "dev": true
+      },
+      {
+        "name": "undici",
+        "severity": "high",
+        "isDirect": false,
+        "via": [
+          {
+            "source": 1243078,
+            "name": "undici",
+            "dependency": "undici",
+            "title": "undici vulnerable to Denial of Service via unbounded memory in the EventSource parser",
+            "url": "https://github.com/advisories/GHSA-4qv8-2p9j-2685",
+            "severity": "moderate",
+            "cwe": [
+              "CWE-770"
+            ],
+            "cvss": {
+              "score": 5.9,
+              "vectorString": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:N/I:N/A:H"
+            },
+            "range": ">=7.0.0 <7.30.1"
+          },
+          {
+            "source": 1243081,
+            "name": "undici",
+            "dependency": "undici",
+            "title": "undici vulnerable to Subresource Integrity bypass via non-lowercase algorithm tokens",
+            "url": "https://github.com/advisories/GHSA-f72v-6w45-q472",
+            "severity": "moderate",
+            "cwe": [
+              "CWE-178"
+            ],
+            "cvss": {
+              "score": 5.9,
+              "vectorString": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:N/I:H/A:N"
+            },
+            "range": ">=7.15.0 <7.30.1"
+          },
+          {
+            "source": 1243113,
+            "name": "undici",
+            "dependency": "undici",
+            "title": "undici vulnerable to Denial of Service via unhandled error on excessive content-encodings",
+            "url": "https://github.com/advisories/GHSA-xjj6-f33q-929c",
+            "severity": "high",
+            "cwe": [
+              "CWE-248",
+              "CWE-459"
+            ],
+            "cvss": {
+              "score": 7.5,
+              "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
+            },
+            "range": ">=7.18.0 <7.30.1"
+          },
+          {
+            "source": 1243473,
+            "name": "undici",
+            "dependency": "undici",
+            "title": "undici vulnerable to cache poisoning and cross-user disclosure via cross-origin redirects",
+            "url": "https://github.com/advisories/GHSA-4w7w-5xrc-9h26",
+            "severity": "high",
+            "cwe": [
+              "CWE-346",
+              "CWE-524"
+            ],
+            "cvss": {
+              "score": 7.4,
+              "vectorString": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:H/A:N"
+            },
+            "range": ">=7.0.0 <7.30.1"
+          },
+          {
+            "source": 1243475,
+            "name": "undici",
+            "dependency": "undici",
+            "title": "undici vulnerable to TLS certificate validation bypass via dropped tls options in Agent",
+            "url": "https://github.com/advisories/GHSA-2m5v-pch6-74hx",
+            "severity": "high",
+            "cwe": [
+              "CWE-295"
+            ],
+            "cvss": {
+              "score": 7.4,
+              "vectorString": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:H/A:N"
+            },
+            "range": ">=7.0.0 <7.30.1"
+          },
+          {
+            "source": 1243478,
+            "name": "undici",
+            "dependency": "undici",
+            "title": "undici vulnerable to Denial of Service via TLS 1.2 certificate-changing renegotiation",
+            "url": "https://github.com/advisories/GHSA-qrxm-fqhp-jwvm",
+            "severity": "high",
+            "cwe": [
+              "CWE-248",
+              "CWE-617"
+            ],
+            "cvss": {
+              "score": 7.5,
+              "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
+            },
+            "range": ">=7.0.0 <7.30.1"
+          },
+          {
+            "source": 1243481,
+            "name": "undici",
+            "dependency": "undici",
+            "title": "undici WebSocket client vulnerable to Denial of Service via unbounded automatic PONG buffering",
+            "url": "https://github.com/advisories/GHSA-9fm3-97px-rjf6",
+            "severity": "moderate",
+            "cwe": [
+              "CWE-400",
+              "CWE-405",
+              "CWE-770"
+            ],
+            "cvss": {
+              "score": 5.9,
+              "vectorString": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:N/I:N/A:H"
+            },
+            "range": ">=7.0.0 <7.30.1"
+          },
+          {
+            "source": 1243484,
+            "name": "undici",
+            "dependency": "undici",
+            "title": "undici vulnerable to Denial of Service via unhandled exception in the decompress interceptor",
+            "url": "https://github.com/advisories/GHSA-55wc-3pg8-jfw6",
+            "severity": "moderate",
+            "cwe": [
+              "CWE-248"
+            ],
+            "cvss": {
+              "score": 5.9,
+              "vectorString": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:N/I:N/A:H"
+            },
+            "range": ">=7.15.0 <7.30.1"
+          }
+        ],
+        "effects": [
+          "miniflare"
+        ],
+        "range": "7.0.0 - 7.30.0",
+        "nodes": [
+          "node_modules/undici"
+        ],
+        "fixAvailable": {
+          "name": "miniflare",
+          "version": "4.20250508.2",
+          "isSemVerMajor": true
+        },
+        "lockedVersion": "7.29.1",
+        "dev": true
+      }
+    ],
+    "scope": "The three high-severity package entries belong to legacy sponsor development tooling. apps/sponsor/package.json lists miniflare as a devDependency; the lockfile marks miniflare, sharp and undici dev:true. Both production audits and the full web audit have zero high/critical entries. Dependency findings are not represented as clean merely because CI succeeded.",
+    "fixApplied": false,
+    "fixAvailableNote": "npm proposes miniflare 4.20250508.2 with isSemVerMajor:true for all three entries. This suggested downgrade was not applied."
+  },
+  "logReview": {
+    "linesReviewed": 7688,
+    "errorAnnotations": 0,
+    "failedTapSummaries": 0,
+    "unexpectedPlaywrightFailuresOrRetries": 0,
+    "lintWarnings": 22,
+    "lintErrors": 0,
+    "expectedNegativeSignatureDiagnostics": 2,
+    "expectedNegativeSignatureEvidence": [
+      "2026-11-23T06:16:33.8403629Z PASS a forged receipt or public header is rejected before decrypting a vault",
+      "2026-11-23T06:16:45.1503080Z PASS a changed signed header or signature is rejected before raw retrieval"
+    ],
+    "actionRuntimeDeprecationWarning": true,
+    "notes": [
+      "The only skipped step collects failure diagnostics; all test and release-build steps ran successfully.",
+      "Two ArweaveJS 'Transaction Verification Failed!' diagnostics are emitted by passing malformed-signature tests and are followed by their rejection assertions.",
+      "The run includes legacy compatibility builds/tests after the independent permaweb artifact was captured; their service URLs are not evidence of a service dependency in the independent artifact."
+    ]
+  },
+  "scope": "Review of completed CI metadata, logs and retained read-only readiness artifact. No new live tests, wallet signing, payment, archive upload, deployment or ArNS change was performed by this review. Official prepare and accepted-pack verification are separate evidence."
+}

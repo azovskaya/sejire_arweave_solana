@@ -1,0 +1,49 @@
+{
+  "schema": "sejire/publication-browser-failure/v1",
+  "observedAt": "2026-11-23T05:49:17Z",
+  "sourceCommit": "b016551dc1e4cd80591236e3c23f635c395fa3bd",
+  "runId": "45119441887",
+  "attempt": 1,
+  "jobId": "137509589474",
+  "tests": {
+    "total": 69,
+    "passed": 68,
+    "failed": 1
+  },
+  "failed": {
+    "browser": "webkit",
+    "scenario": "two tabs cannot silently replace a selected complete archive before saving, and reopening restores the full choice",
+    "stage": "Explicit reopening: goto('/') followed by goto('/#/restore')",
+    "error": "Timed out waiting for restoration words field; page snapshot remained editor",
+    "timeoutMs": 90000
+  },
+  "artifact": {
+    "id": "14793292571",
+    "bytes": 256522,
+    "sha256": "3edac337173231dbc7ab5f99545ea07878ff8e86421bd32180b4a005ce0768e3",
+    "digestVerified": true
+  },
+  "diagnosis": "bootApp reads location.hash before the passive effect subscribes to hashchange; a change in that interval can be lost. The source gap is confirmed; exact event timing is inferred from the failed scenario and snapshot.",
+  "fix": "Capture the boot fragment; subscribe then compare current fragment and reconcile only if changed. Preserve automatic editor resumption for an unchanged empty fragment.",
+  "regression": "Existing consecutive navigation unchanged; add deterministic event-before-subscription regression in all three browsers.",
+  "gatesAlreadyPassed": [
+    "Live API and CORS for both default native nodes",
+    "Independent production build and boundary",
+    "OS-isolated standalone recovery in all three browsers",
+    "PDF stress matrix"
+  ],
+  "releaseAccepted": false,
+  "followup": {
+    "runId": "45120582186",
+    "attempt": 1,
+    "sourceCommit": "3c509fe83582d68e0e7dee6fa6a39d4ac808252c",
+    "originalScenariosPassed": 69,
+    "newCasesReachedRestoration": 3,
+    "newCasesFailedDraftAssertion": 3,
+    "cause": "The editor normalizes optional empty fields at boot; the test compared this stored representation to an unnormalized legacy fixture.",
+    "testOnlyCorrection": "Capture the actual persisted draft immediately before the fragment event, require every original fixture field, then require exact before/after serialized equality.",
+    "runtimeChangedByTestCorrection": false,
+    "nextSourceCommit": "501e64b54a30aad7ec543f80c8b3bfbacbd70d8d",
+    "nextCiRun": "45121248842"
+  }
+}

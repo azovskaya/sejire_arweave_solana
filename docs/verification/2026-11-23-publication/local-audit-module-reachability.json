@@ -1,0 +1,15 @@
+{
+  "scope": "Local independent build; final CI build separately verified",
+  "sourceCommit": "eb2590943a28c32ffc1619a427e993535c3eaa88",
+  "modules": 340,
+  "affectedPackageModules": {
+    "elliptic": [],
+    "qs": [],
+    "stream-json": [],
+    "uuid": [],
+    "pbkdf2": [],
+    "@ardrive/turbo-sdk": [],
+    "@solana/web3.js": [],
+    "@dha-team/arbundles": []
+  }
+}
