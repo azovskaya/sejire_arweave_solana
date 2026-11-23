@@ -20,7 +20,7 @@ function bootApp(): { screen: Screen; store: TreeStore | null; guide: GuideState
 }
 
 export default function App() {
-  const [boot] = useState(bootApp);
+  const [boot] = useState(() => ({ ...bootApp(), hash: location.hash }));
   const [screen, setScreen] = useState<Screen>(boot.screen);
   const [store, setStore] = useState<TreeStore | null>(boot.store);
   const [guide, setGuide] = useState<GuideState>(boot.guide);
@@ -37,8 +37,12 @@ export default function App() {
       else setScreen('welcome');
     };
     window.addEventListener('hashchange', changed);
+    // A fragment navigation can happen after the initial render but before
+    // this passive effect subscribes. Reconcile only a changed fragment so an
+    // unchanged empty URL still resumes the editor selected by bootApp().
+    if (location.hash !== boot.hash) changed();
     return () => window.removeEventListener('hashchange', changed);
-  }, []);
+  }, [boot.hash]);
   function startNew(title: string) {
     clearDraftTree(); clearGuide();
     const next = startGuidedTree(title);

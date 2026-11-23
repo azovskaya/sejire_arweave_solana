@@ -250,6 +250,32 @@ test('offline multitreed archive stays complete when saved locally and cancellat
   expect(all.find(op => op.id === first.id).state).toBe('cancelled'); expect(state.signs).toBe(0); expect(state.posts).toEqual([]); expect(state.external).toEqual([]); expect(state.denied).toEqual([]);
 });
 
+test('fragment navigation before the first route subscription still opens restoration without changing the draft', async ({ page, context }) => {
+  const state = await install(context, page, { draft: true }), errors = [];
+  page.on('pageerror', error => errors.push(error.message));
+  await context.addInitScript(() => {
+    const add = window.addEventListener;
+    window.addEventListener = function (type, listener, options) {
+      if (type === 'hashchange') {
+        window.addEventListener = add;
+        // Deliver a real fragment event immediately before the first listener
+        // is attached, modeling navigation while the app is still mounting.
+        const oldURL = location.href;
+        history.replaceState(null, '', location.pathname + location.search + '#/restore');
+        window.dispatchEvent(new HashChangeEvent('hashchange', { oldURL, newURL: location.href }));
+      }
+      return add.call(this, type, listener, options);
+    };
+  });
+  await page.goto('/');
+  await expect(page).toHaveURL(/\/#\/restore$/);
+  await expect(page.getByLabel('12 слов SEJIRE', { exact: true })).toBeVisible();
+  expect(JSON.parse((await selectionState(page)).draft)).toEqual(tree);
+  expect((await selectionState(page)).session).toBeNull();
+  expect(state.signs).toBe(0); expect(state.posts).toEqual([]); expect(state.external).toEqual([]);
+  expect(state.denied).toEqual([]); expect(errors).toEqual([]);
+});
+
 test('two tabs cannot silently replace a selected complete archive before saving, and reopening restores the full choice', async ({ page, context }) => {
   const state = await install(context, page), errors = [];
   page.on('pageerror', error => errors.push(error.message));
