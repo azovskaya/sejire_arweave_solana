@@ -6,7 +6,7 @@ import { coerceTreeStore } from '../treeJson';
 import type { TreeStore } from '../types';
 import {
   clearVaultSession, getSessionMnemonic, getVaultSession, setVaultSession, setVaultSessionChecked,
-  VAULT_SESSION_META_KEY, type VaultSessionMeta,
+  VAULT_SESSION_META_KEY, vaultEnvelopeDigest, type VaultSessionMeta,
 } from './session';
 
 /** A decrypted, complete snapshot. A network HEAD is supplied only by a reader
@@ -54,7 +54,9 @@ export function acceptVaultVersion(
   try {
     localStorage.setItem(cacheKey, canonical);
     if (!saveDraftTree(tree)) throw Error('storage_unavailable');
-    setVaultSessionChecked(session, mnemonic);
+    const selectedSession = session.source === 'file' || session.source === 'local'
+      ? { ...session, cacheDigest: vaultEnvelopeDigest(envelope) } : session;
+    setVaultSessionChecked(selectedSession, mnemonic);
     const storedSession = getVaultSession();
     if (localStorage.getItem(cacheKey) !== canonical || localStorage.getItem(DRAFT_KEY) !== JSON.stringify(tree) ||
         !storedSession || storedSession.vaultId !== session.vaultId ||

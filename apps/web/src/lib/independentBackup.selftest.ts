@@ -9,12 +9,15 @@ import { deriveKeysFromMnemonic } from './crypto/keys';
 import { encryptJson } from './crypto/encrypt';
 import { putTree, type VaultV1 } from './crypto/vault';
 import { createTree, setDraftPerson, commitDraft } from './treeEngine';
-import { clearVaultSession, getSessionMnemonic, getVaultSession, setVaultSession, VAULT_SESSION_META_KEY } from './vaultSession/session';
+import { clearVaultSession, getSessionMnemonic, getVaultSession, setVaultSession, setVaultSessionChecked,
+  vaultEnvelopeDigest, VAULT_SESSION_META_KEY } from './vaultSession/session';
 import { finalizeIndependentOperation, reconcileIndependentCompletions } from './independentFinalization';
 import { cancelDirectOperation, readDirectOperation, writeDirectOperation } from './directArweave/journal';
 import { sha256, directTags } from './directArweave/format';
 import type { DirectOperation, DirectRawTransaction } from './directArweave/types';
 import { getLocalVaultVersion } from './vaultSession/localArchive';
+import { acceptVaultVersion } from './vaultSession/selection';
+import { DRAFT_KEY } from './draftStorage';
 import { directCrypto } from './directArweave/transaction';
 
 const storage = (): Storage => {
@@ -57,7 +60,7 @@ const originalFetch = globalThis.fetch;
 let networkCalls = 0;
 globalThis.fetch = async () => { networkCalls++; throw Error('An older network copy must not replace the explicitly opened offline vault'); };
 for (const source of ['file', 'local'] as const) {
-  setVaultSession({ vaultId: keys.vaultId, headTxId: null, source }, words);
+  setVaultSessionChecked({ vaultId: keys.vaultId, headTxId: null, source, cacheDigest: vaultEnvelopeDigest(envelope) }, words);
   const loaded = await loadIndependentVaultForPublish(keys, { freshKey: false });
   const editedA = setDraftPerson(a, { id: 'synthetic-person', name: 'Synthetic edit', parents: [], media: [] });
   const next = putTree(loaded.vault, editedA);
@@ -125,7 +128,8 @@ const v1 = completed.txId!;
 try {
   await finalizationTest('resumed completed A(new) advances stale HEAD before sealing B and retains all A history', async () => {
     localStorage.setItem('sejire.envelope.' + keys.vaultId, completed.archiveText);
-    setVaultSession({ vaultId: keys.vaultId, headTxId: v0, source: 'local' }, words);
+    setVaultSessionChecked({ vaultId: keys.vaultId, headTxId: v0, source: 'local',
+      cacheDigest: vaultEnvelopeDigest(JSON.parse(completed.archiveText)) }, words);
     let reads = 0;
     globalThis.fetch = async () => { reads++; throw Error('A completed journal already preserves this native version'); };
     // The supplied parent is a stale render-time prop captured before reconcile.
@@ -140,7 +144,7 @@ try {
     const later = await encryptJson(keys.encKey, keys.vaultId, putTree(singleA, b)), laterText = JSON.stringify(later);
     const savedAt = getLocalVaultVersion(keys.vaultId, v1)?.savedAt;
     localStorage.setItem('sejire.envelope.' + keys.vaultId, laterText);
-    setVaultSession({ vaultId: keys.vaultId, headTxId: v1, source: 'local' }, words);
+    setVaultSessionChecked({ vaultId: keys.vaultId, headTxId: v1, source: 'local', cacheDigest: vaultEnvelopeDigest(later) }, words);
     const result = await finalizeIndependentOperation(completed.id);
     assert.equal(result.advanced, false); assert.equal(localStorage.getItem('sejire.envelope.' + keys.vaultId), laterText);
     assert.equal(getVaultSession()?.source, 'local'); assert.equal(getLocalVaultVersion(keys.vaultId, v1)?.savedAt, savedAt);
@@ -148,7 +152,7 @@ try {
   await finalizationTest('an explicitly imported full snapshot with null HEAD survives historical completion', async () => {
     for (const source of ['file', 'local'] as const) {
       const newer = JSON.stringify(envelope); localStorage.setItem('sejire.envelope.' + keys.vaultId, newer);
-      setVaultSession({ vaultId: keys.vaultId, headTxId: null, source }, words);
+      setVaultSessionChecked({ vaultId: keys.vaultId, headTxId: null, source, cacheDigest: vaultEnvelopeDigest(envelope) }, words);
       assert.equal((await finalizeIndependentOperation(completed.id)).advanced, false);
       assert.equal(localStorage.getItem('sejire.envelope.' + keys.vaultId), newer);
       assert.equal(getVaultSession()?.headTxId, null); assert.equal(getVaultSession()?.source, source);
@@ -157,7 +161,7 @@ try {
   await finalizationTest('divergent local/file cache with parent HEAD is not replaced', async () => {
     for (const source of ['file', 'local'] as const) {
       const newer = JSON.stringify(envelope); localStorage.setItem('sejire.envelope.' + keys.vaultId, newer);
-      setVaultSession({ vaultId: keys.vaultId, headTxId: v0, source }, words);
+      setVaultSessionChecked({ vaultId: keys.vaultId, headTxId: v0, source, cacheDigest: vaultEnvelopeDigest(envelope) }, words);
       assert.equal((await finalizeIndependentOperation(completed.id)).advanced, false);
       assert.equal(localStorage.getItem('sejire.envelope.' + keys.vaultId), newer); assert.equal(getVaultSession()?.headTxId, v0);
     }
@@ -182,7 +186,8 @@ try {
   await finalizationTest('unwritten local archive is not reported as finalized and HEAD stays unchanged', async () => {
     const later = await completedFixture(singleA, 'Q'.repeat(43), v0);
     localStorage.setItem('sejire.envelope.' + keys.vaultId, later.archiveText);
-    setVaultSession({ vaultId: keys.vaultId, headTxId: v0, source: 'local' }, words);
+    setVaultSessionChecked({ vaultId: keys.vaultId, headTxId: v0, source: 'local',
+      cacheDigest: vaultEnvelopeDigest(JSON.parse(later.archiveText)) }, words);
     const write = localStorage.setItem;
     localStorage.setItem = (key, value) => {
       if (key.startsWith('sejire.vaultArchive.')) throw new DOMException('Synthetic quota failure', 'QuotaExceededError');
@@ -202,7 +207,8 @@ try {
       quote: null, signingIntent: null, signedTx: null, txId: null, verification: null,
       uploadProgress: { node: null, headerAccepted: false, uploadedChunks: 0, totalChunks: 0 } });
     localStorage.setItem('sejire.envelope.' + keys.vaultId, prepared.archiveText);
-    setVaultSession({ vaultId: keys.vaultId, headTxId: v0, source: 'local' }, words);
+    setVaultSessionChecked({ vaultId: keys.vaultId, headTxId: v0, source: 'local',
+      cacheDigest: vaultEnvelopeDigest(JSON.parse(prepared.archiveText)) }, words);
     const cancelled = await cancelDirectOperation(prepared.id);
     assert.equal(cancelled.state, 'cancelled'); assert.equal(cancelled.archiveText, prepared.archiveText);
     let calls = 0;
@@ -313,6 +319,25 @@ try {
       globalThis.fetch = beforeFetch;
       Object.defineProperty(globalThis, 'indexedDB', { configurable: true, value: previousDb });
     }
+  });
+  await finalizationTest('a completed operation in another tab cannot replace an explicit or older unbound full-vault selection', async () => {
+    const cacheKey = 'sejire.envelope.' + keys.vaultId;
+    let requests = 0;
+    globalThis.fetch = async () => { requests++; throw Error('A conflicting local selection must stop without network access'); };
+    for (const source of ['file', 'local'] as const) for (const bound of [true, false]) {
+      acceptVaultVersion({ vault, envelope, session: { vaultId: keys.vaultId, headTxId: v0, source }, mnemonic: words }, () => true);
+      if (!bound) setVaultSession({ vaultId: keys.vaultId, headTxId: v0, source }, words);
+      const selected = getVaultSession(), draft = localStorage.getItem(DRAFT_KEY);
+      // The completed archive has only A. The chosen file has A+B+C.
+      localStorage.setItem(cacheKey, completed.archiveText);
+      assert.equal((await finalizeIndependentOperation(completed.id)).advanced, false);
+      await assert.rejects(() => loadIndependentVaultForPublish(keys), /vault_selection_changed/);
+      assert.deepEqual(getVaultSession(), selected);
+      assert.equal(localStorage.getItem(DRAFT_KEY), draft);
+      assert.equal(localStorage.getItem(cacheKey), completed.archiveText);
+      assert.deepEqual(await readDirectOperation(completed.id), completed);
+    }
+    assert.equal(requests, 0);
   });
 } finally { globalThis.fetch = originalFetch; }
 console.log(`independent backup/finalization: ${3 + finalizationChecks} synthetic checks passed; no payments or uploads`);

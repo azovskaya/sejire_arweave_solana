@@ -3,12 +3,23 @@
  * Mnemonic stays in memory only (never localStorage).
  */
 
+import { sha256 } from "@noble/hashes/sha2.js";
+import { bytesToHex, utf8ToBytes } from "@noble/hashes/utils.js";
+import type { EnvelopeV1 } from "../crypto/encrypt";
+import { parseEnvelope, serializeEnvelope } from "../crypto/envelope";
+
 export type VaultSessionMeta = {
   vaultId: string;
   /** Last opened or published network TX for this vault (HEAD). */
   headTxId: string | null;
   source: "network" | "local" | "file" | "publish";
+  /** Bind a tab's explicit local choice to the shared encrypted cache. */
+  cacheDigest?: string;
 };
+
+export function vaultEnvelopeDigest(envelope: EnvelopeV1): string {
+  return bytesToHex(sha256(utf8ToBytes(serializeEnvelope(envelope))));
+}
 
 export const VAULT_SESSION_META_KEY = "sejire.vaultSession.v1";
 
@@ -31,7 +42,19 @@ export function setVaultSessionChecked(meta: VaultSessionMeta, mnemonic?: string
   let previous: string | null;
   try { previous = sessionStorage.getItem(VAULT_SESSION_META_KEY); }
   catch { throw Error('storage_unavailable'); }
-  const serialized = JSON.stringify(meta);
+  let selected = meta;
+  if (meta.source === 'file' || meta.source === 'local') {
+    let cached: string | null;
+    try { cached = localStorage.getItem('sejire.envelope.' + meta.vaultId); }
+    catch { throw Error('storage_unavailable'); }
+    if (!cached) throw Error('storage_unavailable');
+    const envelope = parseEnvelope(JSON.parse(cached));
+    if (envelope.vault_id !== meta.vaultId) throw Error('invalid_backup');
+    const cacheDigest = vaultEnvelopeDigest(envelope);
+    if (meta.cacheDigest !== cacheDigest) throw Error('vault_selection_changed');
+    selected = { ...meta, cacheDigest };
+  }
+  const serialized = JSON.stringify(selected);
   try {
     sessionStorage.setItem(VAULT_SESSION_META_KEY, serialized);
     if (sessionStorage.getItem(VAULT_SESSION_META_KEY) !== serialized) throw Error('storage_unavailable');
@@ -55,6 +78,7 @@ export function getVaultSession(): VaultSessionMeta | null {
       vaultId: parsed.vaultId,
       headTxId: parsed.headTxId ?? null,
       source: parsed.source ?? "network",
+      ...(Object.hasOwn(parsed, "cacheDigest") ? { cacheDigest: parsed.cacheDigest } : {}),
     };
   } catch {
     return null;

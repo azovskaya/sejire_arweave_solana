@@ -2,7 +2,7 @@ import type { SejireKeys } from './crypto/keys';
 import { emptyVault, openEnvelope, openLocalVault, type VaultV1 } from './crypto/vault';
 import { parseEnvelope } from './crypto/envelope';
 import { coerceTreeStore } from './treeJson';
-import { getVaultSession } from './vaultSession/session';
+import { getVaultSession, vaultEnvelopeDigest } from './vaultSession/session';
 import { isGatewayUnavailable } from './arweave/fetch';
 import { reconcileIndependentCompletions } from './independentFinalization';
 import { retrieveNativeVault } from './recovery/historicalNative';
@@ -67,7 +67,19 @@ export async function loadIndependentVaultForPublish(keys: SejireKeys, options: 
     requested.parentTxId === before.headTxId ? { ...requested, parentTxId: session.headTxId } : requested;
   if (!options.freshKey && session?.vaultId === keys.vaultId &&
       (session.source === 'file' || session.source === 'local')) {
-    const vault = await openLocalVault(keys);
+    let text: string | null;
+    try { text = localStorage.getItem('sejire.envelope.' + keys.vaultId); }
+    catch { throw new DirectError('storage_unavailable'); }
+    let envelope;
+    try { envelope = parseEnvelope(JSON.parse(text ?? 'null')); }
+    catch { throw Error('invalid_archive'); }
+    // Older tabs without a digest cannot prove which complete archive was
+    // selected. Require an explicit reopen instead of binding an arbitrary cache.
+    if (vaultEnvelopeDigest(envelope) !== session.cacheDigest) {
+      throw Error('vault_selection_changed');
+    }
+    // Decrypt the bytes just checked, even if another tab writes during WebCrypto.
+    const vault = await openEnvelope(keys, envelope);
     if (!validVault(vault, keys.vaultId)) throw Error('invalid_archive');
     return { vault, parentTxId: session.headTxId };
   }

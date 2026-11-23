@@ -82,6 +82,7 @@ export function Workspace({ store, guide, onStoreChange, onGuideChange, onHome }
   const [toast, setToast] = useState<ToastState | null>(null);
   const toastTimer = useRef<number | null>(null);
   const jsonInputRef = useRef<HTMLInputElement | null>(null);
+  const jsonImportState = useRef({ revision: 0 });
   const moreRef = useRef<HTMLDetailsElement | null>(null);
   const panelRef = useRef<PersonPanelHandle | null>(null);
   const [ancestorsHint, setAncestorsHint] = useState(false);
@@ -159,8 +160,10 @@ export function Workspace({ store, guide, onStoreChange, onGuideChange, onHome }
   }, [store.draft, guide.selfId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
+    const imports = jsonImportState.current;
     return () => {
       if (toastTimer.current) window.clearTimeout(toastTimer.current);
+      imports.revision++;
     };
   }, []);
 
@@ -471,13 +474,16 @@ export function Workspace({ store, guide, onStoreChange, onGuideChange, onHome }
 
   async function importJsonFile(file: File | null) {
     if (!file) return;
-    if (!confirmReplaceDraft(t.workspace.replaceJson)) return;
+    const imports = jsonImportState.current;
+    const revision = ++imports.revision;
     const result = await readTreeJsonFile(file);
+    if (revision !== imports.revision) return;
     if (!result.ok) {
       flash(result.error);
       return;
     }
-    if (!saveDraftTree(result.store)) flash(t.quota);
+    if (!confirmReplaceDraft(t.workspace.replaceJson)) return;
+    if (!saveDraftTree(result.store)) { flash(t.quota); return; }
     saveGuide(result.guide);
     onStoreChange(result.store);
     onGuideChange(result.guide);

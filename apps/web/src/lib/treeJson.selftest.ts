@@ -1,5 +1,6 @@
-import { buildTreeExport, coerceTreeStore, parseTreeJson, TREE_JSON_SCHEMA } from "./treeJson";
-import { createTree, setDraftPerson } from "./treeEngine";
+import { buildTreeExport, coerceTreeStore, parseTreeJson, readTreeJsonFile, TREE_JSON_SCHEMA } from "./treeJson";
+import { commitDraft, createTree, listHistory, loadDraftFromCommit, setDraftPerson } from "./treeEngine";
+import { formatPersonDate } from "./dates";
 import { defaultGuide } from "./guide";
 
 function assert(cond: unknown, msg: string): asserts cond {
@@ -108,5 +109,52 @@ if (polluted.ok) {
   assert(polluted.store.draft.persons.me.media.length === 0, "drop bad media kind");
   assert(!Object.hasOwn(Object.prototype, "name"), "Object.prototype not polluted");
 }
+
+// These used to pass the importer and then throw in the normal date/place
+// renderer. Invalid fields must reject the file, never silently omit a person.
+for (const field of ["name", "born", "died", "birthPlace", "deathPlace", "burialDate", "burialPlace", "occupation", "maidenName", "notes"]) {
+  for (const value of [1990, { text: "Synthetic date" }]) {
+    const bad = parseTreeJson(JSON.stringify({ persons: { a: { id: "a", name: "A", parents: [], [field]: value } } }));
+    assert(!bad.ok, `invalid ${field} is rejected before editor replacement`);
+  }
+}
+for (const place of [1990, [], { label: 1990 }, { label: { text: "Synthetic place" } }, { lat: "51.1" }]) {
+  assert(!parseTreeJson(JSON.stringify({ persons: { a: { id: "a", name: "A", parents: [], place } } })).ok,
+    "invalid nested place is rejected");
+}
+assert(!parseTreeJson(JSON.stringify({ persons: { broken: null } })).ok, "invalid person is not silently dropped");
+assert(!parseTreeJson(JSON.stringify({ persons: {
+  first: { id: "duplicate", name: "Synthetic first person", parents: [] },
+  second: { id: "duplicate", name: "Synthetic second person", parents: [] },
+} })).ok, "two people with the same normalized ID cannot silently replace each other");
+const missingIds = parseTreeJson(JSON.stringify({ persons: { first: { name: "First" }, second: { name: "Second" } } }));
+assert(missingIds.ok && Object.keys(missingIds.store.draft.persons).length === 2, "legacy people without explicit IDs retain distinct map keys");
+
+const historical = commitDraft(commitDraft(store, "Synthetic first snapshot"), "Synthetic second snapshot");
+const historicalText = JSON.stringify(buildTreeExport(historical, guide));
+const historyRound = parseTreeJson(historicalText);
+assert(historyRound.ok, "valid historical export imports");
+assert(JSON.stringify(historyRound.store.commits) === JSON.stringify(historical.commits), "every immutable commit is retained exactly");
+assert(JSON.stringify(historyRound.store.versions) === JSON.stringify(historical.versions), "every historical version is retained exactly");
+assert(listHistory(historyRound.store).length === 2, "normal history reader can inspect imported snapshots");
+const restoredHistory = loadDraftFromCommit(historyRound.store, historical.meta.head!);
+assert(formatPersonDate(restoredHistory.draft.persons.me.born) === formatPersonDate("1990-01-02"), "normal renderer can show imported historical dates");
+const commitId = historical.meta.head!, commit = historical.commits[commitId];
+for (const broken of [
+  { ...historical, commits: null }, { ...historical, commits: [] }, { ...historical, versions: null },
+  { ...historical, versions: { 1: { id: commitId } } },
+  { ...historical, commits: { [commitId]: { ...commit, snapshot: null } } },
+  { ...historical, commits: { [commitId]: { ...commit, snapshot: { persons: null } } } },
+  { ...historical, commits: { [commitId]: { ...commit, snapshot: { persons: { a: { id: "a", name: "A", born: 1990 } } } } } },
+  { ...historical, meta: { ...historical.meta, next_version: -1 } },
+]) assert(!parseTreeJson(JSON.stringify(broken)).ok, "invalid history is rejected without discarding commits");
+assert(JSON.stringify(buildTreeExport(historical, guide).store) === JSON.stringify(historical), "validation leaves original history unchanged");
+
+const fullVault = { schema: "sejire/vault/v1", active_tree_id: store.meta.id,
+  trees: { [store.meta.id]: historical, other: createTree("Second family") } };
+assert(!parseTreeJson(JSON.stringify(fullVault)).ok, "tree import refuses silently choosing one tree from a complete vault");
+assert(coerceTreeStore(fullVault)?.meta.id === store.meta.id, "internal legacy vault coercion remains compatible");
+const unreadable = await readTreeJsonFile({ text: async () => { throw Error("Synthetic file read failure"); } } as unknown as File);
+assert(!unreadable.ok && unreadable.error.includes("прочитать"), "file read failure becomes a visible import error");
 
 console.log("treeJson.selftest: OK");

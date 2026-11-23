@@ -6,7 +6,7 @@ import { DRAFT_KEY } from '../draftStorage';
 import { createTree, setDraftPerson, commitDraft } from '../treeEngine';
 import { coerceTreeStore } from '../treeJson';
 import { acceptVaultVersion, type VaultVersionSelection } from './selection';
-import { clearVaultSession, getSessionMnemonic, getVaultSession, setVaultSession, VAULT_SESSION_META_KEY } from './session';
+import { clearVaultSession, getSessionMnemonic, getVaultSession, setVaultSession, setVaultSessionChecked, VAULT_SESSION_META_KEY, vaultEnvelopeDigest } from './session';
 
 function storage(): Storage {
   const values = new Map<string, string>();
@@ -53,7 +53,7 @@ await test('declining an older network version leaves the complete vault, editor
 await test('accepting a local snapshot persists all trees and histories before returning its active tree', async () => {
   localStorage.setItem(cacheKey, JSON.stringify(earlierEnvelope));
   const opened = acceptVaultVersion(localChoice, () => true);
-  assert.deepEqual(opened, coerceTreeStore(a)); assert.deepEqual(getVaultSession(), localChoice.session);
+  assert.deepEqual(opened, coerceTreeStore(a)); assert.deepEqual(getVaultSession(), { ...localChoice.session, cacheDigest: vaultEnvelopeDigest(fullEnvelope) });
   assert.deepEqual(await openEnvelope(keys, JSON.parse(localStorage.getItem(cacheKey)!)), full);
   assert.deepEqual(JSON.parse(localStorage.getItem(DRAFT_KEY)!), coerceTreeStore(a));
 });
@@ -113,6 +113,16 @@ await test('the rollback snapshot includes editor edits flushed by the confirmat
   } finally { sessionStorage.setItem = write; }
   assert.deepEqual(JSON.parse(localStorage.getItem(DRAFT_KEY)!), edited);
   assert.deepEqual(getVaultSession(), { vaultId: keys.vaultId, headTxId: null, source: 'file' });
+});
+
+await test('a concurrent cache replacement cannot bind a checked session to the wrong envelope', () => {
+  const before = snapshot();
+  localStorage.setItem(cacheKey, JSON.stringify(earlierEnvelope));
+  assert.throws(() => setVaultSessionChecked({ ...localChoice.session,
+    cacheDigest: vaultEnvelopeDigest(fullEnvelope) }, words), /vault_selection_changed/);
+  assert.equal(sessionStorage.getItem(VAULT_SESSION_META_KEY), before.metadata);
+  assert.equal(getSessionMnemonic(), before.phrase);
+  assert.equal(localStorage.getItem(cacheKey), JSON.stringify(earlierEnvelope));
 });
 
 keys.seed.fill(0); keys.master.fill(0); keys.encKey.fill(0);

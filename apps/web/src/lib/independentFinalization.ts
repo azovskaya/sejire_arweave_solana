@@ -3,7 +3,7 @@ import { DirectError, requireDirect } from './directArweave/errors';
 import { verifyArchiveBinding } from './directArweave/format';
 import { listDirectOperations, requireOperation, withDirectLock } from './directArweave/journal';
 import { archiveLocalVaultVersion, getLocalVaultVersion } from './vaultSession/localArchive';
-import { getVaultSession, setVaultSessionChecked } from './vaultSession/session';
+import { getVaultSession, setVaultSessionChecked, vaultEnvelopeDigest } from './vaultSession/session';
 
 /** Finalize only the local view of a previously verified, immutable operation.
  * There is no signing, upload, status fetch, draft replacement or vault selection. */
@@ -36,6 +36,9 @@ export async function finalizeIndependentOperation(id: string) {
     try { cached = localStorage.getItem('sejire.envelope.' + operation.vaultId); }
     catch { throw new DirectError('storage_unavailable'); }
     const explicitLocal = current.source === 'file' || current.source === 'local';
+    if ((explicitLocal || current.cacheDigest !== undefined) && current.cacheDigest !== vaultEnvelopeDigest(envelope)) {
+      return { operation, advanced: false };
+    }
     if ((explicitLocal || current.headTxId === null) && cached !== operation.archiveText) return { operation, advanced: false };
     // localStorage is shared across tabs, sessionStorage is not. A later local
     // preparation may already own this exact cache even while this tab still

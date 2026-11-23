@@ -3,12 +3,13 @@ import { generateKeyPairSync } from 'node:crypto';
 import type { JWKInterface } from 'arweave/web/lib/wallet';
 import { IDBFactory } from 'fake-indexeddb';
 import { loadIndependentVaultForPublish } from './independentVault';
+import { acceptVaultVersion } from './vaultSession/selection';
 import { retrieveNativeVault } from './recovery/historicalNative';
 import { deriveKeysFromMnemonic } from './crypto/keys';
 import { encryptJson } from './crypto/encrypt';
 import { emptyVault, openEnvelope, putTree } from './crypto/vault';
 import { createTree, commitDraft, setDraftPerson } from './treeEngine';
-import { clearVaultSession, getVaultSession, setVaultSession } from './vaultSession/session';
+import { clearVaultSession, getVaultSession, setVaultSession, setVaultSessionChecked, vaultEnvelopeDigest } from './vaultSession/session';
 import { directCrypto } from './directArweave/transaction';
 import { directTags, sha256 } from './directArweave/format';
 import { cancelDirectOperation, createDirectOperation, readDirectOperation } from './directArweave/journal';
@@ -116,7 +117,7 @@ try {
   await test('explicit file and local snapshots remain authoritative even when metadata is unavailable', async () => {
     metadataAvailable = false; localStorage.setItem('sejire.envelope.' + keys.vaultId, archiveText);
     for (const source of ['file', 'local'] as const) {
-      setVaultSession({ vaultId: keys.vaultId, headTxId: txId, source });
+      setVaultSessionChecked({ vaultId: keys.vaultId, headTxId: txId, source, cacheDigest: vaultEnvelopeDigest(envelope) });
       const loaded = await loadIndependentVaultForPublish(keys, { parentTxId: txId });
       assert.deepEqual(loaded.vault, vault); assert.equal(loaded.parentTxId, txId);
     }
@@ -160,7 +161,7 @@ try {
   });
   await test('unreadable journal fails closed without replacing a selected complete local vault', async () => {
     localStorage.setItem('sejire.envelope.' + keys.vaultId, archiveText);
-    setVaultSession({ vaultId: keys.vaultId, headTxId: txId, source: 'file' });
+    setVaultSessionChecked({ vaultId: keys.vaultId, headTxId: txId, source: 'file', cacheDigest: vaultEnvelopeDigest(envelope) });
     const before = getVaultSession(), factory = indexedDB;
     Object.defineProperty(globalThis, 'indexedDB', { configurable: true, value: {
       open: () => { throw new DOMException('Synthetic journal denied', 'SecurityError'); },
@@ -200,8 +201,6 @@ try {
     assert.equal(calls.length, 0);
   });
   await test('malformed selected local vaults never become empty new archives or network replacements', async () => {
-    setVaultSession({ vaultId: keys.vaultId, headTxId: null, source: 'file' });
-    const before = getVaultSession();
     const unsafeTrees = JSON.parse('{"__proto__":' + JSON.stringify(first) + '}');
     const invalidPayloads = [null, [], {}, { ...vault, schema: 'sejire/vault/future' },
       { ...vault, vault_id: '0'.repeat(32) }, { ...vault, trees: [] }, { ...vault, trees: {} },
@@ -210,6 +209,8 @@ try {
     for (const value of invalidPayloads) {
       const encrypted = await encryptJson(keys.encKey, keys.vaultId, value), cached = JSON.stringify(encrypted);
       localStorage.setItem('sejire.envelope.' + keys.vaultId, cached);
+      setVaultSessionChecked({ vaultId: keys.vaultId, headTxId: null, source: 'file', cacheDigest: vaultEnvelopeDigest(encrypted) });
+      const before = getVaultSession();
       await assert.rejects(() => loadIndependentVaultForPublish(keys), /invalid_archive/);
       assert.deepEqual(getVaultSession(), before); assert.equal(localStorage.getItem('sejire.envelope.' + keys.vaultId), cached);
     }
@@ -224,12 +225,45 @@ try {
       const fixture = await productionFixture(index), fixtureKeys = deriveKeysFromMnemonic(fixture.words);
       try {
         localStorage.setItem('sejire.envelope.' + fixtureKeys.vaultId, fixture.archiveText);
-        setVaultSession({ vaultId: fixtureKeys.vaultId, headTxId: null, source: 'local' });
+        setVaultSessionChecked({ vaultId: fixtureKeys.vaultId, headTxId: null, source: 'local',
+          cacheDigest: vaultEnvelopeDigest(JSON.parse(fixture.archiveText)) });
         const before = getVaultSession(), loaded = await loadIndependentVaultForPublish(fixtureKeys);
         assert.deepEqual(loaded.vault, fixture.vault); assert.equal(loaded.parentTxId, null);
         assert.deepEqual(getVaultSession(), before);
         assert.equal(localStorage.getItem('sejire.envelope.' + fixtureKeys.vaultId), fixture.archiveText);
       } finally { fixtureKeys.seed.fill(0); fixtureKeys.master.fill(0); fixtureKeys.encKey.fill(0); }
+    }
+    assert.equal(calls.length, 0);
+  });
+  await test('a local choice cannot silently adopt an older cache written by another tab', async () => {
+    const selectedVault = putTree(vault, createTree('Synthetic third tree'));
+    const selectedEnvelope = await encryptJson(keys.encKey, keys.vaultId, selectedVault);
+    acceptVaultVersion({ vault: selectedVault, envelope: selectedEnvelope,
+      session: { vaultId: keys.vaultId, headTxId: null, source: 'file' }, mnemonic:
+        'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about' }, () => true);
+    const selectedSession = getVaultSession();
+    localStorage.setItem('sejire.envelope.' + keys.vaultId, archiveText);
+    await assert.rejects(() => loadIndependentVaultForPublish(keys), /vault_selection_changed/);
+    assert.deepEqual(getVaultSession(), selectedSession);
+    assert.equal(localStorage.getItem('sejire.envelope.' + keys.vaultId), archiveText);
+    assert.equal(calls.length, 0);
+    // Explicitly re-opening the original source restores a bound, complete selection.
+    acceptVaultVersion({ vault: selectedVault, envelope: selectedEnvelope,
+      session: { vaultId: keys.vaultId, headTxId: null, source: 'local' }, mnemonic:
+        'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about' }, () => true);
+    const loaded = await loadIndependentVaultForPublish(keys);
+    assert.deepEqual(loaded.vault, selectedVault);
+    assert.equal(Object.keys(loaded.vault.trees).length, 3);
+    assert.equal(calls.length, 0);
+  });
+  await test('an older unbound local session requires explicit reopening before another save', async () => {
+    for (const source of ['file', 'local'] as const) {
+      localStorage.setItem('sejire.envelope.' + keys.vaultId, archiveText);
+      setVaultSession({ vaultId: keys.vaultId, headTxId: null, source });
+      const before = getVaultSession();
+      await assert.rejects(() => loadIndependentVaultForPublish(keys), /vault_selection_changed/);
+      assert.deepEqual(getVaultSession(), before);
+      assert.equal(localStorage.getItem('sejire.envelope.' + keys.vaultId), archiveText);
     }
     assert.equal(calls.length, 0);
   });

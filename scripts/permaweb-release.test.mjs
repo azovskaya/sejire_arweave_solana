@@ -450,18 +450,51 @@ test('older partial-upload journals block a new attempt and preserve their conte
   }
 });
 
-test('public verification checks every byte and real fallback, rejects wrong bodies, HTTP errors and off-origin redirects', async t => {
+test('public verification checks every byte, root entry and real fallback, rejects wrong bodies, HTTP errors and off-origin redirects', async t => {
   const f = await fixture(t), release = await withProvenance(f), base = `https://turbo-gateway.com/${id}/`;
+  const headers = url => ({ 'content-type': /\.(?:m?js)$/.test(url) ? 'text/javascript' : 'text/html' });
   const fetcher = async url => {
     const path = url.slice(base.length);
-    return new Response(await readFile(join(f.output, path === '__sejire_fallback_probe__' ? '404.html' : path)));
+    return new Response(await readFile(join(f.output, path === '__sejire_fallback_probe__' ? '404.html' : path || 'index.html')), { headers: headers(url) });
   };
   const report = await verifyPublishedRelease(release, base, { fetcher });
   assert.equal(report.status, 'PASS'); assert.equal(report.files.length, release.files.length); assert.equal(report.fallbackVerified, true);
-  await assert.rejects(() => verifyPublishedRelease(release, base, { fetcher: async () => new Response('wrong') }), /digest_mismatch/);
+  assert.equal(report.entrypointVerified, true);
+  assert.equal(report.browserContentTypesVerified, true);
+  await assert.rejects(() => verifyPublishedRelease(release, base, { fetcher: async url => url === base
+    ? new Response('wrong root page', { headers: headers(url) }) : fetcher(url) }), /public_entrypoint_mismatch/);
+  await assert.rejects(() => verifyPublishedRelease(release, base, { fetcher: async url => new Response('wrong', { headers: headers(url) }) }), /digest_mismatch/);
   await assert.rejects(() => verifyPublishedRelease(release, base, { fetcher: async () => new Response(null, { status: 404 }) }), /public_http_failed/);
   await assert.rejects(() => verifyPublishedRelease(release, base, { fetcher: async () => new Response(null, { status: 302, headers: { location: 'https://other.example/' } }) }), /public_redirect/);
   for (const url of ['http://sejire.ar.io/', 'https://sejire.ar.io/private/', 'https://user@sejire.ar.io/', 'https://other.example/']) assert.throws(() => publicBase(url), /public_base_invalid/);
+});
+
+test('public verification rejects correct bytes that the browser cannot execute or render because of their MIME type', async () => {
+  const base = `https://arweave.net/${id}/`;
+  const files = [
+    ['index.html', '<!doctype html><script type="module" src="./assets/app.js"></script>', 'text/html'],
+    ['404.html', '<!doctype html><script type="module" src="./assets/app.js"></script>', 'text/html'],
+    ['assets/app.js', 'export const ready=true;', 'text/javascript'],
+    ['assets/app.css', 'body{color:#000}', 'text/css'],
+    ['recovery/recover.mjs', 'export const recover=true;', 'text/javascript'],
+  ];
+  const release = { manifest: { sourceCommit: sha }, files: files.map(([path, body]) => ({
+    path, bytes: Buffer.byteLength(body), sha256: digest(body),
+  })) };
+  const fetcher = (badPath, contentType) => async url => {
+    const path = url.slice(base.length);
+    const [, body, expectedType] = files.find(([name]) => name === (path === '__sejire_fallback_probe__' ? '404.html' : path || 'index.html'));
+    const type = path === badPath ? contentType : expectedType;
+    return new Response(Buffer.from(body), { headers: type === undefined ? {} : { 'content-type': type } });
+  };
+  for (const path of [...files.map(([path]) => path), '', '__sejire_fallback_probe__']) {
+    for (const type of [undefined, 'text/plain', 'application/octet-stream']) {
+      await assert.rejects(() => verifyPublishedRelease(release, base, { fetcher: fetcher(path, type) }),
+        /public_content_type_mismatch/, `${path} must fail for ${type ?? 'missing Content-Type'} even when bytes match`);
+    }
+  }
+  assert.equal((await verifyPublishedRelease(release, base, { fetcher: fetcher('assets/app.js', 'APPLICATION/JAVASCRIPT; charset=utf-8') })).status, 'PASS');
+  assert.equal((await verifyPublishedRelease(release, base, { fetcher: fetcher('assets/app.css', 'text/css; charset=UTF-8') })).status, 'PASS');
 });
 
 test('plan mode cannot read an upload key and produces only public metadata', async t => {

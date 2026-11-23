@@ -250,6 +250,59 @@ test('offline multitreed archive stays complete when saved locally and cancellat
   expect(all.find(op => op.id === first.id).state).toBe('cancelled'); expect(state.signs).toBe(0); expect(state.posts).toEqual([]); expect(state.external).toEqual([]); expect(state.denied).toEqual([]);
 });
 
+test('two tabs cannot silently replace a selected complete archive before saving, and reopening restores the full choice', async ({ page, context }) => {
+  const state = await install(context, page), errors = [];
+  page.on('pageerror', error => errors.push(error.message));
+  expect(Object.keys(vault.trees).length).toBeGreaterThan(1);
+  const earlier = await syntheticNativeVersion({ ...vault, trees: { [vault.active_tree_id]: tree } });
+  await restoreFile(page);
+  const selected = await selectionState(page);
+  expect(JSON.parse(selected.session).cacheDigest).toMatch(/^[a-f0-9]{64}$/);
+
+  const other = await context.newPage();
+  other.on('pageerror', error => errors.push(error.message));
+  let replacements = 0;
+  const acceptReplacement = async dialog => { replacements++; expect(dialog.type()).toBe('confirm'); await dialog.accept(); };
+  page.on('dialog', acceptReplacement); other.on('dialog', acceptReplacement);
+  try {
+    // Normal file restoration in another browsing context replaces the shared
+    // cache, while the first tab still explicitly selected the complete vault.
+    await restoreFile(other, earlier.raw);
+    const conflict = await selectionState(page);
+    expect(conflict.session).toBe(selected.session);
+    expect(JSON.parse(conflict.cache)).toEqual(earlier.envelope);
+    expect(conflict.draft).toBe(selected.draft);
+    expect(JSON.parse((await selectionState(other)).session).cacheDigest).not.toBe(JSON.parse(selected.session).cacheDigest);
+
+    await page.getByRole('button', { name: 'Сохранить', exact: true }).click();
+    await page.getByRole('button', { name: 'Подготовить зашифрованную копию', exact: true }).click();
+    await expect(page.getByRole('alert')).toContainText('Откройте нужный файл или локальную версию заново');
+    await expect(page.getByText('Подготовлено локально', { exact: true })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: /Подключить кошелёк|Подписать и отправить/ })).toHaveCount(0);
+    expect(await journal(page)).toEqual([]);
+    expect(await selectionState(page)).toEqual(conflict);
+
+    // The recovery action is explicit and uses the original complete file.
+    await page.goto('/');
+    await restoreFile(page);
+    await page.getByRole('button', { name: 'Сохранить', exact: true }).click();
+    await page.getByRole('button', { name: 'Подготовить зашифрованную копию', exact: true }).click();
+    await expect(page.getByText('Подготовлено локально', { exact: true })).toBeVisible();
+    const operations = await journal(page); expect(operations).toHaveLength(1);
+    const recovered = JSON.parse(new TextDecoder().decode((await recoverText(operations[0].archiveText, vector.words)).plaintext));
+    expect(Object.keys(recovered.trees).sort()).toEqual(Object.keys(vault.trees).sort());
+    for (const [id, original] of Object.entries(vault.trees)) {
+      expect(recovered.trees[id].commits).toEqual(original.commits);
+      expect(recovered.trees[id].versions).toEqual(original.versions);
+      if (id !== vault.active_tree_id) expect(recovered.trees[id]).toEqual(original);
+    }
+    expect(operations[0].parentTxId).toBeNull(); expect(operations[0].signedTx).toBeNull();
+    expect(replacements).toBe(2);
+    expect(state.signs).toBe(0); expect(state.posts).toEqual([]); expect(state.external).toEqual([]);
+    expect(state.denied).toEqual([]); expect(errors).toEqual([]);
+  } finally { await other.close(); }
+});
+
 test('legacy order blocks a fresh AR signature and remains byte-for-byte unchanged', async ({ page, context }) => {
   const state = await install(context, page, { draft: true, wallet: true });
   await page.goto('/');
@@ -280,6 +333,78 @@ test('a damaged portable kit is refused without any network request', async ({ p
   await expect(page.getByRole('alert')).toBeVisible();
   expect(await page.evaluate(() => localStorage.getItem('sejire.draft.tree.v1'))).toBeNull();
   expect(state.posts).toEqual([]); expect(state.external).toEqual([]); expect(state.denied).toEqual([]);
+});
+
+test('tree-file import refuses invalid fields and history before replacing the draft, then retains valid history exactly', async ({ page, context }) => {
+  const state = await install(context, page, { draft: true }), errors = [];
+  page.on('pageerror', error => errors.push(error.message));
+  await page.goto('/');
+  await expect(page.getByRole('button', { name: 'Сохранить', exact: true })).toBeEnabled();
+  const before = await selectionState(page), fileInput = page.locator('input[type="file"][accept="application/json,.json"]');
+  let confirmations = 0;
+  page.on('dialog', async dialog => { confirmations++; expect(dialog.type()).toBe('confirm'); await dialog.accept(); });
+  const personId = Object.keys(tree.draft.persons)[0], commitId = Object.keys(tree.commits)[0];
+  const cases = [
+    { ...tree, draft: { persons: { ...tree.draft.persons, [personId]: { ...tree.draft.persons[personId], born: 1990 } } } },
+    { ...tree, draft: { persons: { ...tree.draft.persons, [personId]: { ...tree.draft.persons[personId], place: { label: { text: 'Synthetic place' } } } } } },
+    { ...tree, commits: { ...tree.commits, [commitId]: { ...tree.commits[commitId], snapshot: null } } },
+  ];
+  for (let index = 0; index < cases.length; index++) {
+    await fileInput.setInputFiles({ name: `synthetic-invalid-${index}.json`, mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(cases[index])) });
+    await expect(page.locator('.toast')).toContainText('Неверные данные древа или истории');
+    expect(await selectionState(page)).toEqual(before);
+    expect(confirmations).toBe(0);
+  }
+  await fileInput.setInputFiles({ name: 'synthetic-complete-vault.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(vault)) });
+  await expect(page.locator('.toast')).toContainText('Файл содержит полный сейф');
+  expect(await selectionState(page)).toEqual(before); expect(confirmations).toBe(0);
+
+  await page.evaluate(() => {
+    const read = File.prototype.text;
+    File.prototype.text = function () {
+      if (this.name === 'synthetic-unreadable.json') return Promise.reject(Error('Synthetic file read failure'));
+      return read.call(this);
+    };
+  });
+  await fileInput.setInputFiles({ name: 'synthetic-unreadable.json', mimeType: 'application/json', buffer: Buffer.from('{}') });
+  await expect(page.locator('.toast')).toContainText('Не удалось прочитать файл');
+  expect(await selectionState(page)).toEqual(before); expect(confirmations).toBe(0);
+
+  const imported = { ...tree, meta: { ...tree.meta, title: 'Synthetic verified tree import' } };
+  await fileInput.setInputFiles({ name: 'synthetic-valid-history.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(imported)) });
+  await expect(page.locator('.toast')).toContainText('Загружено:');
+  const after = await selectionState(page), opened = JSON.parse(after.draft);
+  expect(confirmations).toBe(1); expect(opened.meta.title).toBe(imported.meta.title);
+  expect(opened.commits).toEqual(tree.commits); expect(opened.versions).toEqual(tree.versions);
+  expect(Object.keys(opened.draft.persons).sort()).toEqual(Object.keys(tree.draft.persons).sort());
+  expect(after.session).toBe(before.session); expect(after.cache).toBe(before.cache);
+  expect(state.signs).toBe(0); expect(state.posts).toEqual([]); expect(state.external).toEqual([]);
+  expect(state.denied).toEqual([]); expect(errors).toEqual([]);
+});
+
+test('tree-file import preserves the previous draft when browser storage is full', async ({ page, context }) => {
+  const state = await install(context, page, { draft: true }), errors = [];
+  page.on('pageerror', error => errors.push(error.message));
+  await page.goto('/');
+  await expect(page.getByRole('button', { name: 'Сохранить', exact: true })).toBeEnabled();
+  const before = await selectionState(page);
+  page.on('dialog', dialog => dialog.accept());
+  await page.evaluate(() => {
+    const write = Storage.prototype.setItem;
+    Storage.prototype.setItem = function (key, value) {
+      if (this === localStorage && key === 'sejire.draft.tree.v1') throw new DOMException('Synthetic quota failure', 'QuotaExceededError');
+      return write.call(this, key, value);
+    };
+  });
+  await page.locator('input[type="file"][accept="application/json,.json"]').setInputFiles({
+    name: 'synthetic-quota-import.json', mimeType: 'application/json',
+    buffer: Buffer.from(JSON.stringify({ ...tree, meta: { ...tree.meta, title: 'Must not replace the existing tree' } })),
+  });
+  await expect(page.locator('.toast')).toContainText('Черновик не влез в память браузера');
+  expect(await selectionState(page)).toEqual(before);
+  await expect(page.getByText('Must not replace the existing tree', { exact: true })).toHaveCount(0);
+  expect(state.signs).toBe(0); expect(state.posts).toEqual([]); expect(state.external).toEqual([]);
+  expect(errors).toEqual([]);
 });
 
 test('declining an older network version preserves the selected full vault and the next local export', async ({ page, context }) => {
@@ -322,7 +447,8 @@ test('opening a local_ version adopts its complete vault without inventing a net
   await opening;
   await expect(page.getByRole('dialog')).toHaveCount(0);
   const selected = await selectionState(page);
-  expect(JSON.parse(selected.session)).toEqual({ vaultId: vector.expectedVaultId, headTxId: null, source: 'local' });
+  expect(JSON.parse(selected.session)).toEqual(expect.objectContaining({ vaultId: vector.expectedVaultId, headTxId: null, source: 'local' }));
+  expect(JSON.parse(selected.session).cacheDigest).toMatch(/^[a-f0-9]{64}$/);
   expect(JSON.parse(selected.cache)).toEqual(JSON.parse(vector.archiveText));
   await page.getByRole('button', { name: 'Сохранить', exact: true }).click();
   await page.getByRole('button', { name: 'Подготовить зашифрованную копию', exact: true }).click();

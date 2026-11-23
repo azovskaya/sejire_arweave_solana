@@ -51,6 +51,14 @@ function isSafeRecordKey(id: string): boolean {
 
 function normalizePerson(raw: unknown, id: string): Person | null {
   if (!isRecord(raw)) return null;
+  // These fields are read as text by the editor and both PDF exporters.
+  // Refuse an invalid record instead of turning an imported family into a
+  // partially empty tree or letting a number/object reach String.trim().
+  const textFields = ["name", "born", "died", "birthPlace", "deathPlace", "burialDate", "burialPlace", "occupation", "maidenName", "notes"];
+  if (textFields.some(key => raw[key] != null && typeof raw[key] !== "string")) return null;
+  if (raw.place != null && (!isRecord(raw.place) ||
+      raw.place.label != null && typeof raw.place.label !== "string" ||
+      [raw.place.lat, raw.place.lon].some(value => value != null && (typeof value !== "number" || !Number.isFinite(value))))) return null;
   const pid = typeof raw.id === "string" ? raw.id : id;
   if (!isSafeRecordKey(pid) || !isSafeRecordKey(id)) return null;
   const name = typeof raw.name === "string" ? raw.name : "";
@@ -96,8 +104,10 @@ function normalizeSnapshot(raw: unknown): Snapshot | null {
   const persons: Record<string, Person> = {};
   for (const [id, value] of Object.entries(raw.persons)) {
     if (!isSafeRecordKey(id)) continue;
+    if (isRecord(value) && typeof value.id === "string" && !isSafeRecordKey(value.id)) continue;
     const person = normalizePerson(value, id);
-    if (person) persons[person.id] = person;
+    if (!person || Object.hasOwn(persons, person.id)) return null;
+    persons[person.id] = person;
   }
   return { persons };
 }
@@ -154,12 +164,24 @@ export function coerceTreeStore(raw: unknown): TreeStore | null {
   const draft = normalizeSnapshot(snapshotSource);
   if (!draft) return null;
 
-  const commits = isRecord(raw.commits) ? (raw.commits as TreeStore["commits"]) : {};
-  const versions = isRecord(raw.versions) ? (raw.versions as TreeStore["versions"]) : {};
+  // Validate historical snapshots without rewriting immutable commits. Missing
+  // history remains compatible with older bare snapshots and tree exports.
+  if (raw.commits !== undefined && !isRecord(raw.commits) || raw.versions !== undefined && !isRecord(raw.versions)) return null;
+  const commits = isRecord(raw.commits) ? raw.commits : {};
+  const versions = isRecord(raw.versions) ? raw.versions : {};
+  for (const [id, commit] of Object.entries(commits)) {
+    if (!isSafeRecordKey(id) || !isRecord(commit) || !normalizeSnapshot(commit.snapshot)) return null;
+    if (["tree_id", "commit_id", "parent_commit_id", "author", "created_at", "message"].some(key =>
+      commit[key] != null && typeof commit[key] !== "string")) return null;
+    if (commit.version !== undefined && (!Number.isSafeInteger(commit.version) || (commit.version as number) < 1)) return null;
+  }
+  if (Object.values(versions).some(id => typeof id !== "string" || !isSafeRecordKey(id))) return null;
+  if (isRecord(raw.meta) && raw.meta.next_version !== undefined &&
+      (!Number.isSafeInteger(raw.meta.next_version) || (raw.meta.next_version as number) < 1)) return null;
   return {
     meta: metaFrom(raw.meta, raw),
-    commits,
-    versions,
+    commits: commits as TreeStore["commits"],
+    versions: versions as TreeStore["versions"],
     draft,
     dirty: Boolean(raw.dirty),
   };
@@ -208,13 +230,20 @@ export function parseTreeJson(text: string): ParseTreeJsonResult {
     guideRaw = data.guide;
   }
 
+  if (isRecord(storeRaw) && storeRaw.schema === "sejire/vault/v1") {
+    return { ok: false, error: "Файл содержит полный сейф. Для восстановления всех деревьев откройте зашифрованный архив через «Открыть по 12 словам»." };
+  }
+
   const store = coerceTreeStore(storeRaw);
-  if (!store) return { ok: false, error: "В файле нет данных древа" };
+  if (!store) return { ok: false, error: "Неверные данные древа или истории. Текущий черновик не заменён." };
 
   return { ok: true, store: { ...store, dirty: true }, guide: normalizeGuide(guideRaw) };
 }
 
 export async function readTreeJsonFile(file: File): Promise<ParseTreeJsonResult> {
-  const text = await file.text();
-  return parseTreeJson(text);
+  try {
+    return parseTreeJson(await file.text());
+  } catch {
+    return { ok: false, error: "Не удалось прочитать файл. Текущий черновик не заменён." };
+  }
 }
