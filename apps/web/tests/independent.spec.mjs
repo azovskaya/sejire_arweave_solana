@@ -4,6 +4,7 @@ import { readFile } from 'node:fs/promises';
 import { execFileSync } from 'node:child_process';
 import Arweave from 'arweave';
 import { deriveKeysFromWords, recoverText } from '../../../tools/recovery/recover.mjs';
+import { installRouteMock, drainRouteMocks } from './helpers/routeDrain.mjs';
 
 const ORIGIN = 'http://127.0.0.1:5193';
 const { vectors } = JSON.parse(await readFile(new URL('../../../tools/recovery/public-vectors.json', import.meta.url), 'utf8'));
@@ -638,7 +639,7 @@ test('a sandboxed manifest fallback loads independent assets and the exact offli
   await context.addInitScript(() => localStorage.setItem('sejire.locale', 'ru'));
   page.on('pageerror', error => errors.push(error.message));
   await context.routeWebSocket('**/*', route => { denied.push(route.url()); route.close({ code: 1008, reason: 'Synthetic offline test' }); });
-  await context.route('**/*', async route => {
+  await installRouteMock(context, async route => {
     const url = new URL(route.request().url());
     if (url.origin !== host || !url.pathname.startsWith(prefix + '/')) { denied.push(url.origin + url.pathname); return route.abort('blockedbyclient'); }
     requested.push(url.pathname);
@@ -672,9 +673,7 @@ test('a sandboxed manifest fallback loads independent assets and the exact offli
     expect(requested.some(path => path.startsWith(prefix + '/assets/') && path.endsWith('.js'))).toBe(true);
     expect(denied).toEqual([]); expect(errors).toEqual([]);
   } finally {
-    // Stop new favicon/assets before waiting for local proxy handlers to drain.
-    await page.route('**/*', route => route.abort('blockedbyclient'));
-    await context.unrouteAll({ behavior: 'wait' });
+    await drainRouteMocks(context);
   }
 });
 

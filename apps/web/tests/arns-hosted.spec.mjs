@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { createHash } from 'node:crypto';
 import { mkdir, writeFile } from 'node:fs/promises';
+import { installRouteMock, drainRouteMocks } from './helpers/routeDrain.mjs';
 
 /**
  * Acceptance of the *built* ArNS pack: static dist + baked Fund Worker URL.
@@ -23,11 +24,8 @@ const tx = 'B'.repeat(43);
 const json = (route, value, status = 200) =>
   route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(value) });
 
-test.afterEach(async ({ page, context }) => {
-  // Keep late requests blocked while existing context-level fetch/fulfill handlers
-  // finish, before Playwright disposes the context's request client and page.
-  await page.route('**/*', route => route.abort('blockedbyclient'));
-  await context.unrouteAll({ behavior: 'wait' });
+test.afterEach(async ({ context }) => {
+  await drainRouteMocks(context);
 });
 
 function fundOrder(orderId, status = 'COMPLETED') {
@@ -64,7 +62,7 @@ test('static ArNS pack loads and completes mocked promo save against baked Worke
     ws.close({ code: 1008, reason: 'ws blocked in arns hosted test' });
   });
 
-  await context.route('**/*', async (route) => {
+  await installRouteMock(context, async (route) => {
     const req = route.request();
     const url = new URL(req.url());
 
@@ -129,7 +127,7 @@ test('static ArNS pack loads and completes mocked promo save against baked Worke
 
 test('static pack does not call Fund on github-style relative shell without opening promo', async ({ page, context }) => {
   const fundCalls = [];
-  await context.route('**/*', async (route) => {
+  await installRouteMock(context, async (route) => {
     const url = new URL(route.request().url());
     if (url.origin === FUND) {
       fundCalls.push(url.pathname);
@@ -147,7 +145,7 @@ test('static pack does not call Fund on github-style relative shell without open
 test('ArNS origin explains how to continue previous-origin orders without transferring credentials', async ({ page, context }) => {
   const requests=[];
   await context.addInitScript(()=>localStorage.setItem('sejire.locale','ru'));
-  await context.route('**/*', async route => {
+  await installRouteMock(context, async route => {
     const url=new URL(route.request().url());
     if(url.origin==='https://sejire.ar.io'){
       const response=await route.fetch({url:ORIGIN+url.pathname+url.search});
@@ -179,7 +177,7 @@ for(const [label,host,prefix] of [
   const path=prefix+'/unknown/deep/route';
   const assets=[],denied=[];
   await context.addInitScript(()=>localStorage.setItem('sejire.locale','ru'));
-  await context.route('**/*',async route=>{
+  await installRouteMock(context,async route=>{
     const url=new URL(route.request().url());
     if(url.origin!==host){denied.push(url.origin+url.pathname);return route.abort('blockedbyclient');}
     const localPath=url.pathname===path?'/404.html':url.pathname.slice(prefix.length);
