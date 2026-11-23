@@ -33,6 +33,37 @@ test('only one bounded GET/OPTIONS request per configured endpoint is made, with
   assert.equal(report.readOnly, true); assert.equal(report.uploadAttempted, false); assert.equal(report.walletChecked, false);
 });
 
+test('checks each node sequentially while keeping the two nodes concurrent', async () => {
+  const active = new Set<string>(), calls: string[] = [], overlaps: string[] = [];
+  let peakActiveNodes = 0;
+  const report = await verifyDirectNetwork({ fetcher: (async (input, init) => {
+    const url = new URL(String(input)), method = init?.method ?? '';
+    calls.push(method + ' ' + url.href);
+    if (active.has(url.origin)) {
+      overlaps.push(url.origin);
+      throw Error('synthetic overlapping TLS connections');
+    }
+    active.add(url.origin);
+    peakActiveNodes = Math.max(peakActiveNodes, active.size);
+    try {
+      await new Promise<void>(resolve => setImmediate(resolve));
+      return healthy(url, method);
+    } finally { active.delete(url.origin); }
+  }) as typeof fetch });
+  assert.equal(report.status, 'PASS');
+  assert.deepEqual(overlaps, []);
+  assert.equal(peakActiveNodes, 2, 'different configured nodes must still be checked concurrently');
+  assert.equal(calls.length, DEFAULT_DIRECT_NODES.length * 5);
+  assert.equal(new Set(calls).size, calls.length, 'every endpoint is requested exactly once');
+  for (const node of DEFAULT_DIRECT_NODES) {
+    assert.deepEqual(calls.filter(call => call.includes(node + '/')), [
+      `GET ${node}/info`, `GET ${node}/tx_anchor`, `GET ${node}/price/${PROBE_BYTES}`,
+      `OPTIONS ${node}/tx`, `OPTIONS ${node}/chunk`,
+    ]);
+  }
+  assert(report.nodes.every(node => node.checks.length === 5 && node.checks.every(check => check.ready)));
+});
+
 test('one healthy default fails release readiness and does not claim redundant availability', async () => {
   const report = await verifyDirectNetwork({ fetcher: (async (input, init) => {
     const url = new URL(String(input));

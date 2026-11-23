@@ -99,11 +99,12 @@ export async function verifyDirectNetwork({ fetcher = fetch, checkedAt = new Dat
   if (!nodes.length || nodes.length > 6) throw Error('invalid_default_node_count');
   const results: { node: string; readiness: 'ready' | 'unavailable'; checks: Check[] }[] = new Array(nodes.length);
   let next = 0;
-  // Two nodes, five one-shot endpoint checks each: at most ten requests in flight.
+  // Two nodes in parallel, one request per node at a time to avoid a TLS handshake burst.
   await Promise.all(Array.from({ length: Math.min(2, nodes.length) }, async () => {
     while (next < nodes.length) {
       const index = next++, node = nodes[index];
-      const checks = await Promise.all(endpoints.map(endpoint => probeEndpoint(node, endpoint, fetcher)));
+      const checks: Check[] = [];
+      for (const endpoint of endpoints) checks.push(await probeEndpoint(node, endpoint, fetcher));
       results[index] = { node, readiness: checks.every(check => check.ready) ? 'ready' : 'unavailable', checks };
     }
   }));

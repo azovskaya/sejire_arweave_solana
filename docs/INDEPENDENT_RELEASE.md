@@ -25,6 +25,9 @@ Worker, казна проекта, SOL checkout и bundler не являются
 требует два доступных адреса: `/info`, `/tx_anchor`, `/price` и CORS preflight
 для `/tx` и `/chunk`. Это снимок доступности, а не доказательство независимых
 операторов, реальной доставки chunks или финального settlement.
+Пять запросов к одному узлу выполняются последовательно, а два узла проверяются
+параллельно. Так probe не создаёт всплеск новых TLS-соединений к одному адресу;
+порог готовности и проверки TLS, сети и CORS не ослабляются.
 Native API описан в официальных разделах
 [transactions](https://docs.ar.io/apis/ar-io-node/transactions/) и
 [chunks](https://docs.ar.io/apis/ar-io-node/chunks/).
