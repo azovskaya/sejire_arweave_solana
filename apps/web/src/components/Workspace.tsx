@@ -77,6 +77,7 @@ export function Workspace({ store, guide, onStoreChange, onGuideChange, onHome }
   const [attemptRevision, setAttemptRevision] = useState(0);
   const autoResumeTree = useRef<string | null>(null);
   const openingPublish = useRef(false);
+  const publishRequestState = useRef({ revision: 0 });
   const latestStore = useRef(store);
   latestStore.current = store;
   const [toast, setToast] = useState<ToastState | null>(null);
@@ -166,6 +167,11 @@ export function Workspace({ store, guide, onStoreChange, onGuideChange, onHome }
       imports.revision++;
     };
   }, []);
+
+  useEffect(() => {
+    const requests = publishRequestState.current;
+    return () => { requests.revision++; };
+  }, [store.meta.id]);
 
   useEffect(() => {
     if (!selectedId || !profileOpen) return;
@@ -341,6 +347,8 @@ export function Workspace({ store, guide, onStoreChange, onGuideChange, onHome }
   async function openPublish() {
     if (checkingFundAttempt || openingPublish.current) return;
     openingPublish.current = true;
+    const requests = publishRequestState.current;
+    const revision = ++requests.revision;
     const treeId = store.meta.id;
     try {
       // Recheck under the shared guard: another tab can create an attempt
@@ -352,6 +360,9 @@ export function Workspace({ store, guide, onStoreChange, onGuideChange, onHome }
         }
         catch { pending = true; } // The modal explains an unreadable journal.
       }
+      // The shared journal lock may outlive this editor or tree. A late check
+      // must not flush, commit or mirror the old snapshot into a new screen.
+      if (revision !== requests.revision) return;
       const current = captureEditorStore();
       if (current.meta.id !== treeId) return;
       setHasPendingFund(pending);
@@ -468,6 +479,7 @@ export function Workspace({ store, guide, onStoreChange, onGuideChange, onHome }
   }
 
   function goHome() {
+    publishRequestState.current.revision++;
     captureEditorStore();
     onHome();
   }

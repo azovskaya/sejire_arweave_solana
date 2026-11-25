@@ -6,6 +6,10 @@ await build({root:web,configFile:resolve(web,'vite.config.ts'),logLevel:'warn',b
 const packages=['@ardrive/turbo-sdk','@dha-team/arbundles','@ethersproject','secp256k1','bigint-buffer','ws','elliptic','stream-json','node-forge','@solana/spl-token','@cloudflare'];const evidence={sha:process.env.GITHUB_SHA??'local',mode:'native',chunks,packages:{},note:'All emitted chunks including lazy chunks; presence alone is not an exploit proof'};
 for(const p of packages)evidence.packages[p]={installed:JSON.parse(await readFile(resolve(web,'package-lock.json'),'utf8')).packages[`node_modules/${p}`]?.version??null,parsed:[...parsed].filter(id=>id.includes(`/node_modules/${p}/`)).map(id=>relative(root,id)),emitted:[...emitted].filter(id=>id.includes(`/node_modules/${p}/`)).map(id=>relative(root,id))};
 evidence.arweaveCrypto=[...emitted].filter(id=>/arweave.*crypto/.test(id)).map(id=>relative(root,id));
+// Keep the application's actual rendered module list as well as dependency
+// exclusions. Source-import inventory alone cannot prove what was emitted.
+evidence.emittedAppModules=[...emitted].filter(id=>id.startsWith(web+'/src/')).map(id=>relative(root,id)).sort();
+evidence.emittedModuleCount=emitted.size;
 for(const p of ['@ardrive/turbo-sdk','@dha-team/arbundles','@ethersproject','secp256k1','@solana/spl-token','@cloudflare'])assert.equal(evidence.packages[p].emitted.length,0,`Legacy package in native chunks: ${p}`);
 assert(![...emitted].some(id=>/bigint-buffer.*dist\/node|\.node$/.test(id)),'Native bigint-buffer binding in browser build');
 assert(![...emitted].some(id=>/\/tests\/|\.selftest\.|devnet\.e2e/.test(id)),'Test signer in production build');

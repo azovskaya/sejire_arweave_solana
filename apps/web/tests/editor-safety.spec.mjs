@@ -50,10 +50,75 @@ async function setup(page) {
   await page.reload();
   await expect(page.locator('button.person-card').filter({ hasText: CHILD_NAME })).toBeVisible();
   await expect(page.locator('.app-topbar .top-actions > button.btn')).toBeEnabled();
-  return { baseline, assertReadOnly() {
-    expect(external).toEqual([]); expect(writes).toEqual([]); expect(errors).toEqual([]);
+  return { baseline, assertReadOnly(expectedRenderErrors = []) {
+    expect(external).toEqual([]); expect(writes).toEqual([]);
+    expect(errors.filter(error => !expectedRenderErrors.includes(error))).toEqual([]);
   } };
 }
+
+test('opening the saved draft after a render failure leaves the failed deep link', async ({ page }) => {
+  const f = await setup(page);
+  const before = await draft(page);
+  const crash = 'Synthetic save-screen render failure';
+  // Exercise the real boundary and reload boot path, with a deliberately broken
+  // screen. Once the fragment is cleared this component is no longer mounted.
+  await page.route('**/src/components/PreservationV2.tsx*', route => route.fulfill({
+    contentType: 'application/javascript',
+    body: `export function PreservationV2() { throw Error(${JSON.stringify(crash)}); }`,
+  }));
+  await page.goto('/#/save');
+  await page.reload();
+  await expect(page.locator('.crash-detail')).toHaveText(crash);
+  expect(await draft(page)).toEqual(before);
+  await page.getByRole('button', { name: 'Открыть черновик', exact: true }).click();
+  await expect(page).toHaveURL(/:\/\/127\.0\.0\.1:5186\/$/);
+  await expect(page.locator('.workspace-main')).toBeVisible();
+  await expect(page.locator('.crash-screen')).toHaveCount(0);
+  expect(await draft(page)).toEqual(before);
+  f.assertReadOnly([crash]);
+});
+
+test('a delayed save lookup cannot replace a new tree after leaving the old editor', async ({ page }) => {
+  const f = await setup(page);
+  await profile(page, CHILD_NAME);
+  await page.locator('.person-panel textarea').fill('Old dirty tree waiting to save');
+  await page.locator('.person-panel-head button').click();
+  await expect.poll(async () => (await draft(page)).dirty).toBe(true);
+  await page.evaluate(async () => {
+    // Hold the actual shared journal lock, rather than replacing a runtime module.
+    await new Promise(acquired => {
+      window.editorSaveGate = navigator.locks.request('sejire.preservation-attempts.v1', async () => {
+        const release = new Promise(resolve => { window.releaseEditorSaveGate = resolve; });
+        acquired();
+        await release;
+      });
+    });
+  });
+  await page.locator('.app-topbar .top-actions > button.btn').click();
+  await expect.poll(() => page.evaluate(async () =>
+    (await navigator.locks.query()).pending.filter(lock => lock.name === 'sejire.preservation-attempts.v1').length
+  )).toBe(1);
+  await page.locator('.top-more > summary').click();
+  await page.locator('.top-more-menu > button').last().click();
+  await expect(page.locator('.workspace-main')).toHaveCount(0);
+  page.once('dialog', dialog => dialog.accept());
+  await page.getByRole('button', { name: 'Новое древо', exact: true }).click();
+  await expect(page.locator('.pedigree-empty')).toBeVisible();
+  const replacement = await draft(page);
+  expect(replacement.meta.id).not.toBe(f.baseline.meta.id);
+  expect(replacement.draft.persons).toEqual({});
+  await page.evaluate(async () => {
+    window.releaseEditorSaveGate();
+    await window.editorSaveGate;
+    await navigator.locks.request('sejire.preservation-attempts.v1', () => undefined);
+    await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+  });
+  await expect(page.locator('.app-topbar .top-actions > button.btn')).toBeEnabled();
+  expect(await draft(page)).toEqual(replacement);
+  await expect(page.locator('.pedigree-empty')).toBeVisible();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  f.assertReadOnly();
+});
 
 async function prepareFundedRestore(page) {
   const f = await setup(page);
@@ -237,6 +302,9 @@ test('ordinary funded save imports a general ciphertext without entering the fix
     window.arweaveWallet = { connect: unexpected, sign: unexpected };
   });
   await page.goto('/#/save');
+  // A fragment-only goto keeps the existing document and skips addInitScript.
+  // Reload so the wallet trap exists before React's initial render.
+  await page.reload();
   await expect(page.getByLabel('Зашифрованный архив', { exact: true })).toBeVisible();
   await expect(page.getByLabel('Зашифрованный архив пилота', { exact: true })).toHaveCount(0);
   await expect(page.getByText(/Solana Devnet|Прежний тестовый пилот|0\.03 SOL/)).toHaveCount(0);
