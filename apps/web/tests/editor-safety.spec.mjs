@@ -74,6 +74,7 @@ test('the final input is durable in the same event task before immediate reload'
   expect((await draft(page)).draft.persons[CHILD].notes).toBe(text);
   expect((await draft(page)).commits).toEqual(f.baseline.commits);
   await profile(page, CHILD_NAME);
+  expect((await draft(page)).draft.persons[CHILD].notes).toBe(text);
   const name = 'Алия Мария ';
   const secondReload = page.waitForEvent('domcontentloaded');
   await page.locator('.person-panel input').first().evaluate((field, value) => {
@@ -86,6 +87,25 @@ test('the final input is durable in the same event task before immediate reload'
   expect((await draft(page)).draft.persons[CHILD].name).toBe(name);
   expect((await draft(page)).draft.persons[CHILD].notes).toBe(text);
   expect((await draft(page)).commits).toEqual(f.baseline.commits);
+
+  await profile(page, name);
+  const partialDate = ' 19 ';
+  const thirdReload = page.waitForEvent('domcontentloaded');
+  await page.getByLabel('Дата рождения', { exact: true }).evaluate((field, value) => {
+    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(field, value);
+    field.dispatchEvent(new Event('input', { bubbles: true }));
+    location.reload();
+  }, partialDate);
+  await thirdReload;
+  await expect(page.locator('.workspace-main')).toBeVisible();
+  await profile(page, name);
+  await expect(page.getByLabel('Дата рождения', { exact: true })).toHaveValue(partialDate);
+  const restored = await draft(page);
+  expect(restored.draft.persons[CHILD].name).toBe(name);
+  expect(restored.draft.persons[CHILD].notes).toBe(text);
+  expect(restored.draft.persons[CHILD].born).toBe(partialDate);
+  expect(restored.commits).toEqual(f.baseline.commits);
+  expect(restored.versions).toEqual(f.baseline.versions);
   f.assertReadOnly();
 });
 

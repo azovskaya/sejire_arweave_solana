@@ -1,0 +1,4 @@
+Command: node node_modules/typescript/bin/tsc -p tsconfig.app.json --noEmit --incremental false
+Exit: 0
+
+

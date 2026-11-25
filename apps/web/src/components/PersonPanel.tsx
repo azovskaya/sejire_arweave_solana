@@ -1,7 +1,7 @@
 import { useEffect, useImperativeHandle, useRef, useState, forwardRef } from "react";
 import type { Person } from "../lib/types";
 import { lifespan } from "../lib/pedigree";
-import { normalizeDateInput } from "../lib/dates";
+import { buildPersonDraft } from "../lib/personDraft";
 import {
   protocolViewHasKin,
   type PersonProtocolView,
@@ -48,27 +48,6 @@ function emptyPerson(): Person {
     parents: [],
     media: [],
     notes: "",
-  };
-}
-
-function buildPerson(base: Person, draft: Person): Person {
-  return {
-    ...base,
-    ...draft,
-    id: base.id,
-    name: draft.name.trim(),
-    maidenName: draft.maidenName?.trim() || null,
-    birthPlace: draft.birthPlace?.trim() || null,
-    deathPlace: draft.deathPlace?.trim() || null,
-    burialPlace: draft.burialPlace?.trim() || null,
-    occupation: draft.occupation?.trim() || null,
-    notes: draft.notes?.trim() || "",
-    born: draft.born ? normalizeDateInput(draft.born) || null : null,
-    died: draft.died ? normalizeDateInput(draft.died) || null : null,
-    burialDate: draft.burialDate ? normalizeDateInput(draft.burialDate) || null : null,
-    parents: base.parents,
-    media: base.media ?? [],
-    tombstone: base.tombstone ?? false,
   };
 }
 
@@ -150,7 +129,7 @@ export const PersonPanel = forwardRef<PersonPanelHandle, Props>(function PersonP
     const base = personRef.current;
     const d = draftRef.current;
     if (!base) return;
-    const next = buildPerson(base, d);
+    const next = buildPersonDraft(base, d);
     // Raw input is already durable, including a temporarily empty name. Do
     // not discard other fields merely because the user is still typing it.
     if (!sameProfile(base, next)) onChange(next);
@@ -174,12 +153,11 @@ export const PersonPanel = forwardRef<PersonPanelHandle, Props>(function PersonP
   function setField<K extends keyof Person>(key: K, value: Person[K]) {
     const base = personRef.current;
     if (!base) return;
-    const next = { ...draftRef.current, [key]: value, id: base.id,
-      parents: base.parents, media: base.media ?? [], tombstone: base.tombstone ?? false };
+    const next = buildPersonDraft(base, { ...draftRef.current, [key]: value });
     draftRef.current = next;
     setDraft(next);
     // Commit in the input event, before a pagehide/reload can cancel effects
-    // or timers. Preserve raw spaces/partial dates until explicit normalization.
+    // or timers. A later flush must preserve these same raw spaces/partial dates.
     onChange(next);
   }
 

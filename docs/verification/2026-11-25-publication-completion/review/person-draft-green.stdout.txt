@@ -1,0 +1,14 @@
+Command: node --import tsx --test src/lib/personDraft.selftest.ts
+Exit: 0
+
+✔ reload, pristine profile flush and another field edit keep the exact last notes and immutable history (8.446869ms)
+✔ flushing reloaded raw names, dates and optional facts does not normalize untouched fields (1.001305ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 2
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 784.035761
+

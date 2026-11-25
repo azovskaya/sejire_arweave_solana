@@ -1,0 +1,5 @@
+Command: node --import tsx src/lib/dates.selftest.ts
+Exit: 0
+
+dates.selftest: OK
+

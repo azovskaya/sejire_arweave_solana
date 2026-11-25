@@ -1,0 +1,90 @@
+✖ reload, pristine profile flush and another field edit keep the exact last notes and immutable history (7.573165ms)
+✖ flushing reloaded raw names, dates and optional facts does not normalize untouched fields (3.609111ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 0
+ℹ fail 2
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 641.223209
+
+✖ failing tests:
+
+test at src/lib/personDraft.selftest.ts:1:1241
+✖ reload, pristine profile flush and another field edit keep the exact last notes and immutable history (7.573165ms)
+  AssertionError [ERR_ASSERTION]: opening a pristine profile must not trim saved notes
+  + actual - expected
+  
+  + 'Последняя буква: Ә — не терять пробел'
+  - 'Последняя буква: Ә — не терять пробел '
+                                          ^
+  
+      at TestContext.<anonymous> (/workspace/scratch/ec55c66d48ac/sejire-code-audit-20261125/apps/web/src/lib/personDraft.selftest.ts:41:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.start (node:internal/test_runner/test:1262:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:387:17) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'Последняя буква: Ә — не терять пробел',
+    expected: 'Последняя буква: Ә — не терять пробел ',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at src/lib/personDraft.selftest.ts:1:2681
+✖ flushing reloaded raw names, dates and optional facts does not normalize untouched fields (3.609111ms)
+  AssertionError [ERR_ASSERTION]: a pristine flush is an exact no-op, including partial dates
+  + actual - expected
+  
+    {
+  +   birthPlace: 'Астана',
+  +   born: '19',
+  +   burialDate: '2003-02-01',
+  +   burialPlace: null,
+  +   deathPlace: 'Алматы',
+  +   died: '2020-03-05',
+  -   birthPlace: '  Астана ',
+  -   born: ' 19 ',
+  -   burialDate: ' 1.2.2003 ',
+  -   burialPlace: '  ',
+  -   deathPlace: ' Алматы ',
+  -   died: ' 5.03.20 ',
+      id: 'child',
+  +   maidenName: 'Әбілова',
+  -   maidenName: ' Әбілова ',
+      media: [
+        {
+          caption: ' Historical caption ',
+          kind: 'image',
+          tx: 'synthetic-media'
+        }
+      ],
+  +   name: 'Алия Мария',
+  +   notes: 'Первая строка\nПоследняя строка',
+  +   occupation: 'исследователь',
+  -   name: '  Алия Мария ',
+  -   notes: ' Первая строка\nПоследняя строка \n',
+  -   occupation: ' исследователь ',
+      parents: [
+        'parent'
+      ],
+      place: null,
+      sex: 'M',
+  
+      at TestContext.<anonymous> (/workspace/scratch/ec55c66d48ac/sejire-code-audit-20261125/apps/web/src/lib/personDraft.selftest.ts:73:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18)
+      at Test.postRun (node:internal/test_runner/test:1542:19)
+      at Test.run (node:internal/test_runner/test:1467:12)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: { id: 'child', name: 'Алия Мария', sex: 'M', born: '19', died: '2020-03-05', place: null, birthPlace: 'Астана', deathPlace: 'Алматы', burialDate: '2003-02-01', burialPlace: null, occupation: 'исследователь', maidenName: 'Әбілова', parents: [ 'parent' ], media: [ [Object] ], notes: 'Первая строка\nПоследняя строка', tombstone: false },
+    expected: { id: 'child', name: '  Алия Мария ', sex: 'M', born: ' 19 ', died: ' 5.03.20 ', place: null, birthPlace: '  Астана ', deathPlace: ' Алматы ', burialDate: ' 1.2.2003 ', burialPlace: '  ', occupation: ' исследователь ', maidenName: ' Әбілова ', parents: [ 'parent' ], media: [ [Object] ], notes: ' Первая строка\nПоследняя строка \n', tombstone: false },
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+

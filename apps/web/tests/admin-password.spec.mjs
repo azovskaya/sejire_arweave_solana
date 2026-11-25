@@ -251,12 +251,22 @@ test('unknown native submit response and reload preserve the exact transaction w
   await panel.getByRole('checkbox').check(); await panel.getByRole('button', { name: 'Подписать один перевод в Wander', exact: true }).click();
   await expect(panel.getByRole('status')).toContainText('Подпись сохранена');
   const signed = [...api.state.transfers.values()][0].signedTx, intentId = api.state.topups.intents[0].id;
+  expect(await page.evaluate(() => window.__wanderCalls.sign)).toBe(1);
   native.loseAck = true; await panel.getByRole('button', { name: 'Отправить подписанный перевод', exact: true }).click();
   await expect(panel.getByRole('alert')).toBeVisible(); expect(new Set(native.posts)).toEqual(new Set([signed]));
+  const transferReads = () => api.requests.filter(row => row.method === 'GET' && row.url.endsWith(`/treasury-topups/${intentId}/transfer`)).length;
+  const readsBeforeReload = transferReads();
   await page.reload(); await login(page); await openFundAdmin(page);
-  await topup(page).getByLabel('Заявка для перевода или проверки', { exact: true }).selectOption(intentId);
+  // The wrapping label's text also includes every option; select by its accessible role/name.
+  const intents = topup(page).getByRole('combobox', { name: 'Заявка для перевода или проверки', exact: true });
+  await intents.selectOption(intentId);
+  await expect(intents).toHaveValue(intentId);
   panel = page.getByRole('region', { name: 'Перевод через Wander', exact: true });
   await expect(panel.getByTestId('topup-signed-transfer')).toBeVisible();
+  await expect(panel.getByTestId('topup-signed-transfer')).toContainText(JSON.parse(signed).id);
+  await expect.poll(transferReads).toBeGreaterThan(readsBeforeReload);
+  expect(api.state.transfers.get(intentId).signedTx).toBe(signed);
+  expect(api.state.transfers.size).toBe(1);
   expect(await page.evaluate(() => window.__wanderCalls.sign)).toBe(0);
   native.loseAck = false;
   await panel.getByRole('button', { name: 'Повторно отправить этот же перевод', exact: true }).click();

@@ -24,7 +24,7 @@
     "test:lastScreen": "tsx src/lib/lastScreen.selftest.ts",
     "test:fetch": "tsx src/lib/arweave/fetch.selftest.ts",
     "test:gateways": "tsx src/lib/arweave/gateways.selftest.ts",
-    "test:storage": "tsx src/lib/storageQuota.selftest.ts && node --import tsx src/lib/draftOwnership.selftest.ts",
+    "test:storage": "tsx src/lib/storageQuota.selftest.ts && node --import tsx src/lib/draftOwnership.selftest.ts && node --import tsx --test src/lib/personDraft.selftest.ts",
     "test:archive": "tsx src/lib/vaultSession/localArchive.selftest.ts && tsx src/lib/vaultSession/selection.selftest.ts",
     "test:protocol": "tsx src/lib/ao/protocol.selftest.ts",
     "test:i18n": "tsx src/lib/i18n/i18n.selftest.ts",
