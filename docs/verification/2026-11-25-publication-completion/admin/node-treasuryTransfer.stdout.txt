@@ -1,0 +1,7 @@
+PASS owner preview is read-only; one signature survives lost send acknowledgment and clean-browser recovery
+PASS unknown wallet response blocks another signature; a late result is stored without sending
+PASS leaving the admin page never broadcasts a late valid wallet signature
+PASS lost server claim acknowledgment fences signing in the original and a clean browser
+PASS changed recipient and a missing signed readback stop submission
+PASS storage failure and changed fee fail before the wallet signature
+PASS 6 treasury transfer safety scenarios; synthetic keys and mocked transport only

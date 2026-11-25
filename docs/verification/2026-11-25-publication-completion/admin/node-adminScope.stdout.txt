@@ -1,0 +1,1 @@
+PASS admin authority lifetime, exact amounts, safe projections, protected HTTP transport, abort, static-host fail-closed

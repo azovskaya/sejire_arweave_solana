@@ -1,0 +1,220 @@
+treeEngine.selftest: OK
+crypto.selftest: OK { vaultId: '4e8ba883' }
+backup.selftest: OK (portable recovery, relationships, history, validation, tampering, full-vault cache)
+kinship.selftest: OK
+pedigree.selftest: OK {
+  items: 7,
+  edges: 6,
+  soloH: 364,
+  sixAdds: 0,
+  sevenFromSelf: 64,
+  lineH: 364
+}
+lineage.selftest: OK { male: 3, gens: 3, slots: 7, deep: 13, six: 'a3', seven: 'a2' }
+thirteenLineage.fixture.selftest: OK { people: 8191, maleLine: 13, charts: 273, poster: 'A2 7 gens' }
+dates.selftest: OK
+treeJson.selftest: OK
+zhuzRu.selftest: OK
+sponsor.client.selftest: 2 asserts ok
+loadVault.selftest: OK
+loadVault verified retrieval, local parent and sequential multi-tree selftests: OK
+siteMirror.selftest: OK
+permawebHost.selftest: OK
+lastScreen/pdfRoot/pedigreeFit.selftest: OK
+fetch.selftest: OK { versions: 3 }
+gateways.selftest: OK { graphql: 3, data: 3 }
+storageQuota.selftest: OK
+draftOwnership selftest: PASS (exclusive tabs, lifecycle tokens, byte conflicts, unavailable APIs, quota and atomic replacement)
+localArchive.selftest: OK { count: 2 }
+PASS declining an older network version leaves the complete vault, editor, HEAD and phrase unchanged
+PASS accepting a local snapshot persists all trees and histories before returning its active tree
+PASS local_/demo_ labels cannot become network parents
+PASS another vault or an invalid inactive tree cannot be adopted
+PASS failure writing the complete vault does not change the draft or session
+PASS draft quota failure rolls back the full vault cache and keeps the prior session
+PASS failed session persistence restores both storage values and the in-memory phrase
+PASS the rollback snapshot includes editor edits flushed by the confirmation callback
+PASS a concurrent cache replacement cannot bind a checked session to the wrong envelope
+PASS preparing twice retains all trees/history and updates the local selection digest without changing the editor
+PASS encryption alone has no selection side effect when the preparation is cancelled
+PASS a delayed preparation cannot replace a newer file choice or another tab cache
+PASS preparation cache quota failure preserves the previous selection and draft
+PASS preparation session failure rolls back ciphertext before returning a failure
+PASS completion advances only the exact selected local ciphertext
+vault version selection: 15 synthetic checks passed; no wallets, uploads, or network
+protocol.selftest: OK
+i18n.selftest: OK
+opsDesk.selftest: OK
+networkOverview.selftest: reference, valid/invalid finalized payments, RPC unavailable, legacy fingerprint OK
+solana.policy.selftest: OK — encryption, money caps, quote binding, tags and network isolation
+solana.wallet.selftest: OK — both adapter contracts, real SDK signatures, isolation, changed account and unavailable wallet
+OK free upload signs only once; durable receipt survives a new journal instance
+OK 402 cannot trigger an unauthorized payment
+OK authorized top-up signs exactly one verified transfer
+OK dropped response replays exact data-item bytes, without another signature
+OK lost payment response reconciles the stored transfer; never double-pays
+OK a credited but still insufficient payment is not sent again
+OK SDK transaction to an unexpected recipient is rejected before wallet prompt
+OK rejected message signature cannot upload or pay
+OK account change while message prompt is open stops submission
+OK abort while signature prompt is open stops submission
+OK expired or mismatched quote requests no signature
+OK storage failure prevents upload and payment
+OK payment journal failure prevents the transaction prompt
+OK rejected payment may be retried because no signed transaction escaped
+OK changed transaction returned by wallet is rejected before broadcast
+OK abort during payment signature cannot broadcast
+OK unresolved payment blocks funding a different snapshot
+OK persistence failure after acceptance still returns the successful receipt
+OK receipt must identify exactly the signed item
+OK concurrent attempts are excluded and the lock is released
+solana.upload.selftest: 20 scenarios passed; real SDK signatures, mocked service responses
+solana.receipt.selftest: OK — recovery, exact-byte hash, network isolation, hostile receipts, unavailable/oversized data
+{
+  "result": "PASS",
+  "checkedAt": "2026-11-25T10:16:49.467Z",
+  "checks": {
+    "splIntegerSerializationAndBoundsCases": 98,
+    "moneyRoundtripAndIntegerRoundingCases": 10000,
+    "quoteBoundaryAndInvalidDecimalCases": 16,
+    "unicodeEncryptionUniqueIvRoundtrips": 32,
+    "authenticatedTamperingAndWrongKeyCases": 13,
+    "httpFailureAndAbortCases": 12,
+    "untrustedReceiptUrlIsolationCases": 4,
+    "invalidReceiptAndNetworkCases": 14,
+    "parallelDurableJournalRowsAndNetworkIsolation": 50,
+    "lockReleaseAfterFailure": 1
+  },
+  "externalRequests": 0,
+  "solTransfers": 0,
+  "note": "Additional local diagnostics. IndexedDB is simulated; not a real-browser cross-tab or extension test."
+}
+PASS native read-only network errors never imply an unknown payment
+PASS native three distinct wallet roles and signed genesis
+PASS native fake signature rejected
+PASS native untrusted initial visitor rejected
+PASS native secret/unknown configuration field rejected
+PASS native configuration recovery from portable bytes
+PASS native address rotation preserves previous terms
+PASS native fork not last JSON wins
+PASS native rollback rejected
+PASS native old authority must sign new configuration
+PASS native new key explicit acceptance
+PASS native exact split 30000000
+PASS native exact split 100000000
+PASS native exact split 1000000000
+PASS native donation only no archive or service fee
+PASS native below price rejected
+PASS native large lamports integer precision
+PASS native technical u64 bound not commercial cap
+PASS native one archive authorization exact payer digest bytes and integer ceiling
+PASS native pilot policy binds manager devnet treasury reserve and budget
+PASS native disabled and expired executor stop before RPC or order signature
+PASS native ciphertext or config publication cannot use single archive permission
+PASS native write-ahead failure stops before wallet signature
+PASS native real SDK format-2 preparation with synthetic RSA signer
+PASS native insufficient operational budget rejects
+PASS native wrong signer rejects
+PASS native damaged ciphertext rejects
+PASS native mainnet broadcast is off by default
+PASS native signed bytes saved before first send
+PASS native resume in clean runtime state uses same ID without old private key
+PASS native repeat upload no second transaction
+PASS native tampered signed transaction rejected
+PASS native native status is independent of accepted flag
+PASS native alternate gateway verifies exact bytes and hash
+PASS native corrupted retrieval rejected
+PASS native two trees relationships and history offline restore unchanged
+PASS native no Turbo or cloud endpoints in direct upload path
+PASS native custom endpoint supported by real SDK
+PASS 38 native admin / Arweave tests; LOCAL fixtures, no live transaction or permanent settlement
+PASS native stale tab v3 adopts persistent v4 and cannot roll back
+PASS native trusted fork rejected without changing persistent history
+PASS native exact missing job configuration recovered only from signed historical extension
+PASS native every payment-signing marker forbids orphan replacement
+PASS native stale authorization preserves a recoverable signed mirror before overwriting cache
+PASS 43 native tests including monotonic configuration / orphan guards; LOCAL fixtures only
+PASS V2 stable deterministic save ID
+PASS V2 one prepared service transfer and one reference
+PASS V2 finalized economic payment accepts ComputeBudget
+PASS V2 changed recipient rejected
+PASS V2 changed amount rejected
+PASS V2 additional value transfer rejected
+PASS V2 changed payer rejected
+PASS V2 missing reference rejected
+PASS V2 missing payer signature rejected
+PASS V2 unknown instruction rejected
+PASS V2 unsafe compute budget rejected
+PASS V2 inner value effects rejected
+PASS V2 failed finalized transaction rejected
+PASS V2 wrong Solana network rejected
+PASS V2 lost wallet response discovered by reference
+PASS V2 recovery uses the three approved public devnet RPC URLs
+PASS V2 RPC timeout never proves absence
+PASS V2 two valid readers recover payment while one reader fails
+PASS V2 two valid readers prove expiry and absence while one reader fails
+PASS V2 a hanging third reader cannot block two valid readers
+PASS V2 one remaining valid reader cannot authorize retry
+PASS V2 successful transaction on third valid reader blocks retry
+PASS V2 expired blockhash with complete empty history allows same-reference preparation
+PASS V2 failed finalized transaction with expired blockhash permits same-reference retry
+PASS V2 failed history mismatch cannot authorize another payment
+PASS V2 live blockhash blocks a second payment
+PASS V2 pruned history blocks a second payment
+PASS V2 conflicting reference signatures block a second payment
+PASS V2 only explicit wallet rejection enables safe retry
+PASS V2 Wander signing metadata is accepted without weakening SEJIRE tag binding
+PASS V2 Arweave exact quote and balance accepted
+PASS V2 Arweave quote above cap rejected
+PASS V2 wrong Wander address rejected before signing
+PASS V2 wrong archive size rejected before signing
+PASS V2 insufficient AR balance rejected
+PASS V2 retrieved wrong SHA is never complete
+PASS V2 synthetic retrieved envelope with exact SHA and vault ID verifies
+PASS V2 atomic session transition persists after reload
+PASS V2 immutable reference and archive cannot be replaced
+PASS V2 completed session cannot return to payment
+PASS V2 one session lock name serializes actions
+V2 unit assertions: 41
+PASS V2 machine A happy path uses one payment, one signing, upload, retrieval verification
+PASS V2 machine B double click serializes to one Phantom invocation
+PASS V2 machine C explicit Phantom rejection retains same session/reference for retry
+PASS V2 machine G account switch after broadcast still accepts correct finalized payment
+PASS V2 machine H lost wallet response discovered after reload by reference
+PASS V2 machine Phantom timeout stays pending and reference finds the sent payment
+PASS V2 machine I RPC timeout keeps pending payment and prevents another Phantom call
+PASS V2 machine J expired absent payment retries same session and reference
+PASS V2 machine J finalized failed payment retries same session and reference after expiry
+PASS V2 machine K uncertain previous payment remains pending
+PASS V2 machine L reload READY does not open wallets
+PASS V2 machine L reload SOLANA_PREPARED preserves same reference
+PASS V2 machine L reload AR_READY with lost signature response permits safe retry
+PASS V2 machine L reload SOLANA_PAID and AR_READY preserves the next action
+PASS V2 machine L reload AR_SIGNED resumes same signed ID without Wander
+PASS V2 machine L reload COMPLETE and BLOCKED cannot start a new payment
+PASS V2 machine M Wander rejection leaves no signed plan and permits retry
+PASS V2 machine Wander timeout without signed bytes resets flag and retries without duplicate upload
+PASS V2 machine quote movement before Wander signature permits safe re-quote
+PASS V2 machine lost Wander response before persistence permits same-session retry
+PASS V2 machine legacy false-negative BLOCKED Wander signature is revalidated and resumed without re-signing
+PASS V2 machine N signed transaction survives reload before upload
+PASS V2 machine O upload timeout resumes same signed transaction and progress
+PASS V2 machine P wrong archive blocks payment before Phantom
+PASS V2 machine P wrong archive blocks Wander before signing
+PASS V2 machine R wrong Wander address blocks signature
+PASS V2 machine S retrieval hash mismatch never reaches COMPLETE
+PASS V2 machine gateway redirect retrieves exact archive before COMPLETE and keeps the same Arweave ID
+PASS V2 machine raw gateway fallback verifies archive when rendered endpoint is unavailable
+PASS V2 machine T successful confirmed retrieval with exact SHA reaches COMPLETE
+V2 machine assertions: 30
+Recovery provider, strict historical fund metadata, bounded native data/JSON reads, raw/hash/AES/vault checks and HEAD selftests passed
+fund journal.selftest: OK (exact ciphertext, parent response binding, conflicts, locking, legacy recovery/refusals, cleanup, storage failures, bounds)
+PASS admin authority lifetime, exact amounts, safe projections, protected HTTP transport, abort, static-host fail-closed
+PASS owner preview is read-only; one signature survives lost send acknowledgment and clean-browser recovery
+PASS unknown wallet response blocks another signature; a late result is stored without sending
+PASS leaving the admin page never broadcasts a late valid wallet signature
+PASS lost server claim acknowledgment fences signing in the original and a clean browser
+PASS changed recipient and a missing signed readback stop submission
+PASS storage failure and changed fee fail before the wallet signature
+PASS 6 treasury transfer safety scenarios; synthetic keys and mocked transport only
+paidClient.selftest: PASS (preserved legacy journal, serialized session bootstrap, independent help policy/receipt, u64 RPC precision, cross-tab single payment, lost create/reserve/wallet, cancellation, exact full-vault receipt, no help archive/head change, bounded body)

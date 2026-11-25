@@ -1,0 +1,246 @@
+{
+  "schema": "sejire/backend-completion-evidence/v1",
+  "date": "2026-11-25",
+  "branch": "feat/funded-portable-release-20261125",
+  "baseCommit": "5b35fe0072c50a321d879beee909acc93109d41f",
+  "state": "local uncommitted candidate; no deployment or external transaction",
+  "node": "v24.22.3",
+  "results": [
+    {
+      "command": "npm run check --prefix apps/sponsor",
+      "exitCode": 0,
+      "log": "typecheck.stdout.txt"
+    },
+    {
+      "command": "npm run test:fund --prefix apps/sponsor",
+      "exitCode": 0,
+      "log": "test-fund.stdout.txt",
+      "sqliteGroups": 24,
+      "boundedSubmitReplayGroups": 6
+    },
+    {
+      "command": "npm run test:fund-runtime --prefix apps/sponsor",
+      "exitCode": 0,
+      "log": "test-fund-runtime.stdout.txt",
+      "groups": 20
+    },
+    {
+      "command": "npm run test:linux --prefix apps/sponsor",
+      "exitCode": 0,
+      "log": "test-linux.stdout.txt",
+      "groups": {
+        "linuxAdapter": 6,
+        "paidPromoAdminHttpSqlite": 11,
+        "fundedOperations": 7,
+        "ledgerMigration": 5
+      }
+    },
+    {
+      "command": "node --experimental-sqlite --loader ../../scripts/offline-ts-loader.mjs tests/paid.local.mjs (apps/sponsor)",
+      "exitCode": 0,
+      "log": "test-paid-local.stdout.txt",
+      "groups": 42
+    },
+    {
+      "command": "node --experimental-sqlite --import tsx tests/funded-operations.mjs (apps/sponsor)",
+      "exitCode": 0,
+      "groups": 7,
+      "log": "funded-operations.stdout.txt",
+      "includedInFinalTestLinux": true
+    },
+    {
+      "command": "node --experimental-sqlite --import tsx tests/ledger-import.mjs (apps/sponsor)",
+      "exitCode": 0,
+      "groups": 5,
+      "log": "ledger-import.stdout.txt",
+      "includedInFinalTestLinux": true
+    }
+  ],
+  "features": [
+    "Durable promo lease/job, same signed transaction and chunks across crash/restart",
+    "Combined paid/promo alarm, no shared-alarm deletion, bounded retry/backoff",
+    "Authorized paginated Mainnet/Devnet paid overview without payload or capability",
+    "Prepared topup baseline, two-node native transfer proof, 12 confirmations, exact amount/target, unique TX, revision CAS and audit",
+    "Linux public healthz and separate read-only configuration readiness",
+    "Restore-review marker blocks before writer/database/alarm",
+    "Explicit trusted ingress CIDRs, right-to-left XFF and actual HTTP rate buckets",
+    "Unpredictable server nonce in signed transfer closes stale-head-cache double-credit counterexample",
+    "Non-expiring transfer claim and exact unsigned/signed server journal prevent second-browser automatic signing; only optional bounded Wander metadata tags accepted",
+    "Private manifest with table hashes/counts, pinned digest, exact rowids/raw strings and offline NEW-path import behind common writer guard and durable review marker"
+  ],
+  "networkSafety": {
+    "externalNetworkRequests": 0,
+    "realFundsOrWallets": false,
+    "productionSecretsRead": false,
+    "deployed": false
+  },
+  "sourceFiles": [
+    {
+      "path": "apps/sponsor/linux-server.mjs",
+      "sha256": "d5a20e974d4b6e8a34d0892b810c32a2110a27bf8105a9cae42d5fe1a07e034b"
+    },
+    {
+      "path": "apps/sponsor/trusted-ingress.mjs",
+      "sha256": "f4102e5cfd77d53ca162e4a18bb203a3934ee2181a0d846e32ec22b8f02f73ae"
+    },
+    {
+      "path": "apps/sponsor/package.json",
+      "sha256": "b5c1a8c4af645b6c4ade15dc019537eea1f14997faa7a4f666235fabfd255424"
+    },
+    {
+      "path": "apps/sponsor/src/checkout/adminTypes.ts",
+      "sha256": "3e80d10f7ba9602e1c59477dc6df38a49395e00b7250f897fb2f1cf846a18a34"
+    },
+    {
+      "path": "apps/sponsor/src/checkout/alarm.ts",
+      "sha256": "57d6d28921fcf9c7cc5759aed72aa23d71f44ff160a668acd9350c1344c84147"
+    },
+    {
+      "path": "apps/sponsor/src/checkout/durableStore.ts",
+      "sha256": "0beea0d4b2c4f6683fe869b02aec478c7b6cde5a2c1540d9b03a28d0778db4eb"
+    },
+    {
+      "path": "apps/sponsor/src/checkout/paidLedger.ts",
+      "sha256": "677f62800c5f2a5deb8f7af85e8d55d62f0bd89b030bf6509e27f8d34ea0ac51"
+    },
+    {
+      "path": "apps/sponsor/src/checkout/treasuryGuard.ts",
+      "sha256": "126635e83e006faebe8bf5eaf32aaca9ff25ae332d82fdf360dcf38ec99c989f"
+    },
+    {
+      "path": "apps/sponsor/src/checkout/treasuryTopups.ts",
+      "sha256": "c8fc3c3ba258e07f6b57391f5655203f699665f14da98c91a5f4e85a579a937f"
+    },
+    {
+      "path": "apps/sponsor/src/fund/api.ts",
+      "sha256": "3cb68b234b41060a31aa6e6af82ca3377af841fe4f244dbfbe8f507552eb9837"
+    },
+    {
+      "path": "apps/sponsor/src/fund/ledger.ts",
+      "sha256": "ad9a07b6891086e57c08a08d3201dc869612577287b044024abb751ee0874e51"
+    },
+    {
+      "path": "apps/sponsor/src/fund/runner.ts",
+      "sha256": "b118eb7b84732c7e94af0cf15681b9e107255cd2d7ce8a5c6b169ced0471c269"
+    },
+    {
+      "path": "apps/sponsor/src/fund/treasuryProof.ts",
+      "sha256": "6b3f340692d622bf33708b75226596a5ff9fc32d5ffd2911c4689c7a783577cb"
+    },
+    {
+      "path": "apps/sponsor/tests/fund.local.mjs",
+      "sha256": "73da0b31697c096ab469d953e20eed633f49dd736c83270f1f9478f95ff381a7"
+    },
+    {
+      "path": "apps/sponsor/tests/fund-worker.ts",
+      "sha256": "7a98a62d66e79bb2d0ccd23c2ddbaf6b3c3e29ee00c22993ca784001c813e569"
+    },
+    {
+      "path": "apps/sponsor/tests/fund-runtime.mjs",
+      "sha256": "50a73892f78597d887fa0986c794975748aedf0836e51ff098b8229783e5055b"
+    },
+    {
+      "path": "apps/sponsor/tests/linux-server.mjs",
+      "sha256": "554a377b70823b5c4e15ee94fc618c3cb4189a041dd01e858033e5f9fe6ae952"
+    },
+    {
+      "path": "apps/sponsor/tests/linux-paid-promo.mjs",
+      "sha256": "785f070735a336322c43af83cb453bf14f2d73bbda5073fddf3a93b5023e477b"
+    },
+    {
+      "path": "apps/sponsor/tests/funded-operations.mjs",
+      "sha256": "caa72c8f848b10c44f426080c25dd98bd71ad6fe87ddb82ac4c035310426b13d"
+    },
+    {
+      "path": "apps/sponsor/linux-writer.mjs",
+      "sha256": "e891e468a4616cee140300572241221350d3d33cf84f38989fdff916c1598dd0"
+    },
+    {
+      "path": "apps/sponsor/ledger-snapshot.mjs",
+      "sha256": "5914aca6d44ae264aff000272cb2a203f8ac6280ae0cd1963ed5c5dddcd7a46c"
+    },
+    {
+      "path": "apps/sponsor/bin/import-ledger.mjs",
+      "sha256": "0e2b6e2465fcd897e78e2edc31758ab2f203c76835bdc7fcc7f27b64528422f0"
+    },
+    {
+      "path": "apps/sponsor/src/checkout/migrationSnapshot.ts",
+      "sha256": "0edf86b74bd33c97a9e7de29d04944a41414da020460f94d1e20a849ea917491"
+    },
+    {
+      "path": "apps/sponsor/tests/ledger-import.mjs",
+      "sha256": "2b593ac2d16a6d1f60636d680ccee4e2631e378061f2e932a3d5fdbdc144d30a"
+    }
+  ],
+  "sourceSnapshotNote": "Final check, test:linux (29 groups) and test:fund-runtime (20 checks) passed. A final narrow source-export guard additionally rejects active legacy api_execution leases; ledger-import (5 groups) then passed with its regression. Earlier test:fund and paid.local passes supplement these focused runs; final exact-tree repository CI remains with root.",
+  "limitations": [
+    "Native topup signatures generated synthetically; no real chain confirmation was checked.",
+    "Promo crash provider is synthetic; real child SIGKILL and real SQLite/HTTP exercised. Lease expiry simulated by advancing only the child test clock by121 seconds on restart.",
+    "Workerd autonomous alarm uses synthetic provider; public gateway and wallet production acceptance is separate.",
+    "The server must remain awake with one writer, durable disk, backup review, stable signer and configured trusted ingress; static Arweave frontend does not supply this service.",
+    "Existing signed obligations never create replacement transactions automatically; unresolved proof/provider failures retain reservations and need operator monitoring.",
+    "Topup intent must precede an exact native AR transfer bearing the newly issued signed nonce tag. Earlier deposits, self-transfers, mismatched/data-bearing transfers or fewer than12 confirmations are not credited by this procedure.",
+    "Physical ceiling and paid/promo budget caps are separate. A topup does not reset spent totals or increase a policy quota.",
+    "Encrypted envelope remains limited to512KiB; no production restore or permanent-publication test occurred.",
+    "A pending unsigned transfer claim never expires automatically; an unknown wallet-sign result requires original-attempt recovery/operator review, not another wallet signature.",
+    "Production Worker freeze/export/cutover were not performed. readOnlyLedgerSnapshot requires externally established source quiescence and source identity; importer cannot prove them.",
+    "First private snapshot version refuses table data above64MiB, unexpected app tables, unsupported missing schema or active leases; no truncation.",
+    "New import never clears restore review, starts an executor or migrates separate legacy KV/protocol obligations. Their inventory and source extraction remain owner release gates."
+  ],
+  "crossBoundaryReadOnlyReview": [
+    {
+      "path": "apps/web/src/lib/fund/treasuryTransfer.ts",
+      "sha256": "015915a04dc7013cabe4a967e5ada9301d6e9252a5882e38b7cf4afc6dd596cd",
+      "result": "PASS, no blocker; no edits by backend agent"
+    },
+    {
+      "path": "apps/web/src/lib/fund/treasuryTransferStore.ts",
+      "sha256": "ecf9fd96f1890e2c9c7791daf519eacba0a15365a0fa265471e2b8541540cc21",
+      "result": "PASS, no blocker; no edits by backend agent"
+    }
+  ],
+  "evidenceFiles": [
+    {
+      "path": "test-fund.stdout.txt",
+      "bytes": 4625,
+      "sha256": "361f66ab13ae6bd9d238001743734cca3732ce452e743fab0489dabe53b161ea"
+    },
+    {
+      "path": "test-fund-runtime.stdout.txt",
+      "bytes": 2391,
+      "sha256": "a2eaa1de34b4bd9d0392e63d49c5f6a8bba4015b698ac8c5cc9877669221903c"
+    },
+    {
+      "path": "test-linux.stdout.txt",
+      "bytes": 5050,
+      "sha256": "917629fe345fb42d365a8b2fe672522013241c04012a617990a43da20158d391"
+    },
+    {
+      "path": "test-paid-local.stdout.txt",
+      "bytes": 5221,
+      "sha256": "7baf6a86ed6db7b103d2e540248844715ede1ab5c38efc3613b7abfe165a3a1b"
+    },
+    {
+      "path": "typecheck.stdout.txt",
+      "bytes": 213,
+      "sha256": "dcd62b990aafd5ea7e4367a39268c6c31c77dfb4701193dd007efae1384c69ea"
+    },
+    {
+      "path": "funded-operations.stdout.txt",
+      "bytes": 1725,
+      "sha256": "c40f4b477cba53c3599ce2eac87f23e1553f681042e330d27cc5d7b27884a832"
+    },
+    {
+      "path": "ledger-import.stdout.txt",
+      "bytes": 758,
+      "sha256": "06bcc117b969806f9c5af7a842ad9dcab0bf5013dba146ddf03c7b2f566937be"
+    }
+  ],
+  "reviewFindingsResolved": [
+    "Shared alarm drain waits all settled jobs before SQLite close.",
+    "Stale gateway head versus wallet balance cannot credit a pre-existing transfer because an unpredictable nonce is generated after pin and required in the new native signature.",
+    "A second browser cannot reopen signing for a non-expiring claimed transfer; signed recovery reuses the persisted transaction.",
+    "Readiness quotes full configured archive bytes and uses physical ceiling minus all shared holds.",
+    "Snapshot rejects active paid, promo AND legacy api_execution leases; genuine source quiescence remains an operator prerequisite."
+  ]
+}

@@ -22,12 +22,15 @@ test.beforeAll(async () => {
 const json = (route, value, status = 200) => route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(value) });
 const text = (route, body, status = 200) => route.fulfill({ status, contentType: 'text/plain', body });
 
-async function install(context, page, { draft = false, wallet = false, unavailable = false } = {}) {
+async function install(context, page, { draft = false, wallet = false, unavailable = false, seedOnce = false } = {}) {
   const state = { signs: 0, posts: [], external: [], denied: [], header: null, raw: null, bytesVisible: !unavailable, chunks: 0, reject: false, versions: [], onlyNode: null };
-  await context.addInitScript(({ tree, draft }) => {
+  await context.addInitScript(({ tree, draft, seedOnce }) => {
     localStorage.setItem('sejire.locale', 'ru');
-    if (draft) { localStorage.setItem('sejire.draft.tree.v1', JSON.stringify(tree)); sessionStorage.setItem('sejire.lastScreen', 'work'); }
-  }, { tree, draft });
+    if (draft) {
+      if (!seedOnce || !localStorage.getItem('sejire.draft.tree.v1')) localStorage.setItem('sejire.draft.tree.v1', JSON.stringify(tree));
+      sessionStorage.setItem('sejire.lastScreen', 'work');
+    }
+  }, { tree, draft, seedOnce });
   if (wallet) {
     await page.exposeBinding('__syntheticDirectSignature', async (_source, raw) => {
       state.signs++;
@@ -299,8 +302,9 @@ test('two tabs cannot silently replace a selected complete archive before saving
   const acceptReplacement = async dialog => { replacements++; expect(dialog.type()).toBe('confirm'); await dialog.accept(); };
   page.on('dialog', acceptReplacement); other.on('dialog', acceptReplacement);
   try {
-    // Normal file restoration in another browsing context replaces the shared
-    // cache, while the first tab still explicitly selected the complete vault.
+    // Explicitly transfer the one-writer draft before normal restoration in
+    // the other tab. Its cache is shared; the original file choice is tab-local.
+    await page.getByRole('button', { name: 'Освободить черновик', exact: true }).click();
     await restoreFile(other, earlier.raw);
     const conflict = await selectionState(page);
     expect(conflict.session).toBe(selected.session);
@@ -308,6 +312,9 @@ test('two tabs cannot silently replace a selected complete archive before saving
     expect(conflict.draft).toBe(selected.draft);
     expect(JSON.parse((await selectionState(other)).session).cacheDigest).not.toBe(JSON.parse(selected.session).cacheDigest);
 
+    await other.getByRole('button', { name: 'Освободить черновик', exact: true }).click();
+    await page.getByRole('button', { name: 'Продолжить здесь', exact: true }).click();
+    await expect(page.getByRole('button', { name: 'Сохранить', exact: true })).toBeEnabled();
     await page.getByRole('button', { name: 'Сохранить', exact: true }).click();
     await page.getByRole('button', { name: 'Подготовить зашифрованную копию', exact: true }).click();
     await expect(page.getByRole('alert')).toContainText('Откройте нужный файл или локальную версию заново');
@@ -833,4 +840,64 @@ test('a definitive Wander decline keeps the same encrypted backup and requires a
   expect(completed.id).toBe(before.id); expect(completed.archiveText).toBe(before.archiveText);
   expect(state.signs).toBe(2); expect(state.posts.filter(path => path === '/tx')).toHaveLength(1);
   expect(state.denied).toEqual([]);
+});
+
+test('the independent build preserves the final raw profile input across immediate reload', async ({ page, context }) => {
+  const state = await install(context, page, { draft: true, seedOnce: true });
+  const errors = []; page.on('pageerror', error => errors.push(error.message));
+  await page.goto('/');
+  await page.locator('button.person-card[data-card]').first().dispatchEvent('click');
+  await expect(page.locator('.person-panel.is-open')).toBeVisible();
+  const name = await page.locator('.person-panel input').first().inputValue();
+  const before = JSON.parse((await selectionState(page)).draft);
+  const person = Object.values(before.draft.persons).find(person => person.name === name);
+  expect(person).toBeTruthy();
+  const note = 'Последние введённые символы: Әә — пробел ';
+  const reloading = page.waitForEvent('domcontentloaded');
+  await page.locator('.person-panel textarea').evaluate((field, value) => {
+    Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value').set.call(field, value);
+    field.dispatchEvent(new Event('input', { bubbles: true }));
+    location.reload();
+  }, note);
+  await reloading;
+  await expect(page.getByRole('button', { name: 'Сохранить', exact: true })).toBeEnabled();
+  const after = JSON.parse((await selectionState(page)).draft);
+  expect(after.draft.persons[person.id].notes).toBe(note);
+  expect(after.commits).toEqual(before.commits); expect(after.versions).toEqual(before.versions);
+  expect(state.signs).toBe(0); expect(state.posts).toEqual([]); expect(state.external).toEqual([]);
+  expect(state.denied).toEqual([]); expect(errors).toEqual([]);
+});
+
+test('independent editor ownership transfers between two real tabs without replacing the latest draft', async ({ page, context }) => {
+  const state = await install(context, page, { draft: true, seedOnce: true });
+  const errors = []; page.on('pageerror', error => errors.push(error.message));
+  await page.goto('/');
+  await expect(page.getByRole('button', { name: 'Сохранить', exact: true })).toBeEnabled();
+  const before = JSON.parse((await selectionState(page)).draft);
+  const other = await context.newPage(); other.on('pageerror', error => errors.push(error.message));
+  try {
+    await other.goto('/');
+    await expect(other.locator('.draft-access-notice')).toContainText('открыт в другой вкладке');
+    await expect(other.getByRole('button', { name: 'Сохранить', exact: true })).toHaveCount(0);
+    await page.getByRole('button', { name: 'Освободить черновик', exact: true }).click();
+    await other.getByRole('button', { name: 'Продолжить здесь', exact: true }).click();
+    await other.locator('button.person-card[data-card]').first().dispatchEvent('click');
+    await expect(other.locator('.person-panel.is-open')).toBeVisible();
+    const name = await other.locator('.person-panel input').first().inputValue();
+    const person = Object.values(before.draft.persons).find(person => person.name === name);
+    const note = 'Последняя версия принадлежит второй вкладке';
+    await other.locator('.person-panel textarea').fill(note);
+    await other.locator('.person-panel-head button').click();
+    await page.getByRole('button', { name: 'Продолжить здесь', exact: true }).click();
+    await expect(page.locator('.draft-access-notice')).toContainText('открыт в другой вкладке');
+    expect(JSON.parse((await selectionState(page)).draft).draft.persons[person.id].notes).toBe(note);
+    await other.close();
+    await page.getByRole('button', { name: 'Продолжить здесь', exact: true }).click();
+    await expect(page.getByRole('button', { name: 'Сохранить', exact: true })).toBeEnabled();
+    const latest = JSON.parse((await selectionState(page)).draft);
+    expect(latest.draft.persons[person.id].notes).toBe(note);
+    expect(latest.commits).toEqual(before.commits); expect(latest.versions).toEqual(before.versions);
+    expect(state.signs).toBe(0); expect(state.posts).toEqual([]); expect(state.external).toEqual([]);
+    expect(state.denied).toEqual([]); expect(errors).toEqual([]);
+  } finally { if (!other.isClosed()) await other.close(); }
 });

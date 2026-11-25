@@ -2,6 +2,9 @@ import type { EnvelopeV1 } from '../crypto/encrypt';
 import { serializeEnvelope } from '../crypto/envelope';
 import type { VaultV1 } from '../crypto/vault';
 import { DRAFT_KEY, saveDraftTree } from '../draftStorage';
+import { GUIDE_KEY, assertDraftWriteToken, captureDraftWriteToken, rollbackDraftValue, type DraftWriteToken } from '../draftOwnership';
+import { defaultGuide, saveGuide } from '../guide';
+import { pickHomeFocus } from '../pedigree';
 import { coerceTreeStore } from '../treeJson';
 import type { TreeStore } from '../types';
 import {
@@ -27,13 +30,14 @@ export type VaultPreparationSnapshot = {
   vaultId: string;
   cache: string | null;
   session: string | null;
+  draftToken: DraftWriteToken;
 };
 
 /** Capture before asynchronous loading/encryption. A later local selection or
  * another tab's preparation must not be overwritten by its delayed result. */
 export function captureVaultPreparation(vaultId: string): VaultPreparationSnapshot {
   try {
-    return { vaultId, cache: localStorage.getItem('sejire.envelope.' + vaultId),
+    return { vaultId, draftToken: captureDraftWriteToken(), cache: localStorage.getItem('sejire.envelope.' + vaultId),
       session: sessionStorage.getItem(VAULT_SESSION_META_KEY) };
   } catch { throw Error('storage_unavailable'); }
 }
@@ -47,6 +51,7 @@ export function acceptPreparedVault(
   mnemonic: string,
   before: VaultPreparationSnapshot,
 ): void {
+  assertDraftWriteToken(before.draftToken);
   const canonical = serializeEnvelope(envelope);
   if (envelope.vault_id !== before.vaultId ||
       (parentTxId !== null && !/^[A-Za-z0-9_-]{43}$/.test(parentTxId))) throw Error('invalid_backup');
@@ -83,7 +88,9 @@ export function acceptPreparedVault(
 export function acceptVaultVersion(
   selection: VaultVersionSelection,
   confirm: () => boolean,
+  draftToken: DraftWriteToken = captureDraftWriteToken(),
 ): TreeStore | null {
+  assertDraftWriteToken(draftToken);
   const { vault, envelope, session, mnemonic } = selection;
   const canonical = serializeEnvelope(envelope);
   if (!vault || vault.schema !== 'sejire/vault/v1' || vault.vault_id !== envelope.vault_id ||
@@ -97,17 +104,21 @@ export function acceptVaultVersion(
   const tree = coerceTreeStore(vault.active_tree_id ? vault.trees[vault.active_tree_id] : Object.values(vault.trees)[0]);
   if (!tree) throw Error('invalid_backup');
   if (!confirm()) return null;
+  assertDraftWriteToken(draftToken);
 
   const cacheKey = 'sejire.envelope.' + vault.vault_id;
   // Read after confirmation, since flushing the current editor can itself
   // persist the user's latest edits before this snapshot replaces it.
   const previousCache = localStorage.getItem(cacheKey);
   const previousDraft = localStorage.getItem(DRAFT_KEY);
+  const previousGuide = localStorage.getItem(GUIDE_KEY);
+  const guide = { ...defaultGuide(), step: 'done' as const, selfId: pickHomeFocus(tree.draft, null) };
   const previousSessionRaw = sessionStorage.getItem(VAULT_SESSION_META_KEY);
   const previousSession = getVaultSession(), previousMnemonic = getSessionMnemonic();
   try {
     localStorage.setItem(cacheKey, canonical);
     if (!saveDraftTree(tree)) throw Error('storage_unavailable');
+    if (!saveGuide(guide)) throw Error('storage_unavailable');
     const selectedSession = session.source === 'file' || session.source === 'local'
       ? { ...session, cacheDigest: vaultEnvelopeDigest(envelope) } : session;
     setVaultSessionChecked(selectedSession, mnemonic);
@@ -125,8 +136,9 @@ export function acceptVaultVersion(
       else clearVaultSession();
       restoreValue(sessionStorage, VAULT_SESSION_META_KEY, previousSessionRaw);
       },
-      () => restoreValue(localStorage, DRAFT_KEY, previousDraft),
-      () => restoreValue(localStorage, cacheKey, previousCache),
+      () => rollbackDraftValue(GUIDE_KEY, previousGuide, JSON.stringify(guide), draftToken),
+      () => rollbackDraftValue(DRAFT_KEY, previousDraft, JSON.stringify(tree), draftToken),
+      () => { if (localStorage.getItem(cacheKey) === canonical) restoreValue(localStorage, cacheKey, previousCache); },
     ];
     for (const rollback of rollbacks) {
       try { rollback(); } catch { /* attempt every rollback even if one store is unavailable */ }

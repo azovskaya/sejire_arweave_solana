@@ -4,11 +4,11 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import { installRouteMock, drainRouteMocks } from './helpers/routeDrain.mjs';
 
 /**
- * Acceptance of the *built* ArNS pack: static dist + baked Fund Worker URL.
- * Fund HTTP is mocked (no live order / no AR spend). Production Worker origin
+ * Acceptance of the *built* ArNS pack: static dist + baked API URL.
+ * Fund HTTP is mocked (no live order / no AR spend). The configured API origin
  * is asserted on every Fund call so a wrong bake cannot silently pass.
  */
-const FUND = 'https://sejire-sponsor.azovskaya-alissa.workers.dev';
+const FUND = process.env.SEJIRE_TEST_API_ORIGIN || 'https://sejire-sponsor.azovskaya-alissa.workers.dev';
 const ORIGIN = 'http://127.0.0.1:5191';
 const archive = JSON.stringify({
   schema: 'sejire/envelope/v1',
@@ -53,7 +53,7 @@ function fundOrder(orderId, status = 'COMPLETED') {
   };
 }
 
-test('static ArNS pack loads and completes mocked promo save against baked Worker origin', async ({ page, context }, testInfo) => {
+test('static ArNS pack loads and completes mocked promo save against configured API origin', async ({ page, context }, testInfo) => {
   const fundCalls = [];
   const blocked = { http: 0, websocket: 0 };
 

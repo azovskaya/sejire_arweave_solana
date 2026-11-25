@@ -2,7 +2,8 @@
 import { fundApi, type FundEnv } from '../src/fund/api';
 import { DirectArweaveFundProvider, MockFundedArweaveProvider } from '../src/fund/provider';
 import { publicTreasuryOwner } from './fund-public-owner.mjs';
-export { CheckoutLedger } from '../src/checkout/durableStore';
+import {CheckoutLedger as ProductionLedger} from '../src/checkout/durableStore';
+export class CheckoutLedger extends ProductionLedger{constructor(ctx:DurableObjectState,env:any){super(ctx,env,{fundProvider:provider});}}
 
 const provider = new MockFundedArweaveProvider();
 const testHeader = 'synthetic-workerd-only';
@@ -24,7 +25,7 @@ export default {
         const result = await reader.verify('A'.repeat(43), { digest, bytes: bytes.length, vaultId: 'a'.repeat(32) }, transaction);
         return Response.json({ transaction, result });
       }
-      if (path === '/__test/stats' && request.method === 'GET') return Response.json({ submissions: provider.submissions });
+      if (path === '/__test/stats' && request.method === 'GET') return Response.json({ submissions: provider.submissions,signings:provider.signings,replays:provider.replays });
       if (path === '/__test/mock' && request.method === 'POST') {
         const input = await request.json() as Record<string, unknown>;
         for (const key of Object.keys(input)) if (!['failure', 'delay', 'balance', 'price', 'estimate', 'actual', 'signerAddress'].includes(key)) return Response.json({ error: 'invalid_mock_control' }, { status: 400 });

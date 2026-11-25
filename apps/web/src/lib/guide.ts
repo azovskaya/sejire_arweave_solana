@@ -1,6 +1,6 @@
 import type { Person, TreeStore } from "./types";
 import { createTree, upsertPersonFields, setDraftPerson } from "./treeEngine";
-import { setLocalJson } from "./storageQuota";
+import { GUIDE_KEY, writeDraftValue } from './draftOwnership';
 
 export type GuideStepId =
   | "self"
@@ -75,8 +75,6 @@ export const GUIDE_COPY: Record<
   },
 };
 
-const GUIDE_KEY = "sejire.guide.v1";
-
 export function defaultGuide(): GuideState {
   return {
     step: "self",
@@ -91,13 +89,13 @@ export function defaultGuide(): GuideState {
 }
 
 export function saveGuide(guide: GuideState) {
-  setLocalJson(GUIDE_KEY, guide);
+  return writeDraftValue(GUIDE_KEY, JSON.stringify(guide));
 }
 
 export function loadGuide(): GuideState | null {
-  const raw = localStorage.getItem(GUIDE_KEY);
-  if (!raw) return null;
   try {
+    const raw = localStorage.getItem(GUIDE_KEY);
+    if (!raw) return null;
     return JSON.parse(raw) as GuideState;
   } catch {
     return null;
@@ -105,7 +103,7 @@ export function loadGuide(): GuideState | null {
 }
 
 export function clearGuide() {
-  localStorage.removeItem(GUIDE_KEY);
+  return writeDraftValue(GUIDE_KEY, null);
 }
 
 export function nextStep(step: GuideStepId): GuideStepId {

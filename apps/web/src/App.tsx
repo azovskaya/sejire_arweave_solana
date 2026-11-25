@@ -7,15 +7,13 @@ import { PreservationV2 } from "./components/PreservationV2";
 import { NativeAdminDesk } from "./components/NativeAdminDesk";
 import { AdminDesk } from "./components/AdminDesk";
 import { FundAdmin } from "./components/FundAdmin";
+import { DraftAccessNotice, useDraftAccess, useDraftDocument } from "./components/DraftAccess";
 import { isOpsHash, openOpsHash } from "./lib/opsDesk/route";
 import type { TreeStore } from "./lib/types";
-import { clearDraftTree, loadDraftTree, saveDraftTree } from "./lib/draftStorage";
-import { coerceTreeStore } from "./lib/treeJson";
+import { loadDraftTree } from "./lib/draftStorage";
 import {
-  clearGuide,
   defaultGuide,
   loadGuide,
-  saveGuide,
   startGuidedTree,
   type GuideState,
 } from "./lib/guide";
@@ -52,8 +50,9 @@ export default function App() {
   const [savingRoute, setSavingRoute] = useState(() => location.hash);
   const [savingNavigation, setSavingNavigation] = useState(0);
   const [screen, setScreen] = useState<Screen>(boot.screen);
-  const [store, setStore] = useState<TreeStore | null>(boot.store);
-  const [guide, setGuide] = useState<GuideState>(boot.guide);
+  const access = useDraftAccess();
+  const draft = useDraftDocument(access, boot);
+  const { store, guide } = draft;
 
   function go(next: Screen) {
     if (next === "admin") {
@@ -83,35 +82,26 @@ export default function App() {
   }, [boot.hash]);
 
   function startNew(title: string) {
-    clearDraftTree();
-    clearGuide();
     // A new tree belongs to the archive already unlocked in this tab. Closing
     // that archive is a separate explicit action on the welcome screen.
     const started = startGuidedTree(title);
-    saveDraftTree(started.store);
-    saveGuide(started.guide);
-    setStore(started.store);
-    setGuide(started.guide);
-    go("work");
+    if (draft.replace(started.store, started.guide)) go("work");
   }
 
-  function continueDraft(opened?: TreeStore | null) {
-    const draft = coerceTreeStore(opened) ?? loadDraftTree();
-    if (!draft) return;
-    saveDraftTree(draft);
-    setStore(draft);
-    setGuide(loadGuide() ?? { ...defaultGuide(), step: "done" });
-    go("work");
+  function continueDraft() {
+    if (!draft.pending && loadDraftTree() && draft.loadSaved()) go("work");
   }
 
   return (
     <div className={screen === "work" ? "app-shell is-work" : "app-shell"}>
+      <DraftAccessNotice access={access} document={draft} onHome={() => go("welcome")} />
       {screen === "welcome" && (
         <Welcome
           onStartNew={startNew}
           onContinueDraft={continueDraft}
           onRestoreSeed={() => go("restore")}
           onCashier={() => go("admin")}
+          draftWritable={draft.ready && !draft.pending}
         />
       )}
 
@@ -129,25 +119,23 @@ export default function App() {
         </main>
       )}
 
-      {screen === "restore" && (
+      {screen === "restore" && draft.ready && !draft.pending && (
         <RestoreSeed
+          key={access.token?.epoch}
           onBack={() => go("welcome")}
-          onRestored={(opened) => continueDraft(opened)}
+          onRestored={continueDraft}
         />
       )}
 
-      {screen === "work" && store && (
+      {screen === "work" && store && draft.ready && (
         <Workspace
+          key={access.token?.epoch}
           store={store}
           guide={guide}
-          onStoreChange={(next) => {
-            setStore((prev) => {
-              if (!prev) return prev;
-              const candidate = typeof next === "function" ? next(prev) : next;
-              return coerceTreeStore(candidate) ?? prev;
-            });
-          }}
-          onGuideChange={setGuide}
+          onStoreChange={(next) => draft.updateStore(next, store.meta.id)}
+          onGuideChange={(next) => draft.updateGuide(next, store.meta.id)}
+          onDraftReplace={draft.replace}
+          onDraftReload={draft.loadSaved}
           onHome={() => go("welcome")}
         />
       )}

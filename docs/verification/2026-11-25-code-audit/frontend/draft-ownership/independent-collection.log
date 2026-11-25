@@ -1,0 +1,83 @@
+$ node node_modules/@playwright/test/cli.js test --config playwright.independent.config.ts --list
+Listing tests:
+  [chromium] › independent.spec.mjs:162:3 › independent landing and encrypted-file restoration have no external runtime calls at 1280px
+  [chromium] › independent.spec.mjs:162:3 › independent landing and encrypted-file restoration have no external runtime calls at 390px
+  [chromium] › independent.spec.mjs:181:1 › direct save resumes one signed transaction after reload and portable import, and restores by known ID
+  [chromium] › independent.spec.mjs:228:1 › offline multitreed archive stays complete when saved locally and cancellation never requires payment
+  [chromium] › independent.spec.mjs:257:1 › fragment navigation before the first route subscription still opens restoration without changing the draft
+  [chromium] › independent.spec.mjs:290:1 › two tabs cannot silently replace a selected complete archive before saving, and reopening restores the full choice
+  [chromium] › independent.spec.mjs:347:1 › legacy order blocks a fresh AR signature and remains byte-for-byte unchanged
+  [chromium] › independent.spec.mjs:369:1 › a damaged portable kit is refused without any network request
+  [chromium] › independent.spec.mjs:379:1 › tree-file import refuses invalid fields and history before replacing the draft, then retains valid history exactly
+  [chromium] › independent.spec.mjs:426:1 › tree-file import preserves the previous draft when browser storage is full
+  [chromium] › independent.spec.mjs:451:1 › declining an older network version preserves the selected full vault and the next local export
+  [chromium] › independent.spec.mjs:475:1 › opening a local_ version adopts its complete vault without inventing a network parent
+  [chromium] › independent.spec.mjs:504:1 › a gateway cannot bind an old valid ciphertext to an unsigned network version
+  [chromium] › independent.spec.mjs:532:1 › restoration does not claim success when the selected vault session cannot be persisted
+  [chromium] › independent.spec.mjs:547:1 › a failed preparation session write retains the encrypted attempt and never offers a payment as successful preparation
+  [chromium] › independent.spec.mjs:562:1 › both PDF downloads work with every external service blocked
+  [chromium] › independent.spec.mjs:583:1 › imported deep ancestry survives all four PDF downloads with the network blocked
+  [chromium] › independent.spec.mjs:628:1 › the offline decoder link downloads the exact standalone HTML from the real static server
+  [chromium] › independent.spec.mjs:643:1 › a sandboxed manifest fallback loads independent assets and the exact offline decoder under its manifest path
+  [chromium] › independent.spec.mjs:687:1 › a chosen custom node remains usable through restore, versions, preparation and reload with default gateways blocked
+  [chromium] › independent.spec.mjs:727:1 › a valid but wrong archive phrase cannot replace any local state or trigger a network fallback
+  [chromium] › independent.spec.mjs:754:1 › leaving restoration while a verified network archive is delayed cannot later replace the draft or session
+  [chromium] › independent.spec.mjs:787:1 › an unavailable IndexedDB journal blocks preparation and wallet access while preserving the editor draft
+  [chromium] › independent.spec.mjs:817:1 › a definitive Wander decline keeps the same encrypted backup and requires an explicit second signing action
+  [chromium] › independent.spec.mjs:845:1 › the independent build preserves the final raw profile input across immediate reload
+  [chromium] › independent.spec.mjs:871:1 › independent editor ownership transfers between two real tabs without replacing the latest draft
+  [firefox] › independent.spec.mjs:162:3 › independent landing and encrypted-file restoration have no external runtime calls at 1280px
+  [firefox] › independent.spec.mjs:162:3 › independent landing and encrypted-file restoration have no external runtime calls at 390px
+  [firefox] › independent.spec.mjs:181:1 › direct save resumes one signed transaction after reload and portable import, and restores by known ID
+  [firefox] › independent.spec.mjs:228:1 › offline multitreed archive stays complete when saved locally and cancellation never requires payment
+  [firefox] › independent.spec.mjs:257:1 › fragment navigation before the first route subscription still opens restoration without changing the draft
+  [firefox] › independent.spec.mjs:290:1 › two tabs cannot silently replace a selected complete archive before saving, and reopening restores the full choice
+  [firefox] › independent.spec.mjs:347:1 › legacy order blocks a fresh AR signature and remains byte-for-byte unchanged
+  [firefox] › independent.spec.mjs:369:1 › a damaged portable kit is refused without any network request
+  [firefox] › independent.spec.mjs:379:1 › tree-file import refuses invalid fields and history before replacing the draft, then retains valid history exactly
+  [firefox] › independent.spec.mjs:426:1 › tree-file import preserves the previous draft when browser storage is full
+  [firefox] › independent.spec.mjs:451:1 › declining an older network version preserves the selected full vault and the next local export
+  [firefox] › independent.spec.mjs:475:1 › opening a local_ version adopts its complete vault without inventing a network parent
+  [firefox] › independent.spec.mjs:504:1 › a gateway cannot bind an old valid ciphertext to an unsigned network version
+  [firefox] › independent.spec.mjs:532:1 › restoration does not claim success when the selected vault session cannot be persisted
+  [firefox] › independent.spec.mjs:547:1 › a failed preparation session write retains the encrypted attempt and never offers a payment as successful preparation
+  [firefox] › independent.spec.mjs:562:1 › both PDF downloads work with every external service blocked
+  [firefox] › independent.spec.mjs:583:1 › imported deep ancestry survives all four PDF downloads with the network blocked
+  [firefox] › independent.spec.mjs:628:1 › the offline decoder link downloads the exact standalone HTML from the real static server
+  [firefox] › independent.spec.mjs:643:1 › a sandboxed manifest fallback loads independent assets and the exact offline decoder under its manifest path
+  [firefox] › independent.spec.mjs:687:1 › a chosen custom node remains usable through restore, versions, preparation and reload with default gateways blocked
+  [firefox] › independent.spec.mjs:727:1 › a valid but wrong archive phrase cannot replace any local state or trigger a network fallback
+  [firefox] › independent.spec.mjs:754:1 › leaving restoration while a verified network archive is delayed cannot later replace the draft or session
+  [firefox] › independent.spec.mjs:787:1 › an unavailable IndexedDB journal blocks preparation and wallet access while preserving the editor draft
+  [firefox] › independent.spec.mjs:817:1 › a definitive Wander decline keeps the same encrypted backup and requires an explicit second signing action
+  [firefox] › independent.spec.mjs:845:1 › the independent build preserves the final raw profile input across immediate reload
+  [firefox] › independent.spec.mjs:871:1 › independent editor ownership transfers between two real tabs without replacing the latest draft
+  [webkit] › independent.spec.mjs:162:3 › independent landing and encrypted-file restoration have no external runtime calls at 1280px
+  [webkit] › independent.spec.mjs:162:3 › independent landing and encrypted-file restoration have no external runtime calls at 390px
+  [webkit] › independent.spec.mjs:181:1 › direct save resumes one signed transaction after reload and portable import, and restores by known ID
+  [webkit] › independent.spec.mjs:228:1 › offline multitreed archive stays complete when saved locally and cancellation never requires payment
+  [webkit] › independent.spec.mjs:257:1 › fragment navigation before the first route subscription still opens restoration without changing the draft
+  [webkit] › independent.spec.mjs:290:1 › two tabs cannot silently replace a selected complete archive before saving, and reopening restores the full choice
+  [webkit] › independent.spec.mjs:347:1 › legacy order blocks a fresh AR signature and remains byte-for-byte unchanged
+  [webkit] › independent.spec.mjs:369:1 › a damaged portable kit is refused without any network request
+  [webkit] › independent.spec.mjs:379:1 › tree-file import refuses invalid fields and history before replacing the draft, then retains valid history exactly
+  [webkit] › independent.spec.mjs:426:1 › tree-file import preserves the previous draft when browser storage is full
+  [webkit] › independent.spec.mjs:451:1 › declining an older network version preserves the selected full vault and the next local export
+  [webkit] › independent.spec.mjs:475:1 › opening a local_ version adopts its complete vault without inventing a network parent
+  [webkit] › independent.spec.mjs:504:1 › a gateway cannot bind an old valid ciphertext to an unsigned network version
+  [webkit] › independent.spec.mjs:532:1 › restoration does not claim success when the selected vault session cannot be persisted
+  [webkit] › independent.spec.mjs:547:1 › a failed preparation session write retains the encrypted attempt and never offers a payment as successful preparation
+  [webkit] › independent.spec.mjs:562:1 › both PDF downloads work with every external service blocked
+  [webkit] › independent.spec.mjs:583:1 › imported deep ancestry survives all four PDF downloads with the network blocked
+  [webkit] › independent.spec.mjs:628:1 › the offline decoder link downloads the exact standalone HTML from the real static server
+  [webkit] › independent.spec.mjs:643:1 › a sandboxed manifest fallback loads independent assets and the exact offline decoder under its manifest path
+  [webkit] › independent.spec.mjs:687:1 › a chosen custom node remains usable through restore, versions, preparation and reload with default gateways blocked
+  [webkit] › independent.spec.mjs:727:1 › a valid but wrong archive phrase cannot replace any local state or trigger a network fallback
+  [webkit] › independent.spec.mjs:754:1 › leaving restoration while a verified network archive is delayed cannot later replace the draft or session
+  [webkit] › independent.spec.mjs:787:1 › an unavailable IndexedDB journal blocks preparation and wallet access while preserving the editor draft
+  [webkit] › independent.spec.mjs:817:1 › a definitive Wander decline keeps the same encrypted backup and requires an explicit second signing action
+  [webkit] › independent.spec.mjs:845:1 › the independent build preserves the final raw profile input across immediate reload
+  [webkit] › independent.spec.mjs:871:1 › independent editor ownership transfers between two real tabs without replacing the latest draft
+Total: 78 tests in 1 file
+
+exit_code=0

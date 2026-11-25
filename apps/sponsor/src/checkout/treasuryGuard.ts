@@ -19,6 +19,23 @@ export class TreasuryGuard {
   revision(address: string): number {
     return this.sql.exec<{revision: number}>('SELECT revision FROM treasury_revision WHERE address=?', address).toArray()[0]?.revision ?? 0;
   }
+  ceiling(address:string):{balance:string|null;unobservedDebit:string}{
+    const row=this.sql.exec<{balance:string|null;unobserved_debit:string}>('SELECT balance,unobserved_debit FROM treasury_balance_ceiling WHERE address=?',address).toArray()[0];
+    return {balance:row?.balance??null,unobservedDebit:row?.unobserved_debit??'0'};
+  }
+  pinBalance(address:string,observed:string):string{
+    const balance=this.effectiveBalance(address,observed);
+    this.sql.exec("INSERT INTO treasury_balance_ceiling(address,balance,unobserved_debit) VALUES(?,?,'0') ON CONFLICT(address) DO UPDATE SET balance=excluded.balance,unobserved_debit='0'",address,balance);
+    return balance;
+  }
+  /** Only TreasuryTopupLedger calls this after durable unique transfer proof. */
+  creditProvedTransfer(address:string,amount:string):number{
+    const row=this.ceiling(address);if(row.balance===null||winston(amount)<=0n)throw Error('topup_proof_unavailable');
+    const next=winston(row.balance)+winston(amount);winston(next.toString());
+    this.sql.exec('UPDATE treasury_balance_ceiling SET balance=? WHERE address=?',next.toString(),address);
+    this.sql.exec('INSERT INTO treasury_revision(address,revision) VALUES(?,1) ON CONFLICT(address) DO UPDATE SET revision=revision+1',address);
+    return this.revision(address);
+  }
   debit(address: string, actual: string): void {
     const amount=winston(actual);
     this.sql.exec('INSERT INTO treasury_revision(address,revision) VALUES(?,1) ON CONFLICT(address) DO UPDATE SET revision=revision+1', address);

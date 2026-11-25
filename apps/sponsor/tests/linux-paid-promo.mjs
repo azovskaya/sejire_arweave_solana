@@ -303,6 +303,21 @@ try{
     assert.deepEqual((await checkout(`/orders/${order.id}`)).body.execution.receipt,receipt);
     assert.deepEqual(readSql('SELECT * FROM paid_holds WHERE order_id=?',order.id)[0],beforeHold);
   });
+  await test('authorized Mainnet admin overview reflects committed payment and storage, with no payload or bearer capability',async()=>{
+    const before={sends:wire.paymentSends,headers:wire.headerPosts,chunks:wire.chunkPosts,signs:fundProvider.signings};
+    assert.equal((await fund('/admin/paid-orders')).status,401);
+    const view=await fund('/admin/paid-orders?limit=1',undefined,admin);assert.equal(view.status,200);
+    assert.equal(view.body.schema,'sejire/admin-paid-orders/v1');assert.equal(view.body.configuredNetwork,'mainnet-beta');
+    assert.equal(view.body.policy.serviceLamports,'30000000');assert.equal(view.body.policy.maxArchiveBytes,524288);
+    assert.equal(view.body.policy.paymentEnabled,false);assert.equal(view.body.policy.serviceRecipient,addr(4));
+    const entry=view.body.orders.find(row=>row.id===order.id);assert(entry);
+    assert.equal(entry.network,'mainnet-beta');assert.equal(entry.paymentStatus,'verified');assert.equal(entry.storageStatus,'completed');
+    assert.equal(entry.signature,payment.signature);assert.equal(entry.arweaveTxId,receipt.txId);assert.equal(entry.rewardWinston,reward);
+    assert.deepEqual(view.body.totals,[{network:'mainnet-beta',totalOrders:1,paymentConfirmed:1,storageCompleted:1,pending:0,failed:0,serviceLamports:'30000000',contributionLamports:'0'}]);
+    const serialized=JSON.stringify(view.body);
+    for(const forbidden of [token,otherToken,sha(token),archiveInput.serialized,preparation.messageBase64,payment.signedTransaction,payload(order.id,'signed'),arKey.d])assert.equal(serialized.includes(forbidden),false);
+    assert.deepEqual({sends:wire.paymentSends,headers:wire.headerPosts,chunks:wire.chunkPosts,signs:fundProvider.signings},before);
+  });
   await test('promo admin rotation and lost submission acknowledgement persist real HTTP/SQLite state',async()=>{
     assert.equal((await fund('/admin/promo',{code:'LINUX-PROMO-A',confirm:'LINUX-PROMO-A'},admin)).status,200);
     assert.equal((await fund('/validate',{code:' linux-promo-a '})).status,200);

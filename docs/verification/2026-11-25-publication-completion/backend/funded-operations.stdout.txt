@@ -1,0 +1,38 @@
+PASS funded operations: public health and admin status expose no secrets and perform no signing or upload
+PASS funded operations: prepare pins a conservative baseline before deposit; refresh/restart and lost response reuse exact intent
+Transaction Verification Failed! 
+ Details: {
+  "algorithm": "RSA-PSS",
+  "modulusLength": 4096,
+  "keyUsages": [
+    "verify"
+  ],
+  "saltLengthsAttempted": "0, 32, 478"
+} 
+ N.B. ArweaveJS is only guaranteed to verify txs created using ArweaveJS.
+Transaction Verification Failed! 
+ Details: {
+  "algorithm": "RSA-PSS",
+  "modulusLength": 4096,
+  "keyUsages": [
+    "verify"
+  ],
+  "saltLengthsAttempted": "0, 32, 478"
+} 
+ N.B. ArweaveJS is only guaranteed to verify txs created using ArweaveJS.
+PASS funded operations: only a matching new native AR transfer with two-node proof and 12 confirmations can raise ceiling
+PASS funded operations: a transfer cannot credit two intents and concurrent revision changes fail closed without losing obligations
+PASS funded operations: stale head cache cannot credit an already observed deposit; only the future server nonce is accepted
+Transaction Verification Failed! 
+ Details: {
+  "algorithm": "RSA-PSS",
+  "modulusLength": 4096,
+  "keyUsages": [
+    "verify"
+  ],
+  "saltLengthsAttempted": "0, 32, 478"
+} 
+ N.B. ArweaveJS is only guaranteed to verify txs created using ArweaveJS.
+PASS funded operations: server transfer journal fences another browser and preserves exact Wander-signed payment before any broadcast
+PASS funded operations: SIGKILL after durable SIGNED resumes from real SQLite alarm without browser, code or another signature/payment
+funded-operations: PASS (7 groups); real Linux/SQLite, synthetic keys and zero external requests

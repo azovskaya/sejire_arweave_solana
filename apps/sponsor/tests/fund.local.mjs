@@ -15,9 +15,10 @@ const archive=JSON.stringify({schema:'sejire/envelope/v1',vault_id:'a'.repeat(32
 const createStorage=file=>{const db=new DatabaseSync(file);db.exec('PRAGMA foreign_keys=ON');return {sql:{exec(sql,...args){if(!args.length&&sql.includes(';')){db.exec(sql);return {toArray:()=>[]};}const stmt=db.prepare(sql);if(stmt.columns().length)return {toArray:()=>stmt.all(...args)};stmt.run(...args);return {toArray:()=>[]};}},transactionSync(fn){db.exec('BEGIN IMMEDIATE');try{const result=fn();db.exec('COMMIT');return result;}catch(e){db.exec('ROLLBACK');throw e;}},async sync(){},close(){db.close();}};};
 let storage=createStorage(resolve(temp,'ledger.sqlite')),ledger=new FundLedger(storage),mock=new MockFundedArweaveProvider();
 const namespace={idFromName(){return 'single-ledger';},get(){return {async fetch(_url,init){try{const f=JSON.parse(init.body),now=Date.now();let result;
-  switch(f.action){case 'fundSummary':result=ledger.summary(now);break;case 'fundSettings':result=ledger.settings();break;case 'fundOrder':result=ledger.order(f.orderId,true);break;
+  switch(f.action){case 'fundSummary':result=ledger.summary(now);break;case 'fundAvailable':result=ledger.available(f.balance);break;case 'fundSettings':result=ledger.settings();break;case 'fundOrder':result=ledger.order(f.orderId,true);break;
   case 'fundRate':result=await ledger.rate(f.bucket,f.limit,now);break;case 'fundPromo':result=await ledger.promo(f.hash,f.hint,now);break;
   case 'fundEnable':result=await ledger.enable(f.enabled,now);break;case 'fundLimit':result=await ledger.limit(f.value,now);break;
+  case 'fundClaim':result=await ledger.claim(f.orderId,f.lease,now);break;case 'fundFinish':result=await ledger.finish(f.orderId,f.lease,f.reason,now);break;
   case 'fundReserve':result=await ledger.reserve(f.input,now);break;case 'fundEvent':result=await ledger.event(f.input,now);break;
   case 'fundReconciled':result=await ledger.reconciled(now);break;
   case 'treasuryRevision':result=ledger.treasury.revision(f.address);break;

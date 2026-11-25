@@ -1,0 +1,4 @@
+$ node --import tsx src/lib/treeJson.selftest.ts
+treeJson.selftest: OK
+
+exit_code=0

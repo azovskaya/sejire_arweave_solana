@@ -1,0 +1,29 @@
+$ node node_modules/@playwright/test/cli.js test --config playwright.editor.config.ts --list
+Listing tests:
+  editor-safety.spec.mjs:61:1 › the final input is durable in the same event task before immediate reload
+  editor-safety.spec.mjs:92:1 › two real tabs share one writer, explicitly hand off and reload the newest complete draft
+  editor-safety.spec.mjs:141:1 › pagehide releases the writer and persisted pageshow cannot overwrite a tab that acquired it
+  editor-safety.spec.mjs:164:1 › missing Web Locks leaves the saved draft downloadable without an unsafe writer fallback
+  editor-safety.spec.mjs:179:1 › quota refusal retains the last input for export and explicit retry without deleting the old draft
+  editor-safety.spec.mjs:210:1 › opening the saved draft after a render failure leaves the failed deep link
+  editor-safety.spec.mjs:232:1 › a delayed save lookup cannot replace a new tree after leaving the old editor
+  editor-safety.spec.mjs:298:1 › pending restoration cannot write cache, session or draft after another real tab receives ownership
+  editor-safety.spec.mjs:339:1 › an old application writing without the lock is detected before this tab can overwrite it
+  editor-safety.spec.mjs:362:1 › funded restoration rolls back the full selection when session persistence fails
+  editor-safety.spec.mjs:381:1 › a restored full vault survives two funded preparations and closing without an order
+  editor-safety.spec.mjs:416:1 › funded encryption finishing after route departure cannot change the selected archive
+  editor-safety.spec.mjs:445:1 › funded restoration cannot replace edits after leaving while decryption is pending
+  editor-safety.spec.mjs:473:1 › leaving funded restoration clears its fragment and reload does not reopen it
+  editor-safety.spec.mjs:486:1 › funded restore fragment changed before subscription is reconciled without changing the draft
+  editor-safety.spec.mjs:511:1 › ordinary funded save imports a general ciphertext without entering the fixed Devnet pilot
+  editor-safety.spec.mjs:534:1 › ordinary funded file import cannot adopt its late result after returning to the editor
+  editor-safety.spec.mjs:562:1 › undo deletion keeps newer edits to another person and immutable history
+  editor-safety.spec.mjs:581:1 › switching directly to another card flushes pending notes
+  editor-safety.spec.mjs:591:1 › going home flushes pending notes before the editor unmounts
+  editor-safety.spec.mjs:604:1 › JSON download contains the visible final note without waiting for autosave
+  editor-safety.spec.mjs:620:1 › save snapshots the final visible note and preserves previous commits without an order
+  editor-safety.spec.mjs:636:1 › unchanged profile does not create an extra revision when opening save
+  editor-safety.spec.mjs:644:1 › PDF export receives the current snapshot, not the pre-autosave profile
+Total: 24 tests in 1 file
+
+exit_code=0

@@ -26,3 +26,10 @@ admin.local.json
 # Local Playwright test output (no family archives/words committed)
 apps/web/test-results/
 apps/web/playwright-report/
+
+# Reproducible portable service output and private operator state
+apps/sponsor/build/
+deployment/sejire.env
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm

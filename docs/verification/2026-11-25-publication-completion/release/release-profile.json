@@ -1,0 +1,18 @@
+{
+  "schema": "sejire/deployment-profile/v1",
+  "profile": "portable-funded-mainnet",
+  "apiOrigin": "https://sejire-api.azovskaya.prod.page",
+  "fundingMethods": [
+    "solana",
+    "promo"
+  ],
+  "paymentNetwork": "mainnet-beta",
+  "serviceLamports": "30000000",
+  "storageNetwork": "arweave.N.1",
+  "maxArchiveBytes": 524288,
+  "mandatorySejireService": true,
+  "mandatoryCloudflare": false,
+  "mandatoryBundler": false,
+  "adminAuthorization": "server",
+  "recoveryFormat": "sejire/envelope/v1"
+}

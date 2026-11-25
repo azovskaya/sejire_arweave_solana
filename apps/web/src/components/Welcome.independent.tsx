@@ -7,8 +7,8 @@ import { clearVaultSession, getSessionMnemonic, getVaultSession } from '../lib/v
 import { independentMessages } from '../lib/independentMessages';
 import { LegacyPreservationNotice } from './LegacyPreservationNotice';
 
-type Props = { onStartNew: (title: string) => void; onContinueDraft: () => void; onRestoreSeed: () => void; onHistory: () => void };
-export function Welcome({ onStartNew, onContinueDraft, onRestoreSeed, onHistory }: Props) {
+type Props = { onStartNew: (title: string) => void; onContinueDraft: () => void; onRestoreSeed: () => void; onHistory: () => void; draftWritable?: boolean };
+export function Welcome({ onStartNew, onContinueDraft, onRestoreSeed, onHistory, draftWritable = true }: Props) {
   const { t, locale } = useI18n();
   const copy = landingMessages[locale], direct = independentMessages[locale];
   const [openVaultId, setOpenVaultId] = useState(() => getSessionMnemonic() ? getVaultSession()?.vaultId ?? null : null);
@@ -23,9 +23,9 @@ export function Welcome({ onStartNew, onContinueDraft, onRestoreSeed, onHistory 
     <section className="landing-hero">
       <p className="landing-eyebrow">{copy.eyebrow}</p><h1>{copy.title}</h1><p className="landing-lead">{copy.lead}</p>
       <div className="landing-actions">
-        <button type="button" className="btn" onClick={hasDraft ? onContinueDraft : startFresh}>{hasDraft ? t.welcome.continueDraft : copy.start}</button>
-        <button type="button" className="btn ghost" onClick={onRestoreSeed}>{t.welcome.restoreSeed}</button>
-        {hasDraft && <button type="button" className="welcome-link-quiet" onClick={startFresh}>{t.welcome.newTree}</button>}
+        <button type="button" className="btn" disabled={!draftWritable} onClick={hasDraft ? onContinueDraft : startFresh}>{hasDraft ? t.welcome.continueDraft : copy.start}</button>
+        <button type="button" className="btn ghost" disabled={!draftWritable} onClick={onRestoreSeed}>{t.welcome.restoreSeed}</button>
+        {hasDraft && <button type="button" className="welcome-link-quiet" disabled={!draftWritable} onClick={startFresh}>{t.welcome.newTree}</button>}
       </div>
       <p className="sub">{copy.free}</p><p className="sub">{direct.independentLead}</p>
       {openVaultId && <div><p className="sub" role="status">{copy.openArchive}</p>

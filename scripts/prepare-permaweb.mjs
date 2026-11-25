@@ -3,6 +3,7 @@ import {cp,lstat,mkdir,readFile,readdir,stat,writeFile} from 'node:fs/promises';
 import {resolve,relative,join,dirname} from 'node:path';
 import {execFileSync} from 'node:child_process';
 import {FUNDED_PROFILE, INDEPENDENT_PROFILE, PROFILE_FILE, verifyIndependentBuild} from './static-release-profile.mjs';
+import {PORTABLE_FUNDED_PROFILE, verifyPortableFundedBuild} from './portable-funded-profile.mjs';
 
 const sha256=bytes=>createHash('sha256').update(bytes).digest('hex');
 async function files(root,dir=root){
@@ -34,8 +35,9 @@ export async function preparePermaweb(source,out,sourceCommit){
   try { declaration=JSON.parse(await readFile(join(dst,PROFILE_FILE),'utf8')); }
   catch(error) { if(error?.code!=='ENOENT')throw error; }
   if(declaration!==undefined){
-    if(declaration.profile!==INDEPENDENT_PROFILE)throw Error('invalid_static_release_profile');
-    await verifyIndependentBuild(dst);profile=INDEPENDENT_PROFILE;
+    if(declaration.profile===INDEPENDENT_PROFILE){await verifyIndependentBuild(dst);profile=INDEPENDENT_PROFILE;}
+    else if(declaration.profile===PORTABLE_FUNDED_PROFILE){await verifyPortableFundedBuild(dst);profile=PORTABLE_FUNDED_PROFILE;}
+    else throw Error('invalid_static_release_profile');
   }
   const names=(await files(dst)).filter(name=>name!=='release-manifest.json');
   const hashes={};let bytes=0;
@@ -49,6 +51,6 @@ export async function preparePermaweb(source,out,sourceCommit){
 
 if(process.argv[1]&&resolve(process.argv[1])===new URL(import.meta.url).pathname){
   const sha=execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim();
-  const manifest=await preparePermaweb('apps/web/dist','.cache/permaweb-release',sha);
+  const manifest=await preparePermaweb(process.argv[2]??'apps/web/dist',process.argv[3]??'.cache/permaweb-release',sha);
   console.log(`Prepared static release: ${manifest.fileCount} files, ${manifest.totalBytes} bytes; no upload or payment.`);
 }

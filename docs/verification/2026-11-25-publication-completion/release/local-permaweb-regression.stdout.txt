@@ -1,0 +1,40 @@
+✔ manual feature-branch request is mandatory; malformed release inputs fail closed (3.455953ms)
+✔ a fresh runner cannot repeat an upload when GitHub reruns an earlier dispatch (0.423422ms)
+✔ exact CI, attempt, all steps and current feature head are checked before artifact use (12.652473ms)
+✔ artifact ZIP is hashed, extracted without overwrite, and gets CI-bound public provenance (216.851391ms)
+/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/zipfile/__init__.py:1625: UserWarning: Duplicate name: 'index.html'
+  return self._open_to_write(zinfo, force_zip64=force_zip64)
+✔ ZIP traversal, unlisted credentials, symlinks, duplicates and digest mismatch cannot publish (363.879253ms)
+✔ release preparation rejects source symlinks before copying or overwriting outside files (85.587916ms)
+✔ release preparation refuses an existing destination without merging or changing its contents (31.459109ms)
+✔ artifact recovery rejects a valid ZIP whose actual length contradicts GitHub metadata (69.745197ms)
+✔ artifact pagination cannot hide missing, duplicate or changing evidence behind a valid first page (1.941556ms)
+✔ release verification binds all bytes, source SHA, fallback, file set and independent profile (64.36704ms)
+✔ legacy funded profile remains verifiable but cannot become the independent release (15.572187ms)
+✔ a Worker endpoint or legacy lazy module cannot hide behind an independent manifest (27.832779ms)
+✔ Cloudflare resources cannot hide in entry HTML, a stylesheet or the standalone recovery page (64.42079ms)
+✔ independent package requires offline recovery and exact evidence for every dynamic chunk (23.699158ms)
+✔ boundary hashes final emitted bytes after a late bundler transform while preserving the module map (32.25068ms)
+✔ bounded reads reject overlong streams and dishonest Content-Length (1.074506ms)
+✔ path manifest rejects an index ID that overrides the verified index.html path (0.612943ms)
+✔ quote includes each file, signed-item overhead and fallback manifest; budget and own balance fail closed (30.711049ms)
+✔ upload adapter pins existing-balance funding, own payer, one file at a time, and explicit fallback (31.974366ms)
+✔ the installed pinned Turbo SDK actually constructs a v0.2 manifest with 404 fallback (mocked transport) (1285.358548ms)
+✔ a lost upload ACK does not cause the pinned SDK to sign a second randomized item (220.341265ms)
+✔ the real SDK folder queue stops before signing later files after the first failed upload (47.787739ms)
+✔ an interrupted SDK upload cannot be called again with the same evidence to sign an ambiguous item twice (90.945797ms)
+✔ concurrent upload calls sharing one evidence directory cannot both enter the SDK (23.33618ms)
+✔ older partial-upload journals block a new attempt and preserve their contents (28.118811ms)
+✔ public verification checks every byte, root entry and real fallback, rejects wrong bodies, HTTP errors and off-origin redirects (44.549112ms)
+✔ public verification rejects correct bytes that the browser cannot execute or render because of their MIME type (9.184773ms)
+✔ plan mode cannot read an upload key and produces only public metadata (152.313016ms)
+✔ owner browser-upload verification fetches only a bounded public raw path manifest (1.356396ms)
+✔ ArNS readiness never passes a 503/disabled policy or a broken paid authorization preflight (1.062247ms)
+ℹ tests 30
+ℹ suites 0
+ℹ pass 30
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 3137.109234

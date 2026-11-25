@@ -1,0 +1,67 @@
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+> sejire-sponsor@0.2.0 test:linux
+> node --experimental-sqlite --import tsx tests/linux-server.mjs && node --experimental-sqlite --import tsx tests/linux-paid-promo.mjs && node --experimental-sqlite --import tsx tests/funded-operations.mjs && node --experimental-sqlite --import tsx tests/ledger-import.mjs
+
+PASS Linux storage: async alarm contract, Date input, replacement, durable reopen, cold constructor preserves future/due alarm
+PASS Linux startup: initialization awaited, future alarm preserved, due alarm processed
+PASS Linux restore/ingress: restore review fails before writer; explicit CIDRs, right-to-left IPv4/IPv6 chain, spoofed/invalid headers and actual HTTP rate bucket
+PASS Linux backend: shared ledger contracts, one writer, same key/token after restart, one synthetic order
+PASS Linux writer processes: live competitor and symlink aliases rejected; SIGKILL releases guard; same order/key/token recovered without RPC; legacy wx remains excluded
+PASS Linux writer migration/lifecycle: legacy sentinel unchanged; failed listen releases guard; concurrent close awaits shared shutdown
+PASS Linux paid/promo: default-off HTTP has no payment offer, session or outbound request
+PASS Linux paid/promo: origin and server admin authentication guard management; readiness uses actual synthetic signer
+PASS Linux paid/promo: 512 KiB boundary and tampered archive are rejected before any order or hold
+PASS Linux paid/promo: paid HTTP admission is idempotent and immutable across recipient rotation
+PASS Linux paid/promo: prepared bytes and valid signature are required before durable reserve or relay
+PASS Linux paid/promo: durable Linux alarm continues reserved payment, lost SOL/header replies retain exact obligation
+PASS Linux paid/promo: cold SQLite reopen resumes same owner/key/payment and uploads only missing original chunks
+PASS Linux paid/promo: explicit post-completion repair restores original bytes without changing receipt or spend
+PASS Linux paid/promo: authorized Mainnet admin overview reflects committed payment and storage, with no payload or bearer capability
+PASS Linux paid/promo: promo admin rotation and lost submission acknowledgement persist real HTTP/SQLite state
+PASS Linux paid/promo: new promo use obeys rotated code and cumulative budget without changing historical receipt
+linux-paid-promo: PASS (11 groups); real HTTP/SQLite, intercepted external network, synthetic keys only
+PASS funded operations: public health and admin status expose no secrets and perform no signing or upload
+PASS funded operations: prepare pins a conservative baseline before deposit; refresh/restart and lost response reuse exact intent
+Transaction Verification Failed! 
+ Details: {
+  "algorithm": "RSA-PSS",
+  "modulusLength": 4096,
+  "keyUsages": [
+    "verify"
+  ],
+  "saltLengthsAttempted": "0, 32, 478"
+} 
+ N.B. ArweaveJS is only guaranteed to verify txs created using ArweaveJS.
+Transaction Verification Failed! 
+ Details: {
+  "algorithm": "RSA-PSS",
+  "modulusLength": 4096,
+  "keyUsages": [
+    "verify"
+  ],
+  "saltLengthsAttempted": "0, 32, 478"
+} 
+ N.B. ArweaveJS is only guaranteed to verify txs created using ArweaveJS.
+PASS funded operations: only a matching new native AR transfer with two-node proof and 12 confirmations can raise ceiling
+PASS funded operations: a transfer cannot credit two intents and concurrent revision changes fail closed without losing obligations
+PASS funded operations: stale head cache cannot credit an already observed deposit; only the future server nonce is accepted
+Transaction Verification Failed! 
+ Details: {
+  "algorithm": "RSA-PSS",
+  "modulusLength": 4096,
+  "keyUsages": [
+    "verify"
+  ],
+  "saltLengthsAttempted": "0, 32, 478"
+} 
+ N.B. ArweaveJS is only guaranteed to verify txs created using ArweaveJS.
+PASS funded operations: server transfer journal fences another browser and preserves exact Wander-signed payment before any broadcast
+PASS funded operations: SIGKILL after durable SIGNED resumes from real SQLite alarm without browser, code or another signature/payment
+funded-operations: PASS (7 groups); real Linux/SQLite, synthetic keys and zero external requests
+PASS ledger import: quiesced source snapshot covers exact payloads, capability hashes, idempotency, holds, ceiling, events and alarm
+PASS ledger import: private new-path import verifies every row and preserves legacy bytes while rebuilding only promo job metadata
+PASS ledger import: restored database cannot start, overwrite another ledger, bypass alias exclusion or race the existing writer
+PASS ledger import: bad pinned hash, tampered payload, omitted tables and unexpected columns fail before opening a destination
+PASS ledger import: foreign-key corruption rolls back imported rows and leaves a durable review barrier instead of starting partial state
+ledger-import: PASS (5 groups); synthetic private snapshot, no live source, no network, no executor

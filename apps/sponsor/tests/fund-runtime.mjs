@@ -23,7 +23,7 @@ if (!process.argv[2]) {
   try {
     const bundle = resolve(temp, 'fund-worker.mjs');
     await buildWorker(resolve(here, 'fund-worker.ts'), bundle);
-    for (const phase of ['disabled', 'write', 'restart-read', 'direct-read']) {
+    for (const phase of ['disabled', 'write', 'restart-read', 'direct-read', 'autonomous']) {
       await new Promise((done, reject) => {
         const child = spawn(process.execPath, [fileURLToPath(import.meta.url), phase, temp, bundle], { stdio: 'inherit' });
         child.on('error', reject);
@@ -94,6 +94,8 @@ if (!process.argv[2]) {
         assert.equal(ready.body.fundApiEnabled, false); assert.equal(ready.body.limitWinston, (13n * winston).toString());
         assert.equal(ready.body.walletBalanceWinston, '68000000000000');
         assert.equal(ready.body.currentQuoteWinston, '3000000000');
+        assert.equal(ready.body.quoteBytes,524288);assert.equal(ready.body.sharedReservedWinston,'0');
+        assert.equal(ready.body.effectiveAvailableWinston,(13n*winston).toString());
         assert.equal((await dashboard()).fundStatus, 'HEALTHY');
         await control('mock', { signerAddress: 'wrong-public-address' });
         assert.equal((await call('/admin/readiness', undefined, admin)).body.error, 'treasury_address_mismatch');
@@ -108,6 +110,25 @@ if (!process.argv[2]) {
         assert.equal(checked.result.verification.stage, 'verified');
         assert.equal(checked.result.verification.transactionConfirmed, true);
         assert.equal((await control('stats')).submissions, 0);
+      });
+    } else if(phase==='autonomous'){
+      await test('real workerd alarm resumes saved promo data after disable without HTTP reconciliation or new signature',async()=>{
+        await control('mock',{failure:'lost_response'});
+        const created=await call('/orders',order('1'),undefined,'192.0.2.211');assert.equal(created.status,202);
+        const id=created.body.order.arweaveTxId;assert(id);
+        assert.equal((await call('/admin/enabled',{enabled:false},admin)).status,200);
+        await control('mock',{failure:'archive_unavailable'});
+        const namespace=await runtime.getDurableObjectNamespace('CHECKOUT_LEDGER'),stub=namespace.get(namespace.idFromName('sejire-checkout-ledger-v1'));
+        const deadline=Date.now()+25000;let saved;
+        do{
+          const response=await stub.fetch('https://ledger.internal/',{method:'POST',body:JSON.stringify({action:'fundOrder',orderId:'1'.repeat(32)})});saved=await response.json();
+          if(saved.status==='COMPLETED')break;
+          if(Date.now()>deadline)throw Error('autonomous_workerd_promo_timeout');
+          await new Promise(resolve=>setTimeout(resolve,100));
+        }while(true);
+        assert.equal(saved.arweaveTxId,id);assert.equal(saved.promoRevision,2);
+        const stats=await control('stats');assert.equal(stats.signings,1);assert.equal(stats.replays,1);
+        assert.equal((await dashboard()).promo.enabled,false);
       });
     } else if (phase === 'write') {
       await test('every management route rejects missing and wrong server credential', async () => {

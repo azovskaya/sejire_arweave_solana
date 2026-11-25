@@ -9,6 +9,7 @@ import {startLinuxCheckout,sqliteStorage} from '../linux-server.mjs';
 import {CheckoutLedger,LEDGER_OBJECT_NAME} from '../src/checkout/durableStore.ts';
 import {SOLANA_GENESIS} from '../../../packages/checkout/paid.ts';
 import {addr} from '../src/checkout/rpcFixtures.ts';
+import {trustedIngress} from '../trusted-ingress.mjs';
 
 const writerDb=process.argv[2]==='--writer-child'?process.argv[3]:null;
 const temp=writerDb?null:await mkdtemp(join(tmpdir(),'sejire-linux-backend-'));
@@ -94,6 +95,32 @@ async function legacyWriterAndFailedStart(){
   }finally{await occupant.close();}
   console.log('PASS Linux writer migration/lifecycle: legacy sentinel unchanged; failed listen releases guard; concurrent close awaits shared shutdown');
 }
+async function restoreGateAndIngress(){
+  const path=join(temp,'restored.sqlite'),marker=path+'.restore-review.json';
+  await writeFile(marker,'{"synthetic":"awaiting operator review"}');
+  await assert.rejects(()=>startLinuxCheckout({dbPath:path,bindings}),/linux_restore_review_required/);
+  assert.equal(await readFile(marker,'utf8'),'{"synthetic":"awaiting operator review"}');
+  await assert.rejects(()=>lstat(path+'.writer.lock'),{code:'ENOENT'},'restore gate runs before acquiring writer or opening ledger');
+  const untrusted=trustedIngress();assert.equal(untrusted('127.0.0.1','198.51.100.7'),'127.0.0.1');
+  const trusted=trustedIngress('127.0.0.1/32,10.0.0.0/8,2001:db8:1234::/48');
+  assert.equal(trusted('::ffff:127.0.0.1','198.51.100.7, 10.1.2.3'),'198.51.100.7');
+  assert.equal(trusted('127.0.0.1','192.0.2.99, 198.51.100.7'),'198.51.100.7','a client-supplied earlier hop cannot bypass the nearest untrusted peer');
+  assert.equal(trusted('198.51.100.7','192.0.2.99'),'198.51.100.7','an untrusted socket cannot claim forwarded identity');
+  assert.equal(trusted('2001:db8:1234::1','2001:db8:55::1, 2001:db8:1234::2'),'2001:db8:55::1');
+  for(const value of ['unknown','198.51.100.7:80','198.51.100.7,','[2001:db8::1]','a'.repeat(4097)])assert.equal(trusted('127.0.0.1',value),'127.0.0.1');
+  for(const value of ['*','0.0.0.0/0','127.0.0.1','127.0.0.1/33','::/129','10.0.0.0/8,bad'])assert.throws(()=>trustedIngress(value),/invalid_trusted_proxy_cidrs/);
+  const file=join(temp,'ingress.sqlite'),server=await startLinuxCheckout({dbPath:file,bindings:{...bindings,SEJIRE_TRUSTED_PROXY_CIDRS:'127.0.0.1/32'}});
+  try{
+    const base=`http://127.0.0.1:${server.address.port}`;
+    const response=await originalFetch(base+'/api/checkout/session',{method:'POST',headers:{Origin:origin,'Content-Type':'application/json','X-Forwarded-For':'192.0.2.99, 198.51.100.7','CF-Connecting-IP':'203.0.113.5'},body:'{}'});
+    assert.equal(response.status,201);
+    const db=new DatabaseSync(file,{readOnly:true});try{
+      const expected=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode('198.51.100.7'))),x=>x.toString(16).padStart(2,'0')).join('');
+      const names=db.prepare('SELECT bucket FROM api_rates').all().map(row=>row.bucket);assert(names.includes('sessions:'+expected));
+    }finally{db.close();}
+  }finally{await server.close();}
+  console.log('PASS Linux restore/ingress: restore review fails before writer; explicit CIDRs, right-to-left IPv4/IPv6 chain, spoofed/invalid headers and actual HTTP rate bucket');
+}
 async function storageContract(){
   const file=join(temp,'alarm-contract.sqlite');
   let db=new DatabaseSync(file),storage=sqliteStorage(db);
@@ -147,6 +174,7 @@ if(writerDb){
 }else try{
   await storageContract();
   await startupAlarms();
+  await restoreGateAndIngress();
   backend=await startLinuxCheckout({dbPath,bindings});
   const base=`http://127.0.0.1:${backend.address.port}/api/checkout`;
   const call=async(path,{method='GET',token,key,body}={})=>{

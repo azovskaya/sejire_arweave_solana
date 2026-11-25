@@ -1,0 +1,67 @@
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+> sejire@0.3.0 arns:build:portable
+> node scripts/build-arns-portable-funded.mjs
+
+vite v8.1.6 building client environment for production...
+[2Ktransforming...✓ 2569 modules transformed.
+rendering chunks...
+computing gzip size...
+apps/web/dist/release-profile.json                                       0.50 kB │ gzip:   0.31 kB
+apps/web/dist/index.html                                                 2.36 kB │ gzip:   1.12 kB
+apps/web/dist/assets/work-sans-vietnamese-400-normal-BxGuknnG.woff2      5.02 kB
+apps/web/dist/assets/work-sans-vietnamese-700-normal-CqjC4WOy.woff2      5.39 kB
+apps/web/dist/assets/work-sans-vietnamese-400-normal-DFZk_KN_.woff       7.08 kB
+apps/web/dist/assets/work-sans-vietnamese-700-normal-BYAoORCv.woff       7.54 kB
+apps/web/dist/assets/work-sans-latin-ext-400-normal-zfQnhXzv.woff2      15.29 kB
+apps/web/dist/assets/work-sans-latin-ext-700-normal-Bc0iTajH.woff2      16.16 kB
+apps/web/dist/assets/work-sans-latin-400-normal-jUejSri3.woff2          19.90 kB
+apps/web/dist/assets/work-sans-latin-700-normal-CEeo_t6l.woff2          20.84 kB
+apps/web/dist/assets/work-sans-latin-ext-400-normal-j7TZlk-s.woff       21.11 kB
+apps/web/dist/assets/work-sans-latin-ext-700-normal-BP8nCPzd.woff       22.10 kB
+apps/web/dist/assets/work-sans-latin-400-normal-DE1_0GuN.woff           25.24 kB
+apps/web/dist/assets/work-sans-latin-700-normal-mDs79oer.woff           26.17 kB
+apps/web/dist/assets/NotoSans-Regular-Dpf_lrdO.ttf                     569.20 kB
+apps/web/dist/assets/NotoSans-Bold-axMicgqH.ttf                        575.74 kB
+apps/web/dist/assets/index-BQqfCNAV.css                                 41.58 kB │ gzip:   9.13 kB
+apps/web/dist/assets/rolldown-runtime-CNC7AqOf.js                        0.87 kB │ gzip:   0.50 kB
+apps/web/dist/assets/bs58-BpdPodED.js                                    1.74 kB │ gzip:   0.87 kB
+apps/web/dist/assets/cache-B3QL1hUm.js                                   2.83 kB │ gzip:   1.19 kB
+apps/web/dist/assets/classicTreePdf-CupDCDz4.js                          4.21 kB │ gzip:   2.06 kB
+apps/web/dist/assets/order-aUImZ1HR.js                                   6.72 kB │ gzip:   2.55 kB
+apps/web/dist/assets/textLayout-BkZv1eqn.js                              8.62 kB │ gzip:   4.06 kB
+apps/web/dist/assets/shezhirePdf-BBxorKYo.js                            13.67 kB │ gzip:   4.82 kB
+apps/web/dist/assets/purify.es-Cu8FNuDu.js                              28.56 kB │ gzip:  11.43 kB
+apps/web/dist/assets/index.es-CGdsPtaP.js                              151.39 kB │ gzip:  48.90 kB
+apps/web/dist/assets/html2canvas-CshxQvNN.js                           199.56 kB │ gzip:  46.78 kB
+apps/web/dist/assets/pdf-vendor-Cw9c99At.js                            400.81 kB │ gzip: 130.37 kB
+apps/web/dist/assets/wallet-BneICEBZ.js                                889.53 kB │ gzip: 256.22 kB
+apps/web/dist/assets/index-DyO5DADL.js                               1,138.66 kB │ gzip: 339.70 kB
+
+[33m[EVAL] [0mUse of direct `eval` function is strongly discouraged as it poses security risks and may cause issues with minification.
+     [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m ../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/vm-browserify/index.js:110:12 [38;5;246m][0m
+     [38;5;246m│[0m
+ [38;5;246m110 │[0m [38;5;249m [0m[38;5;249m [0m[38;5;249m [0m[38;5;249m [0m[38;5;249mr[0m[38;5;249me[0m[38;5;249mt[0m[38;5;249mu[0m[38;5;249mr[0m[38;5;249mn[0m[38;5;249m [0meval[38;5;249m([0m[38;5;249mt[0m[38;5;249mh[0m[38;5;249mi[0m[38;5;249ms[0m[38;5;249m.[0m[38;5;249mc[0m[38;5;249mo[0m[38;5;249md[0m[38;5;249me[0m[38;5;249m)[0m[38;5;249m;[0m[38;5;249m [0m[38;5;249m/[0m[38;5;249m/[0m[38;5;249m [0m[38;5;249mm[0m[38;5;249ma[0m[38;5;249my[0m[38;5;249mb[0m[38;5;249me[0m[38;5;249m.[0m[38;5;249m.[0m[38;5;249m.[0m
+ [38;5;240m    │[0m            ──┬─  
+ [38;5;240m    │[0m              ╰─── Use of direct `eval` here.
+ [38;5;240m    │[0m 
+ [38;5;240m    │[0m [38;5;115mHelp[0m: Consider using indirect eval. For more information, check the documentation: https://rolldown.rs/guide/troubleshooting#avoiding-direct-eval
+[38;5;246m─────╯[0m
+
+[33m[INEFFECTIVE_DYNAMIC_IMPORT] [0m../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/web3.js/lib/index.browser.esm.js is dynamically imported by apps/web/src/lib/solana/client.ts, apps/web/src/lib/solana/upload.ts but also statically imported by ../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ardrive/turbo-sdk/lib/esm/common/arnsActions.js, ../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ardrive/turbo-sdk/lib/esm/common/signer.js, ../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ardrive/turbo-sdk/lib/esm/common/token/solana.js, ../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ardrive/turbo-sdk/lib/esm/common/token/spl.js, ../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ardrive/turbo-sdk/lib/esm/utils/common.js, ..., dynamic import will not move module into another chunk.
+
+[33m[INEFFECTIVE_DYNAMIC_IMPORT] [0mapps/web/src/lib/native/payment.ts is dynamically imported by apps/web/src/lib/native/jobs.ts, apps/web/src/lib/native/successor.ts but also statically imported by apps/web/src/components/NativeAdminDesk.tsx, apps/web/src/components/NativeCheckoutPanel.tsx, dynamic import will not move module into another chunk.
+
+✓ built in 1.96s
+{
+  "status": "PASS",
+  "profile": "portable-funded-mainnet",
+  "apiOrigin": "https://sejire-api.azovskaya.prod.page",
+  "jsAssets": 13,
+  "renderedModules": 735,
+  "recoveryFiles": 8,
+  "mandatorySejireService": true,
+  "mandatoryCloudflare": false,
+  "dist": "/workspace/scratch/ec55c66d48ac/sejire-code-audit-20261125/apps/web/dist",
+  "note": "Static build only. Service readiness and owner wallet acceptance are separate release requirements."
+}

@@ -1,0 +1,23 @@
+Listing tests:
+  admin-password.spec.mjs:22:1 › public home has no admin controls and restore stays separate
+  admin-password.spec.mjs:30:1 › admin login cannot create a password or accept wallet words
+  admin-password.spec.mjs:39:1 › server denial fails closed even when a public verifier exists
+  admin-password.spec.mjs:45:1 › show hide and Enter open only the server-authorized desk
+  admin-password.spec.mjs:55:1 › reload and logout erase in-memory authority and never activate legacy key storage
+  admin-password.spec.mjs:65:1 › the server authorizes two clean browsers without a local verifier
+  admin-password.spec.mjs:73:1 › old browser hash and session cannot grant server authorization
+  admin-password.spec.mjs:82:1 › malformed and unavailable admin responses never authorize the desk
+  admin-password.spec.mjs:88:1 › credential travels only in the intended authorization header, with no wallet calls, storage, or logs
+  admin-password.spec.mjs:108:1 › diagnostics requires server authorization and does not open local treasury keys
+  admin-password.spec.mjs:116:1 › Mainnet paid ledger separates Devnet totals and uses the right transaction explorers
+  admin-password.spec.mjs:129:1 › paid overview failure clears old totals and shows unknown instead of fake zero
+  admin-password.spec.mjs:138:1 › late login response cannot revive a cancelled credential
+  admin-password.spec.mjs:147:1 › leaving admin aborts login and returning requires authorization again
+  admin-password.spec.mjs:156:1 › promo success requires readback and a late mutation never follows logout with an authorized GET
+  admin-password.spec.mjs:173:1 › topup begins with a durable intent then confirms one exact transfer and readback
+  admin-password.spec.mjs:191:1 › lost prepare acknowledgment recovers the same durable intent without making another transfer
+  admin-password.spec.mjs:200:1 › topup revision conflict and missing confirmations cannot claim a credit
+  admin-password.spec.mjs:210:1 › HTTP success without credited readback cannot claim a successful topup
+  admin-password.spec.mjs:218:1 › owner previews exact AR amount and fee then signs and submits once through synthetic Wander
+  admin-password.spec.mjs:245:1 › unknown native submit response and reload preserve the exact transaction without a second Wander signature
+Total: 21 tests in 1 file

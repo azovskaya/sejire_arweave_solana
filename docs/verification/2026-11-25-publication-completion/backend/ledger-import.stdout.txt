@@ -1,0 +1,6 @@
+PASS ledger import: quiesced source snapshot covers exact payloads, capability hashes, idempotency, holds, ceiling, events and alarm
+PASS ledger import: private new-path import verifies every row and preserves legacy bytes while rebuilding only promo job metadata
+PASS ledger import: restored database cannot start, overwrite another ledger, bypass alias exclusion or race the existing writer
+PASS ledger import: bad pinned hash, tampered payload, omitted tables and unexpected columns fail before opening a destination
+PASS ledger import: foreign-key corruption rolls back imported rows and leaves a durable review barrier instead of starting partial state
+ledger-import: PASS (5 groups); synthetic private snapshot, no live source, no network, no executor

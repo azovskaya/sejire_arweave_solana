@@ -12,6 +12,7 @@ import type { DirectOperation } from '../lib/directArweave/types';
 import { assertNoLegacyPreservation, hasLegacyPreservation } from '../lib/legacyPreservationGuard';
 import { getSessionMnemonic, getVaultSession, setVaultSessionChecked, vaultEnvelopeDigest } from '../lib/vaultSession/session';
 import { setLocalJson } from '../lib/storageQuota';
+import { assertDraftWriteToken, currentDraftWriteToken } from '../lib/draftOwnership';
 import { useI18n } from '../lib/i18n/I18nProvider';
 import { independentMessages } from '../lib/independentMessages';
 import { DirectArweaveFlow } from './DirectArweaveFlow';
@@ -22,6 +23,7 @@ type Props = ComponentProps<typeof LegacyPublishSeedModal>;
 type Mode = 'checking' | 'intro' | 'show' | 'confirm' | 'existing' | 'ready' | 'flow' | 'pending' | 'legacy';
 export function PublishSeedModal({ store, onClose, onPublished, parentTxId, knownMnemonic }: Props) {
   const { t, locale } = useI18n(), copy = independentMessages[locale];
+  const [draftToken] = useState(currentDraftWriteToken);
   const [phrase, setPhrase] = useState(() => knownMnemonic ?? getSessionMnemonic() ?? '');
   const [repeated, setRepeated] = useState('');
   const [mode, setMode] = useState<Mode>('checking');
@@ -57,21 +59,28 @@ export function PublishSeedModal({ store, onClose, onPublished, parentTxId, know
   async function prepare() {
     if (running.current) return;
     running.current = true; setBusy(true); setError('');
+    function ensureDraft() {
+      if (!alive.current) throw Error('draft_ownership_changed');
+      assertDraftWriteToken(draftToken);
+    }
     try {
+      ensureDraft();
       const normalized = normalizeMnemonic(phrase);
       if (!isValidMnemonic(normalized)) throw Error(t.publish.badMnemonic);
       await assertNoLegacyPreservation();
       if ((await listDirectOperations()).some(op => op.state !== 'complete' && op.state !== 'cancelled')) { if (alive.current) setMode('pending'); return; }
+      ensureDraft();
       const keys = deriveKeysFromMnemonic(normalized);
       const session = getVaultSession();
       const parent = session?.vaultId === keys.vaultId ? parentTxId ?? session.headTxId : null;
       const loaded = await loadIndependentVaultForPublish(keys, { parentTxId: parent, freshKey: fresh.current });
-      if (!alive.current) return;
+      ensureDraft();
       const envelope = await encryptJson(keys.encKey, keys.vaultId, putTree(loaded.vault, store));
+      ensureDraft();
       // The durable operation is committed before replacing the generic local
       // cache. A racing earlier operation can never lose its original bytes.
       const op = await createDirectOperation({ envelope, treeId: store.meta.id, parentTxId: loaded.parentTxId });
-      if (!alive.current) return;
+      ensureDraft();
       if (!setLocalJson('sejire.envelope.' + keys.vaultId, envelope)) throw Error(copy.localQuota);
       setVaultSessionChecked({ vaultId: keys.vaultId, headTxId: loaded.parentTxId, source: 'local',
         cacheDigest: vaultEnvelopeDigest(envelope) }, normalized);

@@ -2069,6 +2069,9 @@ a {
 .fund-admin-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,310px),1fr));gap:1rem;margin:1rem 0}
 .fund-admin-grid .ops-desk-card{min-width:0}.fund-admin-grid .ops-desk-card p{margin:.55rem 0}.fund-admin .btn{margin:.3rem .4rem .3rem 0}
 .fund-admin progress{width:100%;height:1.1rem}.fund-admin-filters{display:flex;flex-wrap:wrap;gap:1rem}.fund-admin-history{max-width:100%;overflow-x:auto}
+.fund-admin .ops-desk-tabs{flex-wrap:wrap}.fund-admin select{min-width:0}
+.fund-admin .fund-admin-consent{display:flex;align-items:flex-start;gap:.65rem}
+.fund-admin .fund-admin-consent input{display:inline-block;width:1.1rem;min-height:1.1rem;flex:0 0 auto;margin:.2rem 0 0}
 @media(max-width:600px){
   .fund-admin,.funded-flow{padding:.8rem}.fund-admin-grid{grid-template-columns:1fr}
   .fund-admin-history table,.fund-admin-history tbody,.fund-admin-history tr,.fund-admin-history td{display:block;width:100%}

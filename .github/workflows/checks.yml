@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
   pull_request:
   push:
-    branches: [main, feat/solana-preservation, feat/preservation-v2-simple, feat/promo-funded-preservation, fix/restore-direct-data, feat/decentralized-arweave-20261116]
+    branches: [main, feat/solana-preservation, feat/preservation-v2-simple, feat/promo-funded-preservation, fix/restore-direct-data, feat/decentralized-arweave-20261116, feat/funded-portable-release-20261125]
 permissions:
   contents: read
 jobs:
@@ -13,7 +13,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: '24.22.3'
           cache: npm
           cache-dependency-path: |
             apps/web/package-lock.json
@@ -40,6 +40,10 @@ jobs:
         run: npm run test:paid-runtime
       - name: Linux checkout adapter, SQLite writer and idempotent order (synthetic network)
         run: npm run test:linux --prefix apps/sponsor
+      - name: Portable release, bounded production preflight and online backup regressions (synthetic)
+        run: npm run test:portable-release && npm run test:linux-package
+      - name: Production Docker image with persistent SQLite, no network and disabled admissions
+        run: npm run portable:service:docker-test
       - run: npm run test:checkout
       - run: npm run test:rpc
       - run: npm run test:sqlite
@@ -110,6 +114,22 @@ jobs:
         with:
           name: permaweb-static-release
           path: .cache/permaweb-release/
+          retention-days: 14
+      - name: Build portable SOL Mainnet, promo and server-admin release with offline recovery
+        env:
+          SEJIRE_FUNDED_API_ORIGIN: https://sejire-api.azovskaya.prod.page
+        run: npm run arns:build:portable && npm run arns:verify:portable
+      - name: Portable static gateway, server-admin and wrong-network acceptance in three browsers
+        env:
+          SEJIRE_TEST_API_ORIGIN: https://sejire-api.azovskaya.prod.page
+        run: npm run test:portable-browser
+      - name: Prepare portable static pack without upload, payment or ArNS change
+        run: node scripts/prepare-permaweb.mjs apps/web/dist .cache/permaweb-portable-release
+      - uses: actions/upload-artifact@v4
+        with:
+          name: permaweb-portable-funded-release
+          path: .cache/permaweb-portable-release/
+          if-no-files-found: error
           retention-days: 14
       - name: Editor safety regressions (synthetic data, no wallets or external writes)
         working-directory: apps/web

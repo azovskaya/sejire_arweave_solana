@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import type { Person, TreeStore } from "../lib/types";
-import { saveDraftTree } from "../lib/draftStorage";
-import { type GuideState, defaultGuide, saveGuide } from "../lib/guide";
+import { type GuideState } from "../lib/guide";
+import { assertDraftWriteToken, currentDraftWriteToken } from "../lib/draftOwnership";
 import { pickDefaultFocus, pickHomeFocus, splitParents, type AddMeSlot } from "../lib/pedigree";
 import { PedigreeView } from "./PedigreeView";
 import { PersonPanel, type PersonPanelHandle } from "./PersonPanel";
@@ -49,6 +49,8 @@ type Props = {
   guide: GuideState;
   onStoreChange: (store: TreeStore | ((prev: TreeStore) => TreeStore)) => void;
   onGuideChange: (guide: GuideState) => void;
+  onDraftReplace: (store: TreeStore, guide: GuideState) => boolean;
+  onDraftReload: () => boolean;
   onHome: () => void;
 };
 
@@ -62,9 +64,10 @@ type ToastState = {
   actionLabel?: string;
 };
 
-export function Workspace({ store, guide, onStoreChange, onGuideChange, onHome }: Props) {
+export function Workspace({ store, guide, onStoreChange, onGuideChange, onDraftReplace, onDraftReload, onHome }: Props) {
   const { locale, t } = useI18n();
   const pdfLocale = locale as PdfLocale;
+  const [draftToken] = useState(currentDraftWriteToken);
   const [focusId, setFocusId] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [profileOpen, setProfileOpen] = useState(false);
@@ -143,16 +146,6 @@ export function Workspace({ store, guide, onStoreChange, onGuideChange, onHome }
     if (count === 0) return true;
     return window.confirm(t.workspace.replaceDraft(count, action));
   }
-
-  useEffect(() => {
-    if (!saveDraftTree(store)) {
-      setToast({ message: t.quota });
-    }
-  }, [store]);
-
-  useEffect(() => {
-    saveGuide(guide);
-  }, [guide]);
 
   useEffect(() => {
     const id = pickDefaultFocus(store.draft, focusId ?? guide.selfId);
@@ -363,6 +356,7 @@ export function Workspace({ store, guide, onStoreChange, onGuideChange, onHome }
       // The shared journal lock may outlive this editor or tree. A late check
       // must not flush, commit or mirror the old snapshot into a new screen.
       if (revision !== requests.revision) return;
+      assertDraftWriteToken(draftToken);
       const current = captureEditorStore();
       if (current.meta.id !== treeId) return;
       setHasPendingFund(pending);
@@ -386,6 +380,8 @@ export function Workspace({ store, guide, onStoreChange, onGuideChange, onHome }
       // attempt never receives a promo code or submits a successor.
       setQuickFundedCode(acceptedFundCode);
       setShowPublish(true);
+    } catch (error) {
+      if (!(error instanceof Error) || !/^draft_/.test(error.message)) flash(t.quota);
     } finally { openingPublish.current = false; }
   }
 
@@ -463,13 +459,10 @@ export function Workspace({ store, guide, onStoreChange, onGuideChange, onHome }
   }
 
   function applyVaultVersion(selection: VaultVersionSelection) {
-    const next = acceptVaultVersion(selection, () => confirmReplaceDraft(t.workspace.replaceOpenVersion));
+    const next = acceptVaultVersion(selection, () => confirmReplaceDraft(t.workspace.replaceOpenVersion), draftToken);
     if (!next) return false;
     const selfId = pickHomeFocus(next.draft, null);
-    const nextGuide = { ...defaultGuide(), step: "done" as const, selfId };
-    saveGuide(nextGuide);
-    onStoreChange(next);
-    onGuideChange(nextGuide);
+    if (!onDraftReload()) throw Error('storage_unavailable');
     setFocusId(selfId);
     setSelectedId(selfId);
     setProfileOpen(false);
@@ -488,17 +481,16 @@ export function Workspace({ store, guide, onStoreChange, onGuideChange, onHome }
     if (!file) return;
     const imports = jsonImportState.current;
     const revision = ++imports.revision;
+    const treeId = store.meta.id;
     const result = await readTreeJsonFile(file);
-    if (revision !== imports.revision) return;
+    if (revision !== imports.revision || latestStore.current.meta.id !== treeId) return;
+    try { assertDraftWriteToken(draftToken); } catch { return; }
     if (!result.ok) {
       flash(result.error);
       return;
     }
     if (!confirmReplaceDraft(t.workspace.replaceJson)) return;
-    if (!saveDraftTree(result.store)) { flash(t.quota); return; }
-    saveGuide(result.guide);
-    onStoreChange(result.store);
-    onGuideChange(result.guide);
+    if (!onDraftReplace(result.store, result.guide)) { flash(t.quota); return; }
     setFocusId(pickHomeFocus(result.store.draft, result.guide.selfId));
     setSelectedId(result.guide.selfId ?? pickDefaultFocus(result.store.draft, null));
     setProfileOpen(false);

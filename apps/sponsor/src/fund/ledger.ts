@@ -1,4 +1,5 @@
 import { TreasuryGuard } from '../checkout/treasuryGuard';
+import { armCheckoutAlarm } from '../checkout/alarm';
 export const TREASURY_ADDRESS = 'qgoIFw9WsusMRapWzcFg4jNW08HSWvQkpAKOz86BUuI';
 export const INITIAL_LIMIT = '13000000000000';
 export type FundStatus = 'RESERVED'|'SIGNED'|'SUBMITTED'|'VERIFYING'|'COMPLETED'|'FAILED'|'RELEASED'|'NEEDS_RECONCILIATION';
@@ -28,10 +29,18 @@ export class FundLedger {
       CREATE INDEX IF NOT EXISTS fund_events_order ON fund_events(order_id,seq);
       CREATE TABLE IF NOT EXISTS fund_audit(seq INTEGER PRIMARY KEY AUTOINCREMENT,action TEXT NOT NULL,details TEXT NOT NULL,at INTEGER NOT NULL);
       CREATE TABLE IF NOT EXISTS fund_rates(bucket TEXT PRIMARY KEY,start INTEGER NOT NULL,count INTEGER NOT NULL);
+      CREATE TABLE IF NOT EXISTS fund_jobs(order_id TEXT PRIMARY KEY REFERENCES fund_orders(order_id),next_at INTEGER,
+        lease TEXT,lease_until INTEGER NOT NULL DEFAULT 0,attempts INTEGER NOT NULL DEFAULT 0,last_error TEXT,updated_at INTEGER NOT NULL);
       CREATE TABLE IF NOT EXISTS fund_meta(id INTEGER PRIMARY KEY CHECK(id=1),reconciled_at INTEGER);`));
     this.sql.exec('INSERT OR IGNORE INTO fund_settings VALUES(1,0,\'\',\'\',0,0,0,?)',INITIAL_LIMIT);
     this.sql.exec('INSERT OR IGNORE INTO fund_meta(id,reconciled_at) VALUES(1,NULL)');
     this.treasury = new TreasuryGuard(storage);
+    // Add jobs for historical unfinished obligations without changing their
+    // order, promo revision, prepared transaction or signed bytes.
+    this.sql.exec(`INSERT OR IGNORE INTO fund_jobs(order_id,next_at,updated_at)
+      SELECT o.order_id,o.created_at,o.created_at FROM fund_orders o JOIN fund_events e
+      ON e.seq=(SELECT MAX(seq) FROM fund_events WHERE order_id=o.order_id)
+      WHERE e.status IN ('RESERVED','SIGNED','SUBMITTED','VERIFYING','NEEDS_RECONCILIATION')`);
   }
   settings(){return this.sql.exec<{enabled:number;code_hash:string;display_hint:string;revision:number;created_at:number;updated_at:number;limit_winston:string}>('SELECT * FROM fund_settings WHERE id=1').toArray()[0];}
   private orders(includeSigned=false):FundOrder[]{
@@ -62,6 +71,13 @@ export class FundLedger {
       currentRevisionSpentWinston:done.filter(x=>x.promoRevision===settings.revision).reduce((n,x)=>n+money(x.actualRewardWinston??'0'),0n).toString(),
       lastReconciliation:this.sql.exec<{reconciled_at:number|null}>('SELECT reconciled_at FROM fund_meta WHERE id=1').toArray()[0].reconciled_at,
       history:orders.map(({signedTransaction,...x})=>x)};
+  }
+  available(balance:string){
+    const summary=this.summary(),sharedReservedWinston=this.treasury.held(TREASURY_ADDRESS,TREASURY_ADDRESS);
+    const guardedBalanceWinston=this.treasury.effectiveBalance(TREASURY_ADDRESS,balance);
+    const free=money(guardedBalanceWinston)>money(sharedReservedWinston)?money(guardedBalanceWinston)-money(sharedReservedWinston):0n;
+    const budget=money(summary.budgetRemainingWinston);
+    return {...summary,sharedReservedWinston,guardedBalanceWinston,effectiveAvailableWinston:(free<budget?free:budget).toString()};
   }
   async rate(bucket:string,limit:number,now=Date.now()){
     this.storage.transactionSync(()=>{const row=this.sql.exec<{start:number;count:number}>('SELECT start,count FROM fund_rates WHERE bucket=?',bucket).toArray()[0];
@@ -99,19 +115,45 @@ export class FundLedger {
       // New clients explicitly send null (genesis) or the immutable parent TX.
       if(input.parentTxId!==undefined)this.sql.exec('INSERT INTO fund_order_links(order_id,parent_tx_id) VALUES(?,?)',input.orderId,parentTxId);
       this.sql.exec('INSERT INTO fund_events(order_id,status,at) VALUES(?,?,?)',input.orderId,'RESERVED',now);
-      return this.order(input.orderId,true)!;});await this.storage.sync();return result;
+      this.sql.exec('INSERT INTO fund_jobs(order_id,next_at,updated_at) VALUES(?,?,?)',input.orderId,now,now);
+      return this.order(input.orderId,true)!;});await this.storage.sync();await this.arm();return result;
   }
-  async event(input:{orderId:string;status:FundStatus;txId?:string;actual?:string;signed?:string},now=Date.now()){
+  async event(input:{orderId:string;status:FundStatus;txId?:string;actual?:string;signed?:string;lease?:string},now=Date.now()){
     const next=this.storage.transactionSync(()=>{const prior=this.order(input.orderId,true);if(!prior)throw Error('order_not_found');
       if(terminal.has(prior.status)||prior.status===input.status)return prior;
+      if(input.lease&&this.sql.exec<{lease:string|null}>('SELECT lease FROM fund_jobs WHERE order_id=?',input.orderId).toArray()[0]?.lease!==input.lease)throw Error('fund_lease_lost');
       if(input.status==='SIGNED'){if(prior.arweaveTxId)return prior;if(prior.status!=='RESERVED'||!input.txId||!input.signed)throw Error('invalid_signed_tx');}
       if(prior.arweaveTxId&&input.txId&&prior.arweaveTxId!==input.txId)throw Error('tx_conflict');
       if(input.status==='COMPLETED'&&(!prior.arweaveTxId||!input.actual||money(input.actual)<=0n||money(input.actual)>money(prior.reservedRewardWinston)))throw Error('invalid_actual_reward');
       if((input.status==='FAILED'||input.status==='RELEASED')&&prior.arweaveTxId)throw Error('signed_tx_must_reconcile');
       if(input.status==='COMPLETED')this.treasury.debit(TREASURY_ADDRESS,input.actual!);
       this.sql.exec('INSERT INTO fund_events(order_id,status,tx_id,actual,signed_json,at) VALUES(?,?,?,?,?,?)',input.orderId,input.status,input.txId??prior.arweaveTxId,input.actual??prior.actualRewardWinston,input.signed??prior.signedTransaction,now);
-      return this.order(input.orderId,true)!;});await this.storage.sync();return next;
+      if(terminal.has(input.status))this.sql.exec('UPDATE fund_jobs SET next_at=NULL,updated_at=? WHERE order_id=?',now,input.orderId);
+      return this.order(input.orderId,true)!;});await this.storage.sync();await this.arm();return next;
   }
+  due(now:number,limit=3):string[]{
+    return this.sql.exec<{order_id:string}>('SELECT order_id FROM fund_jobs WHERE next_at<=? AND lease_until<=? ORDER BY next_at,order_id LIMIT ?',now,now,limit).toArray().map(r=>r.order_id);
+  }
+  async claim(orderId:string,lease:string,now=Date.now()):Promise<FundOrder|null>{
+    const result=this.storage.transactionSync(()=>{
+      const order=this.order(orderId,true);if(!order)throw Error('order_not_found');
+      if(terminal.has(order.status))return null;
+      const row=this.sql.exec<{lease_until:number}>('SELECT lease_until FROM fund_jobs WHERE order_id=?',orderId).toArray()[0];
+      if(!row||row.lease_until>now)return null;
+      this.sql.exec('UPDATE fund_jobs SET lease=?,lease_until=?,updated_at=? WHERE order_id=?',lease,now+120000,now,orderId);
+      return order;
+    });await this.storage.sync();await this.arm();return result;
+  }
+  async finish(orderId:string,lease:string,reason:string|null,now=Date.now()):Promise<void>{
+    this.storage.transactionSync(()=>{
+      const row=this.sql.exec<{lease:string|null;attempts:number}>('SELECT lease,attempts FROM fund_jobs WHERE order_id=?',orderId).toArray()[0];
+      if(!row||row.lease!==lease)return;
+      const done=terminal.has(this.order(orderId)!.status),delay=Math.min(300000,15000*2**Math.min(row.attempts,5));
+      const safe=reason&&/^[a-z][a-z0-9_-]{0,63}$/.test(reason)?reason:reason?'fund_requires_reconciliation':null;
+      this.sql.exec('UPDATE fund_jobs SET next_at=?,lease=NULL,lease_until=0,attempts=attempts+1,last_error=?,updated_at=? WHERE order_id=?',done?null:now+delay,safe,now,orderId);
+    });await this.storage.sync();await this.arm();
+  }
+  async arm():Promise<void>{await armCheckoutAlarm(this.storage);}
   async reconciled(now=Date.now()){
     const seen=new Set<string>();
     for(const row of this.orders()){

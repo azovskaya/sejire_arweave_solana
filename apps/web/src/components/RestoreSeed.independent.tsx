@@ -15,8 +15,7 @@ import type { TreeStore } from '../lib/types';
 import { coerceTreeStore } from '../lib/treeJson';
 import { loadDraftTree } from '../lib/draftStorage';
 import { activePersons } from '../lib/treeEngine';
-import { defaultGuide, saveGuide } from '../lib/guide';
-import { pickHomeFocus } from '../lib/pedigree';
+import { assertDraftWriteToken, currentDraftWriteToken } from '../lib/draftOwnership';
 import { acceptVaultVersion } from '../lib/vaultSession/selection';
 import { archiveLocalVaultVersion, getLocalVaultVersion } from '../lib/vaultSession/localArchive';
 import { useI18n } from '../lib/i18n/I18nProvider';
@@ -26,6 +25,7 @@ import { readDirectNodePreference, saveDirectNodePreference } from '../lib/direc
 type Props = { onRestored: (store?: TreeStore) => void; onBack: () => void };
 export function RestoreSeed({ onRestored, onBack }: Props) {
   const { locale, t } = useI18n(), copy = independentMessages[locale];
+  const [draftToken] = useState(currentDraftWriteToken);
   const nodeError = locale === 'ru' ? 'Адрес узла недействителен. Укажите HTTPS-адрес или очистите поле узла и повторите действие.' : locale === 'kk' ? 'Түйін мекенжайы жарамсыз. HTTPS мекенжайын көрсетіңіз немесе өрісті тазалап, әрекетті қайталаңыз.' : 'The node address is invalid. Enter an HTTPS origin or clear the node field and retry the action.';
   const [initialNode] = useState(() => {
     try { return { value: readDirectNodePreference() ?? '', error: '' }; }
@@ -48,6 +48,7 @@ export function RestoreSeed({ onRestored, onBack }: Props) {
   }, []);
   function ensureActive() {
     if (!alive.current || operationAbort.current?.signal.aborted) throw Error('aborted');
+    assertDraftWriteToken(draftToken);
   }
   function options() {
     ensureActive();
@@ -78,6 +79,7 @@ export function RestoreSeed({ onRestored, onBack }: Props) {
     if (!tree) throw Error('invalid_backup');
     const existing = loadDraftTree();
     if (existing && activePersons(existing.draft).length && !window.confirm(t.restore.replaceDraft)) return;
+    ensureActive();
     if (envelope) {
       parseEnvelope(envelope);
       if (envelope.vault_id !== keys.vaultId) throw Error('invalid_backup');
@@ -89,9 +91,8 @@ export function RestoreSeed({ onRestored, onBack }: Props) {
     }
     const accepted = acceptVaultVersion({ vault, envelope, mnemonic: phrase, session: {
       vaultId: keys.vaultId, headTxId: head, source: head ? 'network' : file ? 'file' : 'local',
-    } }, () => true);
+    } }, () => true, draftToken);
     if (!accepted) return;
-    saveGuide({ ...defaultGuide(), step: 'done', selfId: pickHomeFocus(tree.draft, null) });
     onRestored(accepted);
   }
   async function openId(id: string, phrase: string) {

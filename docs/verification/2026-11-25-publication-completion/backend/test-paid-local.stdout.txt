@@ -1,0 +1,46 @@
+(node:5) ExperimentalWarning: `--experimental-loader` may be removed in the future; instead use `register()`:
+--import 'data:text/javascript,import { register } from "node:module"; import { pathToFileURL } from "node:url"; register("../../scripts/offline-ts-loader.mjs", pathToFileURL("./"));'
+(Use `node --trace-warnings ...` to show where the warning was created)
+PASS paid SQLite: explicit unsigned renewal preserves one order before blockhash expiry
+PASS paid SQLite: reserved signed payment survives restart and service retries only identical bytes
+PASS paid SQLite: standalone contribution creates no archive/AR hold/job and credits its single purpose once after restart
+PASS paid SQLite: standalone payment and terminal state commit atomically; storage-bearing inputs are rejected
+PASS paid SQLite: unknown standalone signature/reference never completes or expires; same preparation recovers while gates are off
+PASS paid SQLite: creation binds exact ciphertext and parent; all order/hold/job rows roll back together
+PASS paid SQLite: cancel before admission wins the race, survives a lost reply/restart and rejects every late create
+PASS paid SQLite: admission committed before its response wins cancellation-by-key and returns the unchanged original order
+PASS paid SQLite: pre-admission cancellation is owner/key scoped, admits known expired owners and rejects legacy/unknown sessions
+PASS paid SQLite: SOL credit and durable storage job commit atomically; injected job failure rolls back credit
+PASS paid SQLite: explicit cancellation wins an in-flight reserve CAS and exact preparation remains mandatory
+PASS paid SQLite: durably reserved signature wins cancellation; null-preparation cancellation cannot erase a newer preparation
+PASS paid SQLite: only an untouched offer expires; unknown wallet/prepared payment retains its hold across time and restart
+PASS paid SQLite: explicit recovery renews only the payment window of an expired immutable order; a lost reply survives restart
+PASS paid SQLite: signed recovery needs an exact checked signature; payment and active lease still forbid it
+PASS paid SQLite: finalized expired signed attempt is fenced on the same order and cannot credit later
+PASS paid SQLite: a found reserved signature credits the original payment instead of renewing it
+PASS paid SQLite: recovery and reserve share an atomic preparation fence in both asynchronous race directions
+PASS paid SQLite: concurrent recovery requests serialize; duplicate predecessor never makes another preparation
+PASS paid SQLite: recovery preserves a real original reference payment and never executes the archive
+PASS paid SQLite: uncertainty, stale candidate height, and SQL failure cannot rotate or release the existing attempt
+PASS paid SQLite: shared physical balance includes paid and promo holds in both admission directions
+PASS paid SQLite: paid budget has its own cap and does not consume promo allowance
+PASS paid SQLite: revision rejects an in-flight stale balance; persisted ceiling rejects later stale high snapshots
+PASS paid SQLite: promo confirmed debits constrain paid admissions; an unobserved debit survives restart conservatively
+PASS paid SQLite: lost header/chunk acknowledgement retries exactly one signed TX across restart, then becomes read-only
+PASS paid SQLite: confirmed spend is counted once while unavailable archive never completes; later outage cannot undo proof
+PASS paid SQLite: confirmed header with lost upload acknowledgement replays only the existing data chunks
+PASS paid SQLite: failed chunk replay stays distinguishable from successful replay awaiting gateway data across restart
+PASS paid SQLite: missing paid payload releases its own lease, records safe backoff and preserves the signed obligation
+PASS paid SQLite: explicit completed repair replays the exact ciphertext after restart without changing receipt, payment or spend
+PASS paid SQLite: repair uses fresh proof, preserves active backoff and never treats a historical receipt as current availability
+PASS paid SQLite: repair failures, execution pause and integrity errors preserve immutable completion and exact retry data
+PASS paid SQLite: repair does not require old preparation bytes; missing archive releases lease and keeps retry durable
+PASS paid SQLite: repair ownership and completed receipt admission do not widen old capability or create new obligations
+PASS paid SQLite: repair lease fences simultaneous runners and a new generation until the previous finalizer finishes
+PASS paid SQLite: cold constructor preserves an already scheduled alarm instead of cancelling its due invocation
+PASS paid SQLite: wrong TX/reward or archive-without-chain proof cannot spend or complete
+PASS paid SQLite: expired original bearer can read its exact v2 result while service continuation remains token-free
+PASS paid SQLite: expired v2 capability cannot create, renew, reach v1 or reach another owner/key
+PASS paid SQLite: known reserved signature reconciles without another payment; paused executor retains obligation
+PASS paid SQLite: lease excludes simultaneous runners; a persisted signed job resumes without new preparation or signature
+Paid SQLite integration: 42 scenarios passed; external requests: 0.

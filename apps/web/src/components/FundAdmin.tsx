@@ -1,76 +1,210 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { SolanaRecipientsAdmin } from './SolanaRecipientsAdmin';
-import { formatAr, fundChangePromo, fundDashboard, fundEnable, fundLimit, fundReconcile, publicFundBalance, type FundDashboard } from '../lib/fund/client';
-const errors:Record<string,string>={admin_unauthorized:'Server admin credential required.',limit_below_spent:'Fund limit cannot be lower than actual confirmed spend.',limit_below_reserved:'Fund limit cannot be lower than confirmed spend plus active reservations.',fund_provider_unavailable:'Fund provider unavailable.',invalid_promo_format:'Use at least 6 letters, digits or hyphens.',promo_confirmation_mismatch:'Promo code confirmation does not match.',fund_ledger_inconsistent:'Fund ledger has inconsistent records. Review the server audit before enabling new uploads.'};
-const date=(at:number|null)=>at?new Date(at).toLocaleString():'—';
-const size=(bytes:number|null)=>bytes==null?'—':bytes>=1048576?`${(bytes/1048576).toFixed(2)} MB`:`${(bytes/1024).toFixed(1)} KB`;
-export function FundAdmin(){
-  const [credential,setCredential]=useState(''),[data,setData]=useState<FundDashboard|null>(null),[error,setError]=useState(''),[message,setMessage]=useState(''),[busy,setBusy]=useState(false);
-  const [publicBalance,setPublicBalance]=useState<{treasuryAddress:string;walletBalanceWinston:string|null;lastBalanceCheck:number|null}|null>(null);
-  const [code,setCode]=useState(''),[confirm,setConfirm]=useState(''),[showCode,setShowCode]=useState(false),[limit,setLimit]=useState('');
-  const [statusFilter,setStatusFilter]=useState('All'),[timeFilter,setTimeFilter]=useState('All time');
-  async function refresh(){setBusy(true);setError('');try{setPublicBalance(await publicFundBalance());if(credential)setData(await fundDashboard(credential));}catch(e){setData(null);setError(errors[(e as Error).message]||(e as Error).message);}finally{setBusy(false);}}
-  useEffect(()=>{let live=true;void publicFundBalance().then(balance=>{if(live)setPublicBalance(balance);}).catch(()=>{if(live)setPublicBalance(null);});return()=>{live=false;};},[]);
-  async function mutate(operation:()=>Promise<unknown>,success:string,interpretPending=false){setBusy(true);setError('');setMessage('');try{const result=await operation() as {pending?:number};setMessage(interpretPending&&result.pending?'Reconciliation checked the fund; some transactions remain pending.':success);setData(await fundDashboard(credential));}catch(e){setError(errors[(e as Error).message]||(e as Error).message);}finally{setBusy(false);}}
-  const filtered=useMemo(()=>data?.history.filter(row=>{
-    const status=statusFilter==='All'||(statusFilter==='Pending'&&['RESERVED','SIGNED','SUBMITTED','VERIFYING','NEEDS_RECONCILIATION'].includes(row.status))||(statusFilter==='Failed'&&['FAILED','RELEASED'].includes(row.status))||row.status===statusFilter.toUpperCase();
-    const time=timeFilter==='All time'||row.createdAt>=Date.now()-(timeFilter==='Today'?86400000:7*86400000);return status&&time;})??[],[data,statusFilter,timeFilter]);
-  let newRemaining:string|null=null;try{if(data&&limit){const [w,f='']=limit.split('.');if(/^\d+$/.test(w)&&/^\d{0,12}$/.test(f)){const next=BigInt(w)*1000000000000n+BigInt(f.padEnd(12,'0'));newRemaining=formatAr((next-BigInt(data.actualSpentWinston)).toString());}}}catch{ /* invalid preview */ }
-  const progress=data&&BigInt(data.limitWinston)>0n?Number(BigInt(data.actualSpentWinston)*10000n/BigInt(data.limitWinston))/100:0;
-  return <section className="fund-admin" aria-label="Free Preservation Fund"><h2>FREE PRESERVATION FUND</h2>
-    <label>Server admin credential<input type="password" autoComplete="off" value={credential} onChange={e=>{setCredential(e.target.value);setData(null);}}/></label>
-    <button className="btn ghost" disabled={busy} onClick={()=>void refresh()}>Refresh balance and dashboard</button>
-    {error&&<p role="alert">{error}</p>}{message&&<p role="status">{message}</p>}
-    {!data&&<div className="ops-desk-card"><p>Treasury <code>{publicBalance?.treasuryAddress??'qgoIFw9WsusMRapWzcFg4jNW08HSWvQkpAKOz86BUuI'}</code></p>
-      <p>Live wallet balance <strong>{publicBalance?.walletBalanceWinston==null?'Balance unavailable':`${formatAr(publicBalance.walletBalanceWinston)} AR`}</strong></p>
-      <p>Last balance check {date(publicBalance?.lastBalanceCheck??null)}</p><p>Enter the server admin credential to view and manage the fund.</p></div>}
-    {data&&<>
-      <SolanaRecipientsAdmin credential={credential}/>
-      <div className="fund-admin-grid"><section className="ops-desk-card"><h3>PROMO CODE</h3>
-        <p>Status <strong>{data.promo.enabled?'ACTIVE':'DISABLED'}</strong></p><p>Current code <strong>{data.promo.displayHint||'—'}</strong></p>
-        <p>Revision {data.promo.revision} · Changed {date(data.promo.updatedAt)}</p>
-        <button className="btn ghost" onClick={()=>setShowCode(v=>!v)}>Change promo code</button>
-        <button className="btn ghost" disabled={busy} onClick={()=>void mutate(()=>fundEnable(credential,!data.promo.enabled),data.promo.enabled?'Promo disabled.':'Promo enabled.')}>{data.promo.enabled?'Disable':'Enable'}</button>
-        {showCode&&<div className="fund-admin-form"><label>New promo code<input value={code} autoComplete="off" onChange={e=>setCode(e.target.value)}/></label>
-          <label>Confirm new promo code<input value={confirm} autoComplete="off" onChange={e=>setConfirm(e.target.value)}/></label>
-          <p>Changing the promo code will invalidate the previous code.</p>
-          <button className="btn" disabled={busy||!code||code!==confirm} onClick={()=>{if(window.confirm('Changing the promo code will invalidate the previous code.'))void mutate(async()=>{await fundChangePromo(credential,code,confirm);setCode('');setConfirm('');setShowCode(false);},'New promo code is active. Previous promo code is no longer valid.');}}>SAVE NEW CODE</button></div>}
-        <p>Current revision: {data.currentRevisionTrees} trees · {formatAr(data.currentRevisionSpentWinston)} AR</p>
-        <p>All time: {data.successfulTrees} trees · {formatAr(data.actualSpentWinston)} AR</p>
-      </section>
-      <section className="ops-desk-card"><h3>ARWEAVE FUND</h3>
-        <p>Treasury <code>{data.treasuryAddress.slice(0,7)}…{data.treasuryAddress.slice(-5)}</code></p>
-        <p>Signer address <strong>{data.signerVerified?'VERIFIED':'NOT VERIFIED'}</strong></p>
-        <p>Live wallet balance <strong>{data.walletBalanceWinston==null?'Balance unavailable':`${formatAr(data.walletBalanceWinston)} AR`}</strong></p>
-        <p>Last balance check {date(data.lastBalanceCheck)}</p>
-        <p>Promo fund limit <strong>{formatAr(data.limitWinston)} AR</strong></p><p>Actual confirmed spend <strong>{formatAr(data.actualSpentWinston)} AR</strong></p>
-        <p>Reserved / in progress <strong>{formatAr(data.reservedWinston)} AR</strong></p><p>Budget remaining <strong>{formatAr(data.budgetRemainingWinston)} AR</strong></p>
-        <p>Effective available now <strong>{formatAr(data.effectiveAvailableWinston)} AR</strong></p>
-        <progress max="100" value={progress}/><p>Spent {progress.toFixed(2)}% · {data.fundStatus}</p>
-        <label>New cumulative limit (AR)<input inputMode="decimal" value={limit} placeholder={formatAr(data.limitWinston)} onChange={e=>setLimit(e.target.value)}/></label>
-        <p>Current actual spend: {formatAr(data.actualSpentWinston)} AR · New remaining budget: {newRemaining??'—'} AR</p>
-        <button className="btn" disabled={busy||newRemaining==null||newRemaining.startsWith('-')} onClick={()=>void mutate(async()=>{await fundLimit(credential,limit);setLimit('');},'Fund limit updated successfully.')}>UPDATE FUND LIMIT</button>
-        <button className="btn ghost" disabled={busy} onClick={()=>void mutate(()=>fundReconcile(credential),'Fund reconciled successfully.',true)}>RECONCILE FUND</button>
-        <p>Last reconciliation: {date(data.lastReconciliation)}</p>
-      </section></div>
-      <div className="fund-admin-grid"><section className="ops-desk-card"><h3>PRESERVATIONS</h3>
-        <p>Saved trees {data.successfulTrees} · Today {data.today} · Last 7 days {data.last7Days}</p>
-        <p>Pending {data.pending} · Failed {data.failedAttempts}</p>
-        <p>Total encrypted bytes {size(data.totalEncryptedBytes)} · Average {size(data.averageArchiveBytes)}</p>
-        <p>Largest {size(data.largestArchiveBytes)} · Smallest {size(data.smallestArchiveBytes)}</p>
-      </section><section className="ops-desk-card"><h3>COST & CAPACITY</h3>
-        <p>Average/tree {formatAr(data.averageActualWinston)} AR · Latest/tree {formatAr(data.latestActualWinston)} AR</p>
-        <p>Min {formatAr(data.minActualWinston)} AR · Max {formatAr(data.maxActualWinston)} AR</p>
-        <p>Total actual {formatAr(data.actualSpentWinston)} AR · Current network price estimate ({size(data.currentQuoteBytes)}) {formatAr(data.currentQuoteWinston)} AR</p>
-        <p>Estimated funded preservations remaining: {data.estimatedTreesRemaining??'Not enough data yet'}</p>
-      </section></div>
-      <section><h3>FUNDED PRESERVATION HISTORY</h3><div className="fund-admin-filters"><label>Status<select value={statusFilter} onChange={e=>setStatusFilter(e.target.value)}>{['All','Completed','Pending','Failed'].map(x=><option key={x}>{x}</option>)}</select></label>
-        <label>Period<select value={timeFilter} onChange={e=>setTimeFilter(e.target.value)}>{['Today','7 days','All time'].map(x=><option key={x}>{x}</option>)}</select></label></div>
-        <div className="fund-admin-history"><table className="ops-desk-table"><thead><tr><th>Date</th><th>Status</th><th>Archive size</th><th>Actual cost AR</th><th>Promo revision</th><th>Arweave TX</th><th>Preservation ID</th></tr></thead>
-          <tbody>{filtered.map(row=><tr key={row.orderId}><td data-label="Date">{date(row.createdAt)}</td><td data-label="Status">{row.status}</td><td data-label="Archive size">{size(row.archiveSizeBytes)}</td><td data-label="Actual cost AR">{formatAr(row.actualRewardWinston)}</td><td data-label="Promo revision">{row.promoRevision}</td>
-            <td data-label="Arweave TX">{row.arweaveTxId?<a href={`https://arweave.net/${row.arweaveTxId}`} target="_blank" rel="noreferrer">{row.arweaveTxId.slice(0,7)}…{row.arweaveTxId.slice(-5)}</a>:'—'}</td>
-            <td data-label="Preservation ID"><code>{row.preservationId.slice(0,8)}…</code></td></tr>)}</tbody></table></div>
-      </section>
+import { PaidOrdersAdmin } from './PaidOrdersAdmin';
+import { TreasuryTopupAdmin } from './TreasuryTopupAdmin';
+import { AdminScope, adminError, parseAdminAr, type AdminRequest } from '../lib/fund/adminScope';
+import { formatAr, fundChangePromo, fundDashboard, fundEnable, fundLimit, fundReconcile, type FundDashboard } from '../lib/fund/client';
+
+const date = (at: number | null) => at ? new Date(at).toLocaleString() : '—';
+const size = (bytes: number | null) => bytes == null ? '—' : bytes >= 1048576 ? `${(bytes / 1048576).toFixed(2)} MiB` : `${(bytes / 1024).toFixed(1)} KiB`;
+type Tab = 'overview' | 'fund' | 'diagnostics';
+type Props = { diagnostics?: ReactNode };
+
+/** Server authorization is required. The credential exists only in this mounted component. */
+export function FundAdmin({ diagnostics }: Props) {
+  const scope = useRef(new AdminScope());
+  const [password, setPassword] = useState(''), [credential, setCredential] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [data, setData] = useState<FundDashboard | null>(null);
+  const [error, setError] = useState(''), [message, setMessage] = useState(''), [busy, setBusy] = useState(false);
+  const [code, setCode] = useState(''), [confirm, setConfirm] = useState(''), [showCode, setShowCode] = useState(false), [limit, setLimit] = useState('');
+  const [statusFilter, setStatusFilter] = useState('All'), [timeFilter, setTimeFilter] = useState('All time');
+  const [tab, setTab] = useState<Tab>(() => location.hash.startsWith('#/admin/diagnostics') ? 'diagnostics' : 'overview');
+  const [session, setSession] = useState(0);
+
+  useEffect(() => {
+    const requests = scope.current;
+    const onHash = () => { if (location.hash.startsWith('#/admin/diagnostics')) setTab('diagnostics'); };
+    window.addEventListener('hashchange', onHash);
+    return () => { requests.clear(); window.removeEventListener('hashchange', onHash); };
+  }, []);
+
+  function clearSession() {
+    scope.current.clear(); setCredential(''); setData(null); setPassword(''); setShowPassword(false);
+    setError(''); setMessage(''); setBusy(false); setCode(''); setConfirm(''); setLimit(''); setShowCode(false);
+    setSession(value => value + 1);
+  }
+  function finish(request: AdminRequest) {
+    if (!scope.current.current(request)) return;
+    setBusy(false); scope.current.finish(request);
+  }
+  async function login(event: FormEvent) {
+    event.preventDefault();
+    if (busy || !password.trim()) return;
+    const selected = password;
+    scope.current.replace(selected);
+    const request = scope.current.begin();
+    setBusy(true); setError(''); setMessage('');
+    try {
+      const next = await fundDashboard(request.credential, request.signal);
+      if (!scope.current.current(request)) return;
+      setData(next); setCredential(selected); setPassword(''); setShowPassword(false); setSession(value => value + 1);
+    } catch (failure) {
+      if (scope.current.current(request)) { setData(null); setCredential(''); setError(adminError(failure)); }
+    } finally { finish(request); }
+  }
+  async function refresh() {
+    if (busy || !credential) return;
+    const request = scope.current.begin();
+    setBusy(true); setError(''); setMessage('');
+    try {
+      const next = await fundDashboard(request.credential, request.signal);
+      if (scope.current.current(request)) setData(next);
+    } catch (failure) {
+      if (scope.current.current(request)) { setData(null); setError(adminError(failure)); }
+    } finally { finish(request); }
+  }
+  async function mutate(operation: (request: AdminRequest) => Promise<unknown>, accepted: (next: FundDashboard) => boolean,
+    success: string | ((next: FundDashboard) => string), clearInput?: () => void) {
+    if (busy || !credential || !data) return;
+    const request = scope.current.begin();
+    setBusy(true); setError(''); setMessage('');
+    let readBack = false;
+    try {
+      await operation(request);
+      if (!scope.current.current(request)) return;
+      const next = await fundDashboard(request.credential, request.signal);
+      if (!scope.current.current(request)) return;
+      setData(next);
+      readBack = true;
+      if (!accepted(next)) throw Error('admin_readback_mismatch');
+      setMessage(typeof success === 'function' ? success(next) : success);
+      clearInput?.();
+    } catch (failure) {
+      if (scope.current.current(request)) { if (!readBack) setData(null); setError(adminError(failure)); }
+    } finally { finish(request); }
+  }
+
+  const filtered = useMemo(() => data?.history.filter(row => {
+    const status = statusFilter === 'All' || statusFilter === 'Pending' && ['RESERVED', 'SIGNED', 'SUBMITTED', 'VERIFYING', 'NEEDS_RECONCILIATION'].includes(row.status) ||
+      statusFilter === 'Failed' && ['FAILED', 'RELEASED'].includes(row.status) || row.status === statusFilter.toUpperCase();
+    return status && (timeFilter === 'All time' || row.createdAt >= Date.now() - (timeFilter === 'Today' ? 86400000 : 7 * 86400000));
+  }) ?? [], [data, statusFilter, timeFilter]);
+  let limitWinston: string | null = null, newRemaining: string | null = null;
+  try {
+    if (data && limit) {
+      limitWinston = parseAdminAr(limit);
+      newRemaining = formatAr((BigInt(limitWinston) - BigInt(data.actualSpentWinston) - BigInt(data.reservedWinston)).toString());
+    }
+  } catch { /* Invalid input cannot authorize an update. */ }
+  const progress = data && BigInt(data.limitWinston) > 0n ? Number(BigInt(data.actualSpentWinston) * 10000n / BigInt(data.limitWinston)) / 100 : 0;
+
+  return <section className="fund-admin" aria-label="Управление сохранениями">
+    {!credential ? <form className="ops-desk-form" onSubmit={event => void login(event)}>
+      <p>Войдите с паролем администратора сервера. Права проверяются сервером; слова кошелька и архива здесь не нужны.</p>
+      <label>Пароль<input type={showPassword ? 'text' : 'password'} autoComplete="current-password" value={password}
+        onChange={event => { clearSession(); setPassword(event.target.value); }} /></label>
+      <button type="button" className="welcome-link-quiet" onClick={() => setShowPassword(value => !value)}>{showPassword ? 'Скрыть пароль' : 'Показать пароль'}</button>
+      <button type="submit" className="btn" disabled={busy || !password.trim()}>Войти</button>
+      {busy && <p role="status">Проверяем доступ на сервере…</p>}
+    </form> : <>
+      <div className="ops-desk-tabs" role="tablist" aria-label="Разделы администратора" onKeyDown={event => {
+        if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+        const tabs = Array.from(event.currentTarget.querySelectorAll<HTMLButtonElement>('[role="tab"]'));
+        const index = tabs.indexOf(document.activeElement as HTMLButtonElement);
+        if (index < 0) return;
+        event.preventDefault();
+        const next = event.key === 'Home' ? 0 : event.key === 'End' ? tabs.length - 1 : (index + (event.key === 'ArrowRight' ? 1 : -1) + tabs.length) % tabs.length;
+        tabs[next].click(); tabs[next].focus();
+      }}>
+        <button type="button" role="tab" className={tab === 'overview' ? 'is-on' : ''} aria-selected={tab === 'overview'} onClick={() => setTab('overview')}>Обзор Solana</button>
+        <button type="button" role="tab" className={tab === 'fund' ? 'is-on' : ''} aria-selected={tab === 'fund'} onClick={() => setTab('fund')}>Промокод и фонд</button>
+        {diagnostics && <button type="button" role="tab" className={tab === 'diagnostics' ? 'is-on' : ''} aria-selected={tab === 'diagnostics'} onClick={() => setTab('diagnostics')}>Диагностика</button>}
+      </div>
+      <button type="button" className="btn ghost" onClick={clearSession}>Выйти</button>
+      {tab === 'diagnostics' && diagnostics}
+      {tab === 'overview' && <PaidOrdersAdmin key={session} credential={credential} />}
+      {tab === 'fund' && <>
+        <h2>Промокод и фонд Arweave</h2>
+        <button type="button" className="btn ghost" disabled={busy} onClick={() => void refresh()}>Обновить фонд</button>
+        {!data && <p>Состояние фонда не подтверждено. Обновите данные перед изменением настроек.</p>}
+        {data && <>
+          <SolanaRecipientsAdmin key={session} credential={credential} />
+          <TreasuryTopupAdmin key={`topup-${session}`} credential={credential} />
+          <div className="fund-admin-grid"><section className="ops-desk-card"><h3>Промокод</h3>
+            <p>Состояние <strong>{data.promo.enabled ? 'Активен' : 'Отключён'}</strong></p>
+            <p>Текущий код <strong>{data.promo.displayHint || '—'}</strong></p>
+            <p>Версия {data.promo.revision} · Изменён {date(data.promo.updatedAt)}</p>
+            <button type="button" className="btn ghost" disabled={busy} onClick={() => setShowCode(value => !value)}>Изменить промокод</button>
+            <button type="button" className="btn ghost" disabled={busy} onClick={() => {
+              const enabled = !data.promo.enabled;
+              void mutate(request => fundEnable(request.credential, enabled, request.signal), next => next.promo.enabled === enabled,
+                enabled ? 'Промокод включён. Настройка проверена на сервере.' : 'Промокод выключен. Начатые сохранения продолжаются.');
+            }}>{data.promo.enabled ? 'Отключить промокод' : 'Включить промокод'}</button>
+            {showCode && <div className="fund-admin-form">
+              <label>Новый промокод<input value={code} disabled={busy} autoComplete="off" maxLength={64} onChange={event => setCode(event.target.value)} /></label>
+              <label>Повторите новый промокод<input value={confirm} disabled={busy} autoComplete="off" maxLength={64} onChange={event => setConfirm(event.target.value)} /></label>
+              <p>После смены прежний код перестанет действовать для новых сохранений. История и начатые запросы сохранятся.</p>
+              <button type="button" className="btn" disabled={busy || !/^[A-Z0-9][A-Z0-9-]{5,63}$/.test(code.trim().toUpperCase()) || code !== confirm} onClick={() => {
+                if (!window.confirm('Заменить действующий промокод? Прежний код больше не будет приниматься для новых сохранений.')) return;
+                const normalized = code.trim().toUpperCase(), hint = `${normalized.slice(0, 4)}••••${normalized.slice(-2)}`, revision = data.promo.revision;
+                void mutate(request => fundChangePromo(request.credential, code, confirm, request.signal),
+                  next => next.promo.enabled && next.promo.revision === revision + 1 && next.promo.displayHint === hint,
+                  'Новый промокод сохранён и проверен на сервере.', () => { setCode(''); setConfirm(''); setShowCode(false); });
+              }}>Сохранить промокод</button>
+            </div>}
+            <p>По текущей версии: {data.currentRevisionTrees} сохранений · {formatAr(data.currentRevisionSpentWinston)} AR</p>
+            <p>За всё время: {data.successfulTrees} сохранений · {formatAr(data.actualSpentWinston)} AR</p>
+          </section><section className="ops-desk-card"><h3>Бюджет бесплатных сохранений</h3>
+            <p>Кошелёк фонда <code>{data.treasuryAddress}</code></p>
+            <p>Подписант: <strong>{data.signerVerified ? 'Адрес проверен' : 'Адрес не подтверждён'}</strong></p>
+            <p>Баланс кошелька <strong>{data.walletBalanceWinston == null ? 'Не удалось проверить' : `${formatAr(data.walletBalanceWinston)} AR`}</strong></p>
+            <p>Проверен {date(data.lastBalanceCheck)}</p>
+            <p>Общий лимит промофонда <strong>{formatAr(data.limitWinston)} AR</strong></p>
+            <p>Подтверждённые расходы <strong>{formatAr(data.actualSpentWinston)} AR</strong></p>
+            <p>Зарезервировано <strong>{formatAr(data.reservedWinston)} AR</strong></p>
+            <p>Остаток бюджета <strong>{formatAr(data.budgetRemainingWinston)} AR</strong></p>
+            <p>Доступно сейчас <strong>{formatAr(data.effectiveAvailableWinston)} AR</strong></p>
+            <progress max="100" value={progress} /><p>Потрачено {progress.toFixed(2)}% · {data.fundStatus}</p>
+            <label>Новый общий лимит фонда (AR)<input inputMode="decimal" value={limit} disabled={busy} placeholder={formatAr(data.limitWinston)} onChange={event => setLimit(event.target.value)} /></label>
+            <p>Остаток после расходов и резервов: {newRemaining ?? '—'} AR. Изменение лимита не пополняет кошелёк.</p>
+            <button type="button" className="btn" disabled={busy || limitWinston === null || newRemaining === null || newRemaining.startsWith('-')} onClick={() => {
+              const expected = limitWinston;
+              void mutate(request => fundLimit(request.credential, limit, request.signal), next => next.limitWinston === expected,
+                'Лимит фонда сохранён и проверен на сервере.', () => setLimit(''));
+            }}>Сохранить лимит</button>
+            <button type="button" className="btn ghost" disabled={busy} onClick={() => {
+              if (!window.confirm('Проверить незавершённые сохранения и при необходимости дослать их прежние подписанные данные? Новые заказы и подписи не создаются.')) return;
+              void mutate(request => fundReconcile(request.credential, request.signal), () => true,
+                next => next.pending ? 'Сверка выполнена. Некоторые сохранения ещё ожидают подтверждения.' : 'Сверка фонда завершена.');
+            }}>Проверить незавершённые сохранения</button>
+            <p>Последняя сверка: {date(data.lastReconciliation)}</p>
+          </section></div>
+          <div className="fund-admin-grid"><section className="ops-desk-card"><h3>Сохранения по промокоду</h3>
+            <p>Завершено {data.successfulTrees} · За 24 часа {data.today} · За 7 дней {data.last7Days}</p>
+            <p>Ожидают {data.pending} · Не завершены {data.failedAttempts}</p>
+            <p>Всего зашифровано {size(data.totalEncryptedBytes)} · В среднем {size(data.averageArchiveBytes)}</p>
+          </section><section className="ops-desk-card"><h3>Расходы на хранение</h3>
+            <p>Среднее сохранение {formatAr(data.averageActualWinston)} AR · Последнее {formatAr(data.latestActualWinston)} AR</p>
+            <p>Текущая оценка для {size(data.currentQuoteBytes)}: {formatAr(data.currentQuoteWinston)} AR</p>
+            <p>Оценка доступных сохранений: {data.estimatedTreesRemaining ?? 'Пока недостаточно данных'}</p>
+          </section></div>
+          <section><h3>История бесплатных сохранений</h3>
+            <div className="fund-admin-filters"><label>Состояние<select value={statusFilter} onChange={event => setStatusFilter(event.target.value)}>
+              <option value="All">Все</option><option value="Completed">Завершено</option><option value="Pending">Ожидает</option><option value="Failed">Не завершено</option>
+            </select></label><label>Период<select value={timeFilter} onChange={event => setTimeFilter(event.target.value)}>
+              <option value="Today">24 часа</option><option value="7 days">7 дней</option><option value="All time">Всё время</option>
+            </select></label></div>
+            <div className="fund-admin-history"><table className="ops-desk-table"><thead><tr><th>Дата</th><th>Состояние</th><th>Размер</th><th>Расход AR</th><th>Версия кода</th><th>Arweave TX</th></tr></thead>
+              <tbody>{filtered.map(row => <tr key={row.orderId}>
+                <td data-label="Дата">{date(row.createdAt)}</td><td data-label="Состояние">{row.status}</td><td data-label="Размер">{size(row.archiveSizeBytes)}</td>
+                <td data-label="Расход AR">{formatAr(row.actualRewardWinston)}</td><td data-label="Версия кода">{row.promoRevision}</td>
+                <td data-label="Arweave TX">{row.arweaveTxId ? <a href={`https://arweave.net/${row.arweaveTxId}`} target="_blank" rel="noreferrer">{row.arweaveTxId.slice(0, 7)}…{row.arweaveTxId.slice(-5)}</a> : '—'}</td>
+              </tr>)}</tbody></table></div>
+          </section>
+        </>}
+      </>}
     </>}
+    {error && <p role="alert">{error}</p>}{message && <p role="status">{message}</p>}
   </section>;
 }

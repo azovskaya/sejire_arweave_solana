@@ -111,7 +111,6 @@ export const PersonPanel = forwardRef<PersonPanelHandle, Props>(function PersonP
   const { t } = useI18n();
   const [draft, setDraft] = useState<Person>(person ?? emptyPerson());
   const [confirmDelete, setConfirmDelete] = useState(false);
-  const ready = useRef(false);
   const sheetRef = useRef<HTMLElement | null>(null);
   const draftRef = useRef(draft);
   const personRef = useRef(person);
@@ -120,30 +119,18 @@ export const PersonPanel = forwardRef<PersonPanelHandle, Props>(function PersonP
   personRef.current = person;
 
   useEffect(() => {
-    setDraft(person ?? emptyPerson());
+    const next = person ?? emptyPerson();
+    draftRef.current = next;
+    setDraft(next);
     setConfirmDelete(false);
-    ready.current = false;
-    const timer = window.setTimeout(() => {
-      ready.current = true;
-    }, 0);
-    return () => window.clearTimeout(timer);
   }, [person]);
-
-  useEffect(() => {
-    if (!person || !ready.current) return;
-    const next = buildPerson(person, draft);
-    if (sameProfile(person, next)) return;
-    if (!next.name.trim()) return;
-    const timer = window.setTimeout(() => onChange(next), 350);
-    return () => window.clearTimeout(timer);
-  }, [draft, person, onChange]);
 
   useEffect(() => {
     if (!person) return;
     const el = sheetRef.current;
     if (!el) return;
     el.scrollTop = 0;
-  }, [person]);
+  }, [person?.id]);
 
   useEffect(() => {
     const el = sheetRef.current;
@@ -164,10 +151,8 @@ export const PersonPanel = forwardRef<PersonPanelHandle, Props>(function PersonP
     const d = draftRef.current;
     if (!base) return;
     const next = buildPerson(base, d);
-    if (!next.name.trim()) {
-      setDraft((prev) => ({ ...prev, name: base.name }));
-      return;
-    }
+    // Raw input is already durable, including a temporarily empty name. Do
+    // not discard other fields merely because the user is still typing it.
     if (!sameProfile(base, next)) onChange(next);
   }
 
@@ -187,7 +172,15 @@ export const PersonPanel = forwardRef<PersonPanelHandle, Props>(function PersonP
   }
 
   function setField<K extends keyof Person>(key: K, value: Person[K]) {
-    setDraft((prev) => ({ ...prev, [key]: value }));
+    const base = personRef.current;
+    if (!base) return;
+    const next = { ...draftRef.current, [key]: value, id: base.id,
+      parents: base.parents, media: base.media ?? [], tombstone: base.tombstone ?? false };
+    draftRef.current = next;
+    setDraft(next);
+    // Commit in the input event, before a pagehide/reload can cancel effects
+    // or timers. Preserve raw spaces/partial dates until explicit normalization.
+    onChange(next);
   }
 
   const panelClass = open ? "person-panel is-open" : "person-panel is-docked";
@@ -233,10 +226,7 @@ export const PersonPanel = forwardRef<PersonPanelHandle, Props>(function PersonP
             <input
               value={draft.name}
               onChange={(e) => setField("name", e.target.value)}
-              onBlur={() => {
-                if (!draft.name.trim()) setDraft((prev) => ({ ...prev, name: person.name }));
-                else flushNow();
-              }}
+              onBlur={flushNow}
             />
           </label>
           <label>

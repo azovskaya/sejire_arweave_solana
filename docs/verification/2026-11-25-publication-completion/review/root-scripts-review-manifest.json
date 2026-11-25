@@ -1,0 +1,59 @@
+{
+  "generated_at": "2026-11-25T10:20:15.849181+00:00",
+  "scope": "Independent full source reads and review of fixes; no real ledger imported or service deployed.",
+  "files": [
+    {
+      "path": "scripts/portable-funded-profile.mjs",
+      "sha256": "d3ccf0469e53f161a1a8b5532cd2b7c798c942bb197da120db89f8ea31f9737a"
+    },
+    {
+      "path": "scripts/build-arns-portable-funded.mjs",
+      "sha256": "19584479010bfee0ca7d2c7f28f9f3d5a33ec00a6aac413481c4cf4212d5a44b"
+    },
+    {
+      "path": "scripts/permaweb-release.mjs",
+      "sha256": "c733db265271e68592a29181fbb963cbfd9b130b9f722aaee0a7c341e83ca272"
+    },
+    {
+      "path": "scripts/verify-portable-service.mts",
+      "sha256": "94c5a548bc5875a24031e61918c9fc515a730c9e4b8ec0f25f918848a5151870"
+    },
+    {
+      "path": "scripts/linux-backup.mjs",
+      "sha256": "807bcd87028c39324a56967e48d7d3fed7451537889aee65d377f23633323822"
+    },
+    {
+      "path": "scripts/linux-backup-cli.mjs",
+      "sha256": "4fd3ccd3523ba298d050ce03ea4f3e179a159332ff8d311f6e9dce3749c5bb1c"
+    },
+    {
+      "path": "apps/sponsor/linux-writer.mjs",
+      "sha256": "e891e468a4616cee140300572241221350d3d33cf84f38989fdff916c1598dd0"
+    },
+    {
+      "path": "apps/sponsor/ledger-snapshot.mjs",
+      "sha256": "5914aca6d44ae264aff000272cb2a203f8ac6280ae0cd1963ed5c5dddcd7a46c"
+    },
+    {
+      "path": "apps/sponsor/bin/import-ledger.mjs",
+      "sha256": "0e2b6e2465fcd897e78e2edc31758ab2f203c76835bdc7fcc7f27b64528422f0"
+    },
+    {
+      "path": "apps/sponsor/src/checkout/migrationSnapshot.ts",
+      "sha256": "48ac899a3ed386f4a277331b79c3ecca716a54e7cacdd8f7d61c4e9e7308d662"
+    },
+    {
+      "path": "scripts/linux-backup-startup-race.test.mjs",
+      "sha256": "75821ffba7bf6e0169def464e100540fbc2f93fbc37f4bae8f9af9519bd05a11"
+    }
+  ],
+  "executed": [
+    "node --import ./apps/web/node_modules/tsx/dist/loader.mjs --test scripts/linux-backup-startup-race.test.mjs"
+  ],
+  "test_result": "1 passed, 0 failed",
+  "limits": [
+    "Previous implementation not executed; no measured RED claim.",
+    "No native power-failure simulation.",
+    "No production preflight or migration performed."
+  ]
+}

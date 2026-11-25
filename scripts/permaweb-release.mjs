@@ -7,6 +7,8 @@ import { pathToFileURL } from 'node:url';
 import { REPOSITORY, validateReleaseEvidence } from './worker-release-gate.mjs';
 import { BOUNDARY_FILE, FUNDED_PROFILE, INDEPENDENT_PROFILE, INDEPENDENT_ROOT_FILES,
   PROFILE_FILE, RECOVERY_FILES, verifyIndependentBuild } from './static-release-profile.mjs';
+import { PORTABLE_FUNDED_PROFILE, PORTABLE_FUNDED_BRANCH, PORTABLE_FUNDED_ARTIFACT,
+  PORTABLE_ROOT_FILES, verifyPortableFundedBuild } from './portable-funded-profile.mjs';
 
 export const BRANCH = 'feat/decentralized-arweave-20261116';
 export const ARTIFACT_NAME = 'permaweb-static-release';
@@ -26,10 +28,18 @@ export function staticPath(name) {
     /^assets\/[A-Za-z0-9_-][A-Za-z0-9_.-]*\.(?:js|css|svg|png|jpg|jpeg|gif|webp|avif|ico|woff2?|ttf)$/.test(name);
 }
 
+/** A new profile receives its own branch/artifact contract; independent gates stay exact. */
+export function releaseContract(profile = INDEPENDENT_PROFILE) {
+  if (profile === INDEPENDENT_PROFILE) return { profile, branch: BRANCH, artifact: ARTIFACT_NAME };
+  if (profile === PORTABLE_FUNDED_PROFILE) return { profile, branch: PORTABLE_FUNDED_BRANCH, artifact: PORTABLE_FUNDED_ARTIFACT };
+  throw Error('permaweb_release_profile_mismatch');
+}
+
 export function permawebRequest(env) {
+  const contract = releaseContract(env.PERMAWEB_PROFILE);
   requireValue(env.GITHUB_REPOSITORY === REPOSITORY, 'permaweb_repository_mismatch');
   requireValue(env.GITHUB_EVENT_NAME === 'workflow_dispatch', 'permaweb_manual_only');
-  requireValue(env.GITHUB_REF === `refs/heads/${BRANCH}`, 'permaweb_branch_mismatch');
+  requireValue(env.GITHUB_REF === `refs/heads/${contract.branch}`, 'permaweb_branch_mismatch');
   requireValue(env.PERMAWEB_CONFIRM === 'pack-ready', 'permaweb_confirmation_required');
   requireValue(['prepare', 'upload'].includes(env.PERMAWEB_MODE), 'permaweb_invalid_release_mode');
   if (env.PERMAWEB_MODE === 'upload') requireValue(env.GITHUB_RUN_ATTEMPT === '1', 'permaweb_upload_rerun_requires_prior_evidence');
@@ -38,7 +48,8 @@ export function permawebRequest(env) {
     requireValue(/^[1-9][0-9]*$/.test(env[key] ?? '') && Number.isSafeInteger(Number(env[key])), 'permaweb_invalid_run');
     return Number(env[key]);
   });
-  return { sha: env.GITHUB_SHA, runId: numbers[0], attempt: numbers[1] };
+  return { sha: env.GITHUB_SHA, runId: numbers[0], attempt: numbers[1],
+    ...(contract.profile === PORTABLE_FUNDED_PROFILE ? { profile: contract.profile } : {}) };
 }
 
 async function githubJson(path, token, fetcher) {
@@ -54,11 +65,12 @@ async function githubJson(path, token, fetcher) {
 }
 
 export function acceptedArtifact(request, artifacts, jobs) {
-  const matches = artifacts.filter(item => item.name === ARTIFACT_NAME && !item.expired);
+  const contract = releaseContract(request.profile);
+  const matches = artifacts.filter(item => item.name === contract.artifact && !item.expired);
   requireValue(matches.length === 1, 'permaweb_ambiguous_artifact');
   const item = matches[0], verify = jobs.find(job => job.name === 'verify');
   requireValue(Number.isSafeInteger(item.id) && item.id > 0 && item.workflow_run?.id === request.runId &&
-    item.workflow_run.head_sha === request.sha && item.workflow_run.head_branch === BRANCH &&
+    item.workflow_run.head_sha === request.sha && item.workflow_run.head_branch === contract.branch &&
     /^sha256:[a-f0-9]{64}$/.test(item.digest ?? '') && Number.isSafeInteger(item.size_in_bytes) &&
     item.size_in_bytes > 0 && item.size_in_bytes <= MAX_RELEASE_BYTES, 'permaweb_artifact_mismatch');
   // A single old artifact from an earlier attempt is not an accepted new build.
@@ -70,9 +82,10 @@ export function acceptedArtifact(request, artifacts, jobs) {
 
 export async function checkPermawebRelease(env, fetcher = fetch) {
   const request = permawebRequest(env);
+  const contract = releaseContract(request.profile);
   requireValue(typeof env.GH_TOKEN === 'string' && env.GH_TOKEN.length > 0, 'permaweb_token_missing');
   const read = path => githubJson(path, env.GH_TOKEN, fetcher);
-  const [run, ref] = await Promise.all([read(`actions/runs/${request.runId}`), read(`git/ref/heads/${BRANCH}`)]);
+  const [run, ref] = await Promise.all([read(`actions/runs/${request.runId}`), read(`git/ref/heads/${contract.branch}`)]);
   const jobs = [], artifacts = [];
   for (const [target, path, key] of [
     [jobs, `actions/runs/${request.runId}/attempts/${request.attempt}/jobs`, 'jobs'],
@@ -90,7 +103,7 @@ export async function checkPermawebRelease(env, fetcher = fetch) {
     }
     requireValue(target.length === total && new Set(target.map(item => item.id)).size === total, 'permaweb_evidence_incomplete');
   }
-  validateReleaseEvidence(request, run, ref, jobs, { branch: BRANCH });
+  validateReleaseEvidence(request, run, ref, jobs, { branch: contract.branch });
   return { request, artifact: acceptedArtifact(request, artifacts, jobs) };
 }
 
@@ -161,10 +174,11 @@ export async function verifyRelease(directory, sourceCommit, { provenance = fals
     typeof manifest.files === 'object' && !Array.isArray(manifest.files), 'permaweb_release_manifest_mismatch');
   const paths = Object.keys(manifest.files).sort();
   const profile = manifest.profile ?? FUNDED_PROFILE;
-  requireValue([FUNDED_PROFILE, INDEPENDENT_PROFILE].includes(profile) &&
+  requireValue([FUNDED_PROFILE, INDEPENDENT_PROFILE, PORTABLE_FUNDED_PROFILE].includes(profile) &&
     (expectedProfile === undefined || profile === expectedProfile), 'permaweb_release_profile_mismatch');
   const requiredPaths = profile === INDEPENDENT_PROFILE
-    ? [...INDEPENDENT_ROOT_FILES, ...RECOVERY_FILES.map(file => `recovery/${file}`)] : [...ROOT_FILES];
+    ? [...INDEPENDENT_ROOT_FILES, ...RECOVERY_FILES.map(file => `recovery/${file}`)]
+    : profile === PORTABLE_FUNDED_PROFILE ? [...PORTABLE_ROOT_FILES, ...RECOVERY_FILES.map(file => `recovery/${file}`)] : [...ROOT_FILES];
   requireValue(paths.every(staticPath) && paths.length === manifest.fileCount &&
     requiredPaths.every(name => paths.includes(name)), 'permaweb_release_paths_mismatch');
   const expected = [...paths, 'release-manifest.json', ...(provenance ? ['build-provenance.json'] : [])].sort();
@@ -186,6 +200,7 @@ export async function verifyRelease(directory, sourceCommit, { provenance = fals
   for (const [, path] of html.matchAll(/(?:src|href)=["']\.\/(assets\/[^"']+)["']/g)) requireValue(paths.includes(path), 'permaweb_missing_entry_asset');
   requireValue(html === await readFile(join(root, '404.html'), 'utf8'), 'permaweb_fallback_mismatch');
   if (profile === INDEPENDENT_PROFILE) await verifyIndependentBuild(root);
+  else if (profile === PORTABLE_FUNDED_PROFILE) await verifyPortableFundedBuild(root);
   else {
     requireValue(!paths.some(path => EXTRA_ROOT_FILES.has(path) || path.startsWith('recovery/')), 'permaweb_mixed_release_profile');
     const lock = JSON.parse(await readFile(join(root, 'admin-lock.json'), 'utf8'));
@@ -197,14 +212,15 @@ export async function verifyRelease(directory, sourceCommit, { provenance = fals
 }
 
 export function buildProvenance(evidence, release) {
-  return { schema: 'sejire/permaweb-provenance/v1', artifact: ARTIFACT_NAME,
+  return { schema: 'sejire/permaweb-provenance/v1', artifact: releaseContract(evidence.request.profile).artifact,
     run: evidence.request.runId, attempt: evidence.request.attempt, artifactId: evidence.artifact.id,
     sourceCommit: evidence.request.sha, publishedByCommit: evidence.request.sha, profile: release.manifest.profile ?? FUNDED_PROFILE,
     zipSha256: evidence.artifact.digest.slice(7), releaseManifestSha256: release.manifestSha256 };
 }
 
 export async function verifyAcceptedRelease(evidence, directory = ACCEPTED_DIR) {
-  const release = await verifyRelease(directory, evidence.request.sha, { provenance: true, expectedProfile: INDEPENDENT_PROFILE });
+  const release = await verifyRelease(directory, evidence.request.sha,
+    { provenance: true, expectedProfile: releaseContract(evidence.request.profile).profile });
   const actual = JSON.parse(await readFile(join(release.root, 'build-provenance.json'), 'utf8'));
   requireValue(JSON.stringify(actual) === JSON.stringify(buildProvenance(evidence, release)), 'permaweb_provenance_mismatch');
   return release;
@@ -225,7 +241,8 @@ export async function recoverPermawebRelease(env, { fetcher = fetch, directory =
   requireValue(digest(bytes) === evidence.artifact.digest.slice(7), 'permaweb_zip_digest_mismatch');
   requireValue(bytes.length === evidence.artifact.size_in_bytes, 'permaweb_artifact_size_mismatch');
   extractAcceptedZip(bytes, directory);
-  const release = await verifyRelease(directory, evidence.request.sha, { expectedProfile: INDEPENDENT_PROFILE });
+  const release = await verifyRelease(directory, evidence.request.sha,
+    { expectedProfile: releaseContract(evidence.request.profile).profile });
   await writeFile(join(release.root, 'build-provenance.json'), JSON.stringify(buildProvenance(evidence, release), null, 2) + '\n', { flag: 'wx' });
   await mkdir(evidenceDirectory, { recursive: true });
   await writeFile(join(evidenceDirectory, 'accepted-build.json'), JSON.stringify(buildProvenance(evidence, release), null, 2) + '\n');
@@ -239,5 +256,5 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
       : await recoverPermawebRelease(process.env);
     console.log(JSON.stringify({ status: 'PASS', sourceCommit: release.manifest.sourceCommit,
       files: release.files.length, bytes: release.files.reduce((sum, file) => sum + file.bytes, 0), directory: ACCEPTED_DIR }));
-  } catch (error) { console.error(error instanceof Error && /^(?:permaweb_|release_|independent_)[a-z_]+$/.test(error.message) ? error.message : 'permaweb_release_failed'); process.exitCode = 1; }
+  } catch (error) { console.error(error instanceof Error && /^(?:permaweb_|release_|independent_|portable_)[a-z_]+$/.test(error.message) ? error.message : 'permaweb_release_failed'); process.exitCode = 1; }
 }

@@ -131,7 +131,9 @@ export function PreservationV2({legacyPilot=false,envelope,treeName,treeId,paren
       const text=await file.text();
       if(!active())return;
       setPromoEnvelope(parseEnvelope(JSON.parse(text)));
-    }catch{if(active())setError('Не удалось прочитать зашифрованный архив.');}
+    }catch(e){if(active())setError(e instanceof Error && e.message==='envelope_too_large'
+      ? 'Зашифрованный архив больше 512 КиБ. Оплата не запрашивалась; исходный файл остаётся у вас.'
+      : 'Не удалось прочитать зашифрованный архив.');}
     finally{if(active())setImporting(false);}
   }
   function leaveImport(){importRevision.current++;setImporting(false);onBack?.();}
@@ -178,6 +180,7 @@ export function PreservationV2({legacyPilot=false,envelope,treeName,treeId,paren
   if(activeEnvelope&&actualMethod==='choose')return <section className="native-checkout" aria-label="Сохранить семейную историю">
     <h1>Сохранить семейную историю</h1>
     <h2>{treeName || 'Мой род'}</h2>
+    <p>Общий зашифрованный архив всех деревьев — до 512 КиБ. Размер проверяется до оплаты.</p>
     <div className="actions" style={{flexDirection:'column',alignItems:'stretch',gap:'12px'}}>
       <button className="btn" type="button" disabled={checkingMethod} onClick={()=>void chooseMethod('promo')}>{t.publish.saveWithPromo}</button>
       <button className="btn ghost" type="button" disabled={checkingMethod} onClick={()=>void chooseMethod('solana')}>{t.publish.saveWithSolana}</button>
@@ -203,6 +206,7 @@ export function PreservationV2({legacyPilot=false,envelope,treeName,treeId,paren
   if(!legacyPilot)return <section className="native-checkout" aria-label="Сохранить семейную историю">
     <h1>Сохранить семейную историю</h1>
     <p>Изменения дерева можно сохранить из редактора. Если у вас уже есть зашифрованная копия архива, выберите её файл.</p>
+    <p>Принимается общий зашифрованный архив размером до 512 КиБ.</p>
     <label>Зашифрованный архив<input type="file" accept="application/json,.json" disabled={importing}
       onChange={e=>{const file=e.target.files?.[0];e.target.value='';void choosePromo(file);}}/></label>
     {importing&&<p role="status">Читаем зашифрованный архив…</p>}

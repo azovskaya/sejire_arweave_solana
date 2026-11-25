@@ -13,7 +13,8 @@ export class FundApiError extends Error {
 export type FundDashboard={promo:{enabled:boolean;displayHint:string;revision:number;createdAt:number;updatedAt:number};treasuryAddress:string;signerVerified:boolean;limitWinston:string;actualSpentWinston:string;reservedWinston:string;budgetRemainingWinston:string;walletBalanceWinston:string|null;lastBalanceCheck:number|null;currentQuoteWinston:string|null;currentQuoteBytes:number;effectiveAvailableWinston:string|null;estimatedTreesRemaining:string|null;fundStatus:string;successfulTrees:number;today:number;last7Days:number;failedAttempts:number;pending:number;totalEncryptedBytes:number;averageArchiveBytes:number|null;largestArchiveBytes:number|null;smallestArchiveBytes:number|null;averageActualWinston:string|null;minActualWinston:string|null;maxActualWinston:string|null;latestActualWinston:string|null;currentRevisionTrees:number;currentRevisionSpentWinston:string;lastReconciliation:number|null;history:FundOrderView[]};
 export function formatAr(value:string|null|undefined,places=6){if(value==null)return '—';const raw=BigInt(value),negative=raw<0n,n=negative?-raw:raw,whole=n/1000000000000n,frac=(n%1000000000000n).toString().padStart(12,'0');return `${negative?'-':''}${whole}.${frac.slice(0,places)}`;}
 function configuredApiOrigin():string{
-  const raw=import.meta.env.VITE_FUND_API_URL||import.meta.env.VITE_CHECKOUT_API_URL;
+  const env=import.meta.env??{};
+  const raw=env.VITE_FUND_API_URL||env.VITE_CHECKOUT_API_URL;
   if(raw)return raw;
   // Static ArNS hosts have no /api/* — never fall back to location.origin there.
   if(typeof location!=='undefined'&&isStaticPermawebHost(location.hostname))throw Error('fund_api_not_configured');
@@ -27,7 +28,7 @@ async function call<T>(path:string,method:'GET'|'POST'='GET',value?:unknown,admi
   if(signal?.aborted)cancel();else signal?.addEventListener('abort',cancel,{once:true});
   const timer=setTimeout(cancel,30000);
   try{
-    const r=await fetch(endpoint()+path,{method,credentials:'omit',referrerPolicy:'no-referrer',cache:'no-store',headers:{...(value===undefined?{}:{'Content-Type':'application/json'}),...(adminPassword?{Authorization:`Bearer ${adminPassword}`}:{})},...(value===undefined?{}:{body:JSON.stringify(value)}),signal:controller.signal,...(path==='/admin/solana-recipients'?{redirect:'error' as const}:{})});
+    const r=await fetch(endpoint()+path,{method,credentials:'omit',referrerPolicy:'no-referrer',cache:'no-store',headers:{...(value===undefined?{}:{'Content-Type':'application/json'}),...(adminPassword?{Authorization:`Bearer ${adminPassword}`}:{})},...(value===undefined?{}:{body:JSON.stringify(value)}),signal:controller.signal,...(path.startsWith('/admin/')?{redirect:'error' as const}:{})});
     const data=await r.json() as {error?:string};
     if(!r.ok)throw new FundApiError(data.error||'fund_unavailable',r.status);
     return data as T;
@@ -47,10 +48,45 @@ export async function preserveFunded(envelope:EnvelopeV1,code:string,orderId:str
   if(!result.order)throw Error('invalid_order_response');assertFundOrderParent(result.order,parentTxId,true);return result;
 }
 export async function journalKey(envelope:EnvelopeV1){return `sejire-funded:${await envelopeDigest(serializeEnvelope(envelope))}`;}
-export const fundDashboard=(password:string)=>call<FundDashboard>('/admin/dashboard','GET',undefined,password);
-export const fundChangePromo=(password:string,code:string,confirm:string)=>call('/admin/promo','POST',{code,confirm},password);
-export const fundEnable=(password:string,enabled:boolean)=>call('/admin/enabled','POST',{enabled},password);
-export const fundLimit=(password:string,limitAr:string)=>call('/admin/limit','POST',{limitAr},password);
-export const fundReconcile=(password:string)=>call('/admin/reconcile','POST',{},password);
-export const solanaRecipientSettings=(password:string)=>call<SolanaRecipientAdminView>('/admin/solana-recipients','GET',undefined,password);
-export const saveSolanaRecipients=(password:string,value:SolanaRecipients&{expectedRevision:number})=>call<SolanaRecipientAdminView>('/admin/solana-recipients','POST',value,password);
+export function checkedFundDashboard(value:unknown):FundDashboard{
+  const data=value as FundDashboard;
+  const money=(v:unknown)=>typeof v==='string'&&/^(0|[1-9][0-9]{0,29})$/.test(v);
+  const count=(v:unknown)=>Number.isSafeInteger(v)&&Number(v)>=0;
+  if(!data||typeof data!=='object'||!data.promo||typeof data.promo.enabled!=='boolean'||
+    typeof data.promo.displayHint!=='string'||data.promo.displayHint.length>64||!count(data.promo.revision)||
+    !count(data.promo.createdAt)||!count(data.promo.updatedAt)||
+    typeof data.treasuryAddress!=='string'||!/^[A-Za-z0-9_-]{43}$/.test(data.treasuryAddress)||
+    typeof data.signerVerified!=='boolean'||!Array.isArray(data.history)||typeof data.fundStatus!=='string'||
+    !/^[A-Z0-9_ -]{1,64}$/i.test(data.fundStatus)||
+    !['limitWinston','actualSpentWinston','reservedWinston','budgetRemainingWinston','currentRevisionSpentWinston']
+      .every(key=>money(data[key as keyof FundDashboard]))||
+    !['walletBalanceWinston','currentQuoteWinston','effectiveAvailableWinston','averageActualWinston','minActualWinston','maxActualWinston','latestActualWinston']
+      .every(key=>data[key as keyof FundDashboard]===null||money(data[key as keyof FundDashboard]))||
+    !['successfulTrees','today','last7Days','failedAttempts','pending','totalEncryptedBytes','currentRevisionTrees','currentQuoteBytes']
+      .every(key=>count(data[key as keyof FundDashboard]))||
+    !['lastBalanceCheck','lastReconciliation','averageArchiveBytes','largestArchiveBytes','smallestArchiveBytes']
+      .every(key=>data[key as keyof FundDashboard]===null||count(data[key as keyof FundDashboard]))||
+    !(data.estimatedTreesRemaining===null||money(data.estimatedTreesRemaining))||
+    !data.history.every(row=>row&&/^[a-f0-9]{32}$/.test(row.orderId)&&typeof row.status==='string'&&
+      count(row.archiveSizeBytes)&&count(row.createdAt)&&count(row.promoRevision)&&
+      (row.actualRewardWinston===null||money(row.actualRewardWinston))&&
+      (row.arweaveTxId===null||typeof row.arweaveTxId==='string'&&/^[A-Za-z0-9_-]{43}$/.test(row.arweaveTxId))))throw Error('admin_response_invalid');
+  return data;
+}
+export const fundDashboard=async(password:string,signal?:AbortSignal)=>checkedFundDashboard(await call<unknown>('/admin/dashboard','GET',undefined,password,signal));
+export const fundChangePromo=(password:string,code:string,confirm:string,signal?:AbortSignal)=>call('/admin/promo','POST',{code,confirm},password,signal);
+export const fundEnable=(password:string,enabled:boolean,signal?:AbortSignal)=>call('/admin/enabled','POST',{enabled},password,signal);
+export const fundLimit=(password:string,limitAr:string,signal?:AbortSignal)=>call('/admin/limit','POST',{limitAr},password,signal);
+export const fundReconcile=(password:string,signal?:AbortSignal)=>call('/admin/reconcile','POST',{},password,signal);
+/** Protected admin paths only; credentials are sent solely in the Authorization header. */
+export function fundAdminCall<T>(path:string,password:string,method:'GET'|'POST'='GET',value?:unknown,signal?:AbortSignal,query?:{limit:number;cursor:string|null}):Promise<T>{
+  if(!/^\/admin\/[a-z0-9/-]+$/.test(path)||!password)throw Error('invalid_request');
+  if(query){
+    if(!['/admin/paid-orders','/admin/treasury-topups'].includes(path)||method!=='GET'||!Number.isSafeInteger(query.limit)||query.limit<1||query.limit>100||
+      query.cursor!==null&&!/^[1-9][0-9]{0,14}$/.test(query.cursor))throw Error('invalid_admin_query');
+    path+=`?limit=${query.limit}${query.cursor===null?'':`&cursor=${query.cursor}`}`;
+  }
+  return call<T>(path,method,value,password,signal);
+}
+export const solanaRecipientSettings=(password:string,signal?:AbortSignal)=>call<SolanaRecipientAdminView>('/admin/solana-recipients','GET',undefined,password,signal);
+export const saveSolanaRecipients=(password:string,value:SolanaRecipients&{expectedRevision:number},signal?:AbortSignal)=>call<SolanaRecipientAdminView>('/admin/solana-recipients','POST',value,password,signal);

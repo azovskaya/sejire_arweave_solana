@@ -1,0 +1,199 @@
+{
+  "generated_at": "2026-11-25T10:07:52.337395+00:00",
+  "scope": "Draft ownership and immediate raw-input durability; no deployment, wallet or archive upload performed.",
+  "files": [
+    {
+      "path": "apps/web/src/lib/draftOwnership.ts",
+      "sha256": "9129e71547ed73bf47d24df837a16d0f15fd7b5c09c14c250b3cea3b55444941",
+      "purpose": "Exclusive Web Lock, scoped lifecycle tokens, exact-byte conflict check, guarded draft/guide primitives."
+    },
+    {
+      "path": "apps/web/src/lib/draftStorage.ts",
+      "sha256": "b3ff59e97455af1410745f1c2f345ea1e547707565fc9b19549bfe9de6ec7160",
+      "purpose": "Atomic draft/guide replacement with conditional rollback; no early deletion."
+    },
+    {
+      "path": "apps/web/src/lib/guide.ts",
+      "sha256": "9a3fb678dd25b66619bad2d5cd6377caeaa3068d801e82ec1750837621e779e0",
+      "purpose": "All guide saves/clears use the same writer guard; protected reads tolerate denied storage."
+    },
+    {
+      "path": "apps/web/src/lib/vaultSession/selection.ts",
+      "sha256": "99df44b0332abdf22fc529770ae05e58bcf571b628c44cba21d40d032521ff73",
+      "purpose": "Capture ownership before preparation; token fence before cache/session/draft; atomic guide adoption and CAS rollback."
+    },
+    {
+      "path": "apps/web/src/components/DraftAccess.tsx",
+      "sha256": "4badd8a576309d16edee481cf97c7a42a8ebcefef069a0757f9855eb062513e6",
+      "purpose": "StrictMode/pagehide/pageshow holder lifecycle; synchronous document persistence; blocked/unsupported/export/unsaved UX."
+    },
+    {
+      "path": "apps/web/src/App.tsx",
+      "sha256": "887a059f3f8f9640fd9606abb8b43d109e350343f5e0efd60be2657165d9316b",
+      "purpose": "Funded App writer gate, fresh hydration, new/continue/restore/version callbacks."
+    },
+    {
+      "path": "apps/web/src/App.independent.tsx",
+      "sha256": "eb298b8411f39c8574a0f1e867fd074be71bf8aa1f337b7d3c3a0bd655a25eab",
+      "purpose": "Independent App writer gate and the same offline draft semantics."
+    },
+    {
+      "path": "apps/web/src/components/Welcome.tsx",
+      "sha256": "01028ebe187ff7c9e256f7dfea9a457477204116bb8d1edd7caa1f01fe0d0d8c",
+      "purpose": "Disable new/continue/restore when writing is unavailable or input is unsaved."
+    },
+    {
+      "path": "apps/web/src/components/Welcome.independent.tsx",
+      "sha256": "0baea80bbd7e003d9d53e49ef663748381d13a96acf176debe392e7744b78878",
+      "purpose": "Independent landing disables draft mutations but retains history and offline decoder."
+    },
+    {
+      "path": "apps/web/src/components/Workspace.tsx",
+      "sha256": "0919fede156952fde536ce174fd8e3cf923074b58e8d671335235c3da968b733",
+      "purpose": "Remove deferred autosave; route edits through current document; fence async import/publish/version callbacks."
+    },
+    {
+      "path": "apps/web/src/components/PersonPanel.tsx",
+      "sha256": "6cee17c48ef5df4ba1f004d527bd8c911223a26092c81a204e0ef37129aac9a4",
+      "purpose": "Persist raw input within its event; normalize only at explicit flush; no 350 ms debounce."
+    },
+    {
+      "path": "apps/web/src/components/RestoreSeed.tsx",
+      "sha256": "5d3d075275f7f00667b188d7cd9dfeb462ecea28bdca5905957e57f37daccc31",
+      "purpose": "Captured ownership token in restore lifecycle and selection, no late cache/session/draft write."
+    },
+    {
+      "path": "apps/web/src/components/RestoreSeed.independent.tsx",
+      "sha256": "8903a6718eb0bd3c7591ef9559ad4aab5764611e1a21c5d6e92823bb1a39e707",
+      "purpose": "Equivalent independent restore fence including after confirmation."
+    },
+    {
+      "path": "apps/web/src/components/PublishSeedModal.independent.tsx",
+      "sha256": "5ebc1db0861c10451126ad614c0d0b75ec770692ae232f714eeee627974bc4ab",
+      "purpose": "Check captured token after encryption and before operation/cache/session adoption."
+    },
+    {
+      "path": "apps/web/src/lib/draftOwnership.selftest.ts",
+      "sha256": "8d9eaecc1452896af755f03d3cab7ba9e4f00a66553217b482061e54c4ba4a3e",
+      "purpose": "Synthetic lock/storage lifecycle and failure checks."
+    },
+    {
+      "path": "apps/web/tests/editor-safety.spec.mjs",
+      "sha256": "b97b7005b93ef2ff75442ccef7061de0df6a24896da0b37289454d11cc4a66dc",
+      "purpose": "Seven ownership/reload/failure regressions; existing assertions retained; real second pages use browser Web Locks."
+    },
+    {
+      "path": "apps/web/tests/independent.spec.mjs",
+      "sha256": "c90cb39939aa9384d3111fd210d9f28ed764e9f1137c971d7d5ff936a7153185",
+      "purpose": "Two static-build regressions plus explicit lock handoff in existing full-vault conflict regression."
+    }
+  ],
+  "checks": [
+    {
+      "name": "typecheck",
+      "command": [
+        "node",
+        "node_modules/typescript/bin/tsc",
+        "-p",
+        "tsconfig.app.json",
+        "--noEmit",
+        "--incremental",
+        "false"
+      ],
+      "started": "2026-11-25T10:07:38.517207+00:00",
+      "exit_code": 0,
+      "log": "typecheck.log",
+      "browser_execution": false
+    },
+    {
+      "name": "ownership",
+      "command": [
+        "node",
+        "--import",
+        "tsx",
+        "src/lib/draftOwnership.selftest.ts"
+      ],
+      "started": "2026-11-25T10:07:47.698854+00:00",
+      "exit_code": 0,
+      "log": "ownership.log",
+      "browser_execution": false
+    },
+    {
+      "name": "storage",
+      "command": [
+        "node",
+        "--import",
+        "tsx",
+        "src/lib/storageQuota.selftest.ts"
+      ],
+      "started": "2026-11-25T10:07:48.078520+00:00",
+      "exit_code": 0,
+      "log": "storage.log",
+      "browser_execution": false
+    },
+    {
+      "name": "selection",
+      "command": [
+        "node",
+        "--import",
+        "tsx",
+        "src/lib/vaultSession/selection.selftest.ts"
+      ],
+      "started": "2026-11-25T10:07:48.278553+00:00",
+      "exit_code": 0,
+      "log": "selection.log",
+      "browser_execution": false
+    },
+    {
+      "name": "tree-json",
+      "command": [
+        "node",
+        "--import",
+        "tsx",
+        "src/lib/treeJson.selftest.ts"
+      ],
+      "started": "2026-11-25T10:07:48.530005+00:00",
+      "exit_code": 0,
+      "log": "tree-json.log",
+      "browser_execution": false
+    },
+    {
+      "name": "editor-collection",
+      "command": [
+        "node",
+        "node_modules/@playwright/test/cli.js",
+        "test",
+        "--config",
+        "playwright.editor.config.ts",
+        "--list"
+      ],
+      "started": "2026-11-25T10:07:48.715788+00:00",
+      "exit_code": 0,
+      "log": "editor-collection.log",
+      "browser_execution": false
+    },
+    {
+      "name": "independent-collection",
+      "command": [
+        "node",
+        "node_modules/@playwright/test/cli.js",
+        "test",
+        "--config",
+        "playwright.independent.config.ts",
+        "--list"
+      ],
+      "started": "2026-11-25T10:07:50.457500+00:00",
+      "exit_code": 0,
+      "log": "independent-collection.log",
+      "browser_execution": false
+    }
+  ],
+  "browser_status": "Not executed locally: browser binary unavailable in this environment. Collection is not a browser PASS. Root will execute GitHub CI.",
+  "browser_counts": {
+    "editor": 24,
+    "independent_scenarios": 26,
+    "independent_projects": 3,
+    "independent_total": 78
+  },
+  "bfcache_test_scope": "Real two tabs; synthetic pagehide/pageshow persisted events. Does not claim a native BFCache navigation was observed."
+}

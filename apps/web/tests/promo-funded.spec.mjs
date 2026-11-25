@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { createHash } from 'node:crypto';
-import { mockAdminLock, adminPassword } from './admin-password.fixture.mjs';
+import { adminPassword, paidOverview, topupsView, serviceRecipient, fundRecipient } from './server-admin.fixture.mjs';
 const archive=JSON.stringify({schema:'sejire/envelope/v1',vault_id:'a'.repeat(32),cipher:'aes-gcm-256',kdf:'hkdf-sha256',iv:'AAAAAAAAAAAAAAAA',ciphertext:'A'.repeat(32),protocol:'sejire/v0.3'});
 const tx='A'.repeat(43),initial='13000000000000';
 const origin='http://127.0.0.1:5183';
@@ -352,7 +352,6 @@ async function openTransactionDetails(page){
 }
 
 test('Admin changes one promo and cumulative limit; user preserves encrypted archive without Solana',async({page},testInfo)=>{
- await mockAdminLock(page);
  let code='',revision=0,enabled=false,limit=initial,spent=0n;
  const rows=[];
  const dashboard=()=>({promo:{enabled,displayHint:code?`${code.slice(0,4)}••••${code.slice(-2)}`:'',revision,createdAt:Date.now(),updatedAt:Date.now()},treasuryAddress:'qgoIFw9WsusMRapWzcFg4jNW08HSWvQkpAKOz86BUuI',signerVerified:true,
@@ -368,6 +367,10 @@ test('Admin changes one promo and cumulative limit; user preserves encrypted arc
   if(path.startsWith('/api/fund/admin/')&&route.request().headers()['authorization']!==`Bearer ${adminPassword}`){status=401;value={error:'admin_unauthorized'};}
   else if(path.endsWith('/balance'))value={treasuryAddress:'qgoIFw9WsusMRapWzcFg4jNW08HSWvQkpAKOz86BUuI',walletBalanceWinston:'68996561462544',lastBalanceCheck:Date.now()};
   else if(path.endsWith('/dashboard'))value=dashboard();
+  else if(path.endsWith('/paid-orders'))value=paidOverview();
+  else if(path.endsWith('/treasury-topups'))value=topupsView();
+  else if(path.endsWith('/solana-recipients'))value={schema:'sejire/sol-recipients-admin/v1',serviceRecipient,fundRecipient,
+    revision:1,updatedAt:Date.now(),source:'admin',network:'mainnet-beta',paymentEnabled:true,executionEnabled:true,contributionEnabled:true};
   else if(path.endsWith('/promo')){code=body.code.trim().toUpperCase();revision++;enabled=true;value=dashboard();}
   else if(path.endsWith('/enabled')){enabled=body.enabled;value=dashboard();}
   else if(path.endsWith('/limit')){limit=String(BigInt(body.limitAr)*1000000000000n);value=dashboard();}
@@ -382,25 +385,23 @@ test('Admin changes one promo and cumulative limit; user preserves encrypted arc
   await route.fulfill({status,contentType:'application/json',body:JSON.stringify(value)});
  });
  await page.goto('/#/admin');await page.getByLabel('Пароль',{exact:true}).fill(adminPassword);await page.getByRole('button',{name:'Войти'}).click();
- await page.getByRole('button',{name:'Free Preservation Fund'}).click();
- await page.getByLabel('Server admin credential').fill(adminPassword);await page.getByRole('button',{name:'Refresh balance and dashboard'}).click();
+ await page.getByRole('tab',{name:'Промокод и фонд',exact:true}).click();
  await expect(page.getByText('13.000000 AR').first()).toBeVisible();
- await page.getByRole('button',{name:'Change promo code'}).click();await page.getByLabel('New promo code',{exact:true}).fill('TEST-PENSIONER');await page.getByLabel('Confirm new promo code').fill('TEST-PENSIONER');
- page.once('dialog',dialog=>dialog.accept());await page.getByRole('button',{name:'SAVE NEW CODE'}).click();await expect(page.getByText('TEST••••ER')).toBeVisible();
+ await page.getByRole('button',{name:'Изменить промокод'}).click();await page.getByLabel('Новый промокод',{exact:true}).fill('TEST-PENSIONER');await page.getByLabel('Повторите новый промокод').fill('TEST-PENSIONER');
+ page.once('dialog',dialog=>dialog.accept());await page.getByRole('button',{name:'Сохранить промокод'}).click();await expect(page.getByText('TEST••••ER')).toBeVisible();
  await openPromo(page);await savePromo(page);
  await expect(promo(page).getByRole('status')).toContainText('Семейная история сохранена');await expect(page.getByRole('button',{name:'Оплатить 0.03 SOL'})).toHaveCount(0);
  await openPromo(page,archive,true);
  await expect(promo(page).getByRole('status')).toContainText('Семейная история сохранена');expect(rows).toHaveLength(1);
- await page.goto('/#/admin');await page.getByLabel('Пароль',{exact:true}).fill(adminPassword);await page.getByRole('button',{name:'Войти'}).click();await page.getByRole('button',{name:'Free Preservation Fund'}).click();
- await page.getByLabel('Server admin credential').fill(adminPassword);await page.getByRole('button',{name:'Refresh balance and dashboard'}).click();
- await expect(page.getByText('Saved trees 1')).toBeVisible();
+ await page.goto('/#/admin');await page.getByLabel('Пароль',{exact:true}).fill(adminPassword);await page.getByRole('button',{name:'Войти'}).click();await page.getByRole('tab',{name:'Промокод и фонд',exact:true}).click();
+ await expect(page.getByText('Завершено 1 · За 24 часа 1 · За 7 дней 1')).toBeVisible();
  await page.screenshot({path:testInfo.outputPath('promo-funded-admin.png'),fullPage:true});
  await page.setViewportSize({width:390,height:844});await page.screenshot({path:testInfo.outputPath('promo-funded-admin-mobile.png'),fullPage:true});
  await expect(page.getByText('0.003000 AR',{exact:false}).first()).toBeVisible();await expect(page.getByRole('link',{name:/AAAAAAA/})).toBeVisible();
- await page.getByRole('button',{name:'Change promo code'}).click();await page.getByLabel('New promo code',{exact:true}).fill('TEST-PENSIONER-2');await page.getByLabel('Confirm new promo code').fill('TEST-PENSIONER-2');
- page.once('dialog',dialog=>dialog.accept());await page.getByRole('button',{name:'SAVE NEW CODE'}).click();
- await page.getByLabel('New cumulative limit (AR)').fill('26');await page.getByRole('button',{name:'UPDATE FUND LIMIT'}).click();
- await expect(page.getByText('26.000000 AR').first()).toBeVisible();await expect(page.getByText('Saved trees 1')).toBeVisible();
+ await page.getByRole('button',{name:'Изменить промокод'}).click();await page.getByLabel('Новый промокод',{exact:true}).fill('TEST-PENSIONER-2');await page.getByLabel('Повторите новый промокод').fill('TEST-PENSIONER-2');
+ page.once('dialog',dialog=>dialog.accept());await page.getByRole('button',{name:'Сохранить промокод'}).click();
+ await page.getByLabel('Новый общий лимит фонда (AR)').fill('26');await page.getByRole('button',{name:'Сохранить лимит'}).click();
+ await expect(page.getByText('26.000000 AR').first()).toBeVisible();await expect(page.getByText('Завершено 1 · За 24 часа 1 · За 7 дней 1')).toBeVisible();
  const nextArchive=JSON.parse(archive);nextArchive.ciphertext='B'+nextArchive.ciphertext.slice(1);
  await openPromo(page,JSON.stringify(nextArchive));
  await savePromo(page);await expect(promo(page).getByRole('alert')).toContainText('Неверный промокод.');expect(rows).toHaveLength(1);

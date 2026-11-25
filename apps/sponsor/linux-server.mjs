@@ -4,13 +4,13 @@
  */
 import {createServer} from 'node:http';
 import {DatabaseSync} from 'node:sqlite';
-import {lstat,mkdir,realpath} from 'node:fs/promises';
-import {basename,dirname,join,resolve} from 'node:path';
 import {CheckoutLedger,LEDGER_OBJECT_NAME} from './src/checkout/durableStore.ts';
 import {checkoutApi} from './src/checkout/api.ts';
 import {fundApi} from './src/fund/api.ts';
 import {RecipientSettings,withRecipientSettings} from './src/checkout/recipientSettings.ts';
 import {recipientAdminApi,RECIPIENT_ADMIN_PATH} from './src/checkout/recipientAdmin.ts';
+import {trustedIngress} from './trusted-ingress.mjs';
+import {canonicalDatabasePath,acquireWriter,assertRestoreReviewed} from './linux-writer.mjs';
 
 export function sqliteStorage(db){
   db.exec('PRAGMA foreign_keys=ON');db.exec('PRAGMA journal_mode=WAL');
@@ -32,47 +32,13 @@ export function sqliteStorage(db){
   };
 }
 
-async function canonicalDatabasePath(input){
-  const requested=resolve(input),parent=await realpath(dirname(requested));
-  const named=join(parent,basename(requested));
-  let info;
-  try{info=await lstat(named);}catch(error){if(error.code==='ENOENT')return named;throw error;}
-  const path=info.isSymbolicLink()?await realpath(named):named;
-  info=await lstat(path);
-  // A hard-linked ledger could have two different sibling guard paths.
-  if(!info.isFile()||info.nlink!==1)throw Error('invalid_backend_database_path');
-  return path;
-}
-
-async function acquireWriter(path){
-  const directory=path+'.writer.lock';
-  // A permanent directory also blocks the previous adapter's open('wx'). A
-  // legacy regular sentinel is never removed or guessed to be stale here.
-  try{await mkdir(directory,{mode:0o700});}catch(error){if(error.code!=='EEXIST')throw error;}
-  const info=await lstat(directory);
-  if(!info.isDirectory()||info.isSymbolicLink())throw Error('backend_writer_already_active');
-  const guardPath=join(directory,'guard.sqlite');
-  try{
-    const existing=await lstat(guardPath);
-    if(!existing.isFile()||existing.isSymbolicLink()||existing.nlink!==1)throw Error('invalid_backend_writer_guard');
-  }catch(error){if(error.code!=='ENOENT')throw error;}
-  let guard;
-  try{
-    guard=new DatabaseSync(guardPath);
-    guard.exec('PRAGMA busy_timeout=0; PRAGMA journal_mode=DELETE; BEGIN IMMEDIATE');
-    return guard;
-  }catch(error){
-    guard?.close();
-    if(error.errcode===5||error.errcode===6)throw Error('backend_writer_already_active');
-    throw error;
-  }
-}
-
 // The optional provider is an in-process test port already supported by fundApi.
 // The CLI and HTTP requests cannot select it; production uses the normal provider.
-export async function startLinuxCheckout({dbPath,host='127.0.0.1',port=0,bindings={},fundProvider}){
+export async function startLinuxCheckout({dbPath,host='127.0.0.1',port=0,bindings={},fundProvider,treasuryProofReader}){
   if(typeof dbPath!=='string'||!dbPath||!Number.isSafeInteger(port)||port<0||port>65535)throw Error('invalid_backend_config');
-  const path=await canonicalDatabasePath(dbPath),guard=await acquireWriter(path);
+  const path=await canonicalDatabasePath(dbPath),clientAddress=trustedIngress(bindings.SEJIRE_TRUSTED_PROXY_CIDRS??'');
+  await assertRestoreReviewed(path);
+  const guard=await acquireWriter(path);
   let db,server,interval,tail=Promise.resolve(),closePromise;const background=new Set();
   const close=()=>closePromise??=(async()=>{
     if(interval)clearInterval(interval);
@@ -87,6 +53,9 @@ export async function startLinuxCheckout({dbPath,host='127.0.0.1',port=0,binding
     // have opened that inode. SQLite releases its lock, including on SIGKILL.
   })();
   try{
+    // Import/restore uses the same held guard. Recheck only after acquiring it,
+    // before creating/opening a ledger or scheduling any old obligation.
+    await assertRestoreReviewed(path);
     db=new DatabaseSync(path);const storage=sqliteStorage(db);
     const objectId={name:LEDGER_OBJECT_NAME,equals(other){return other?.name===LEDGER_OBJECT_NAME;}};
     let ledger,initial=Promise.resolve();
@@ -102,14 +71,21 @@ export async function startLinuxCheckout({dbPath,host='127.0.0.1',port=0,binding
       return pending;
     },waitUntil(promise){
       const job=Promise.resolve(promise).catch(()=>{});background.add(job);void job.finally(()=>background.delete(job));}};
-    ledger=new CheckoutLedger(ctx,env);
+    ledger=new CheckoutLedger(ctx,env,{fundProvider});
     // Honour the constructor's initialization gate before serving any request.
     await initial;
     // Opening a process must not execute or replace an alarm scheduled for later.
     // Recheck inside the queue so an earlier job can move or delete the alarm.
-    const runDueAlarm=()=>serial(async()=>{if((storage.alarmAt()??Infinity)<=Date.now())await ledger.alarm();});
+    let alarmRunning=false;
+    const runDueAlarm=()=>serial(async()=>{
+      if(alarmRunning||(storage.alarmAt()??Infinity)>Date.now())return;
+      alarmRunning=true;
+      // Network waits must not hold the HTTP ledger queue. SQLite transactions
+      // remain synchronous; durable leases exclude duplicate job execution.
+      ctx.waitUntil(ledger.alarm().finally(()=>{alarmRunning=false;}));
+    });
     initial=runDueAlarm();
-    interval=setInterval(()=>{void runDueAlarm();},1000);
+    interval=setInterval(()=>{void runDueAlarm().catch(()=>{});},1000);
     interval.unref();
     const max=Math.min(20*1024*1024,Math.max(8192,(Number(env.MAX_ENVELOPE_BYTES)||524288)*2+8192));
     server=createServer(async(req,res)=>{
@@ -117,15 +93,21 @@ export async function startLinuxCheckout({dbPath,host='127.0.0.1',port=0,binding
         const chunks=[];let size=0;
         for await(const chunk of req){size+=chunk.length;if(size>max){res.writeHead(413,{'Content-Type':'application/json'});res.end('{"error":"request_too_large"}');return;}chunks.push(chunk);}
         const url=new URL(req.url??'/','http://127.0.0.1');
-        const headers=new Headers(req.headers);headers.set('CF-Connecting-IP',req.socket.remoteAddress??'unknown');
+        const headers=new Headers(req.headers);headers.set('CF-Connecting-IP',clientAddress(req.socket.remoteAddress,headers.get('X-Forwarded-For')));
         const request=new Request(url,{method:req.method,headers,
           ...(['GET','HEAD'].includes(req.method??'GET')?{}:{body:Buffer.concat(chunks)})});
         const path=url.pathname;
+        if(path==='/healthz'&&req.method==='GET'){
+          db.prepare('SELECT 1').get();
+          const commit=typeof env.SEJIRE_BUILD_COMMIT==='string'&&/^[a-f0-9]{7,64}$/.test(env.SEJIRE_BUILD_COMMIT)?env.SEJIRE_BUILD_COMMIT:null;
+          res.writeHead(200,{'Content-Type':'application/json','Cache-Control':'no-store'});
+          res.end(JSON.stringify({schema:'sejire/service-health/v1',status:'ok',runtime:'linux-sqlite',sourceCommit:commit}));return;
+        }
         const offer=req.method==='GET'&&['/api/checkout/policy','/api/checkout/policy/contribution','/api/checkout/rpc-health'].includes(path);
         const create=req.method==='POST'&&path==='/api/checkout/orders';
         const selected=offer||create?withRecipientSettings(env,new RecipientSettings(storage).get()):env;
         const response=path===RECIPIENT_ADMIN_PATH?await recipientAdminApi(request,env):
-          (await checkoutApi(request,selected)??await fundApi(request,selected,fundProvider)??
+          (await checkoutApi(request,selected)??await fundApi(request,selected,fundProvider,treasuryProofReader)??
           new Response('{"error":"not_found"}',{status:404,headers:{'Content-Type':'application/json'}}));
         res.writeHead(response.status,Object.fromEntries(response.headers));res.end(Buffer.from(await response.arrayBuffer()));
       }catch{if(!res.headersSent)res.writeHead(503,{'Content-Type':'application/json'});res.end('{"error":"backend_unavailable"}');}

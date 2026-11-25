@@ -92,10 +92,12 @@ export async function readPaidPolicy(signal?: AbortSignal, kind: 'preservation' 
       (value.contributionReady !== undefined && typeof value.contributionReady !== 'boolean')) throw Error('invalid_paid_policy');
   if (value.policy !== undefined) {
     validatePaidPolicy(value.policy);
+    if (import.meta.env?.VITE_PORTABLE_FUNDED === '1' && value.policy.network !== 'mainnet-beta') throw Error('paid_mainnet_required');
     if (await paidPolicyHash(value.policy) !== value.policyHash) throw Error('paid_policy_mismatch');
   }
   if (value.contributionPolicy !== undefined) {
     validateContributionPolicy(value.contributionPolicy);
+    if (import.meta.env?.VITE_PORTABLE_FUNDED === '1' && value.contributionPolicy.network !== 'mainnet-beta') throw Error('paid_mainnet_required');
     if (await paidPolicyHash(value.contributionPolicy) !== value.contributionPolicyHash) throw Error('paid_policy_mismatch');
   }
   if ((value.ready && !value.policy) || (value.contributionReady && !value.contributionPolicy) ||

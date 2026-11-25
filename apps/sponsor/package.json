@@ -16,7 +16,7 @@
     "test:recipients": "node --experimental-sqlite --loader ../../scripts/offline-ts-loader.mjs tests/recipient-settings.local.mjs",
     "test:paid-runtime": "node tests/direct-preservation-runtime.mjs && node tests/paid-api-runtime.mjs",
     "linux:serve": "node --experimental-sqlite --import tsx bin/linux-checkout.mjs",
-    "test:linux": "node --experimental-sqlite --import tsx tests/linux-server.mjs && node --experimental-sqlite --import tsx tests/linux-paid-promo.mjs",
+    "test:linux": "node --experimental-sqlite --import tsx tests/linux-server.mjs && node --experimental-sqlite --import tsx tests/linux-paid-promo.mjs && node --experimental-sqlite --import tsx tests/funded-operations.mjs && node --experimental-sqlite --import tsx tests/ledger-import.mjs",
     "test:api": "node tests/api-runtime.mjs",
     "test:preservation": "tsx src/checkout/preparation.selftest.ts && tsx src/checkout/preservation.selftest.ts",
     "test:protocol": "tsx src/protocol/selftest.ts"

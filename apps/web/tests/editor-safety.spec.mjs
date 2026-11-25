@@ -9,20 +9,21 @@ async function draft(page) {
 async function profile(page, name) {
   await page.locator('button.person-card').filter({ hasText: name }).dispatchEvent('click');
   await expect(page.locator('.person-panel.is-open input').first()).toHaveValue(name);
-  // Let the panel's zero-delay readiness callback run; keep its 350 ms save blocked.
-  await page.evaluate(() => new Promise(resolve => setTimeout(resolve, 0)));
 }
 async function setup(page) {
   const external = [], writes = [], errors = [];
-  page.on('pageerror', error => errors.push(error.message));
-  page.on('console', msg => { if (/flushSync.*(lifecycle|rendering)/i.test(msg.text())) errors.push(msg.text()); });
-  page.on('request', request => {
-    if (request.method() !== 'GET' && request.method() !== 'HEAD') writes.push(request.url());
-  });
-  await page.route('**/*', route => {
-    if (new URL(route.request().url()).origin === 'http://127.0.0.1:5186') return route.continue();
-    external.push(route.request().url()); return route.abort();
-  });
+  async function watchPage(target) {
+    target.on('pageerror', error => errors.push(error.message));
+    target.on('console', msg => { if (/flushSync.*(lifecycle|rendering)/i.test(msg.text())) errors.push(msg.text()); });
+    target.on('request', request => {
+      if (request.method() !== 'GET' && request.method() !== 'HEAD') writes.push(request.url());
+    });
+    await target.route('**/*', route => {
+      if (new URL(route.request().url()).origin === 'http://127.0.0.1:5186') return route.continue();
+      external.push(route.request().url()); return route.abort();
+    });
+  }
+  await watchPage(page);
   await page.addInitScript(() => {
     const original = window.setTimeout.bind(window);
     // Reproduce an action BEFORE autosave deterministically, independent of CI speed.
@@ -31,6 +32,7 @@ async function setup(page) {
       delay === 350 || delay === 7000 ? 60000 : delay, ...args);
   });
   await page.goto('/');
+  await expect(page.getByRole('button', { name: 'Освободить черновик', exact: true })).toBeVisible();
   const baseline = await page.evaluate(async ({ CHILD, MOTHER, CHILD_NAME, MOTHER_NAME }) => {
     const engine = await import('/src/lib/treeEngine.ts');
     const { saveDraftTree } = await import('/src/lib/draftStorage.ts');
@@ -50,11 +52,160 @@ async function setup(page) {
   await page.reload();
   await expect(page.locator('button.person-card').filter({ hasText: CHILD_NAME })).toBeVisible();
   await expect(page.locator('.app-topbar .top-actions > button.btn')).toBeEnabled();
-  return { baseline, assertReadOnly(expectedRenderErrors = []) {
+  return { baseline, watchPage, assertReadOnly(expectedRenderErrors = []) {
     expect(external).toEqual([]); expect(writes).toEqual([]);
     expect(errors.filter(error => !expectedRenderErrors.includes(error))).toEqual([]);
   } };
 }
+
+test('the final input is durable in the same event task before immediate reload', async ({ page }) => {
+  const f = await setup(page);
+  await profile(page, CHILD_NAME);
+  const text = 'Последняя буква: Ә — не терять пробел ';
+  const firstReload = page.waitForEvent('domcontentloaded');
+  await page.locator('.person-panel textarea').evaluate((field, value) => {
+    Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value').set.call(field, value);
+    field.dispatchEvent(new Event('input', { bubbles: true }));
+    // No blur, timeout or React effect can complete a delayed save first.
+    location.reload();
+  }, text);
+  await firstReload;
+  await expect(page.locator('.workspace-main')).toBeVisible();
+  expect((await draft(page)).draft.persons[CHILD].notes).toBe(text);
+  expect((await draft(page)).commits).toEqual(f.baseline.commits);
+  await profile(page, CHILD_NAME);
+  const name = 'Алия Мария ';
+  const secondReload = page.waitForEvent('domcontentloaded');
+  await page.locator('.person-panel input').first().evaluate((field, value) => {
+    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(field, value);
+    field.dispatchEvent(new Event('input', { bubbles: true }));
+    location.reload();
+  }, name);
+  await secondReload;
+  await expect(page.locator('.workspace-main')).toBeVisible();
+  expect((await draft(page)).draft.persons[CHILD].name).toBe(name);
+  expect((await draft(page)).draft.persons[CHILD].notes).toBe(text);
+  expect((await draft(page)).commits).toEqual(f.baseline.commits);
+  f.assertReadOnly();
+});
+
+test('two real tabs share one writer, explicitly hand off and reload the newest complete draft', async ({ page, context }) => {
+  const f = await setup(page), other = await context.newPage();
+  await f.watchPage(other);
+  try {
+    await profile(page, CHILD_NAME);
+    await page.locator('.person-panel textarea').fill('Written immediately by the first tab');
+    await page.locator('.person-panel-head button').click();
+    await other.goto('/');
+    await expect(other.locator('.draft-access-notice')).toContainText('открыт в другой вкладке');
+    await expect(other.getByRole('button', { name: 'Продолжить', exact: true })).toBeDisabled();
+    await expect(other.getByRole('button', { name: 'Новое древо', exact: true })).toBeDisabled();
+    await expect(other.getByRole('button', { name: 'Открыть по 12 словам', exact: true })).toBeDisabled();
+    await expect(other.locator('.workspace-main')).toHaveCount(0);
+    const downloading = other.waitForEvent('download');
+    await other.getByRole('button', { name: 'Скачать сохранённую копию', exact: true }).click();
+    const downloaded = await downloading, chunks = [];
+    for await (const chunk of await downloaded.createReadStream()) chunks.push(chunk);
+    const exported = JSON.parse(Buffer.concat(chunks).toString('utf8'));
+    expect(exported.store.draft.persons[CHILD].notes).toBe('Written immediately by the first tab');
+    expect(exported.store.commits).toEqual(f.baseline.commits);
+
+    await page.getByRole('button', { name: 'Освободить черновик', exact: true }).click();
+    await expect(page.locator('.workspace-main')).toHaveCount(0);
+    await other.getByRole('button', { name: 'Продолжить здесь', exact: true }).click();
+    await expect(other.getByRole('button', { name: 'Продолжить', exact: true })).toBeEnabled();
+    await other.getByRole('button', { name: 'Продолжить', exact: true }).click();
+    await profile(other, CHILD_NAME);
+    await expect(other.locator('.person-panel textarea')).toHaveValue('Written immediately by the first tab');
+    await other.locator('.person-panel textarea').fill('The second tab owns these newer changes');
+    await other.locator('.person-panel-head button').click();
+
+    await page.getByRole('button', { name: 'Продолжить здесь', exact: true }).click();
+    await expect(page.locator('.draft-access-notice')).toContainText('открыт в другой вкладке');
+    expect((await draft(page)).draft.persons[CHILD].notes).toBe('The second tab owns these newer changes');
+    // Reloading the reader also cannot take over or autosave its old snapshot.
+    await page.reload();
+    await expect(page.locator('.draft-access-notice')).toContainText('открыт в другой вкладке');
+    expect((await draft(page)).draft.persons[CHILD].notes).toBe('The second tab owns these newer changes');
+
+    await other.close();
+    await page.getByRole('button', { name: 'Продолжить здесь', exact: true }).click();
+    await expect(page.locator('.workspace-main')).toBeVisible();
+    await profile(page, CHILD_NAME);
+    await expect(page.locator('.person-panel textarea')).toHaveValue('The second tab owns these newer changes');
+    expect((await draft(page)).commits).toEqual(f.baseline.commits);
+    f.assertReadOnly();
+  } finally { if (!other.isClosed()) await other.close(); }
+});
+
+test('pagehide releases the writer and persisted pageshow cannot overwrite a tab that acquired it', async ({ page, context }) => {
+  const f = await setup(page), other = await context.newPage();
+  await f.watchPage(other);
+  try {
+    await page.evaluate(() => window.dispatchEvent(new PageTransitionEvent('pagehide', { persisted: true })));
+    await other.goto('/');
+    await expect(other.getByRole('button', { name: 'Продолжить', exact: true })).toBeEnabled();
+    await other.getByRole('button', { name: 'Продолжить', exact: true }).click();
+    await profile(other, CHILD_NAME);
+    await other.locator('.person-panel textarea').fill('Changed while the first document was suspended');
+    await other.locator('.person-panel-head button').click();
+    await page.evaluate(() => window.dispatchEvent(new PageTransitionEvent('pageshow', { persisted: true })));
+    await expect(page.locator('.draft-access-notice')).toContainText('открыт в другой вкладке');
+    await expect(page.locator('.workspace-main')).toHaveCount(0);
+    expect((await draft(page)).draft.persons[CHILD].notes).toBe('Changed while the first document was suspended');
+    await other.close();
+    await page.getByRole('button', { name: 'Продолжить здесь', exact: true }).click();
+    await expect(page.locator('.workspace-main')).toBeVisible();
+    expect((await draft(page)).draft.persons[CHILD].notes).toBe('Changed while the first document was suspended');
+    f.assertReadOnly();
+  } finally { if (!other.isClosed()) await other.close(); }
+});
+
+test('missing Web Locks leaves the saved draft downloadable without an unsafe writer fallback', async ({ page }) => {
+  const f = await setup(page), before = await draft(page);
+  await page.addInitScript(() => Object.defineProperty(navigator, 'locks', { configurable: true, value: undefined }));
+  await page.reload();
+  await expect(page.locator('.draft-access-notice')).toContainText('Редактирование остановлено');
+  await expect(page.locator('.workspace-main')).toHaveCount(0);
+  const downloading = page.waitForEvent('download');
+  await page.getByRole('button', { name: 'Скачать сохранённую копию', exact: true }).click();
+  const download = await downloading, chunks = [];
+  for await (const chunk of await download.createReadStream()) chunks.push(chunk);
+  expect(JSON.parse(Buffer.concat(chunks).toString('utf8')).store).toEqual(before);
+  expect(await draft(page)).toEqual(before);
+  f.assertReadOnly();
+});
+
+test('quota refusal retains the last input for export and explicit retry without deleting the old draft', async ({ page }) => {
+  const f = await setup(page), before = await draft(page);
+  await profile(page, CHILD_NAME);
+  await page.evaluate(() => {
+    const write = Storage.prototype.setItem;
+    window.allowDraftWrites = () => { Storage.prototype.setItem = write; };
+    Storage.prototype.setItem = function (key, value) {
+      if (this === localStorage && key === 'sejire.draft.tree.v1') throw new DOMException('Synthetic draft quota', 'QuotaExceededError');
+      return write.call(this, key, value);
+    };
+  });
+  const note = 'Latest unsaved text must remain recoverable';
+  await page.locator('.person-panel textarea').fill(note);
+  await expect(page.locator('.draft-access-notice')).toContainText('пока не записаны');
+  expect(await draft(page)).toEqual(before);
+  await expect(page.getByRole('button', { name: 'Освободить черновик', exact: true })).toBeDisabled();
+  const downloading = page.waitForEvent('download');
+  await page.getByRole('button', { name: 'Скачать мои изменения', exact: true }).click();
+  const download = await downloading, chunks = [];
+  for await (const chunk of await download.createReadStream()) chunks.push(chunk);
+  const exported = JSON.parse(Buffer.concat(chunks).toString('utf8'));
+  expect(exported.store.draft.persons[CHILD].notes).toBe(note);
+  expect(exported.store.commits).toEqual(before.commits);
+  await page.evaluate(() => window.allowDraftWrites());
+  await page.getByRole('button', { name: 'Повторить локальное сохранение', exact: true }).click();
+  await expect(page.locator('.draft-access-notice')).not.toContainText('пока не записаны');
+  expect((await draft(page)).draft.persons[CHILD].notes).toBe(note);
+  expect((await draft(page)).commits).toEqual(before.commits);
+  f.assertReadOnly();
+});
 
 test('opening the saved draft after a render failure leaves the failed deep link', async ({ page }) => {
   const f = await setup(page);
@@ -143,6 +294,70 @@ async function restorationSelection(page) {
     cache: localStorage.getItem('sejire.envelope.' + window.restoreAuditFixture.vault.vault_id),
   }));
 }
+
+test('pending restoration cannot write cache, session or draft after another real tab receives ownership', async ({ page, context }) => {
+  const f = await prepareFundedRestore(page), before = await restorationSelection(page);
+  const other = await context.newPage();
+  await f.watchPage(other);
+  let confirmations = 0;
+  page.on('dialog', async dialog => { confirmations++; await dialog.accept(); });
+  await page.evaluate(() => {
+    const decrypt = crypto.subtle.decrypt.bind(crypto.subtle);
+    crypto.subtle.decrypt = async (...args) => {
+      const result = await decrypt(...args);
+      window.draftOwnershipDecryptWaiting = true;
+      await new Promise(resolve => { window.releaseDraftOwnershipDecrypt = resolve; });
+      return result;
+    };
+  });
+  try {
+    await page.getByRole('button', { name: 'Восстановить архив', exact: true }).click();
+    await expect.poll(() => page.evaluate(() => window.draftOwnershipDecryptWaiting)).toBe(true);
+    await page.getByRole('button', { name: 'Освободить черновик', exact: true }).click();
+    await expect(page.getByRole('textbox', { name: '12 слов восстановления SEJIRE' })).toHaveCount(0);
+    await other.goto('/');
+    await other.getByRole('button', { name: 'Продолжить', exact: true }).click();
+    await profile(other, CHILD_NAME);
+    await other.locator('.person-panel textarea').fill('The new owner retains this draft');
+    await other.locator('.person-panel-head button').click();
+    const latest = await draft(other);
+    await page.evaluate(async () => {
+      window.releaseDraftOwnershipDecrypt();
+      await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    });
+    expect(confirmations).toBe(0);
+    const after = await restorationSelection(page);
+    expect(after.cache).toBe(before.cache);
+    expect(after.session).toBe(before.session);
+    expect(await draft(page)).toEqual(latest);
+    expect(latest.draft.persons[CHILD].notes).toBe('The new owner retains this draft');
+    expect(latest.commits).toEqual(f.baseline.commits);
+    f.assertReadOnly();
+  } finally { await other.close(); }
+});
+
+test('an old application writing without the lock is detected before this tab can overwrite it', async ({ page, context }) => {
+  const f = await setup(page), other = await context.newPage();
+  await f.watchPage(other);
+  try {
+    await other.goto('/');
+    await expect(other.locator('.draft-access-notice')).toContainText('открыт в другой вкладке');
+    await other.evaluate(id => {
+      const tree = JSON.parse(localStorage.getItem('sejire.draft.tree.v1'));
+      tree.draft.persons[id].notes = 'Written by an older application without Web Locks';
+      localStorage.setItem('sejire.draft.tree.v1', JSON.stringify(tree));
+    }, CHILD);
+    await expect(page.locator('.draft-access-notice')).toContainText('изменён вне этой вкладки');
+    await expect(page.locator('.workspace-main')).toHaveCount(0);
+    expect((await draft(page)).draft.persons[CHILD].notes).toBe('Written by an older application without Web Locks');
+    await page.getByRole('button', { name: 'Продолжить здесь', exact: true }).click();
+    await expect(page.locator('.workspace-main')).toBeVisible();
+    await profile(page, CHILD_NAME);
+    await expect(page.locator('.person-panel textarea')).toHaveValue('Written by an older application without Web Locks');
+    expect((await draft(page)).commits).toEqual(f.baseline.commits);
+    f.assertReadOnly();
+  } finally { await other.close(); }
+});
 
 test('funded restoration rolls back the full selection when session persistence fails', async ({ page }) => {
   const f = await prepareFundedRestore(page);

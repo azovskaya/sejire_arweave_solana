@@ -1,0 +1,242 @@
+{
+  "schema": "sejire/admin-completion-evidence/v1",
+  "date": "2026-11-25",
+  "evidenceSavedAtUtc": "2026-11-25T10:23:23.552133+00:00",
+  "branch": "feat/funded-portable-release-20261125",
+  "baseCommit": "5b35fe0072c50a321d879beee909acc93109d41f",
+  "state": "frontend frozen, local uncommitted candidate; no deployment or external transaction by this agent",
+  "logProvenance": "Verbatim stdout preserved from completed tool-call output in this session; no tests rerun while saving evidence. Tool chunk IDs identify the capture. Text log extensions avoid the repository generic *.log ignore rule.",
+  "results": [
+    {
+      "name": "adminScope standalone",
+      "command": "node --import ./apps/web/node_modules/tsx/dist/loader.mjs apps/web/src/lib/fund/adminScope.selftest.ts",
+      "cwd": ".",
+      "exitCode": 0,
+      "kind": "node-execution",
+      "log": "node-adminScope.stdout.txt",
+      "sourceChunk": "6e6db4",
+      "alsoPassedInFinalCombinedRun": true
+    },
+    {
+      "name": "final combined admin helper run",
+      "commands": [
+        "node --import ./apps/web/node_modules/tsx/dist/loader.mjs apps/web/src/lib/fund/adminScope.selftest.ts",
+        "node --import ./apps/web/node_modules/tsx/dist/loader.mjs apps/web/src/lib/fund/treasuryTransfer.selftest.ts"
+      ],
+      "cwd": ".",
+      "exitCode": 0,
+      "kind": "node-execution",
+      "log": "node-admin-safety-combined.stdout.txt",
+      "sourceChunks": [
+        "7f00ba",
+        "69d9b7"
+      ],
+      "transferSafetyScenarios": 6
+    },
+    {
+      "name": "web typecheck",
+      "command": "node node_modules/typescript/bin/tsc -b --pretty false",
+      "cwd": "apps/web",
+      "exitCode": 0,
+      "kind": "typecheck",
+      "log": "typecheck.stdout.txt",
+      "sourceChunk": "912771",
+      "stdoutBytes": 0
+    },
+    {
+      "name": "admin browser collection",
+      "command": "node node_modules/@playwright/test/cli.js test --config playwright.admin-password.config.ts --list",
+      "cwd": "apps/web",
+      "exitCode": 0,
+      "kind": "collection-only",
+      "collectedTests": 21,
+      "executedBrowserTests": 0,
+      "log": "playwright-admin-collection.stdout.txt",
+      "sourceChunk": "a70729"
+    },
+    {
+      "name": "fund browser collection",
+      "command": "node node_modules/@playwright/test/cli.js test --config playwright.fund.config.ts --list",
+      "cwd": "apps/web",
+      "exitCode": 0,
+      "kind": "collection-only",
+      "collectedTests": 27,
+      "executedBrowserTests": 0,
+      "log": "playwright-fund-collection.stdout.txt",
+      "sourceChunk": "8d5460"
+    },
+    {
+      "name": "recipient browser collection",
+      "command": "node node_modules/@playwright/test/cli.js test --config playwright.sol-recipients.config.mjs --list",
+      "cwd": "apps/web",
+      "exitCode": 0,
+      "kind": "collection-only",
+      "collectedTests": 3,
+      "executedBrowserTests": 0,
+      "log": "playwright-recipients-collection.stdout.txt",
+      "sourceChunk": "7ac6f8"
+    }
+  ],
+  "review": {
+    "adminPath": "/#/admin",
+    "modernAuthorization": "server-required; credential held in page memory only",
+    "paidOverview": "server-authorized read-only ledger; separate Mainnet/Devnet totals and payment/storage statuses; no public Devnet scraper",
+    "treasuryFlow": "prepare durable nonce intent -> Wander quote and exact preview -> one durable server/local signing claim -> verified signed bytes with server readback -> explicit send -> two-node confirmed credit and readback",
+    "foundAndFixed": "Cached balance could include a historical incoming transfer while both /info heights lagged. Backend fixed this with unpredictable 256-bit nonce issued after pin, required in the native signed transfer tag.",
+    "backendReview": "PASS after nonce and transfer-claim fixes; reviewed amount/recipient/sender/signature/ID/tag/block/confirmations, atomic unique TX/revision/CAS and conservative shared ceiling",
+    "reciprocalFrontendReview": {
+      "reviewer": "/root/sol_promo_architecture",
+      "mode": "read-only",
+      "result": "no blockers",
+      "scope": [
+        "treasuryTransfer.ts",
+        "treasuryTransferStore.ts",
+        "server contract matching",
+        "late-signature persistence without network",
+        "immutable signed replay and clean-browser recovery"
+      ]
+    }
+  },
+  "networkSafety": {
+    "realWalletConnectOrSign": false,
+    "realFundsTransferred": false,
+    "productionSecretsRead": false,
+    "deployed": false,
+    "nodeTestTransport": "fully mocked",
+    "signer": "synthetic ephemeral RSA4096 test key; not logged or persisted"
+  },
+  "limitations": [
+    "Playwright --list is test collection only. No browser test executed by this agent; Chromium was unavailable locally. Full CI and browser acceptance remain required.",
+    "A signing claim never expires. An unknown signature requires checking the original wallet/page; the same intent cannot request a replacement signature automatically.",
+    "Two trusted Arweave nodes report chain inclusion and confirmations; this is not a local consensus proof.",
+    "Native AR topup, real Wander UX, production operator authorization and Mainnet roundtrip were not exercised against live services.",
+    "A topup raises the proved physical ceiling only; it does not reset spent totals or automatically increase paid/promo policy quotas.",
+    "The existing encrypted-envelope limit remains 512 KiB; current policy limit is displayed in admin. Public save UI warning is owned by the root/public-release workstream."
+  ],
+  "sourceSnapshotNote": "Hashes describe the frozen source snapshot when this evidence was saved. Node logs cover the helper code; final UI-only label/CSS changes are covered by the recorded typecheck and collection, not by a local browser execution. Root exact-tree CI/build is separate.",
+  "sourceFiles": [
+    {
+      "path": "apps/web/src/components/AdminDesk.tsx",
+      "sha256": "99a1e6614e5eb6578f1f56fe5bec81711d2b62a82b9b8ed81e3178e00aff61f0"
+    },
+    {
+      "path": "apps/web/src/components/ServerAdminDesk.tsx",
+      "sha256": "95fd70e8801726bc5c8f636f0c239585e9ac829a633262db6e3a2dd3c975e3bc"
+    },
+    {
+      "path": "apps/web/src/components/FundAdmin.tsx",
+      "sha256": "b9174dc9a5a14cfadd86829f832dd09dc2f2cbcbb557cf49b44748cefb2b4086"
+    },
+    {
+      "path": "apps/web/src/components/PaidOrdersAdmin.tsx",
+      "sha256": "46a8cf17a1ca13f6ac100b2370a26c9b8ba833504976cc21f44d09d4c54d6326"
+    },
+    {
+      "path": "apps/web/src/components/SolanaRecipientsAdmin.tsx",
+      "sha256": "f8ad9ddee8a5f4b6bb4316ac6b3fcb2b86d74248329d5f06647570799fa7c032"
+    },
+    {
+      "path": "apps/web/src/components/TreasuryTopupAdmin.tsx",
+      "sha256": "b46cbba773a9159c3214eca5c19bb037fb62ed1981b01ca814864bf7dae7ba9b"
+    },
+    {
+      "path": "apps/web/src/components/TreasuryTransferPanel.tsx",
+      "sha256": "bb7d0d635ffe950f2b0c701942ce2fc39bcf363561f857b20b5380073d3d6290"
+    },
+    {
+      "path": "apps/web/src/lib/fund/client.ts",
+      "sha256": "2dbd6533767f19b00f3fe43fd3f91c5569dccee9377f24f0d18cfea7af22b72f"
+    },
+    {
+      "path": "apps/web/src/lib/fund/adminClient.ts",
+      "sha256": "9fdbee7c4d8b3344a2770f15eb945004e4b67c2a124c0994d4269231ce32d5a4"
+    },
+    {
+      "path": "apps/web/src/lib/fund/adminScope.ts",
+      "sha256": "63426af1f1bf169879aa4807c8e35891c299e29e5576b39022e1c5570a737199"
+    },
+    {
+      "path": "apps/web/src/lib/fund/adminScope.selftest.ts",
+      "sha256": "aab9e44760f0813dc1435c5d68a155dc9b870cef3a1d09f1bf099374e72d6541"
+    },
+    {
+      "path": "apps/web/src/lib/fund/treasuryTransfer.ts",
+      "sha256": "015915a04dc7013cabe4a967e5ada9301d6e9252a5882e38b7cf4afc6dd596cd"
+    },
+    {
+      "path": "apps/web/src/lib/fund/treasuryTransferStore.ts",
+      "sha256": "ecf9fd96f1890e2c9c7791daf519eacba0a15365a0fa265471e2b8541540cc21"
+    },
+    {
+      "path": "apps/web/src/lib/fund/treasuryTransfer.selftest.ts",
+      "sha256": "e0d3c9ed48c820e3e52a9a1f4d55239cb3093dae29302005556251077f58a5fa"
+    },
+    {
+      "path": "apps/web/src/index.css",
+      "sha256": "e2f599dcdba984e6e44f493016251369581a738dd11b16ce655ba6078c6fc7a4"
+    },
+    {
+      "path": "apps/web/tests/admin-password.spec.mjs",
+      "sha256": "d8f0abec98860cd1f4a5be761c3f8da5024fe99e651350909fd1be151f3c9929"
+    },
+    {
+      "path": "apps/web/tests/promo-funded.spec.mjs",
+      "sha256": "eaa71c32b7ddd15a2569c5de00939e8a96805a053b5948287dcb34b68be9e52c"
+    },
+    {
+      "path": "apps/web/tests/server-admin.fixture.mjs",
+      "sha256": "8bae31336921ef8e8ae67bc5a94fecbd5fdc6d6a8fecc6401da055eab7235166"
+    }
+  ],
+  "reviewedBackendFiles": [
+    {
+      "path": "apps/sponsor/src/checkout/treasuryTopups.ts",
+      "sha256": "c8fc3c3ba258e07f6b57391f5655203f699665f14da98c91a5f4e85a579a937f"
+    },
+    {
+      "path": "apps/sponsor/src/fund/treasuryProof.ts",
+      "sha256": "6b3f340692d622bf33708b75226596a5ff9fc32d5ffd2911c4689c7a783577cb"
+    },
+    {
+      "path": "apps/sponsor/src/checkout/treasuryGuard.ts",
+      "sha256": "126635e83e006faebe8bf5eaf32aaca9ff25ae332d82fdf360dcf38ec99c989f"
+    }
+  ],
+  "logFiles": [
+    {
+      "path": "node-adminScope.stdout.txt",
+      "bytes": 121,
+      "sha256": "c0bf0bbff0a0cc6de22c9b04c25dab0f6f73d9858b233f03ff7d0b8e9edde7d7"
+    },
+    {
+      "path": "node-treasuryTransfer.stdout.txt",
+      "bytes": 590,
+      "sha256": "75baf34c260ca5dafc771eb0767d05e213b3ce6eab0056a8a2189d7bff35354a"
+    },
+    {
+      "path": "node-admin-safety-combined.stdout.txt",
+      "bytes": 711,
+      "sha256": "9ee22ead7b65c94cc387f599df2486310fd600cac6f1f2e4e8a5daa6f38b6224"
+    },
+    {
+      "path": "typecheck.stdout.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "playwright-admin-collection.stdout.txt",
+      "bytes": 2390,
+      "sha256": "6e52352879a6fcde9a430dc76f5e974e3819748318d508f07155473da15fd149"
+    },
+    {
+      "path": "playwright-fund-collection.stdout.txt",
+      "bytes": 3363,
+      "sha256": "cc30bf52db923b4de54e0b155f858751ca8f763b2e505db243b2e55c40dcf86d"
+    },
+    {
+      "path": "playwright-recipients-collection.stdout.txt",
+      "bytes": 350,
+      "sha256": "6a32f72bb1226474b81217987e6e3801edcef39acdeb8f875ac38f89292841ca"
+    }
+  ]
+}

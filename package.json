@@ -69,7 +69,15 @@
     "test:continuation": "apps/sponsor/node_modules/.bin/tsx scripts/continuation.selftest.mts",
     "native:dev": "VITE_PRESERVATION_V2_ENABLED=1 VITE_NATIVE_AR_ENABLED=1 VITE_NATIVE_AR_BROADCAST=0 VITE_NATIVE_SOL_MAINNET=0 npm run solana:dev",
     "native:build": "VITE_PRESERVATION_V2_TEST=0 VITE_PRESERVATION_V2_ENABLED=1 VITE_NATIVE_AR_PILOT=1 VITE_NATIVE_AR_ENABLED=1 VITE_NATIVE_AR_BROADCAST=0 VITE_NATIVE_SOL_MAINNET=0 npm run solana:build",
-    "test:native-browser": "npm run test:native-browser --prefix apps/web"
+    "test:native-browser": "npm run test:native-browser --prefix apps/web",
+    "arns:build:portable": "node scripts/build-arns-portable-funded.mjs",
+    "arns:verify:portable": "node scripts/verify-arns-portable-funded.mjs apps/web/dist",
+    "linux:build": "node deployment/build-server.mjs",
+    "test:portable-release": "node --test scripts/portable-funded-profile.test.mjs scripts/linux-backup.test.mjs && node --import ./apps/web/node_modules/tsx/dist/loader.mjs --test scripts/verify-portable-service.test.mts && node --import ./apps/web/node_modules/tsx/dist/loader.mjs --test scripts/linux-backup-startup-race.test.mjs",
+    "test:linux-package": "npm run linux:build && node --test scripts/linux-package.test.mjs",
+    "portable:service:verify": "node --import ./apps/web/node_modules/tsx/dist/loader.mjs scripts/verify-portable-service.mts",
+    "portable:service:docker-test": "bash scripts/docker-service-smoke.sh",
+    "test:portable-browser": "npm run test:portable-browser --prefix apps/web"
   },
   "devDependencies": {
     "pptxgenjs": "^4.0.1"

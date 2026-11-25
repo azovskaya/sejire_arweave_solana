@@ -1,0 +1,5 @@
+Listing tests:
+  sol-recipients.spec.mjs:29:1 › two fields validate, save once, reload server values, and never activate payments
+  sol-recipients.spec.mjs:45:1 › a stale tab shows conflict instead of pretending the recipients were saved
+  sol-recipients.spec.mjs:54:1 › invalid admin access cannot edit or save fields
+Total: 3 tests in 1 file

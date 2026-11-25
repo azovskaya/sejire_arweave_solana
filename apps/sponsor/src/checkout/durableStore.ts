@@ -8,8 +8,11 @@ import { FundLedger, TREASURY_ADDRESS } from '../fund/ledger';
 import { PaidLedger } from './paidLedger';
 import { runPaidOrder, recoverPaidOrder } from './paidRunner';
 import type { PaidEnv } from './paidPolicy';
+import {DirectArweaveFundProvider,type FundedArweaveProvider} from '../fund/provider';
+import {runFundOrder,type FundOperations} from '../fund/runner';
 import type { DurablePaymentPreparation } from '../../../../packages/checkout/paid';
 import { RecipientSettings } from './recipientSettings';
+import {TreasuryTopupLedger} from './treasuryTopups';
 
 export const LEDGER_OBJECT_NAME = 'sejire-checkout-ledger-v1';
 type Env = PaidEnv & { CHECKOUT_LEDGER: DurableObjectNamespace };
@@ -23,13 +26,15 @@ export class CheckoutLedger {
   private readonly fund: FundLedger;
   private readonly paid: PaidLedger;
   private readonly recipients: RecipientSettings;
-  constructor(private readonly ctx: DurableObjectState, private readonly env: Env) {
+  private readonly topups: TreasuryTopupLedger;
+  constructor(private readonly ctx: DurableObjectState, private readonly env: Env, private readonly dependencies: {fundProvider?:FundedArweaveProvider}={}) {
     if (!ctx.id.equals(env.CHECKOUT_LEDGER.idFromName(LEDGER_OBJECT_NAME))) throw new Error('wrong_ledger_object');
     this.store = new SqliteAtomicOrderStore(ctx.storage);
     this.api = new ApiLedger(ctx.storage, this.store);
     this.fund = new FundLedger(ctx.storage);
     this.paid = new PaidLedger(ctx.storage,this.store,this.api);
     this.recipients = new RecipientSettings(ctx.storage);
+    this.topups = new TreasuryTopupLedger(ctx.storage,this.fund.treasury);
     // Re-arm durable obligations after an isolate restart, without a browser token.
     ctx.blockConcurrencyWhile(async()=>{
       // A cold alarm invokes the constructor first. Replacing an already due
@@ -38,8 +43,23 @@ export class CheckoutLedger {
     });
   }
   async alarm():Promise<void>{
-    try{for(const id of this.paid.due(Date.now(),3))await runPaidOrder(this.paid,this.env,id);}
-    finally{await this.paid.arm();}
+    const fundStore:FundOperations={call:async<T>(input:unknown):Promise<T>=>{
+      const f=input as {action:string;orderId:string;lease:string;reason:string|null;input:Parameters<FundLedger['event']>[0]};
+      if(f.action==='fundOrder')return this.fund.order(f.orderId,true) as T;
+      if(f.action==='fundClaim')return await this.fund.claim(f.orderId,f.lease) as T;
+      if(f.action==='fundFinish'){await this.fund.finish(f.orderId,f.lease,f.reason);return null as T;}
+      if(f.action==='fundEvent')return await this.fund.event(f.input) as T;
+      throw Error('unknown_fund_action');
+    }};
+    let provider=this.dependencies.fundProvider??null;
+    if(!provider&&this.env.ARWEAVE_TREASURY_JWK)try{provider=new DirectArweaveFundProvider(this.env.ARWEAVE_TREASURY_JWK);}catch{/* Hold obligations until a valid signer is restored. */}
+    try{
+      // Independent queues progress together; leases prevent overlap with HTTP.
+      await Promise.allSettled([
+        ...this.paid.due(Date.now(),3).map(id=>runPaidOrder(this.paid,this.env,id)),
+        ...this.fund.due(Date.now(),3).map(id=>runFundOrder(fundStore,provider,id))
+      ]);
+    }finally{await this.paid.arm();}
   }
   async fetch(request: Request): Promise<Response> {
     if (request.method !== 'POST') return new Response('method_not_allowed', { status: 405 });
@@ -51,6 +71,15 @@ export class CheckoutLedger {
     switch (data.action) {
       case 'recipientSettingsGet': return Response.json(this.recipients.get());
       case 'recipientSettingsSave': return Response.json(await this.recipients.save(f.input, now));
+      case 'paidAdminOverview': return Response.json(this.paid.adminOverview(Number(f.limit),typeof f.cursor==='string'?f.cursor:null));
+      case 'treasurySnapshot': return Response.json(this.topups.snapshot(String(f.address)));
+      case 'treasuryTopups': return Response.json(this.topups.list(f.limit===undefined?100:Number(f.limit),typeof f.cursor==='string'?f.cursor:null));
+      case 'treasuryTopupGet': return Response.json(this.topups.get(String(f.id)));
+      case 'treasuryTransferGet': return Response.json({transfer:this.topups.transfer(String(f.id))});
+      case 'treasuryTransferClaim': return Response.json(await this.topups.claimTransfer(f.input as Parameters<TreasuryTopupLedger['claimTransfer']>[0],now));
+      case 'treasuryTransferSigned': return Response.json(await this.topups.signTransfer(f.input as Parameters<TreasuryTopupLedger['signTransfer']>[0],now));
+      case 'treasuryTopupPrepare': return Response.json(await this.topups.prepare(f.input as Parameters<TreasuryTopupLedger['prepare']>[0],now));
+      case 'treasuryTopupConfirm': return Response.json(await this.topups.confirm(f.input as Parameters<TreasuryTopupLedger['confirm']>[0],now));
       case 'treasuryRevision': return Response.json(this.fund.treasury.revision(String(f.address)));
       case 'treasuryHeld': return Response.json(this.fund.treasury.held(String(f.address),TREASURY_ADDRESS));
       case 'treasuryEffectiveBalance': return Response.json(this.fund.treasury.effectiveBalance(String(f.address),String(f.balance)));
@@ -91,7 +120,10 @@ export class CheckoutLedger {
         return Response.json(snapshot);
       }
       case 'fundSummary': return Response.json(this.fund.summary(now));
+      case 'fundAvailable': return Response.json(this.fund.available(String(f.balance)));
       case 'fundSettings': return Response.json(this.fund.settings());
+      case 'fundClaim': return Response.json(await this.fund.claim(String(f.orderId),String(f.lease),now));
+      case 'fundFinish': await this.fund.finish(String(f.orderId),String(f.lease),typeof f.reason==='string'?f.reason:null,now); return Response.json(null);
       case 'fundOrder': return Response.json(this.fund.order(String(f.orderId),true));
       case 'fundRate': await this.fund.rate(String(f.bucket),Number(f.limit),now); return Response.json(null);
       case 'fundPromo': return Response.json(await this.fund.promo(String(f.hash),String(f.hint),now));
@@ -124,12 +156,12 @@ export class CheckoutLedger {
       default: return new Response('unknown_ledger_action', { status: 400 });
     }
     } catch (error) {
-      const known = ['order_or_reference_exists', 'order_not_found', 'previous_payment_unresolved', 'order_already_paid',
+      const known = ['invalid_admin_query','invalid_topup_request','treasury_revision_conflict','topup_idempotency_conflict','topup_not_found','topup_transfer_invalid','topup_transfer_conflict','topup_transfer_unresolved','topup_already_credited','topup_transaction_used','topup_intent_mismatch','topup_legacy_intent_requires_review','topup_transaction_mismatch','topup_not_confirmed','topup_precedes_intent','topup_proof_unavailable','order_or_reference_exists', 'order_not_found', 'previous_payment_unresolved', 'order_already_paid',
         'invalid_solana_recipient','solana_recipient_roles_overlap','solana_test_recipient_forbidden','invalid_solana_recipient_settings','solana_recipient_revision_conflict','payment_settings_changed',
         'payment_conflict', 'payment_not_reserved', 'credit_allocation_mismatch', 'payment_already_used',
         'paid_budget_exhausted','balance_observation_stale','paid_hold_not_releasable','paid_request_cancelled','repair_not_available','invalid_idempotency_key','order_expired','payment_not_prepared','preparation_changed',
         'invalid_payment_signature','invalid_payment_preparation','payment_preparation_mismatch','invalid_signed_payment','payment_not_expired','payment_recovery_busy','payment_recovery_unavailable','invalid_paid_archive','archive_mismatch','archive_not_canonical','invalid_envelope','envelope_too_large',
-        'promo_invalid','promo_disabled','promo_missing','fund_exhausted','archive_changed','limit_below_spent','limit_below_reserved','fund_ledger_inconsistent','wallet_low','invalid_ar_amount','invalid_winston','invalid_reward','invalid_signed_tx','tx_conflict','invalid_actual_reward','signed_tx_must_reconcile','order_not_found','unauthorized', 'idempotency_conflict', 'rate_limited', 'preservation_not_paid', 'execution_not_reserved', 'upload_receipt_mismatch'];
+        'fund_lease_lost','promo_invalid','promo_disabled','promo_missing','fund_exhausted','archive_changed','limit_below_spent','limit_below_reserved','fund_ledger_inconsistent','wallet_low','invalid_ar_amount','invalid_winston','invalid_reward','invalid_signed_tx','tx_conflict','invalid_actual_reward','signed_tx_must_reconcile','order_not_found','unauthorized', 'idempotency_conflict', 'rate_limited', 'preservation_not_paid', 'execution_not_reserved', 'upload_receipt_mismatch'];
       const code = error instanceof Error && known.includes(error.message) ? error.message : 'ledger_operation_failed';
       return Response.json({ error: code }, { status: 409 });
     }

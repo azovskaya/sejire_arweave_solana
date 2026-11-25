@@ -1,0 +1,114 @@
+{
+  "groups": 27,
+  "allPassed": true,
+  "results": [
+    {
+      "task": "test:engine",
+      "ok": true
+    },
+    {
+      "task": "test:crypto",
+      "ok": true
+    },
+    {
+      "task": "test:kinship",
+      "ok": true
+    },
+    {
+      "task": "test:pedigree",
+      "ok": true
+    },
+    {
+      "task": "test:lineage",
+      "ok": true
+    },
+    {
+      "task": "test:thirteen",
+      "ok": true
+    },
+    {
+      "task": "test:dates",
+      "ok": true
+    },
+    {
+      "task": "test:json",
+      "ok": true
+    },
+    {
+      "task": "test:zhuz",
+      "ok": true
+    },
+    {
+      "task": "test:sponsor",
+      "ok": true
+    },
+    {
+      "task": "test:loadVault",
+      "ok": true
+    },
+    {
+      "task": "test:mirror",
+      "ok": true
+    },
+    {
+      "task": "test:permawebHost",
+      "ok": true
+    },
+    {
+      "task": "test:lastScreen",
+      "ok": true
+    },
+    {
+      "task": "test:fetch",
+      "ok": true
+    },
+    {
+      "task": "test:gateways",
+      "ok": true
+    },
+    {
+      "task": "test:storage",
+      "ok": true
+    },
+    {
+      "task": "test:archive",
+      "ok": true
+    },
+    {
+      "task": "test:protocol",
+      "ok": true
+    },
+    {
+      "task": "test:i18n",
+      "ok": true
+    },
+    {
+      "task": "test:opsDesk",
+      "ok": true
+    },
+    {
+      "task": "test:solana",
+      "ok": true
+    },
+    {
+      "task": "test:native",
+      "ok": true
+    },
+    {
+      "task": "test:v2",
+      "ok": true
+    },
+    {
+      "task": "test:recovery",
+      "ok": true
+    },
+    {
+      "task": "test:fund-client",
+      "ok": true
+    },
+    {
+      "task": "test:paid-client",
+      "ok": true
+    }
+  ]
+}

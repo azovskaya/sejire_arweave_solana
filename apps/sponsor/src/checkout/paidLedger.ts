@@ -1,3 +1,5 @@
+import {armCheckoutAlarm} from './alarm';
+import type {AdminPaidOrder,AdminPaidTotal} from './adminTypes';
 import { assertOrder, assertBase58, type PaidOrder } from '../../../../packages/checkout/order';
 import { validatePaidOrderPolicy, validatePaymentPreparation, validatePaidReceipt, verifyPreparedPaymentSignature, paymentMessageBytes,
   type PaidPolicy, type CheckoutPolicy, type DurablePaymentPreparation, type PaidReceipt } from '../../../../packages/checkout/paid';
@@ -106,6 +108,33 @@ export class PaidLedger {
     await this.storage.sync();return result;
   }
   hasOrders():boolean{return this.sql.exec('SELECT order_id FROM paid_orders LIMIT 1').toArray().length>0;}
+  /** Authorized caller only. Whitelist a bounded projection, never an owner
+   * token, payload, prepared transaction, signature bytes or RPC credential. */
+  adminOverview(limit=50,cursor:string|null=null){
+    if(!Number.isSafeInteger(limit)||limit<1||limit>100||cursor!==null&&!/^[1-9][0-9]{0,14}$/.test(cursor))throw Error('invalid_admin_query');
+    type Row={rowid:number;order_json:string;payment_json:string|null;pending_signature:string|null;status:string;released:number;preparation_json:string|null;proof_json:string|null;receipt_json:string|null;tx_id:string|null};
+    const all=this.sql.exec<{order_json:string;paid:number;status:string;released:number}>('SELECT o.order_json,p.paid,p.status,p.released FROM paid_orders p JOIN orders o ON o.id=p.order_id').toArray();
+    const totals=new Map<string,AdminPaidTotal>();
+    for(const r of all){const o=JSON.parse(r.order_json) as PaidOrder;
+      let t=totals.get(o.network);if(!t){t={network:o.network,totalOrders:0,paymentConfirmed:0,storageCompleted:0,pending:0,failed:0,serviceLamports:'0',contributionLamports:'0'};totals.set(o.network,t);}
+      t.totalOrders++;if(r.paid){t.paymentConfirmed++;t.serviceLamports=(BigInt(t.serviceLamports)+BigInt(o.servicePayment.amount)).toString();t.contributionLamports=(BigInt(t.contributionLamports)+BigInt(o.fundContribution.amount)).toString();}
+      if(o.kind==='preservation'&&r.status==='completed')t.storageCompleted++;
+      if(r.released||r.status==='cancelled')t.failed++;else if(r.status!=='completed')t.pending++;
+    }
+    const rows=this.sql.exec<Row>(`SELECT p.rowid,o.order_json,o.payment_json,o.pending_signature,p.status,p.released,p.preparation_json,p.proof_json,p.receipt_json,
+      (SELECT json_extract(payload,'$.id') FROM paid_payloads s WHERE s.order_id=p.order_id AND s.kind='signed') AS tx_id
+      FROM paid_orders p JOIN orders o ON o.id=p.order_id WHERE (? IS NULL OR p.rowid<?) ORDER BY p.rowid DESC LIMIT ?`,cursor,cursor===null?null:Number(cursor),limit+1).toArray();
+    const orders:AdminPaidOrder[]=rows.slice(0,limit).map(r=>{
+      const o=JSON.parse(r.order_json) as PaidOrder,payment=json<ValidatedPayment>(r.payment_json),preparation=json<DurablePaymentPreparation>(r.preparation_json),proof=json<DirectCheck>(r.proof_json),receipt=json<PaidReceipt>(r.receipt_json);
+      return {id:o.id,kind:o.kind,network:o.network,createdAt:o.createdAt,updatedAt:Math.max(o.createdAt,preparation?.createdAt??0,proof?.checkedAt??0,receipt?.verifiedAt??0),
+        paymentStatus:payment?'verified':r.released?'cancelled':r.pending_signature||preparation?'requires-reconciliation':'awaiting-payment',
+        storageStatus:o.kind==='contribution'?'not-applicable':r.status,serviceLamports:o.servicePayment.amount,contributionLamports:o.fundContribution.amount,
+        ...(payment?.signature||r.pending_signature?{signature:payment?.signature??r.pending_signature!}:{}),
+        ...(r.tx_id?{arweaveTxId:r.tx_id}:{}),...(o.kind==='preservation'?{archiveBytes:o.archive.bytes}:{}),
+        ...(receipt?.rewardWinston||proof?.rewardWinston?{rewardWinston:receipt?.rewardWinston??proof!.rewardWinston!}:{})};
+    });
+    return {totals:[...totals.values()],orders,hasMore:rows.length>limit,cursor:rows.length>limit?String(rows[limit-1].rowid):null};
+  }
   async create(input:{hash:string;key:string;intent:string;order:PaidOrder;policy:CheckoutPolicy;serialized?:string;
     prepared?:PreparedDirectPlan;budgetLimit?:string;balance?:string;balanceRevision?:number},now:number){
     this.api.authenticate(input.hash,now);
@@ -401,11 +430,5 @@ export class PaidLedger {
     return this.sql.exec<{order_id:string}>('SELECT order_id FROM paid_orders WHERE released=0 AND (status<>? OR EXISTS(SELECT 1 FROM paid_archive_repairs r WHERE r.order_id=paid_orders.order_id AND r.status<>\'verified\')) AND next_at<=? AND lease_until<=? ORDER BY next_at LIMIT ?',
       'completed',now,now,limit).toArray().map(r=>r.order_id);
   }
-  async arm():Promise<void>{
-    const rows=this.sql.exec<{next_at:number;lease_until:number}>('SELECT next_at,lease_until FROM paid_orders WHERE released=0 AND (status<>? OR EXISTS(SELECT 1 FROM paid_archive_repairs r WHERE r.order_id=paid_orders.order_id AND r.status<>\'verified\'))','completed').toArray();
-    if(!rows.length){if(this.storage.deleteAlarm)await this.storage.deleteAlarm();return;}
-    const next=Math.max(Date.now()+1000,Math.min(...rows.map(r=>Math.max(r.next_at,r.lease_until))));
-    // No token/session is needed by the alarm; its obligation survives browser close.
-    if(this.storage.setAlarm)await this.storage.setAlarm(next);
-  }
+  async arm():Promise<void>{await armCheckoutAlarm(this.storage);}
 }

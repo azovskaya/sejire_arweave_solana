@@ -18,9 +18,10 @@ type Props = {
   onContinueDraft: () => void;
   onRestoreSeed: () => void;
   onCashier: () => void;
+  draftWritable?: boolean;
 };
 
-export function Welcome({ onStartNew, onContinueDraft, onRestoreSeed, onCashier }: Props) {
+export function Welcome({ onStartNew, onContinueDraft, onRestoreSeed, onCashier, draftWritable = true }: Props) {
   const [supportOpen, setSupportOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [openVaultId, setOpenVaultId] = useState(() => getSessionMnemonic() ? getVaultSession()?.vaultId ?? null : null);
@@ -53,11 +54,11 @@ export function Welcome({ onStartNew, onContinueDraft, onRestoreSeed, onCashier 
       <h1>{copy.title}</h1>
       <p className="landing-lead">{copy.lead}</p>
       <div className="landing-actions">
-        <button type="button" className="btn" onClick={hasDraft ? onContinueDraft : startFresh}>
+        <button type="button" className="btn" disabled={!draftWritable} onClick={hasDraft ? onContinueDraft : startFresh}>
           {hasDraft ? t.welcome.continueDraft : copy.start}
         </button>
-        <button type="button" className="btn ghost" onClick={onRestoreSeed}>{t.welcome.restoreSeed}</button>
-        {hasDraft && <button type="button" className="welcome-link-quiet" onClick={startFresh}>{t.welcome.newTree}</button>}
+        <button type="button" className="btn ghost" disabled={!draftWritable} onClick={onRestoreSeed}>{t.welcome.restoreSeed}</button>
+        {hasDraft && <button type="button" className="welcome-link-quiet" disabled={!draftWritable} onClick={startFresh}>{t.welcome.newTree}</button>}
       </div>
       <p className="sub">{copy.free}</p>
       <PermawebMigrationNotice />

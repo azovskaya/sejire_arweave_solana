@@ -16,8 +16,7 @@ import {recoverVaultFromWords} from "../lib/recovery/recover";
 import type {VerifiedVersion,SafeRecoveryDiagnostics,RecoveryErrorCode,RecoveryStage} from "../lib/recovery/types";
 import { loadDraftTree } from "../lib/draftStorage";
 import type { TreeStore } from "../lib/types";
-import { defaultGuide, saveGuide } from "../lib/guide";
-import { pickHomeFocus } from "../lib/pedigree";
+import { assertDraftWriteToken, currentDraftWriteToken } from "../lib/draftOwnership";
 import { activePersons } from "../lib/treeEngine";
 import { acceptVaultVersion } from "../lib/vaultSession/selection";
 import {archiveLocalVaultVersion,getLocalVaultVersion,listLocalVaultVersions,type LocalVaultVersion} from "../lib/vaultSession/localArchive";
@@ -37,6 +36,7 @@ type PickerItem =
 
 export function RestoreSeed({ onRestored, onBack }: Props) {
   const { locale, t } = useI18n();
+  const [draftToken] = useState(currentDraftWriteToken);
   const [input, setInput] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -68,6 +68,7 @@ export function RestoreSeed({ onRestored, onBack }: Props) {
   }
   function ensureActive(request: AbortController) {
     if (!isActive(request)) throw Error('restore_cancelled');
+    assertDraftWriteToken(draftToken);
   }
   function beginRequest() {
     if (!alive.current || activeRequest.current) return null;
@@ -139,9 +140,8 @@ export function RestoreSeed({ onRestored, onBack }: Props) {
         }
       }
       return true;
-    });
+    }, draftToken);
     if (!store) return;
-    saveGuide({ ...defaultGuide(), step: "done", selfId: pickHomeFocus(store.draft, null) });
     onRestored(store);
   }
 

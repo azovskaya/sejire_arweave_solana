@@ -25,6 +25,7 @@ import { addressFromTreasuryJson, generateTreasuryWallet, treasuryBalanceAr } fr
 import type { OpsOverview, RedactedOpsKeys } from "../lib/opsDesk/types";
 import { PreservationV2Diagnostics } from "./PreservationV2Diagnostics";
 import { FundAdmin } from "./FundAdmin";
+import { ServerAdminDesk } from "./ServerAdminDesk";
 
 type Props = { onHome: () => void; v2Diagnostics?: boolean };
 type Tab = "overview" | "keys" | "password" | "diagnostics" | "fund";
@@ -39,7 +40,11 @@ function tenge(n: number, currency: string): string {
   return `${n} ${currency}`;
 }
 
-export function AdminDesk({ onHome, v2Diagnostics=false }: Props) {
+export function AdminDesk(props: Props) {
+  return props.v2Diagnostics ? <ServerAdminDesk onHome={props.onHome} /> : <LegacyAdminDesk {...props} />;
+}
+
+function LegacyAdminDesk({ onHome, v2Diagnostics=false }: Props) {
   const { t, locale } = useI18n();
   const a = t.admin;
   const copy=v2Copy[locale];

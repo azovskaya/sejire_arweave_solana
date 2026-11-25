@@ -1,0 +1,4 @@
+$ node --import tsx src/lib/draftOwnership.selftest.ts
+draftOwnership selftest: PASS (exclusive tabs, lifecycle tokens, byte conflicts, unavailable APIs, quota and atomic replacement)
+
+exit_code=0

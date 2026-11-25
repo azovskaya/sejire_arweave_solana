@@ -1,0 +1,4 @@
+$ node --import tsx src/lib/storageQuota.selftest.ts
+storageQuota.selftest: OK
+
+exit_code=0
