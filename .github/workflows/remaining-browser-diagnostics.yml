@@ -1,0 +1,38 @@
+name: SEJIRE remaining browser diagnostics
+on:
+  push:
+    branches: [audit/remaining-browser-20261125]
+permissions:
+  contents: read
+jobs:
+  browser:
+    name: ${{ matrix.suite }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix:
+        suite: [test:admin-browser, test:fund-browser, test:paid-browser, test:v2-recovery-browser]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24.22.3"
+          cache: npm
+          cache-dependency-path: |
+            apps/web/package-lock.json
+            apps/sponsor/package-lock.json
+      - run: npm ci --prefix apps/web
+      - run: npm ci --prefix apps/sponsor
+      - run: npm exec --prefix apps/web -- playwright install --with-deps chromium
+      - name: Existing synthetic regression suite
+        run: npm run "${{ matrix.suite }}" --prefix apps/web
+      - name: Preserve synthetic browser diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: browser-${{ strategy.job-index }}-diagnostics
+          path: apps/web/test-results/
+          if-no-files-found: ignore
+          retention-days: 7
