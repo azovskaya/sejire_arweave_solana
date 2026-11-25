@@ -1,0 +1,240 @@
+name: DIAGNOSTIC exact ba6777ac remaining checks — NOT RELEASE
+
+# Place only on a separate audit/remaining-exact-* branch. Every job checks out
+# the immutable candidate, not the diagnostic branch. This cannot satisfy the
+# SEJIRE checks release contract and creates no accepted release artifact.
+on:
+  workflow_dispatch:
+  push:
+    branches: ['audit/remaining-exact-*']
+    paths: ['.github/workflows/remaining-exact-diagnostic.yml']
+
+permissions:
+  contents: read
+concurrency:
+  group: diagnostic-remaining-exact-ba6777ac
+  cancel-in-progress: false
+
+jobs:
+  editor_admin:
+    name: DIAGNOSTIC editor safety and server admin
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ba6777ac9c780627a6cdceafe947fed08ddaca63
+          persist-credentials: false
+      - run: test "$(git rev-parse HEAD)" = ba6777ac9c780627a6cdceafe947fed08ddaca63
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.22.3'
+          cache: npm
+          cache-dependency-path: |
+            apps/web/package-lock.json
+            apps/sponsor/package-lock.json
+      - run: npm ci --prefix apps/web
+      - run: npm ci --prefix apps/sponsor
+      - id: browsers
+        run: npm exec --prefix apps/web -- playwright install --with-deps chromium
+      - name: Exact editor safety suite, including same-event reload and two tabs
+        working-directory: apps/web
+        run: npx --no-install playwright test --config playwright.editor.config.ts
+      - name: Preserve editor diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: DIAGNOSTIC-ba6777ac-editor-NOT-RELEASE
+          path: apps/web/test-results/
+          if-no-files-found: ignore
+          retention-days: 14
+      - name: Exact server-admin password and native-transfer suite
+        if: ${{ !cancelled() && steps.browsers.outcome == 'success' }}
+        run: npm run test:admin-browser --prefix apps/web
+      - name: Preserve admin diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: DIAGNOSTIC-ba6777ac-admin-NOT-RELEASE
+          path: apps/web/test-results/
+          if-no-files-found: ignore
+          retention-days: 14
+
+  paid_fund_recovery:
+    name: DIAGNOSTIC paid, promo and V2 recovery
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ba6777ac9c780627a6cdceafe947fed08ddaca63
+          persist-credentials: false
+      - run: test "$(git rev-parse HEAD)" = ba6777ac9c780627a6cdceafe947fed08ddaca63
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.22.3'
+          cache: npm
+          cache-dependency-path: |
+            apps/web/package-lock.json
+            apps/sponsor/package-lock.json
+      - run: npm ci --prefix apps/web
+      - run: npm ci --prefix apps/sponsor
+      - id: browsers
+        run: npm exec --prefix apps/web -- playwright install --with-deps chromium
+      - name: Exact paid SOL browser suite, mocked network
+        run: npm run test:paid-browser
+      - name: Preserve paid diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: DIAGNOSTIC-ba6777ac-paid-NOT-RELEASE
+          path: apps/web/test-results/
+          if-no-files-found: ignore
+          retention-days: 14
+      - name: Exact promo browser suite, mocked network
+        if: ${{ !cancelled() && steps.browsers.outcome == 'success' }}
+        run: npm run test:fund-browser --prefix apps/web
+      - name: Preserve promo diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: DIAGNOSTIC-ba6777ac-promo-NOT-RELEASE
+          path: apps/web/test-results/
+          if-no-files-found: ignore
+          retention-days: 14
+      - name: Exact V2 recovery browser suite, synthetic archives
+        if: ${{ !cancelled() && steps.browsers.outcome == 'success' }}
+        run: npm run test:v2-recovery-browser --prefix apps/web
+      - name: Preserve recovery diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: DIAGNOSTIC-ba6777ac-recovery-NOT-RELEASE
+          path: apps/web/test-results/
+          if-no-files-found: ignore
+          retention-days: 14
+
+  dependency_audits:
+    name: DIAGNOSTIC production and full dependency audits
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ba6777ac9c780627a6cdceafe947fed08ddaca63
+          persist-credentials: false
+      - run: test "$(git rev-parse HEAD)" = ba6777ac9c780627a6cdceafe947fed08ddaca63
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.22.3'
+          cache: npm
+          cache-dependency-path: |
+            apps/web/package-lock.json
+            apps/sponsor/package-lock.json
+      - run: npm ci --prefix apps/web
+      - run: npm ci --prefix apps/sponsor
+      - name: Web production audit — original non-blocking review command
+        continue-on-error: true
+        run: |
+          mkdir -p .cache/dependency-audit
+          npm audit --prefix apps/web --omit=dev --json | tee .cache/dependency-audit/web-production.json
+      - name: Web full audit — original non-blocking review command
+        continue-on-error: true
+        run: npm audit --prefix apps/web --json | tee .cache/dependency-audit/web-full.json
+      - name: Sponsor production audit — original non-blocking review command
+        continue-on-error: true
+        run: npm audit --prefix apps/sponsor --omit=dev --json | tee .cache/dependency-audit/sponsor-production.json
+      - name: Sponsor full audit — original non-blocking review command
+        continue-on-error: true
+        run: npm audit --prefix apps/sponsor --json | tee .cache/dependency-audit/sponsor-full.json
+      - name: Show exact high and critical counts; missing evidence fails
+        if: always()
+        run: |
+          node --input-type=module <<'NODE'
+          import { readFile } from 'node:fs/promises';
+          for (const scope of ['web-production', 'web-full', 'sponsor-production', 'sponsor-full']) {
+            try {
+              const result = JSON.parse(await readFile(`.cache/dependency-audit/${scope}.json`, 'utf8'));
+              const counts = result.metadata?.vulnerabilities;
+              if (!counts || !['high', 'critical', 'total'].every(key => Number.isSafeInteger(counts[key]) && counts[key] >= 0)) {
+                throw Error('audit_counts_missing');
+              }
+              console.log(JSON.stringify({ diagnosticOnly: true, sourceCommit: 'ba6777ac9c780627a6cdceafe947fed08ddaca63', scope, vulnerabilities: counts }));
+            } catch {
+              console.error(JSON.stringify({ diagnosticOnly: true, scope, error: 'audit_evidence_missing_or_invalid' }));
+              process.exitCode = 1;
+            }
+          }
+          NODE
+      - name: Preserve all diagnostic audit JSON
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: DIAGNOSTIC-ba6777ac-dependency-audits-NOT-RELEASE
+          path: .cache/dependency-audit/
+          if-no-files-found: error
+          retention-days: 14
+
+  native_network:
+    name: DIAGNOSTIC exact native GET and OPTIONS with sanitized causes
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ba6777ac9c780627a6cdceafe947fed08ddaca63
+          persist-credentials: false
+      - run: test "$(git rev-parse HEAD)" = ba6777ac9c780627a6cdceafe947fed08ddaca63
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.22.3'
+          cache: npm
+          cache-dependency-path: apps/web/package-lock.json
+      - run: npm ci --prefix apps/web
+      - name: Existing exact probe once, unchanged two-node threshold and timeouts
+        timeout-minutes: 2
+        run: |
+          node --import ./apps/web/node_modules/tsx/dist/loader.mjs --input-type=module <<'NODE'
+          import { mkdir, writeFile } from 'node:fs/promises';
+          import { verifyDirectNetwork } from './scripts/verify-direct-network.mts';
+          const events = [];
+          const safeToken = value => typeof value === 'string' && /^[A-Za-z0-9_.-]{1,80}$/.test(value) ? value : undefined;
+          function causes(error, depth = 0) {
+            if (!error || typeof error !== 'object' || depth > 3) return undefined;
+            return {
+              name: safeToken(error.name), code: safeToken(error.code), syscall: safeToken(error.syscall),
+              cause: causes(error.cause, depth + 1),
+              errors: Array.isArray(error.errors) ? error.errors.slice(0, 4).map(item => causes(item, depth + 1)) : undefined,
+            };
+          }
+          const report = await verifyDirectNetwork({ fetcher: async (input, init) => {
+            const url = new URL(String(input)), method = init?.method;
+            if (!['GET', 'OPTIONS'].includes(method) || init?.body !== undefined) throw Error('diagnostic_read_only_required');
+            const started = Date.now();
+            const event = { target: url.origin + url.pathname, method, focus: ['/info', '/tx_anchor'].includes(url.pathname) };
+            try {
+              const response = await fetch(input, init);
+              events.push({ ...event, elapsedMs: Date.now() - started, status: response.status });
+              return response;
+            } catch (error) {
+              const failure = { ...event, elapsedMs: Date.now() - started,
+                signalAborted: init.signal?.aborted === true, transport: causes(error) };
+              events.push(failure); console.error(JSON.stringify(failure));
+              throw error;
+            }
+          } });
+          const evidence = { diagnosticOnly: true, releaseAcceptance: false,
+            sourceCommit: 'ba6777ac9c780627a6cdceafe947fed08ddaca63', events, report };
+          await mkdir('.cache/diagnostic-native', { recursive: true });
+          await writeFile('.cache/diagnostic-native/readiness.json', JSON.stringify(evidence, null, 2) + '\n', { flag: 'wx' });
+          console.log(JSON.stringify(evidence, null, 2));
+          if (report.status !== 'PASS') process.exitCode = 1;
+          NODE
+      - name: Preserve diagnostic native network evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: DIAGNOSTIC-ba6777ac-native-network-NOT-RELEASE
+          path: .cache/diagnostic-native/
+          if-no-files-found: error
+          retention-days: 14

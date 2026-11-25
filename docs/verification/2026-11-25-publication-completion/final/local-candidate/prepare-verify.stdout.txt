@@ -1,0 +1,36 @@
+{
+  "scope": "LOCAL_CANDIDATE_NOT_ACCEPTED_FULL_CI",
+  "result": "LOCAL_BUILD_AND_STATIC_VERIFICATION_PASS",
+  "sourceCommit": "ba6777ac9c780627a6cdceafe947fed08ddaca63",
+  "localCommit": "b0f294fc6ecd4d0bc68526bea2cf9e4d6a8ca196",
+  "tree": "79e4286c3217bc5b59abcfd2a76905b221b932be",
+  "directory": "/workspace/scratch/ec55c66d48ac/sejire-code-audit-20261125/.cache/publication-completion/local-portable-ba6777ac/release",
+  "manifestSha256": "ecf03e31e08ede36fed9a6fe5c46be8dcb57b034b5ccc36942de064da80cd31a",
+  "bundleBoundarySha256": "b79df5185328310fe199ff4a17f9c48577f3f57cb93ef05bdaa5527b14c376cf",
+  "profileSha256": "d7c2425055129b5494d8006ec25a7b6aee55f358176bc56b534853ab771690a3",
+  "manifestFileCount": 42,
+  "manifestTotalBytes": 4421020,
+  "packageFileCount": 43,
+  "packageTotalBytes": 4425789,
+  "jsAssets": 13,
+  "renderedModules": 736,
+  "recoveryFiles": 8,
+  "reviewedDraftModulesPresent": [
+    {
+      "path": "apps/web/src/lib/personDraft.ts",
+      "present": true
+    },
+    {
+      "path": "apps/web/src/lib/draftOwnership.ts",
+      "present": true
+    },
+    {
+      "path": "apps/web/src/components/DraftAccess.tsx",
+      "present": true
+    }
+  ],
+  "fullCiAccepted": false,
+  "acceptedProvenanceCreated": false,
+  "sourceCleanAfterBuild": true,
+  "summary": "/workspace/scratch/ec55c66d48ac/sejire-code-audit-20261125/.cache/publication-completion/local-portable-ba6777ac/summary.json"
+}

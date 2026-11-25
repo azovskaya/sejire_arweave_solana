@@ -1,0 +1,233 @@
+{
+  "schema": "sejire/funded-release-final-readiness/v1",
+  "date": "2026-11-25",
+  "ownerTimezone": "Asia/Almaty",
+  "recordedAt": "2026-11-25T11:48:51.791308+00:00",
+  "verdict": "NO_GO_FOR_PERMANENT_UPLOAD_OR_ARNS_CUTOVER",
+  "softwareWork": "implemented; targeted exact-source diagnostics and local package passed; complete release CI blocked on live native network readiness",
+  "publicationApproved": false,
+  "fullCiAccepted": false,
+  "acceptedCiArtifact": null,
+  "source": {
+    "repository": "azovskaya/sejire_arweave_solana",
+    "branch": "feat/funded-portable-release-20261125",
+    "remoteCommit": "ba6777ac9c780627a6cdceafe947fed08ddaca63",
+    "localEquivalentCommit": "b0f294fc6ecd4d0bc68526bea2cf9e4d6a8ca196",
+    "tree": "79e4286c3217bc5b59abcfd2a76905b221b932be",
+    "pushed": true
+  },
+  "fullCi": {
+    "runId": 45603078598,
+    "url": "https://github.com/azovskaya/sejire_arweave_solana/actions/runs/45603078598",
+    "attempt": 2,
+    "jobId": 139169973671,
+    "conclusion": "failure",
+    "stepCounts": {
+      "success": 33,
+      "failure": 1,
+      "skipped": 50
+    },
+    "failedStep": "Read-only direct Arweave API and CORS readiness",
+    "attempt1AlsoFailedSameGate": true,
+    "thresholdUnchanged": true,
+    "readiness": "one of two configured endpoints ready",
+    "source": "ci-run.json and ci-attempt2-jobs.json"
+  },
+  "diagnostics": {
+    "runId": 45605798546,
+    "url": "https://github.com/azovskaya/sejire_arweave_solana/actions/runs/45605798546",
+    "workflowCommit": "0ed99587b3b1bf64fe2511e3e60d42fdcc2e2266",
+    "checkedOutSourceCommit": "ba6777ac9c780627a6cdceafe947fed08ddaca63",
+    "conclusion": "failure",
+    "jobs": [
+      {
+        "id": 139176202572,
+        "name": "DIAGNOSTIC production and full dependency audits",
+        "conclusion": "success"
+      },
+      {
+        "id": 139176202845,
+        "name": "DIAGNOSTIC editor safety and server admin",
+        "conclusion": "success"
+      },
+      {
+        "id": 139176203035,
+        "name": "DIAGNOSTIC exact native GET and OPTIONS with sanitized causes",
+        "conclusion": "failure"
+      },
+      {
+        "id": 139176203136,
+        "name": "DIAGNOSTIC paid, promo and V2 recovery",
+        "conclusion": "success"
+      }
+    ],
+    "browserExecutions": 155,
+    "browserSuites": [
+      {
+        "name": "editor safety",
+        "passed": 24
+      },
+      {
+        "name": "server admin and native topup",
+        "passed": 21
+      },
+      {
+        "name": "paid SOL",
+        "passed": 48
+      },
+      {
+        "name": "promo",
+        "passed": 27
+      },
+      {
+        "name": "V2 recovery",
+        "passed": 35
+      }
+    ],
+    "browserNetwork": "mocked or blocked; synthetic archives and software wallet fixtures; no real extension acceptance",
+    "nativeFailure": "arweave.net timeout and ECONNRESET from GitHub runner; turbo-gateway.com all five checks pass",
+    "artifactAcceptance": false
+  },
+  "currentSourceSuccessfulFullCiSteps": {
+    "npmTest": true,
+    "sponsorTypecheck": true,
+    "linuxSqliteAndMigration": true,
+    "onlineBackupAndRestore": true,
+    "compiledServiceAndDocker": true,
+    "pdf": {
+      "files": 89,
+      "pages": 779,
+      "passing": 89,
+      "findings": {}
+    },
+    "offlineRecoveryNodeChecks": true,
+    "note": "Later browser/static/live steps skipped after native network gate; earlier-source successes are not substituted."
+  },
+  "localCandidate": {
+    "scope": "LOCAL_CANDIDATE_NOT_ACCEPTED_FULL_CI",
+    "result": "LOCAL_BUILD_AND_STATIC_VERIFICATION_PASS",
+    "files": 43,
+    "bytes": 4425789,
+    "manifestFiles": 42,
+    "manifestBytes": 4421020,
+    "jsAssets": 13,
+    "renderedModules": 736,
+    "recoveryFiles": 8,
+    "manifestSha256": "ecf03e31e08ede36fed9a6fe5c46be8dcb57b034b5ccc36942de064da80cd31a",
+    "summarySha256": "8506c5d631f33010e8b1ff383430e4f8ba53997caf2aad23d9937b093d74b2c1",
+    "provenanceCreated": false,
+    "published": false
+  },
+  "dependencyAudit": {
+    "counts": {
+      "sponsor-full": {
+        "info": 0,
+        "low": 13,
+        "moderate": 1,
+        "high": 3,
+        "critical": 0,
+        "total": 17
+      },
+      "web-production": {
+        "info": 0,
+        "low": 13,
+        "moderate": 10,
+        "high": 0,
+        "critical": 0,
+        "total": 23
+      },
+      "sponsor-production": {
+        "info": 0,
+        "low": 13,
+        "moderate": 1,
+        "high": 0,
+        "critical": 0,
+        "total": 14
+      },
+      "web-full": {
+        "info": 0,
+        "low": 18,
+        "moderate": 11,
+        "high": 0,
+        "critical": 0,
+        "total": 29
+      }
+    },
+    "npmAuditCommandsAreNotClean": true,
+    "sponsorHighScope": "Miniflare dev/test dependency tree via sharp and undici; absent from omit=dev production audit",
+    "runtime": {
+      "node": "24.22.3",
+      "bundledUndici": "7.30.2",
+      "openssl": "3.5.9",
+      "source": "locally observed process.versions; Docker pins same Node version; official release confirms Undici7.30.2"
+    },
+    "fullThirdPartySourceAudit": false,
+    "containerOsVulnerabilityScan": false
+  },
+  "operatorTooling": {
+    "branch": "docs/funded-release-evidence-20261125",
+    "commit": "7eb522e6cae947132f792a010312a7a6c41ddb19",
+    "tree": "9190d66f836d29300586502b0ac4122271e0895f",
+    "path": "deployment/legacy-export",
+    "syntheticGroupsPassed": 15,
+    "typecheckExitCode": 0,
+    "deployment": false,
+    "realCloudflareControlPlaneAcceptance": false,
+    "realLedgerExported": false,
+    "realLedgerImported": false,
+    "source": "../../../../deployment/legacy-export/evidence/summary.json"
+  },
+  "hosting": {
+    "checkedOn": "2026-11-25",
+    "mode": "connected account metadata read only",
+    "plannedApi": "https://sejire-api.azovskaya.prod.page",
+    "sejireAppFound": false,
+    "plan": "free",
+    "appsUsed": 2,
+    "appsLimit": 5,
+    "reservedMemoryMiB": 352,
+    "memoryLimitMiB": 512,
+    "sleepMinutes": 30,
+    "productionDeployment": false,
+    "alwaysOnPurchased": false,
+    "secretsRead": false
+  },
+  "manualWorkflowRegistration": {
+    "pr": 12,
+    "url": "https://github.com/azovskaya/sejire_arweave_solana/pull/12",
+    "commit": "7f0b6997e1a3bcfef7c86aeed17a91ad5bf67646",
+    "draft": true,
+    "merged": false,
+    "registrationCi": 45597370197,
+    "registrationCiConclusion": "success",
+    "mainUnchanged": "897559c197bc90ae9fac66abaefe000df2a2b51c"
+  },
+  "unresolvedArchive": {
+    "transactionId": "AtwLYx509C9jWIFKUNg7dy1GSgiaDbXVK1YEQbBWfHY",
+    "expectedBytes": 25269,
+    "sha256": "96bb194c3fbcf1dfea7e738cf91d758b8cfdaabb5be934df8dacd96a65c7be85",
+    "lastRawCheckDate": "2026-11-24",
+    "newRawReadbackConfirmed": false,
+    "replaceWithNewPaymentOrArchive": false
+  },
+  "remainingGates": [
+    "Successful complete same-source CI and accepted portable artifact after live native network readiness recovers",
+    "Always-on Linux host, exact HTTPS API origin, persistent data, trusted ingress/CORS, independent backup and restore",
+    "Private old ledger and ancillary data inventory, verified export/import and one-executor handoff",
+    "Owner-supplied private server configuration, public SOL recipients, AR signer/fund/budgets and read-only production preflight",
+    "Real Mainnet SOL and promo saves, public ciphertext digest and clean-browser/offline recovery",
+    "Confirmed Console Owner/Controller, old Target/TTL, approved upload cost and new manifest before ArNS cutover"
+  ],
+  "externalActions": {
+    "githubSourceAndEvidencePushed": true,
+    "mainMerged": false,
+    "realWalletSignature": false,
+    "realSpend": false,
+    "permanentUpload": false,
+    "productionDeployment": false,
+    "arnsTargetChanged": false,
+    "walletSeedsRead": false,
+    "realPrivateArchiveRead": false
+  },
+  "report": "../../2026-11-25-publication-plan-and-readiness.md"
+}

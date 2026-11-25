@@ -1,3 +1,21 @@
+# Последнее продолжение — 25 ноября 2026: код подготовлен, публикация ещё закрыта
+
+Source **`feat/funded-portable-release-20261125`**, GitHub **`ba6777ac9c780627a6cdceafe947fed08ddaca63`**, local equivalent `b0f294fc6ecd4d0bc68526bea2cf9e4d6a8ca196`, одинаковое дерево `79e4286c3217bc5b59abcfd2a76905b221b932be`. Source head стабилен и отправлен; не заменять его docs-веткой при сборке/развёртывании.
+
+**NO-GO для permanent upload и ArNS cutover.** Полный [CI 45603078598](https://github.com/azovskaya/sejire_arweave_solana/actions/runs/45603078598) попытки 1/2 упал на read-only native API readiness: 1/2 nodes ready. Отдельный диагностический job подтвердил timeout/ECONNRESET arweave.net с GitHub runner. Checks/timeouts не ослаблялись, успешного полного CI и accepted artifact текущего source нет. Не подставлять пакет старого упавшего source или локальную сборку вместо accepted GitHub artifact.
+
+На exact source прошли **155 Chromium browser executions**: editor 24, admin 21, paid 48, promo 27, V2 recovery 35; [diagnostic 45605798546](https://github.com/azovskaya/sejire_arweave_solana/actions/runs/45605798546) в целом failure из-за network job. Новое исправление PersonPanel сохраняет raw spaces/partial dates при flush/reload; regression RED 0/2 → GREEN 2/2 и editor 24/24 подтверждены. Admin recovery locator исправлен с сохранением/усилением проверки единственной подписи и exact signed bytes. Полный CI до сетевого отказа прошёл Node, SQL, backup/restore, Docker и 89 PDF / 779 страниц. Локальный portable build/prepare/verify PASS: 43 файла, 13 JS, 736 rendered modules, 8 recovery files, без accepted provenance.
+
+[План владельца и итоговая готовность](verification/2026-11-25-publication-plan-and-readiness.md), [машинная сводка](verification/2026-11-25-publication-completion/final/summary.json), [evidence scope](verification/2026-11-25-publication-completion/final/README.md). Отчёты и operator tooling сохранены отдельно в `docs/funded-release-evidence-20261125`. Operator pinned commit `7eb522e6cae947132f792a010312a7a6c41ddb19`, [инструкция](../deployment/legacy-export/README.md): 15 synthetic groups + typecheck PASS; реальная установка/экспорт/импорт не выполнялись.
+
+Production gates остаются: always-on host/HTTPS/persistent data/CORS/trusted ingress/off-host restore; private source ledger+KV/protocol inventory/quiescence и single executor; owner secrets/public recipients/fund; реальные Mainnet SOL+promo saves/raw/digest/clean-browser+offline restore; действительный Console Owner/Controller и старый Target/TTL. Планируемый API `https://sejire-api.azovskaya.prod.page` не развёрнут; повторное чтение Blitz показало Free и отсутствие SEJIRE app. Native network gate надо закрыть успешным свежим полным CI того же source. Mainnet service price 0.03 SOL, fee отдельно, 512 KiB envelope; SOL revenue не пополняет AR treasury автоматически.
+
+[Draft PR 12](https://github.com/azovskaya/sejire_arweave_solana/pull/12) регистрации manual portable workflow открыт и не слит; его отдельный CI success относится к регистрации, не к funded runtime. Main остаётся `897559c197bc90ae9fac66abaefe000df2a2b51c`. Реальные кошельки, траты, upload, production deploy и ArNS change не выполнялись. Прежний `AtwLYx509C9jWIFKUNg7dy1GSgiaDbXVK1YEQbBWfHY` сохраняется; новое получение raw bytes не подтверждено. Seed/private keys/старые private archives не читались.
+
+---
+
+## Исторические записи до финального evidence
+
 # Последнее продолжение — 25 ноября 2026: переносимый SOL/promo релиз
 
 Новый кандидат находится в `feat/funded-portable-release-20261125`. Полная инструкция оператора — [deployment/README.md](../deployment/README.md); сводка текущего этапа — [publication completion](verification/2026-11-25-publication-completion.md). Точный GitHub SHA и окончательный CI фиксируются в финальном evidence отдельно от стабильного source head; при начале работы прочитать их, не подменять CI предыдущего кандидата результатом нового.

@@ -1,0 +1,557 @@
+{
+  "total_count": 4,
+  "jobs": [
+    {
+      "id": 139176202572,
+      "run_id": 45605798546,
+      "workflow_name": "DIAGNOSTIC exact ba6777ac remaining checks — NOT RELEASE",
+      "head_branch": "audit/remaining-exact-20261125",
+      "run_url": "https://api.github.com/repos/azovskaya/sejire_arweave_solana/actions/runs/45605798546",
+      "run_attempt": 1,
+      "node_id": "CR_kwDOUwl83M8AAAAgZ4xRTA",
+      "head_sha": "0ed99587b3b1bf64fe2511e3e60d42fdcc2e2266",
+      "url": "https://api.github.com/repos/azovskaya/sejire_arweave_solana/actions/jobs/139176202572",
+      "html_url": "https://github.com/azovskaya/sejire_arweave_solana/actions/runs/45605798546/job/139176202572",
+      "status": "completed",
+      "conclusion": "success",
+      "created_at": "2026-11-25T11:35:09Z",
+      "started_at": "2026-11-25T11:35:12Z",
+      "completed_at": "2026-11-25T11:35:41Z",
+      "name": "DIAGNOSTIC production and full dependency audits",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-11-25T11:35:12Z",
+          "completed_at": "2026-11-25T11:35:13Z"
+        },
+        {
+          "name": "Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2026-11-25T11:35:13Z",
+          "completed_at": "2026-11-25T11:35:15Z"
+        },
+        {
+          "name": "Run test \"$(git rev-parse HEAD)\" = ba6777ac9c780627a6cdceafe947fed08ddaca63",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3,
+          "started_at": "2026-11-25T11:35:15Z",
+          "completed_at": "2026-11-25T11:35:15Z"
+        },
+        {
+          "name": "Run actions/setup-node@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4,
+          "started_at": "2026-11-25T11:35:15Z",
+          "completed_at": "2026-11-25T11:35:15Z"
+        },
+        {
+          "name": "Run npm ci --prefix apps/web",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5,
+          "started_at": "2026-11-25T11:35:15Z",
+          "completed_at": "2026-11-25T11:35:27Z"
+        },
+        {
+          "name": "Run npm ci --prefix apps/sponsor",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6,
+          "started_at": "2026-11-25T11:35:27Z",
+          "completed_at": "2026-11-25T11:35:32Z"
+        },
+        {
+          "name": "Web production audit — original non-blocking review command",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 7,
+          "started_at": "2026-11-25T11:35:32Z",
+          "completed_at": "2026-11-25T11:35:33Z"
+        },
+        {
+          "name": "Web full audit — original non-blocking review command",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 8,
+          "started_at": "2026-11-25T11:35:33Z",
+          "completed_at": "2026-11-25T11:35:33Z"
+        },
+        {
+          "name": "Sponsor production audit — original non-blocking review command",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 9,
+          "started_at": "2026-11-25T11:35:33Z",
+          "completed_at": "2026-11-25T11:35:34Z"
+        },
+        {
+          "name": "Sponsor full audit — original non-blocking review command",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 10,
+          "started_at": "2026-11-25T11:35:34Z",
+          "completed_at": "2026-11-25T11:35:35Z"
+        },
+        {
+          "name": "Show exact high and critical counts; missing evidence fails",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 11,
+          "started_at": "2026-11-25T11:35:35Z",
+          "completed_at": "2026-11-25T11:35:35Z"
+        },
+        {
+          "name": "Preserve all diagnostic audit JSON",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 12,
+          "started_at": "2026-11-25T11:35:35Z",
+          "completed_at": "2026-11-25T11:35:36Z"
+        },
+        {
+          "name": "Post Run actions/setup-node@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 23,
+          "started_at": "2026-11-25T11:35:36Z",
+          "completed_at": "2026-11-25T11:35:39Z"
+        },
+        {
+          "name": "Post Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 24,
+          "started_at": "2026-11-25T11:35:39Z",
+          "completed_at": "2026-11-25T11:35:39Z"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 25,
+          "started_at": "2026-11-25T11:35:39Z",
+          "completed_at": "2026-11-25T11:35:39Z"
+        }
+      ],
+      "check_run_url": "https://api.github.com/repos/azovskaya/sejire_arweave_solana/check-runs/139176202572",
+      "labels": [
+        "ubuntu-24.04"
+      ],
+      "runner_id": 1000002498,
+      "runner_name": "GitHub Actions 1000002498",
+      "runner_group_id": 0,
+      "runner_group_name": "GitHub Actions"
+    },
+    {
+      "id": 139176202845,
+      "run_id": 45605798546,
+      "workflow_name": "DIAGNOSTIC exact ba6777ac remaining checks — NOT RELEASE",
+      "head_branch": "audit/remaining-exact-20261125",
+      "run_url": "https://api.github.com/repos/azovskaya/sejire_arweave_solana/actions/runs/45605798546",
+      "run_attempt": 1,
+      "node_id": "CR_kwDOUwl83M8AAAAgZ4xSXQ",
+      "head_sha": "0ed99587b3b1bf64fe2511e3e60d42fdcc2e2266",
+      "url": "https://api.github.com/repos/azovskaya/sejire_arweave_solana/actions/jobs/139176202845",
+      "html_url": "https://github.com/azovskaya/sejire_arweave_solana/actions/runs/45605798546/job/139176202845",
+      "status": "completed",
+      "conclusion": "success",
+      "created_at": "2026-11-25T11:35:09Z",
+      "started_at": "2026-11-25T11:35:12Z",
+      "completed_at": "2026-11-25T11:37:12Z",
+      "name": "DIAGNOSTIC editor safety and server admin",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-11-25T11:35:13Z",
+          "completed_at": "2026-11-25T11:35:13Z"
+        },
+        {
+          "name": "Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2026-11-25T11:35:13Z",
+          "completed_at": "2026-11-25T11:35:15Z"
+        },
+        {
+          "name": "Run test \"$(git rev-parse HEAD)\" = ba6777ac9c780627a6cdceafe947fed08ddaca63",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3,
+          "started_at": "2026-11-25T11:35:15Z",
+          "completed_at": "2026-11-25T11:35:15Z"
+        },
+        {
+          "name": "Run actions/setup-node@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4,
+          "started_at": "2026-11-25T11:35:15Z",
+          "completed_at": "2026-11-25T11:35:16Z"
+        },
+        {
+          "name": "Run npm ci --prefix apps/web",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5,
+          "started_at": "2026-11-25T11:35:16Z",
+          "completed_at": "2026-11-25T11:35:25Z"
+        },
+        {
+          "name": "Run npm ci --prefix apps/sponsor",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6,
+          "started_at": "2026-11-25T11:35:25Z",
+          "completed_at": "2026-11-25T11:35:29Z"
+        },
+        {
+          "name": "Run npm exec --prefix apps/web -- playwright install --with-deps chromium",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 7,
+          "started_at": "2026-11-25T11:35:29Z",
+          "completed_at": "2026-11-25T11:35:51Z"
+        },
+        {
+          "name": "Exact editor safety suite, including same-event reload and two tabs",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 8,
+          "started_at": "2026-11-25T11:35:51Z",
+          "completed_at": "2026-11-25T11:36:41Z"
+        },
+        {
+          "name": "Preserve editor diagnostics",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 9,
+          "started_at": "2026-11-25T11:36:41Z",
+          "completed_at": "2026-11-25T11:36:41Z"
+        },
+        {
+          "name": "Exact server-admin password and native-transfer suite",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 10,
+          "started_at": "2026-11-25T11:36:41Z",
+          "completed_at": "2026-11-25T11:37:06Z"
+        },
+        {
+          "name": "Preserve admin diagnostics",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 11,
+          "started_at": "2026-11-25T11:37:06Z",
+          "completed_at": "2026-11-25T11:37:08Z"
+        },
+        {
+          "name": "Post Run actions/setup-node@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 21,
+          "started_at": "2026-11-25T11:37:08Z",
+          "completed_at": "2026-11-25T11:37:08Z"
+        },
+        {
+          "name": "Post Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 22,
+          "started_at": "2026-11-25T11:37:08Z",
+          "completed_at": "2026-11-25T11:37:09Z"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 23,
+          "started_at": "2026-11-25T11:37:09Z",
+          "completed_at": "2026-11-25T11:37:09Z"
+        }
+      ],
+      "check_run_url": "https://api.github.com/repos/azovskaya/sejire_arweave_solana/check-runs/139176202845",
+      "labels": [
+        "ubuntu-24.04"
+      ],
+      "runner_id": 1000002499,
+      "runner_name": "GitHub Actions 1000002499",
+      "runner_group_id": 0,
+      "runner_group_name": "GitHub Actions"
+    },
+    {
+      "id": 139176203035,
+      "run_id": 45605798546,
+      "workflow_name": "DIAGNOSTIC exact ba6777ac remaining checks — NOT RELEASE",
+      "head_branch": "audit/remaining-exact-20261125",
+      "run_url": "https://api.github.com/repos/azovskaya/sejire_arweave_solana/actions/runs/45605798546",
+      "run_attempt": 1,
+      "node_id": "CR_kwDOUwl83M8AAAAgZ4xTGw",
+      "head_sha": "0ed99587b3b1bf64fe2511e3e60d42fdcc2e2266",
+      "url": "https://api.github.com/repos/azovskaya/sejire_arweave_solana/actions/jobs/139176203035",
+      "html_url": "https://github.com/azovskaya/sejire_arweave_solana/actions/runs/45605798546/job/139176203035",
+      "status": "completed",
+      "conclusion": "failure",
+      "created_at": "2026-11-25T11:35:09Z",
+      "started_at": "2026-11-25T11:35:11Z",
+      "completed_at": "2026-11-25T11:35:53Z",
+      "name": "DIAGNOSTIC exact native GET and OPTIONS with sanitized causes",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-11-25T11:35:12Z",
+          "completed_at": "2026-11-25T11:35:14Z"
+        },
+        {
+          "name": "Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2026-11-25T11:35:14Z",
+          "completed_at": "2026-11-25T11:35:16Z"
+        },
+        {
+          "name": "Run test \"$(git rev-parse HEAD)\" = ba6777ac9c780627a6cdceafe947fed08ddaca63",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3,
+          "started_at": "2026-11-25T11:35:16Z",
+          "completed_at": "2026-11-25T11:35:16Z"
+        },
+        {
+          "name": "Run actions/setup-node@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4,
+          "started_at": "2026-11-25T11:35:16Z",
+          "completed_at": "2026-11-25T11:35:21Z"
+        },
+        {
+          "name": "Run npm ci --prefix apps/web",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5,
+          "started_at": "2026-11-25T11:35:21Z",
+          "completed_at": "2026-11-25T11:35:29Z"
+        },
+        {
+          "name": "Existing exact probe once, unchanged two-node threshold and timeouts",
+          "status": "completed",
+          "conclusion": "failure",
+          "number": 6,
+          "started_at": "2026-11-25T11:35:29Z",
+          "completed_at": "2026-11-25T11:35:51Z"
+        },
+        {
+          "name": "Preserve diagnostic native network evidence",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 7,
+          "started_at": "2026-11-25T11:35:51Z",
+          "completed_at": "2026-11-25T11:35:52Z"
+        },
+        {
+          "name": "Post Run actions/setup-node@v4",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 13,
+          "started_at": "2026-11-25T11:35:52Z",
+          "completed_at": "2026-11-25T11:35:52Z"
+        },
+        {
+          "name": "Post Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 14,
+          "started_at": "2026-11-25T11:35:52Z",
+          "completed_at": "2026-11-25T11:35:52Z"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 15,
+          "started_at": "2026-11-25T11:35:52Z",
+          "completed_at": "2026-11-25T11:35:52Z"
+        }
+      ],
+      "check_run_url": "https://api.github.com/repos/azovskaya/sejire_arweave_solana/check-runs/139176203035",
+      "labels": [
+        "ubuntu-24.04"
+      ],
+      "runner_id": 1000002500,
+      "runner_name": "GitHub Actions 1000002500",
+      "runner_group_id": 0,
+      "runner_group_name": "GitHub Actions"
+    },
+    {
+      "id": 139176203136,
+      "run_id": 45605798546,
+      "workflow_name": "DIAGNOSTIC exact ba6777ac remaining checks — NOT RELEASE",
+      "head_branch": "audit/remaining-exact-20261125",
+      "run_url": "https://api.github.com/repos/azovskaya/sejire_arweave_solana/actions/runs/45605798546",
+      "run_attempt": 1,
+      "node_id": "CR_kwDOUwl83M8AAAAgZ4xTgA",
+      "head_sha": "0ed99587b3b1bf64fe2511e3e60d42fdcc2e2266",
+      "url": "https://api.github.com/repos/azovskaya/sejire_arweave_solana/actions/jobs/139176203136",
+      "html_url": "https://github.com/azovskaya/sejire_arweave_solana/actions/runs/45605798546/job/139176203136",
+      "status": "completed",
+      "conclusion": "success",
+      "created_at": "2026-11-25T11:35:09Z",
+      "started_at": "2026-11-25T11:35:12Z",
+      "completed_at": "2026-11-25T11:40:55Z",
+      "name": "DIAGNOSTIC paid, promo and V2 recovery",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-11-25T11:35:13Z",
+          "completed_at": "2026-11-25T11:35:16Z"
+        },
+        {
+          "name": "Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2026-11-25T11:35:16Z",
+          "completed_at": "2026-11-25T11:35:20Z"
+        },
+        {
+          "name": "Run test \"$(git rev-parse HEAD)\" = ba6777ac9c780627a6cdceafe947fed08ddaca63",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3,
+          "started_at": "2026-11-25T11:35:20Z",
+          "completed_at": "2026-11-25T11:35:20Z"
+        },
+        {
+          "name": "Run actions/setup-node@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4,
+          "started_at": "2026-11-25T11:35:20Z",
+          "completed_at": "2026-11-25T11:35:24Z"
+        },
+        {
+          "name": "Run npm ci --prefix apps/web",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5,
+          "started_at": "2026-11-25T11:35:24Z",
+          "completed_at": "2026-11-25T11:35:32Z"
+        },
+        {
+          "name": "Run npm ci --prefix apps/sponsor",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6,
+          "started_at": "2026-11-25T11:35:32Z",
+          "completed_at": "2026-11-25T11:35:35Z"
+        },
+        {
+          "name": "Run npm exec --prefix apps/web -- playwright install --with-deps chromium",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 7,
+          "started_at": "2026-11-25T11:35:35Z",
+          "completed_at": "2026-11-25T11:36:13Z"
+        },
+        {
+          "name": "Exact paid SOL browser suite, mocked network",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 8,
+          "started_at": "2026-11-25T11:36:13Z",
+          "completed_at": "2026-11-25T11:38:58Z"
+        },
+        {
+          "name": "Preserve paid diagnostics",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 9,
+          "started_at": "2026-11-25T11:38:58Z",
+          "completed_at": "2026-11-25T11:38:58Z"
+        },
+        {
+          "name": "Exact promo browser suite, mocked network",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 10,
+          "started_at": "2026-11-25T11:38:58Z",
+          "completed_at": "2026-11-25T11:39:54Z"
+        },
+        {
+          "name": "Preserve promo diagnostics",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 11,
+          "started_at": "2026-11-25T11:39:54Z",
+          "completed_at": "2026-11-25T11:39:57Z"
+        },
+        {
+          "name": "Exact V2 recovery browser suite, synthetic archives",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 12,
+          "started_at": "2026-11-25T11:39:57Z",
+          "completed_at": "2026-11-25T11:40:50Z"
+        },
+        {
+          "name": "Preserve recovery diagnostics",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 13,
+          "started_at": "2026-11-25T11:40:50Z",
+          "completed_at": "2026-11-25T11:40:51Z"
+        },
+        {
+          "name": "Post Run actions/setup-node@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 25,
+          "started_at": "2026-11-25T11:40:51Z",
+          "completed_at": "2026-11-25T11:40:52Z"
+        },
+        {
+          "name": "Post Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 26,
+          "started_at": "2026-11-25T11:40:52Z",
+          "completed_at": "2026-11-25T11:40:52Z"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 27,
+          "started_at": "2026-11-25T11:40:52Z",
+          "completed_at": "2026-11-25T11:40:52Z"
+        }
+      ],
+      "check_run_url": "https://api.github.com/repos/azovskaya/sejire_arweave_solana/check-runs/139176203136",
+      "labels": [
+        "ubuntu-24.04"
+      ],
+      "runner_id": 1000002501,
+      "runner_name": "GitHub Actions 1000002501",
+      "runner_group_id": 0,
+      "runner_group_name": "GitHub Actions"
+    }
+  ]
+}

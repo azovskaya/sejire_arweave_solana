@@ -1,0 +1,26 @@
+{
+  "scope": "LOCAL_CANDIDATE_NOT_ACCEPTED_FULL_CI",
+  "sourceCommit": "ba6777ac9c780627a6cdceafe947fed08ddaca63",
+  "localCommit": "b0f294fc6ecd4d0bc68526bea2cf9e4d6a8ca196",
+  "tree": "79e4286c3217bc5b59abcfd2a76905b221b932be",
+  "sourceCleanBeforeBuild": true,
+  "startedAt": "2026-11-25T11:38:00.760Z",
+  "apiOrigin": "https://sejire-api.azovskaya.prod.page",
+  "acceptedProvenanceCreated": false,
+  "fullCi": {
+    "runId": 45603078598,
+    "attempts": [
+      {
+        "attempt": 1,
+        "status": "failure"
+      },
+      {
+        "attempt": 2,
+        "status": "failure"
+      }
+    ],
+    "accepted": false
+  },
+  "buildCommand": "SEJIRE_FUNDED_API_ORIGIN=https://sejire-api.azovskaya.prod.page npm run arns:build:portable",
+  "preparation": "export preparePermaweb(apps/web/dist, candidate/release, explicit remote sourceCommit), after local tree equality check"
+}

@@ -1,0 +1,59 @@
+[
+  {
+    "sourceCommit": "23037bdcd7b8478ba8a4dc256275222ded7b9105",
+    "localCommit": "0151154adfeecbd05b267ba791ad7841e93d607c",
+    "tree": "ce00da8cfe9c13e04d68c1a3f465a52b704f9d17",
+    "runId": 45595831074,
+    "jobId": 139141507015,
+    "conclusion": "failure",
+    "failedStep": "Independent static app in Chromium, Firefox and WebKit (synthetic network)",
+    "cause": "Test attempted ifAvailable before WebKit had completed document lock cleanup",
+    "result": "77/78 independent; corrected observed-state synchronization"
+  },
+  {
+    "sourceCommit": "413b06b370b9f055ab672eab7c86a9c9b05f2a28",
+    "localCommit": "1965924cab1f97db8ce6150ebba21f567d01ec15",
+    "tree": "479bbe9f8ae336ef9b9f0c85644a44d235ff7c9b",
+    "runId": 45597559533,
+    "jobId": 139147558076,
+    "conclusion": "failure",
+    "failedStep": "Portable static gateway, server-admin and wrong-network acceptance in three browsers",
+    "cause": "Firefox virtual gateway fixture forwarded foreign Host to local Vite",
+    "result": "Independent78/78; portable26/33; fixed static proxy transport"
+  },
+  {
+    "sourceCommit": "66512ee76779472a2d133e2feae30cc6a476de1a",
+    "localCommit": "88b1c30f8d87a0eba47d094e83c4ff0cb5e85dbc",
+    "tree": "8cb824fc9f9e81c56ea69c3f518f1e7c834a50b5",
+    "runId": 45599285860,
+    "jobId": 139153566045,
+    "conclusion": "failure",
+    "failedStep": "Editor safety regressions (synthetic data, no wallets or external writes)",
+    "cause": "Draft notes lost a trailing space on reload path",
+    "result": "Independent78/78; portable33/33; editor23/24; runtime correction pending"
+  },
+  {
+    "sourceCommit": "ba6777ac9c780627a6cdceafe947fed08ddaca63",
+    "localCommit": "b0f294fc6ecd4d0bc68526bea2cf9e4d6a8ca196",
+    "tree": "79e4286c3217bc5b59abcfd2a76905b221b932be",
+    "runId": 45603078598,
+    "attempt": 1,
+    "jobId": 139166745422,
+    "conclusion": "failure",
+    "failedStep": "Read-only direct Arweave API and CORS readiness",
+    "cause": "arweave.net info/anchor/price requests unavailable or timed out; second node fully ready; required 2 nodes, observed 1",
+    "result": "No portable artifact. Exact same source rerun requested; no requirement or timeout relaxed."
+  },
+  {
+    "sourceCommit": "ba6777ac9c780627a6cdceafe947fed08ddaca63",
+    "localCommit": "b0f294fc6ecd4d0bc68526bea2cf9e4d6a8ca196",
+    "tree": "79e4286c3217bc5b59abcfd2a76905b221b932be",
+    "runId": 45603078598,
+    "attempt": 2,
+    "jobId": 139169973671,
+    "conclusion": "failure",
+    "failedStep": "Read-only direct Arweave API and CORS readiness",
+    "cause": "arweave.net info/anchor unavailable or timed out; its price+OPTIONS now passed; turbo-gateway all5passed; 1/2 ready nodes",
+    "result": "Same-source full rerun, no source changes or weakened checks. No portable artifact."
+  }
+]

@@ -1,0 +1,230 @@
+{
+  "diagnosticOnly": true,
+  "releaseAcceptance": false,
+  "sourceCommit": "ba6777ac9c780627a6cdceafe947fed08ddaca63",
+  "events": [
+    {
+      "target": "https://turbo-gateway.com/info",
+      "method": "GET",
+      "focus": true,
+      "elapsedMs": 409,
+      "status": 200
+    },
+    {
+      "target": "https://turbo-gateway.com/tx_anchor",
+      "method": "GET",
+      "focus": true,
+      "elapsedMs": 685,
+      "status": 200
+    },
+    {
+      "target": "https://turbo-gateway.com/price/25269",
+      "method": "GET",
+      "focus": false,
+      "elapsedMs": 485,
+      "status": 200
+    },
+    {
+      "target": "https://turbo-gateway.com/tx",
+      "method": "OPTIONS",
+      "focus": false,
+      "elapsedMs": 113,
+      "status": 204
+    },
+    {
+      "target": "https://turbo-gateway.com/chunk",
+      "method": "OPTIONS",
+      "focus": false,
+      "elapsedMs": 110,
+      "status": 204
+    },
+    {
+      "target": "https://arweave.net/info",
+      "method": "GET",
+      "focus": true,
+      "elapsedMs": 5362,
+      "status": 200
+    },
+    {
+      "target": "https://arweave.net/tx_anchor",
+      "method": "GET",
+      "focus": true,
+      "elapsedMs": 8001,
+      "signalAborted": true,
+      "transport": {
+        "name": "TimeoutError"
+      }
+    },
+    {
+      "target": "https://arweave.net/price/25269",
+      "method": "GET",
+      "focus": false,
+      "elapsedMs": 5610,
+      "signalAborted": false,
+      "transport": {
+        "name": "TypeError",
+        "cause": {
+          "name": "Error",
+          "code": "ECONNRESET"
+        }
+      }
+    },
+    {
+      "target": "https://arweave.net/tx",
+      "method": "OPTIONS",
+      "focus": false,
+      "elapsedMs": 2480,
+      "signalAborted": false,
+      "transport": {
+        "name": "TypeError",
+        "cause": {
+          "name": "Error",
+          "code": "ECONNRESET"
+        }
+      }
+    },
+    {
+      "target": "https://arweave.net/chunk",
+      "method": "OPTIONS",
+      "focus": false,
+      "elapsedMs": 357,
+      "status": 204
+    }
+  ],
+  "report": {
+    "schema": "sejire/direct-network-readiness/v1",
+    "checkedAt": "2026-11-25T11:35:29.767Z",
+    "origin": "https://sejire.ar.io",
+    "archiveBytes": 25269,
+    "status": "FAIL",
+    "readyNodes": 1,
+    "configuredNodes": 2,
+    "requiredReadyNodes": 2,
+    "redundancy": "redundancyNotConfirmed",
+    "readOnly": true,
+    "walletChecked": false,
+    "uploadAttempted": false,
+    "scope": "Native API and CORS preflight snapshot; actual upload, archive readback, settlement and distinct operator ownership are not tested.",
+    "nodes": [
+      {
+        "node": "https://arweave.net",
+        "readiness": "unavailable",
+        "checks": [
+          {
+            "name": "info",
+            "method": "GET",
+            "path": "/info",
+            "status": 200,
+            "ready": true,
+            "cors": true,
+            "reason": null,
+            "allowOrigin": "*",
+            "network": "arweave.N.1"
+          },
+          {
+            "name": "anchor",
+            "method": "GET",
+            "path": "/tx_anchor",
+            "status": null,
+            "ready": false,
+            "cors": false,
+            "reason": "request_unavailable_or_timed_out"
+          },
+          {
+            "name": "price",
+            "method": "GET",
+            "path": "/price/25269",
+            "status": null,
+            "ready": false,
+            "cors": false,
+            "reason": "request_unavailable_or_timed_out"
+          },
+          {
+            "name": "transactionPreflight",
+            "method": "OPTIONS",
+            "path": "/tx",
+            "status": null,
+            "ready": false,
+            "cors": false,
+            "reason": "request_unavailable_or_timed_out"
+          },
+          {
+            "name": "chunkPreflight",
+            "method": "OPTIONS",
+            "path": "/chunk",
+            "status": 204,
+            "ready": true,
+            "cors": true,
+            "reason": null,
+            "allowOrigin": "*",
+            "allowMethods": "GET, POST, PUT, DELETE, OPTIONS, PATCH",
+            "allowHeaders": "*"
+          }
+        ]
+      },
+      {
+        "node": "https://turbo-gateway.com",
+        "readiness": "ready",
+        "checks": [
+          {
+            "name": "info",
+            "method": "GET",
+            "path": "/info",
+            "status": 200,
+            "ready": true,
+            "cors": true,
+            "reason": null,
+            "allowOrigin": "*",
+            "network": "arweave.N.1"
+          },
+          {
+            "name": "anchor",
+            "method": "GET",
+            "path": "/tx_anchor",
+            "status": 200,
+            "ready": true,
+            "cors": true,
+            "reason": null,
+            "allowOrigin": "*",
+            "anchor": "CCxzQ917iHZYFzYhWVtM7r-tM8m_KYGOLClDpVJ9yiAKI6wrcLFqsqCY9VpIJlsP"
+          },
+          {
+            "name": "price",
+            "method": "GET",
+            "path": "/price/25269",
+            "status": 200,
+            "ready": true,
+            "cors": true,
+            "reason": null,
+            "allowOrigin": "*",
+            "rewardWinston": "3385342489"
+          },
+          {
+            "name": "transactionPreflight",
+            "method": "OPTIONS",
+            "path": "/tx",
+            "status": 204,
+            "ready": true,
+            "cors": true,
+            "reason": null,
+            "allowOrigin": "*",
+            "allowMethods": "GET,HEAD,PUT,PATCH,POST,DELETE",
+            "allowHeaders": "content-type"
+          },
+          {
+            "name": "chunkPreflight",
+            "method": "OPTIONS",
+            "path": "/chunk",
+            "status": 204,
+            "ready": true,
+            "cors": true,
+            "reason": null,
+            "allowOrigin": "*",
+            "allowMethods": "GET,HEAD,PUT,PATCH,POST,DELETE",
+            "allowHeaders": "content-type"
+          }
+        ]
+      }
+    ]
+  }
+}

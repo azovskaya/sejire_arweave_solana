@@ -1,0 +1,148 @@
+{
+  "recordedAt": "2026-11-25",
+  "sourceCommit": "ba6777ac9c780627a6cdceafe947fed08ddaca63",
+  "runId": 45603078598,
+  "attempt": 1,
+  "jobId": 139166745422,
+  "artifactId": 15016088322,
+  "artifactSha256": "68c1f0859424b9ad9456be80b6e74af3941c3674751c93c6bea58f050a26bd81",
+  "source": "Decoded GitHub job log; JSON preserved without timestamp prefixes",
+  "readiness": {
+    "schema": "sejire/direct-network-readiness/v1",
+    "checkedAt": "2026-11-25T11:21:52.249Z",
+    "origin": "https://sejire.ar.io",
+    "archiveBytes": 25269,
+    "status": "FAIL",
+    "readyNodes": 1,
+    "configuredNodes": 2,
+    "requiredReadyNodes": 2,
+    "redundancy": "redundancyNotConfirmed",
+    "readOnly": true,
+    "walletChecked": false,
+    "uploadAttempted": false,
+    "scope": "Native API and CORS preflight snapshot; actual upload, archive readback, settlement and distinct operator ownership are not tested.",
+    "nodes": [
+      {
+        "node": "https://arweave.net",
+        "readiness": "unavailable",
+        "checks": [
+          {
+            "name": "info",
+            "method": "GET",
+            "path": "/info",
+            "status": null,
+            "ready": false,
+            "cors": false,
+            "reason": "request_unavailable_or_timed_out"
+          },
+          {
+            "name": "anchor",
+            "method": "GET",
+            "path": "/tx_anchor",
+            "status": null,
+            "ready": false,
+            "cors": false,
+            "reason": "request_unavailable_or_timed_out"
+          },
+          {
+            "name": "price",
+            "method": "GET",
+            "path": "/price/25269",
+            "status": null,
+            "ready": false,
+            "cors": false,
+            "reason": "request_unavailable_or_timed_out"
+          },
+          {
+            "name": "transactionPreflight",
+            "method": "OPTIONS",
+            "path": "/tx",
+            "status": 204,
+            "ready": true,
+            "cors": true,
+            "reason": null,
+            "allowOrigin": "*",
+            "allowMethods": "GET, POST, PUT, DELETE, OPTIONS, PATCH",
+            "allowHeaders": "*"
+          },
+          {
+            "name": "chunkPreflight",
+            "method": "OPTIONS",
+            "path": "/chunk",
+            "status": 204,
+            "ready": true,
+            "cors": true,
+            "reason": null,
+            "allowOrigin": "*",
+            "allowMethods": "GET, POST, PUT, DELETE, OPTIONS, PATCH",
+            "allowHeaders": "*"
+          }
+        ]
+      },
+      {
+        "node": "https://turbo-gateway.com",
+        "readiness": "ready",
+        "checks": [
+          {
+            "name": "info",
+            "method": "GET",
+            "path": "/info",
+            "status": 200,
+            "ready": true,
+            "cors": true,
+            "reason": null,
+            "allowOrigin": "*",
+            "network": "arweave.N.1"
+          },
+          {
+            "name": "anchor",
+            "method": "GET",
+            "path": "/tx_anchor",
+            "status": 200,
+            "ready": true,
+            "cors": true,
+            "reason": null,
+            "allowOrigin": "*",
+            "anchor": "YeNJKezGtCK3Id3QBEFUxOV0REwffhVc7mzhdsmjA-lsRdWNIYpMdauGSRKNNbwY"
+          },
+          {
+            "name": "price",
+            "method": "GET",
+            "path": "/price/25269",
+            "status": 200,
+            "ready": true,
+            "cors": true,
+            "reason": null,
+            "allowOrigin": "*",
+            "rewardWinston": "3385342489"
+          },
+          {
+            "name": "transactionPreflight",
+            "method": "OPTIONS",
+            "path": "/tx",
+            "status": 204,
+            "ready": true,
+            "cors": true,
+            "reason": null,
+            "allowOrigin": "*",
+            "allowMethods": "GET,HEAD,PUT,PATCH,POST,DELETE",
+            "allowHeaders": "content-type"
+          },
+          {
+            "name": "chunkPreflight",
+            "method": "OPTIONS",
+            "path": "/chunk",
+            "status": 204,
+            "ready": true,
+            "cors": true,
+            "reason": null,
+            "allowOrigin": "*",
+            "allowMethods": "GET,HEAD,PUT,PATCH,POST,DELETE",
+            "allowHeaders": "content-type"
+          }
+        ]
+      }
+    ]
+  },
+  "followup": "Same source rerun requested; no source, checks or thresholds changed. This failed attempt is not acceptance evidence."
+}

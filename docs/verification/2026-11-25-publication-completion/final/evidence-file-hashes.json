@@ -1,0 +1,142 @@
+{
+  "schema": "sejire/final-readiness-evidence-hashes/v1",
+  "sourceCommit": "ba6777ac9c780627a6cdceafe947fed08ddaca63",
+  "review": "Second read-only consistency review of owner plan, summary and README: PASS; no production approval",
+  "files": [
+    {
+      "path": "docs/verification/2026-11-25-publication-completion/final/README.md",
+      "bytes": 7656,
+      "sha256": "f23320c656d30adee31ced660242fcd32372a67bb0414855a8fb2286bf436d28"
+    },
+    {
+      "path": "docs/verification/2026-11-25-publication-completion/final/attempt-history.json",
+      "bytes": 2811,
+      "sha256": "3f8b7d946ae54096930804304d9ffb96e8aebae22adb7a0aee4e3f67c623ba1e"
+    },
+    {
+      "path": "docs/verification/2026-11-25-publication-completion/final/ci-attempt2-jobs.json",
+      "bytes": 24825,
+      "sha256": "674fffe9d0b705eec06b4727665351915e3fad0d0b1806f35f7663dd3d632210"
+    },
+    {
+      "path": "docs/verification/2026-11-25-publication-completion/final/ci-run.json",
+      "bytes": 14609,
+      "sha256": "816f2f338b396d9cd42c7dc3c7ca21d165dd11c8dc6a3f02a927271c188084d1"
+    },
+    {
+      "path": "docs/verification/2026-11-25-publication-completion/final/dependency-audits/sponsor-full.json",
+      "bytes": 14782,
+      "sha256": "4e6018d3e0dcae9a90883cb72dd5215e43a342f622d5abeff7f05e2a5b184d6b"
+    },
+    {
+      "path": "docs/verification/2026-11-25-publication-completion/final/dependency-audits/sponsor-production.json",
+      "bytes": 8578,
+      "sha256": "1648df0996cf7226218e2f50bd5ea152cc817521e04e2077f49a4de9e17af628"
+    },
+    {
+      "path": "docs/verification/2026-11-25-publication-completion/final/dependency-audits/web-full.json",
+      "bytes": 19568,
+      "sha256": "2084580ba4e475e87e83cb746ce56517dcb66d0c573babbfc5be4bd4c5afa867"
+    },
+    {
+      "path": "docs/verification/2026-11-25-publication-completion/final/dependency-audits/web-production.json",
+      "bytes": 16473,
+      "sha256": "83635e1795167afa8ec9c910a23d0b96918eed9e6c3baf0d69ffaf892d4b33d7"
+    },
+    {
+      "path": "docs/verification/2026-11-25-publication-completion/final/diagnostic-jobs.json",
+      "bytes": 19816,
+      "sha256": "b0fcda03c25dc9f8edea111610b7e1b23d5e42aab4b404bcd4efd80fe0b85c67"
+    },
+    {
+      "path": "docs/verification/2026-11-25-publication-completion/final/diagnostic-run.json",
+      "bytes": 14572,
+      "sha256": "757eb53768b833dedfd06625e7f2d6c62b548a1be6a9a9299d1e8e4c043c44ce"
+    },
+    {
+      "path": "docs/verification/2026-11-25-publication-completion/final/editor-admin-selected.stdout.txt",
+      "bytes": 8120,
+      "sha256": "0bf6c17f68ec4decd9e1e8cbc654440895ae9cf8fd6a26255d12953b24af4bc2"
+    },
+    {
+      "path": "docs/verification/2026-11-25-publication-completion/final/exact-diagnostic-workflow.yml",
+      "bytes": 10653,
+      "sha256": "20834645ad87d0ab60f1c22c997f06d5e8199acff0b5c41beaebc873fc5e37bb"
+    },
+    {
+      "path": "docs/verification/2026-11-25-publication-completion/final/local-candidate/build.stdout.txt",
+      "bytes": 6126,
+      "sha256": "a76f332038224f6351ac0c2b548517bfced38f669e1126c303b283aed9cb424a"
+    },
+    {
+      "path": "docs/verification/2026-11-25-publication-completion/final/local-candidate/bundle-boundary.json",
+      "bytes": 81052,
+      "sha256": "b79df5185328310fe199ff4a17f9c48577f3f57cb93ef05bdaa5527b14c376cf"
+    },
+    {
+      "path": "docs/verification/2026-11-25-publication-completion/final/local-candidate/prepare-local-candidate.original.mjs",
+      "bytes": 4508,
+      "sha256": "b35529ec79f98518c504c33de8f5e3a1de3bbb7ea45df3c2258e70d90c0f6ee9"
+    },
+    {
+      "path": "docs/verification/2026-11-25-publication-completion/final/local-candidate/prepare-verify.stdout.txt",
+      "bytes": 1421,
+      "sha256": "babe0fb880a57e2d0f8de3927380bab871ad469ea5bcb38287c772e4b646c885"
+    },
+    {
+      "path": "docs/verification/2026-11-25-publication-completion/final/local-candidate/release-manifest.json",
+      "bytes": 4769,
+      "sha256": "ecf03e31e08ede36fed9a6fe5c46be8dcb57b034b5ccc36942de064da80cd31a"
+    },
+    {
+      "path": "docs/verification/2026-11-25-publication-completion/final/local-candidate/release-profile.json",
+      "bytes": 501,
+      "sha256": "d7c2425055129b5494d8006ec25a7b6aee55f358176bc56b534853ab771690a3"
+    },
+    {
+      "path": "docs/verification/2026-11-25-publication-completion/final/local-candidate/source.json",
+      "bytes": 881,
+      "sha256": "18aa5963b28cc88ff88b38bfeb6da1f598d4b4adf6c96fc03978501645457555"
+    },
+    {
+      "path": "docs/verification/2026-11-25-publication-completion/final/local-candidate/summary.json",
+      "bytes": 10047,
+      "sha256": "8506c5d631f33010e8b1ff383430e4f8ba53997caf2aad23d9937b093d74b2c1"
+    },
+    {
+      "path": "docs/verification/2026-11-25-publication-completion/final/native-network-diagnostic.json",
+      "bytes": 5982,
+      "sha256": "63b61266ea30ff159416d8629ddb95613f91dbed03c3af8077f25b5489430b21"
+    },
+    {
+      "path": "docs/verification/2026-11-25-publication-completion/final/paid-promo-recovery-selected.stdout.txt",
+      "bytes": 18900,
+      "sha256": "ed1828d887641f6cd9d72511f1c1c6492e894dd5ef98e672a98cd41e05ed3d1d"
+    },
+    {
+      "path": "docs/verification/2026-11-25-publication-completion/final/runtime-security.md",
+      "bytes": 2287,
+      "sha256": "a25a8345251e135f3cfa7e370bce0bd2a2c2ec8c2fea0dea7351e60a900f7499"
+    },
+    {
+      "path": "docs/verification/2026-11-25-publication-completion/final/summary.json",
+      "bytes": 7861,
+      "sha256": "3b606e96b654524096e0d0addc3a5344e39853235556519fa45929e9e3ade3dc"
+    },
+    {
+      "path": "docs/verification/2026-11-25-publication-plan-and-readiness.md",
+      "bytes": 40648,
+      "sha256": "0ec2869ae2343286e0300bcac820329959b82816d7a7564855453842dcb318c7"
+    },
+    {
+      "path": "docs/verification/2026-11-25-publication-completion/review/live-native-api-attempt1.json",
+      "bytes": 4497,
+      "sha256": "29f3c3605fdda9733626c230ebde5dd1f0d227ddcb62f7ab8ec8b17070cbcc8e"
+    },
+    {
+      "path": "docs/verification/2026-11-25-publication-completion/review/live-native-api-attempt2.json",
+      "bytes": 4593,
+      "sha256": "e037d4d6bbbe83672ceba3c3aa036945384002065385f8d46f886c749a93b6ef"
+    }
+  ]
+}
