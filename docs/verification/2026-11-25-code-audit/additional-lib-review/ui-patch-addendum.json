@@ -1,0 +1,28 @@
+{
+  "schema": "sejire/independent-ui-patch-addendum/v1",
+  "dateUTC": "2026-11-25T08:30:07.158872+00:00",
+  "status": "PASS_TARGETED_REVIEW_PENDING_BROWSER_EXECUTION",
+  "runtimeEditsByReviewer": false,
+  "newTestsExecutedByReviewer": 0,
+  "files": [
+    {
+      "path": "apps/web/src/components/ErrorBoundary.tsx",
+      "sha256": "fdb16b3550b79c5b0b1de5caeb9819c01366ee92036b3a8b0660464ff2a5220b",
+      "manualReviewExtent": "targeted",
+      "review": "Clear failed deep-link fragment before reloading an existing draft"
+    },
+    {
+      "path": "apps/web/src/components/Workspace.tsx",
+      "sha256": "3e7a139f3f476364e36d91252c56b24a8ec8592986e13913941f60afde9acf16",
+      "manualReviewExtent": "targeted",
+      "review": "publishRequestState revision on Home/tree change/unmount; guard after shared journal await and before old draft side effects"
+    },
+    {
+      "path": "apps/web/tests/editor-safety.spec.mjs",
+      "sha256": "3b10d8ee82b3d106c9dd83e23375116b4724bf48d62a78b60313a531d27a442c",
+      "manualReviewExtent": "targeted",
+      "review": "Actual boundary/reload regression and held Web Lock + Home + new tree regression; source read only"
+    }
+  ],
+  "conclusion": "No new blockers found for the demonstrated crash deep-link and delayed save lookup scenarios; parent CI must establish execution."
+}

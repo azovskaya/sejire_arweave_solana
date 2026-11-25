@@ -1,0 +1,16 @@
+PASS declining an older network version leaves the complete vault, editor, HEAD and phrase unchanged
+PASS accepting a local snapshot persists all trees and histories before returning its active tree
+PASS local_/demo_ labels cannot become network parents
+PASS another vault or an invalid inactive tree cannot be adopted
+PASS failure writing the complete vault does not change the draft or session
+PASS draft quota failure rolls back the full vault cache and keeps the prior session
+PASS failed session persistence restores both storage values and the in-memory phrase
+PASS the rollback snapshot includes editor edits flushed by the confirmation callback
+PASS a concurrent cache replacement cannot bind a checked session to the wrong envelope
+PASS preparing twice retains all trees/history and updates the local selection digest without changing the editor
+PASS encryption alone has no selection side effect when the preparation is cancelled
+PASS a delayed preparation cannot replace a newer file choice or another tab cache
+PASS preparation cache quota failure preserves the previous selection and draft
+PASS preparation session failure rolls back ciphertext before returning a failure
+PASS completion advances only the exact selected local ciphertext
+vault version selection: 15 synthetic checks passed; no wallets, uploads, or network

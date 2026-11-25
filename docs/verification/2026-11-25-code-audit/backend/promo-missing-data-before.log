@@ -1,0 +1,31 @@
+PASS Linux paid/promo: default-off HTTP has no payment offer, session or outbound request
+PASS Linux paid/promo: origin and server admin authentication guard management; readiness uses actual synthetic signer
+PASS Linux paid/promo: 512 KiB boundary and tampered archive are rejected before any order or hold
+PASS Linux paid/promo: paid HTTP admission is idempotent and immutable across recipient rotation
+PASS Linux paid/promo: prepared bytes and valid signature are required before durable reserve or relay
+PASS Linux paid/promo: durable Linux alarm continues reserved payment, lost SOL/header replies retain exact obligation
+PASS Linux paid/promo: cold SQLite reopen resumes same owner/key/payment and uploads only missing original chunks
+PASS Linux paid/promo: explicit post-completion repair restores original bytes without changing receipt or spend
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
++ actual - expected
+
++ 'VERIFYING'
+- 'COMPLETED'
+
+    at file:///workspace/scratch/ec55c66d48ac/sejire-code-audit-20261125/apps/sponsor/tests/linux-paid-promo.mjs:321:47
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async test (file:///workspace/scratch/ec55c66d48ac/sejire-code-audit-20261125/apps/sponsor/tests/linux-paid-promo.mjs:172:31)
+    at async file:///workspace/scratch/ec55c66d48ac/sejire-code-audit-20261125/apps/sponsor/tests/linux-paid-promo.mjs:301:3 {
+  generatedMessage: true,
+  code: 'ERR_ASSERTION',
+  actual: 'VERIFYING',
+  expected: 'COMPLETED',
+  operator: 'strictEqual',
+  diff: 'simple'
+}
+
+Node.js v24.22.3

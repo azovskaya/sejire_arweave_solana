@@ -1,0 +1,174 @@
+[
+  {
+    "name": "sponsor",
+    "argv": [
+      "node",
+      "--import",
+      "./node_modules/tsx/dist/loader.mjs",
+      "src/selftest.ts"
+    ],
+    "exitCode": 0,
+    "seconds": 0.87,
+    "log": "sponsor-sponsor.log"
+  },
+  {
+    "name": "checkout",
+    "argv": [
+      "node",
+      "--import",
+      "./node_modules/tsx/dist/loader.mjs",
+      "src/checkout/selftest.ts"
+    ],
+    "exitCode": 0,
+    "seconds": 0.37,
+    "log": "sponsor-checkout.log"
+  },
+  {
+    "name": "rpc",
+    "argv": [
+      "node",
+      "--import",
+      "./node_modules/tsx/dist/loader.mjs",
+      "src/checkout/rpc.selftest.ts"
+    ],
+    "exitCode": 0,
+    "seconds": 0.57,
+    "log": "sponsor-rpc.log"
+  },
+  {
+    "name": "paid",
+    "argv": [
+      "node",
+      "--import",
+      "./node_modules/tsx/dist/loader.mjs",
+      "src/checkout/paid.selftest.ts"
+    ],
+    "exitCode": 0,
+    "seconds": 0.82,
+    "log": "sponsor-paid.log"
+  },
+  {
+    "name": "direct-preservation",
+    "argv": [
+      "node",
+      "--import",
+      "./node_modules/tsx/dist/loader.mjs",
+      "src/checkout/directPreservation.selftest.ts"
+    ],
+    "exitCode": 0,
+    "seconds": 1.78,
+    "log": "sponsor-direct-preservation.log"
+  },
+  {
+    "name": "paid-sqlite",
+    "argv": [
+      "node",
+      "--experimental-sqlite",
+      "--loader",
+      "../../scripts/offline-ts-loader.mjs",
+      "tests/paid.local.mjs"
+    ],
+    "exitCode": 0,
+    "seconds": 2.52,
+    "log": "sponsor-paid-sqlite.log"
+  },
+  {
+    "name": "recipients-sqlite",
+    "argv": [
+      "node",
+      "--experimental-sqlite",
+      "--loader",
+      "../../scripts/offline-ts-loader.mjs",
+      "tests/recipient-settings.local.mjs"
+    ],
+    "exitCode": 0,
+    "seconds": 1.52,
+    "log": "sponsor-recipients-sqlite.log"
+  },
+  {
+    "name": "preparation",
+    "argv": [
+      "node",
+      "--import",
+      "./node_modules/tsx/dist/loader.mjs",
+      "src/checkout/preparation.selftest.ts"
+    ],
+    "exitCode": 0,
+    "seconds": 0.37,
+    "log": "sponsor-preparation.log"
+  },
+  {
+    "name": "preservation",
+    "argv": [
+      "node",
+      "--import",
+      "./node_modules/tsx/dist/loader.mjs",
+      "src/checkout/preservation.selftest.ts"
+    ],
+    "exitCode": 0,
+    "seconds": 1.07,
+    "log": "sponsor-preservation.log"
+  },
+  {
+    "name": "protocol",
+    "argv": [
+      "node",
+      "--import",
+      "./node_modules/tsx/dist/loader.mjs",
+      "src/protocol/selftest.ts"
+    ],
+    "exitCode": 0,
+    "seconds": 0.97,
+    "log": "sponsor-protocol.log"
+  },
+  {
+    "name": "sqlite-runtime",
+    "argv": [
+      "node",
+      "tests/sqlite-runtime.mjs"
+    ],
+    "exitCode": 0,
+    "seconds": 3.37,
+    "log": "sponsor-sqlite-runtime.log"
+  },
+  {
+    "name": "api-runtime",
+    "argv": [
+      "node",
+      "tests/api-runtime.mjs"
+    ],
+    "exitCode": 0,
+    "seconds": 10.62,
+    "log": "sponsor-api-runtime.log"
+  },
+  {
+    "name": "fund-runtime",
+    "argv": [
+      "node",
+      "tests/fund-runtime.mjs"
+    ],
+    "exitCode": 0,
+    "seconds": 4.44,
+    "log": "sponsor-fund-runtime.log"
+  },
+  {
+    "name": "direct-preservation-runtime",
+    "argv": [
+      "node",
+      "tests/direct-preservation-runtime.mjs"
+    ],
+    "exitCode": 0,
+    "seconds": 1.52,
+    "log": "sponsor-direct-preservation-runtime.log"
+  },
+  {
+    "name": "paid-api-runtime",
+    "argv": [
+      "node",
+      "tests/paid-api-runtime.mjs"
+    ],
+    "exitCode": 0,
+    "seconds": 23.32,
+    "log": "sponsor-paid-api-runtime.log"
+  }
+]

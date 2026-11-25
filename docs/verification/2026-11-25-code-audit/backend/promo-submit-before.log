@@ -1,0 +1,22 @@
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
++ actual - expected
+
++ 'still-pending'
+- 'rejected'
+
+    at file:///workspace/scratch/ec55c66d48ac/sejire-code-audit-20261125/apps/sponsor/tests/fund-submit-recovery.mjs:46:12
+    at async test (file:///workspace/scratch/ec55c66d48ac/sejire-code-audit-20261125/apps/sponsor/tests/fund-submit-recovery.mjs:43:40)
+    at async file:///workspace/scratch/ec55c66d48ac/sejire-code-audit-20261125/apps/sponsor/tests/fund-submit-recovery.mjs:45:3 {
+  generatedMessage: true,
+  code: 'ERR_ASSERTION',
+  actual: 'still-pending',
+  expected: 'rejected',
+  operator: 'strictEqual',
+  diff: 'simple'
+}
+
+Node.js v24.22.3

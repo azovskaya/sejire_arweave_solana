@@ -1,0 +1,83 @@
+{
+  "schema": "sejire/shared-dependency-review-crosscheck/v1",
+  "method": "Path and current SHA matched to pre-existing backend sourceReviewEntries; this is not an independent manual reread.",
+  "evidence": "../backend/coverage.json",
+  "dependencies": [
+    {
+      "path": "apps/sponsor/src/checkout/paymentValidator.ts",
+      "sha256": "e4d6ed099d49dd08caef18f5bc69a955d9523cc35166748fc4bccaa88fdd50fc",
+      "backendReview": "active_path_full_review",
+      "hashMatches": true
+    },
+    {
+      "path": "apps/sponsor/src/checkout/rpcDecoder.ts",
+      "sha256": "9e3c29d1d4885615aae95a515c87ff5b2070df04129756b4f7284f0ae8f04643",
+      "backendReview": "active_path_full_review",
+      "hashMatches": true
+    },
+    {
+      "path": "apps/sponsor/src/checkout/rpcErrors.ts",
+      "sha256": "8d830524882e7e1e15e3a1d2e19b7515f78645f560dfacbbfe720331db166ecc",
+      "backendReview": "active_path_full_review",
+      "hashMatches": true
+    },
+    {
+      "path": "apps/sponsor/src/checkout/rpcReader.ts",
+      "sha256": "42bb8aa37735dba74df122a64edd1d39cda43e23a8f33a2eabbef3bf5e8c9f99",
+      "backendReview": "active_path_full_review",
+      "hashMatches": true
+    },
+    {
+      "path": "packages/checkout/amounts.ts",
+      "sha256": "fe01f512cfc7c09750f1ea35e6a2039c7f82d5faa1a212dcb46e1760c602401f",
+      "backendReview": null,
+      "hashMatches": false,
+      "additionalReview": "full",
+      "additionalShaMatches": true,
+      "additionalEvidence": "coverage.json#sharedPackageAdditionalReads"
+    },
+    {
+      "path": "packages/checkout/order.ts",
+      "sha256": "9afeb1b018745d66d58c1119b18b8ab1c66123425a8a525af1b2a4b40251565a",
+      "backendReview": null,
+      "hashMatches": false,
+      "additionalReview": "full",
+      "additionalShaMatches": true,
+      "additionalEvidence": "coverage.json#sharedPackageAdditionalReads"
+    },
+    {
+      "path": "packages/checkout/paid.ts",
+      "sha256": "c4a023a516654475f9ac77ffe177ed0c4d4c73735fb9e30a9cbaa78a81794249",
+      "backendReview": null,
+      "hashMatches": false,
+      "rootReviewReported": "Parent explicitly reports full manual reading; root coverage evidence is being finalized separately. Not counted as an independent read here."
+    },
+    {
+      "path": "packages/checkout/recipients.ts",
+      "sha256": "31c2619261e7a08dd045f707cc40c3f9a7fd60be87dbc0be1e6e5777b2b51967",
+      "backendReview": null,
+      "hashMatches": false,
+      "additionalReview": "full",
+      "additionalShaMatches": true,
+      "additionalEvidence": "coverage.json#sharedPackageAdditionalReads"
+    },
+    {
+      "path": "packages/checkout/rpcJson.ts",
+      "sha256": "1ec11289392269849ebccf8ea419e9b7a50b2443c909aad23f8346cf49a8cf68",
+      "backendReview": null,
+      "hashMatches": false,
+      "additionalReview": "full",
+      "additionalShaMatches": true,
+      "additionalEvidence": "coverage.json#sharedPackageAdditionalReads"
+    },
+    {
+      "path": "packages/protocol/wire.ts",
+      "sha256": "07f36cf19d2b6e9a4b400f3a9d223b632b050e412c90a2e876550f4efcb674d5",
+      "backendReview": null,
+      "hashMatches": false,
+      "additionalReview": "full",
+      "additionalShaMatches": true,
+      "additionalEvidence": "coverage.json#sharedPackageAdditionalReads"
+    }
+  ]
+}

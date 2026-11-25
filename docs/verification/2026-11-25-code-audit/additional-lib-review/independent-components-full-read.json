@@ -1,0 +1,33 @@
+{
+  "schema": "sejire/independent-components-full-read/v1",
+  "dateUTC": "2026-11-25T08:34:32.084388+00:00",
+  "snapshotCommit": "9315471ba4fd5a6d0c2d8292bef33ab2ce9617ae",
+  "status": "FULL_SOURCE_READ_COMPLETE",
+  "files": [
+    {
+      "path": "apps/web/src/components/PublishSeedModal.independent.tsx",
+      "sha256": "ba53efefa30b27912c96bc7f826bba5598418ea8ac62b5c87abe9b6300a009c2",
+      "lines": 126,
+      "manualReviewExtent": "full",
+      "review": "Full component: initial legacy/pending gating, words creation/confirmation, async prepare and durable direct operation before cache, local session digest binding, close/unmount guards, finalization and all rendered modes"
+    },
+    {
+      "path": "apps/web/src/components/RestoreSeed.independent.tsx",
+      "sha256": "15eaf5951a2be82dc916312694f299c8d50a9fef7c677585b8785f6f47182d87",
+      "lines": 219,
+      "manualReviewExtent": "full",
+      "review": "Full component: input/state/lifetime, file/words/receipt/known-ID dispatch, native verification, local cache reread, explicit version selection, quota handling and acceptance, node preference, all rendered controls"
+    }
+  ],
+  "filesRead": 2,
+  "linesRead": 345,
+  "runtimeEdits": 0,
+  "testOrBuildRuns": 0,
+  "newProvenBlockers": [],
+  "limitations": [
+    "Full source reading does not imply dynamic execution of every UI path. Existing browser/CI evidence remains separate.",
+    "An independent preparation can durably finish createDirectOperation if unmounted during encryption. The post-journal lifetime check prevents its subsequent generic cache/session update and UI success; it does not cancel the already prepared ciphertext record. No wallet signature or upload occurs in this step.",
+    "Publish intentionally journals the exact encrypted operation before generic cache/session writes. This is recoverable ordering, not a claim that all three stores form one atomic transaction.",
+    "The independent components are outside the currently targeted funded entrypoint; they were read to close remaining own-source review coverage."
+  ]
+}

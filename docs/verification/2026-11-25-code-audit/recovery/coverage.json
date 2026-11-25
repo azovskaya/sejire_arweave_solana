@@ -1,0 +1,151 @@
+{
+  "schema": "sejire/recovery-code-audit-coverage/v1",
+  "checkedAt": "2026-11-25T07:52:30.756708+00:00",
+  "baseCommit": "a2b738bf8183c0b0551273e0530ae8f14589b26d",
+  "ownedFiles": [
+    {
+      "file": "tools/recovery/FORMAT.md",
+      "sha256": "420b47f94a27e84c0daacd052e1bfc599faa34b938aff38604abbe050a44bedc",
+      "lines": 172,
+      "review": "Specification/license/schema read; consistency with implementation and limits reviewed",
+      "inAcceptedRuntime": true
+    },
+    {
+      "file": "tools/recovery/LICENSES.txt",
+      "sha256": "f97a6c3404d8a2c46fad2e9ec82734f2fabef0aea9decf6dfc0ad42ed97bcfff",
+      "lines": 49,
+      "review": "Specification/license/schema read; consistency with implementation and limits reviewed",
+      "inAcceptedRuntime": true
+    },
+    {
+      "file": "tools/recovery/README.md",
+      "sha256": "d212d9bd990eac3fafdaf84192cd2c9b1fda4e2bf1313020e107f49484ca0a32",
+      "lines": 112,
+      "review": "Specification/license/schema read; consistency with implementation and limits reviewed",
+      "inAcceptedRuntime": true
+    },
+    {
+      "file": "tools/recovery/adversarial-interop.mts",
+      "sha256": "2209da9bcd49d16c81cd3464bb666bddf0b0943689aa4be0fcfe7075b924885f",
+      "lines": 187,
+      "review": "Logic read and trust boundary reviewed",
+      "inAcceptedRuntime": false
+    },
+    {
+      "file": "tools/recovery/browser.test.mjs",
+      "sha256": "c668b250c11013264477b0e367ca192c6dc61adcc32ebc1b0da83f2b92ea3916",
+      "lines": 304,
+      "review": "Logic read and trust boundary reviewed",
+      "inAcceptedRuntime": false
+    },
+    {
+      "file": "tools/recovery/build-html.mjs",
+      "sha256": "a1a4950d1b030a08008bce841e4b13b6e1a9a3ae795a22361ed1e98b3f610819",
+      "lines": 103,
+      "review": "Logic read and trust boundary reviewed",
+      "inAcceptedRuntime": false
+    },
+    {
+      "file": "tools/recovery/english.txt",
+      "sha256": "2f5eed53a4727b4bf8880d8f3f199efc90e58503646d9ff8eff3a2ed3b24dbda",
+      "lines": 2048,
+      "review": "2048-entry count, uniqueness, embedded equality and pinned SHA-256 verified in passing tests",
+      "inAcceptedRuntime": true
+    },
+    {
+      "file": "tools/recovery/envelope-v1.schema.json",
+      "sha256": "d778054b4d58c50bfe3404342911f4ac94b1952b3bb2615d114b59a737610989",
+      "lines": 18,
+      "review": "Specification/license/schema read; consistency with implementation and limits reviewed",
+      "inAcceptedRuntime": true
+    },
+    {
+      "file": "tools/recovery/fixtures.test-helper.mts",
+      "sha256": "8c3d1936848ac6d479f5aae87d6c1809058094857236f1bef4573f898a220b35",
+      "lines": 90,
+      "review": "Logic read and trust boundary reviewed",
+      "inAcceptedRuntime": false
+    },
+    {
+      "file": "tools/recovery/generate-public-vectors.mts",
+      "sha256": "7608b51d69ef9842995616c17aee174ed1517902eee7ce2b086c3380a2317d89",
+      "lines": 46,
+      "review": "Logic read and trust boundary reviewed",
+      "inAcceptedRuntime": false
+    },
+    {
+      "file": "tools/recovery/interop.mts",
+      "sha256": "39d16c768f18f65b4adc5fe9a3a666bb6263965473312acd772229ca81b74ee7",
+      "lines": 58,
+      "review": "Logic read and trust boundary reviewed",
+      "inAcceptedRuntime": false
+    },
+    {
+      "file": "tools/recovery/public-vectors.json",
+      "sha256": "ac75d9a6cb3ed9b5fded300ce43db7457dcbe844d1198f302554e0008403a75e",
+      "lines": 32,
+      "review": "Two deliberately public synthetic vectors; all derivation stages and exact plaintext bytes verified in passing tests; values not copied to audit logs",
+      "inAcceptedRuntime": true
+    },
+    {
+      "file": "tools/recovery/recover.mjs",
+      "sha256": "f841b4e0ec4c86b65476b869aa0f8a5f703fe44f8703ce1cfb2822e695980996",
+      "lines": 2268,
+      "review": "Logic read and trust boundary reviewed",
+      "inAcceptedRuntime": true
+    },
+    {
+      "file": "tools/recovery/recovery.html",
+      "sha256": "cec4fdd7ea9733583d86788689e4cc0bbe63c40b4116b1aaf75242e56be54385",
+      "lines": 2301,
+      "review": "Generated source bound byte-for-byte to reviewed recover.mjs/build-html.mjs; CSP hashes and absence of external loaders checked in passing tests",
+      "inAcceptedRuntime": true
+    },
+    {
+      "file": "tools/recovery/recovery.test.mjs",
+      "sha256": "26170a28d3e227501b579c66db83b29ec79a8859c2a529551a78351f9944a254",
+      "lines": 164,
+      "review": "Logic read and trust boundary reviewed",
+      "inAcceptedRuntime": false
+    },
+    {
+      "file": "apps/web/scripts/check-layout-pdfs.py",
+      "sha256": "38a934604db53d580c6b44b35d9e127dd6513e2df3c696828febfe4ddf394f70",
+      "lines": 285,
+      "review": "Logic read and trust boundary reviewed",
+      "inAcceptedRuntime": false
+    },
+    {
+      "file": "apps/web/scripts/export-layout-stress.mjs",
+      "sha256": "dc32fab7e2459faadc573eb3b344c08f4db38eda8940271443222e43727b4499",
+      "lines": 203,
+      "review": "Logic read and trust boundary reviewed",
+      "inAcceptedRuntime": false
+    },
+    {
+      "file": "apps/web/scripts/export-qa-13gen.ts",
+      "sha256": "e361ab9157587d277258b77faf2fdd6d75bc4e68c18966c6b737ede0174ad8b9",
+      "lines": 98,
+      "review": "Logic read and trust boundary reviewed",
+      "inAcceptedRuntime": false
+    },
+    {
+      "file": "apps/web/scripts/export-qa-7gen.ts",
+      "sha256": "321e00805b07abf46c2b2aaba37fd3c92b417db1bb32d58b02c86dfe229a1800",
+      "lines": 75,
+      "review": "Logic read and trust boundary reviewed",
+      "inAcceptedRuntime": false
+    }
+  ],
+  "readOnlyProductionDependencies": {
+    "apps/web/src/lib/crypto/keys.ts": "decc9427eac184cc400fba32587984ea202f006dedbe2f7bfaf834b3986329f9",
+    "apps/web/src/lib/crypto/bip39.ts": "386716b8e7c6b51bd88bcc3f0eea5dea9b7dc524359a2d9806b5d2fe122c7716",
+    "apps/web/src/lib/crypto/encrypt.ts": "861ca9501eef769097e062dc78d3d1908274f7b646f21fb3173452fa1cb997f5",
+    "apps/web/src/lib/crypto/envelope.ts": "b36832840d81acf134ab3c1e8deca13ab90fb4ec0ff84e6c1b8934c475ae4cf6",
+    "apps/web/src/lib/crypto/vault.ts": "8efd5681db6bd7b416853002711182f175c2fb8a55ccd4cd8eaccdb3b11c0595",
+    "apps/web/src/lib/independentBackup.ts": "ab007af709eabe5cc2bdb781532e3acf2f5791d5efe1b8dca2037841c69ca77c",
+    "apps/web/src/lib/treeEngine.ts": "9a3fae9c654f3c017b4485f3c2a45237bf87f2d71ff88b22697ed40940a1c75a",
+    "apps/web/src/lib/treeJson.ts": "c7ceda978df1174f98b6b99d5297ba3f1300d0879c223135b722b268aa7c5a64"
+  },
+  "modifications": "No runtime, exporter, fixture, test or schema files changed by this audit agent; only evidence added."
+}

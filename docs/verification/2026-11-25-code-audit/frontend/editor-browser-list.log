@@ -1,0 +1,17 @@
+Listing tests:
+  editor-safety.spec.mjs:82:1 › funded restoration rolls back the full selection when session persistence fails
+  editor-safety.spec.mjs:101:1 › a restored full vault survives two funded preparations and closing without an order
+  editor-safety.spec.mjs:136:1 › funded encryption finishing after route departure cannot change the selected archive
+  editor-safety.spec.mjs:165:1 › funded restoration cannot replace edits after leaving while decryption is pending
+  editor-safety.spec.mjs:193:1 › leaving funded restoration clears its fragment and reload does not reopen it
+  editor-safety.spec.mjs:206:1 › funded restore fragment changed before subscription is reconciled without changing the draft
+  editor-safety.spec.mjs:231:1 › ordinary funded save imports a general ciphertext without entering the fixed Devnet pilot
+  editor-safety.spec.mjs:251:1 › ordinary funded file import cannot adopt its late result after returning to the editor
+  editor-safety.spec.mjs:279:1 › undo deletion keeps newer edits to another person and immutable history
+  editor-safety.spec.mjs:298:1 › switching directly to another card flushes pending notes
+  editor-safety.spec.mjs:308:1 › going home flushes pending notes before the editor unmounts
+  editor-safety.spec.mjs:321:1 › JSON download contains the visible final note without waiting for autosave
+  editor-safety.spec.mjs:337:1 › save snapshots the final visible note and preserves previous commits without an order
+  editor-safety.spec.mjs:353:1 › unchanged profile does not create an extra revision when opening save
+  editor-safety.spec.mjs:361:1 › PDF export receives the current snapshot, not the pre-autosave profile
+Total: 15 tests in 1 file

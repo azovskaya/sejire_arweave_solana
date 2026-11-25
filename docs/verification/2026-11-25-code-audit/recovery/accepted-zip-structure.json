@@ -1,0 +1,36 @@
+{
+  "checkedAt": "2026-11-25T07:50:34.279124+00:00",
+  "status": "PASS",
+  "scope": "Archived accepted ZIP structure and fixed hash bindings only; no .env/key file opened and no assertion about entire Git history",
+  "zipSha256": "f897aa1172986b595e39b76a7a8535da94b4a5be1886d21a7362cd099bcc5b60",
+  "files": 41,
+  "manifestFiles": 39,
+  "caseInsensitiveUniquePaths": true,
+  "safePaths": true,
+  "noSymbolicLinks": true,
+  "noEnvGitKeyOrSourceMapEntries": true,
+  "recoveryFiles": [
+    "recovery/FORMAT.md",
+    "recovery/LICENSES.txt",
+    "recovery/README.md",
+    "recovery/english.txt",
+    "recovery/envelope-v1.schema.json",
+    "recovery/public-vectors.json",
+    "recovery/recover.mjs",
+    "recovery/recovery.html"
+  ],
+  "recoveryBytesMatchAuditBase": {
+    "recovery/FORMAT.md": true,
+    "recovery/LICENSES.txt": true,
+    "recovery/README.md": true,
+    "recovery/english.txt": true,
+    "recovery/envelope-v1.schema.json": true,
+    "recovery/public-vectors.json": true,
+    "recovery/recover.mjs": true,
+    "recovery/recovery.html": true
+  },
+  "sourceCommit": "17a254eb13bb999127d9f7b3ecd54905f317e02d",
+  "ciRun": 45122610001,
+  "newerAuditCommitNotRepresented": true,
+  "warning": "Independent archive does not include SOL, promo, or admin product flows."
+}

@@ -1,0 +1,302 @@
+{
+  "schema": "sejire/manual-frontend-ui-addendum/v1",
+  "dateUTC": "2026-11-25",
+  "observedHead": "ca3629c1ed11a4d124f97b5dcb7856f062bfb104",
+  "branch": "fix/release-code-audit-20261125",
+  "snapshotNote": "Hashes capture the authorized ErrorBoundary/Workspace patch in the shared working tree. Commit/push/build/CI ownership is with the parent audit; observedHead alone does not identify uncommitted changes.",
+  "methodology": "Every full entry was read in its entirety, including source omitted by truncated command output by re-reading the missing ranges. Full means source reading, not dynamic execution or proof of all behaviors. File inventory and test collection are not manual review.",
+  "additionalManualFileCount": 24,
+  "additionalRuntimeSourceCount": 22,
+  "expandedPriorManualFileCount": 1,
+  "combinedUniqueRuntimeSourceCountUnderOriginalInventoryDefinition": 73,
+  "additionalManualReviews": [
+    {
+      "path": "apps/web/src/components/AddPersonModal.tsx",
+      "sha256": "e87cb10533134ec12aeefa306e6791e240c3a243bbd4986f7319da1f316148d8",
+      "lines": 113,
+      "manualReviewExtent": "full",
+      "profileReachability": "Funded and independent editor",
+      "purposeAndReviewedBoundary": "All editable fields, required name/sex, submit/cancel/backdrop behavior; data writes delegated to Workspace."
+    },
+    {
+      "path": "apps/web/src/components/CheckoutPublishPanel.tsx",
+      "sha256": "0b4e89b66c7a24ed5ebd516e2e9ece8bc9ecfaeeddb80d4281bc8f778efb7882",
+      "lines": 114,
+      "manualReviewExtent": "full",
+      "profileReachability": "Historical checkout branch; not the selected V2 save/support path",
+      "purposeAndReviewedBoundary": "Complete old order/contribution UI, pending resume, explicit wallet/consent, receipt and confirmation callbacks."
+    },
+    {
+      "path": "apps/web/src/components/DateTextInput.tsx",
+      "sha256": "ca930728543b696053ead806cb7abcd802aa5c99f3d7548625d63766d9e51077",
+      "lines": 49,
+      "manualReviewExtent": "full",
+      "profileReachability": "Shared profile editor",
+      "purposeAndReviewedBoundary": "Loose textual date editing and normalization on blur; no native date input or persistence side effects."
+    },
+    {
+      "path": "apps/web/src/components/DirectArweaveFlow.tsx",
+      "sha256": "74e8e1b6781f8809685c8399ce9f1b232bb479341d6d6bc3336aa07d36a53df7",
+      "lines": 168,
+      "manualReviewExtent": "full",
+      "profileReachability": "Independent entrypoint",
+      "purposeAndReviewedBoundary": "Read/check versus explicit quote/sign/resume/cancel, operation finalization, wallet bounds and recovery/receipt downloads."
+    },
+    {
+      "path": "apps/web/src/components/DirectSaveHistory.tsx",
+      "sha256": "afc0b62c676c885f9b6d72ae6ebcf7cecbb24d6f91d6724e17f42d018fd9c1ca",
+      "lines": 51,
+      "manualReviewExtent": "full",
+      "profileReachability": "Independent welcome/history",
+      "purposeAndReviewedBoundary": "Read-only listing, explicit operation selection and portable attempt import; no automatic upload/sign action."
+    },
+    {
+      "path": "apps/web/src/components/ErrorBoundary.tsx",
+      "sha256": "fdb16b3550b79c5b0b1de5caeb9819c01366ee92036b3a8b0660464ff2a5220b",
+      "lines": 75,
+      "manualReviewExtent": "full",
+      "profileReachability": "Shared top-level boundary",
+      "purposeAndReviewedBoundary": "Caught render failure, stored-draft JSON export and corrected clear-fragment draft reload."
+    },
+    {
+      "path": "apps/web/src/components/LanguageSwitch.tsx",
+      "sha256": "63b8a5cc45948705c254d911392cc9e5cef9a35872f36147f418fa2905ffff6b",
+      "lines": 63,
+      "manualReviewExtent": "full",
+      "profileReachability": "Both entrypoints and legacy admin UI",
+      "purposeAndReviewedBoundary": "Locale selection, radiogroup roles, roving tab index and Arrow/Home/End keyboard handling."
+    },
+    {
+      "path": "apps/web/src/components/LegacyPreservationNotice.tsx",
+      "sha256": "3a09eac282d32fff149e425337891fb9c94e6cbe97e66566a0a48386e99fdc5f",
+      "lines": 12,
+      "manualReviewExtent": "full",
+      "profileReachability": "Independent history/restore boundary",
+      "purposeAndReviewedBoundary": "Historical application link, explicit explanatory message and safe new-tab link attributes."
+    },
+    {
+      "path": "apps/web/src/components/NativeAdminDesk.tsx",
+      "sha256": "23f23ae7d70e7b2c60e7780122aa2622c5afa3be2397abd52c1b72e5a9c06f34",
+      "lines": 231,
+      "manualReviewExtent": "full",
+      "profileReachability": "Historical native admin; App chooses AdminDesk instead when V2 enabled",
+      "purposeAndReviewedBoundary": "Complete config/signature/settings/import/export/payment-check/upload UI; reviewed as retained historical implementation, not Mainnet admin acceptance."
+    },
+    {
+      "path": "apps/web/src/components/NativeCheckoutPanel.tsx",
+      "sha256": "5469d4624d605967610e2c4932f97a2331ac5f64d9bd6525ce24ffdd6990d491",
+      "lines": 122,
+      "manualReviewExtent": "full",
+      "profileReachability": "Historical native save/support branch when V2 disabled",
+      "purposeAndReviewedBoundary": "Complete native session restore, explicit order selection, successor/risk-test gates, consent, reconciliation and historical route links."
+    },
+    {
+      "path": "apps/web/src/components/PaidSaveHistory.tsx",
+      "sha256": "31ddf5be941c9c44ca96344b14f429032ec23bccb5753cd966302e7b0288b858",
+      "lines": 44,
+      "manualReviewExtent": "full",
+      "profileReachability": "Funded V2 welcome/history",
+      "purposeAndReviewedBoundary": "Preservation attempt list, loading/failure/retry and explicit PaidSolanaFlow resume; no new payment on list display."
+    },
+    {
+      "path": "apps/web/src/components/PedigreeView.tsx",
+      "sha256": "faf0d28938bcf4152cdf4971bb1972dfe12524a3f22a30e6325f7ecc75eb6f7e",
+      "lines": 372,
+      "manualReviewExtent": "full",
+      "profileReachability": "Shared editor",
+      "purposeAndReviewedBoundary": "Full focus/fit/scale/pan/pinch/wheel state, pointer filtering, layout callbacks, textual cards and parent edge display."
+    },
+    {
+      "path": "apps/web/src/components/PersonPanel.tsx",
+      "sha256": "97e0aeba67b9e11f269bbc7f2642ac5733009e8689f75d8c1915dd931392a3eb",
+      "lines": 481,
+      "manualReviewExtent": "full",
+      "profileReachability": "Shared editor",
+      "purposeAndReviewedBoundary": "Profile draft reset/debounce, explicit flush, structural fields retained from base, relation/focus/delete callbacks and mobile sheet lifecycle."
+    },
+    {
+      "path": "apps/web/src/components/PreservationV2Diagnostics.tsx",
+      "sha256": "20c51ebfbc48d8cff30f105b525400f574e42c06c31884f845085a9794970f4c",
+      "lines": 25,
+      "manualReviewExtent": "full",
+      "profileReachability": "Funded admin historical V2 diagnostics",
+      "purposeAndReviewedBoundary": "Read-only safe metadata display; no ciphertext, recovery words or signed transaction bytes rendered."
+    },
+    {
+      "path": "apps/web/src/components/ShezhireMetaModal.tsx",
+      "sha256": "b8327ca9da5468ba49323e637e30d46b5b29bcd51f8afe28b977baeecbf04c87",
+      "lines": 111,
+      "manualReviewExtent": "full",
+      "profileReachability": "Shared editor affiliation form",
+      "purposeAndReviewedBoundary": "Local form state, validated Zhuz values, trimmed clan, explicit Save/Clear/Cancel and Escape handling."
+    },
+    {
+      "path": "apps/web/src/components/ShezhireTemplateModal.tsx",
+      "sha256": "b7e7625037214141110fabafcdd73ecc90e22520999f817cd754bc44d556bec6",
+      "lines": 43,
+      "manualReviewExtent": "full",
+      "profileReachability": "Shared editor PDF selection",
+      "purposeAndReviewedBoundary": "Explicit template selection/cancel, descriptions and selected template callback; no tree writes."
+    },
+    {
+      "path": "apps/web/src/components/SolanaPublishPanel.tsx",
+      "sha256": "3047d6f1aba9018e5ec4099f4a68a0ec6bac3e08f3bd66dae26630873cdafc9f",
+      "lines": 149,
+      "manualReviewExtent": "full",
+      "profileReachability": "Historical Turbo checkout branch; not the selected V2 save path",
+      "purposeAndReviewedBoundary": "Complete quote/network/wallet, separate top-up consent, immutable attempt selection, bounded retrieval and receipt callbacks."
+    },
+    {
+      "path": "apps/web/src/components/Welcome.independent.tsx",
+      "sha256": "dc2af7a546365da86a7099e153c6ab986410ca8fe3ec9dff44b041fe47a6ce60",
+      "lines": 43,
+      "manualReviewExtent": "full",
+      "profileReachability": "Independent welcome",
+      "purposeAndReviewedBoundary": "New/continue/restore/direct history, explicit archive close, offline recovery and legacy preservation notice."
+    },
+    {
+      "path": "apps/web/src/components/Welcome.tsx",
+      "sha256": "3037c692d1b905aea2c10c7b4d35c984a2f4f7e04df5cb3506c1930b8075b714",
+      "lines": 85,
+      "manualReviewExtent": "full",
+      "profileReachability": "Funded welcome",
+      "purposeAndReviewedBoundary": "New/continue/restore, V2 paid contribution/history reachability, separate archive close and QA-only admin button."
+    },
+    {
+      "path": "apps/web/src/components/paymentPanels.legacy.ts",
+      "sha256": "a415f6bb96a39ad931d8dc87d964b290dac7eaa56471e09a2976c709d49f44fd",
+      "lines": 3,
+      "manualReviewExtent": "full",
+      "profileReachability": "Build alias for legacy panels",
+      "purposeAndReviewedBoundary": "Both export bindings read; old CheckoutPublishPanel and SolanaPublishPanel names preserved."
+    },
+    {
+      "path": "apps/web/src/components/paymentPanels.native.ts",
+      "sha256": "4dc38d28da39f0c0f03fa086f8c2a108c2e6327243ad1dffcac20183e29c4d67",
+      "lines": 2,
+      "manualReviewExtent": "full",
+      "profileReachability": "Build alias for native panels",
+      "purposeAndReviewedBoundary": "Both legacy names alias NativeCheckoutPanel; V2 conditional branches determine user reachability."
+    },
+    {
+      "path": "apps/web/src/main.tsx",
+      "sha256": "b0074c0ea2606442a992bbb42a3c6229c76a10f5a1b519a74aad683c76f05916",
+      "lines": 16,
+      "manualReviewExtent": "full",
+      "profileReachability": "Shared startup",
+      "purposeAndReviewedBoundary": "React StrictMode, I18nProvider, AppErrorBoundary and @sejire/app build alias order."
+    },
+    {
+      "path": "apps/web/src/vite-env.d.ts",
+      "sha256": "4e9abd9dd33e4e359fdc4741d73c32641be87114c3e19bd533eb2e4a2eb70250",
+      "lines": 23,
+      "manualReviewExtent": "full",
+      "profileReachability": "Type declarations only",
+      "purposeAndReviewedBoundary": "All declared build flags and browser globals read; no environment values or secrets accessed."
+    },
+    {
+      "path": "apps/web/src/index.css",
+      "sha256": "9981d8cfc68fc1e7b7c38b3e1aa435fe0aeaccb3818913004363b08bec748ee2",
+      "lines": 2078,
+      "manualReviewExtent": "full",
+      "profileReachability": "Shared styles",
+      "purposeAndReviewedBoundary": "Entire stylesheet read: local fonts, editor/grid/pedigree, modal/sheet stacking, wrapping, responsive layouts and funded/admin rules. Source review only; no visual rendering claim."
+    }
+  ],
+  "expandedPriorManualReviews": [
+    {
+      "path": "apps/web/src/components/Workspace.tsx",
+      "sha256": "3e7a139f3f476364e36d91252c56b24a8ec8592986e13913941f60afde9acf16",
+      "lines": 825,
+      "manualReviewExtent": "full",
+      "profileReachability": "Shared funded/independent editor",
+      "purposeAndReviewedBoundary": "Expanded original targeted review to the entire component: profile flush, parent/self adds, deletion/undo against current state, metadata, JSON/PDF/version replacement, persistence, pending attempts, corrected async openPublish cancellation and publish callbacks."
+    }
+  ],
+  "supportingReachabilityReads": [
+    {
+      "path": "apps/web/vite.config.ts",
+      "sha256": "2204a3b478d18dce686ec3a2c90a2e24c601c9465d6e13d2495b1580595d641a",
+      "manualReviewExtent": "full",
+      "purposeAndReviewedBoundary": "Build aliases and static relative base read to trace profile reachability; build/exporter verification remains parent-owned."
+    },
+    {
+      "path": "scripts/build-arns-promo.sh",
+      "sha256": "3d024d9b93ad025a943ab6b412b86e15e76df633915e2889c5877e5625ec15cd",
+      "manualReviewExtent": "targeted",
+      "purposeAndReviewedBoundary": "Only explicit profile flag assignment block (lines 28-43) read for V2/native branch selection; not a manual review of the entire script."
+    }
+  ],
+  "componentInventory": {
+    "method": "Automated file inventory for completeness comparison only",
+    "componentSourceFiles": 34,
+    "filesWithAtLeastFullOrTargetedEntryInEitherCoverageFile": 34,
+    "notCovered": [],
+    "stillTargetedRatherThanFull": [
+      "apps/web/src/components/AdminDesk.tsx",
+      "apps/web/src/components/PublishSeedModal.independent.tsx",
+      "apps/web/src/components/PublishSeedModal.tsx",
+      "apps/web/src/components/RestoreSeed.independent.tsx",
+      "apps/web/src/components/SolanaRecipientsAdmin.tsx",
+      "apps/web/src/components/VaultVersionsModal.tsx"
+    ]
+  },
+  "newFindings": [
+    {
+      "id": "FE-07",
+      "status": "fixed in local shared working tree; browser pending parent CI",
+      "severity": "medium",
+      "summary": "ErrorBoundary Open draft retained a deep link that bootApp prioritizes over remembered work screen. Clear fragment before reloading a valid draft.",
+      "prePatchSha256": "5c8a7dccf9ebb695a331857ce78b846ae853d5ec6e9207d064c914c6642b430c",
+      "evidenceKind": "source trace, parent and independent reviewer agreement; no local browser red claimed"
+    },
+    {
+      "id": "FE-08",
+      "status": "fixed in local shared working tree; browser pending parent CI",
+      "severity": "high",
+      "summary": "Delayed Workspace.openPublish lookup could call the live App setter with the unmounted old dirty tree after Home/new tree. Revision fence invalidated by Home, tree context and unmount before capture/commit/mirror.",
+      "prePatchSha256": "04c044a0e30e8108f46bc2f9835616e01ef5ab642aa9b39ef8ed04e063c7005b",
+      "evidenceKind": "source trace, parent and independent reviewer agreement; real Web Lock regression added but not locally executed"
+    }
+  ],
+  "unfixedLimits": [
+    "Concurrent editing of the single shared draft in separate tabs is last-write-wins; no draft revision/CAS or editor ownership guard. Paid/promo attempt locks do not solve draft editing conflicts.",
+    "PersonPanel autosaves on a 350ms debounce; explicit app Save/Home/export/profile navigation flush current values, but no separate browser reload/pagehide flush was found for the final debounce window.",
+    "Keyboard focus trapping and visual/mobile accessibility were not dynamically tested; modal markup alone is not an accessibility conformance claim.",
+    "Some funded/legacy labels remain Russian even when the locale changes; this pass did not certify complete translation coverage.",
+    "Current V2 admin overview remains explicitly historical Devnet analytics; this is not a Mainnet order ledger."
+  ],
+  "actualChecksForFinalSmallPatch": [
+    {
+      "command": "node --check apps/web/tests/editor-safety.spec.mjs",
+      "exitCode": 0,
+      "meaning": "JavaScript syntax only"
+    },
+    {
+      "command": "git diff --check",
+      "exitCode": 0,
+      "meaning": "Whitespace/conflict-marker patch check only"
+    }
+  ],
+  "addedBrowserRegressions": [
+    "opening the saved draft after a render failure leaves the failed deep link",
+    "a delayed save lookup cannot replace a new tree after leaving the old editor"
+  ],
+  "browserStatus": "No browser execution or collection in this supplemental pass; previously known Chromium availability blocker unchanged. The two new tests require parent CI.",
+  "runtimeMutations": "Only ErrorBoundary.tsx and Workspace.tsx, explicitly authorized by parent after source review; editor-safety.spec.mjs adds two tests and corrects same-document init-script timing without relaxing the walletCalls === 0 assertion. Existing independent assertions untouched.",
+  "prohibitedActionsNotPerformed": [
+    "reading .env/owner seeds/admin secrets",
+    "wallet connection or signature",
+    "real payment",
+    "archive upload",
+    "deployment",
+    "push",
+    "browser launch or Vite build by this supplemental audit"
+  ],
+  "regressionTestFile": {
+    "path": "apps/web/tests/editor-safety.spec.mjs",
+    "sha256": "3b10d8ee82b3d106c9dd83e23375116b4724bf48d62a78b60313a531d27a442c",
+    "sourceTestCaseCount": 17,
+    "note": "Source count, not browser collection or execution; contains test-only reload correction so addInitScript wallet trap runs before startup."
+  }
+}

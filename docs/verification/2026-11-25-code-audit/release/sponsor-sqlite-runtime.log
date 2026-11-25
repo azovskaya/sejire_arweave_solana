@@ -1,0 +1,19 @@
+PASS SQLite write: immutable order and pending signature saved
+PASS SQLite write: global reference uniqueness across orders
+PASS SQLite write: 32 concurrent confirmations yield one credit
+PASS SQLite write: transaction replay across different orders blocked
+PASS SQLite write: unresolved signature is retained and cannot be replaced
+PASS SQLite write: large values and cumulative totals beyond u64 stay exact
+PASS SQLite write: fault before commit rolls back inserts and preserves pending operation
+PASS SQLite write: lost response AFTER durable commit does not erase credit
+PASS SQLite write: saved real devnet payments: disk commit/reopen/repeat yields one credit per purpose
+sqlite write: 9 scenarios PASS
+PASS SQLite restart-read: new process reopens complete order/payment/credits/states
+PASS SQLite restart-read: repeat confirmation after restart never credits again
+PASS SQLite restart-read: unfinished reconciliation survives restart then completes once
+PASS SQLite restart-read: exact large amounts remain TEXT after reopen
+PASS SQLite restart-read: lost commit response followed by process restart returns already-credited
+PASS SQLite restart-read: wrong object identity cannot create separate uniqueness island
+PASS SQLite restart-read: saved real devnet payments: disk commit/reopen/repeat yields one credit per purpose
+sqlite restart-read: 7 scenarios PASS
+sqlite.runtime: PASS; separate Node/workerd processes reopened persisted SQLite; no in-memory adapter, no cloud resources

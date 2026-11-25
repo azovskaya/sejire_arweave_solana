@@ -1,0 +1,1210 @@
+{
+  "date": "2026-09-30",
+  "sha": "local",
+  "target": "production-format devnet browser bundle",
+  "method": "Vite module graph + rendered chunk modules, existing SDK/cryptography unchanged; no dynamic exploit proof",
+  "entries": {
+    "@ardrive/turbo-sdk": {
+      "severityAtBaseline": "high",
+      "advisory": [
+        "@solana/spl-token",
+        "@solana/web3.js"
+      ],
+      "dependencyNodes": [
+        "node_modules/@ardrive/turbo-sdk"
+      ],
+      "includedModules": [
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ardrive/turbo-sdk/lib/esm/common/arnsActions.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ardrive/turbo-sdk/lib/esm/common/chunked.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ardrive/turbo-sdk/lib/esm/common/currency.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ardrive/turbo-sdk/lib/esm/common/events.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ardrive/turbo-sdk/lib/esm/common/factory.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ardrive/turbo-sdk/lib/esm/common/folderIndex.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ardrive/turbo-sdk/lib/esm/common/http.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ardrive/turbo-sdk/lib/esm/common/index.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ardrive/turbo-sdk/lib/esm/common/logger.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ardrive/turbo-sdk/lib/esm/common/payment.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ardrive/turbo-sdk/lib/esm/common/signer.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ardrive/turbo-sdk/lib/esm/common/token/ario.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ardrive/turbo-sdk/lib/esm/common/token/arweave.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ardrive/turbo-sdk/lib/esm/common/token/baseEth.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ardrive/turbo-sdk/lib/esm/common/token/erc20.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ardrive/turbo-sdk/lib/esm/common/token/ethereum.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ardrive/turbo-sdk/lib/esm/common/token/index.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ardrive/turbo-sdk/lib/esm/common/token/polygon.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ardrive/turbo-sdk/lib/esm/common/token/solana.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ardrive/turbo-sdk/lib/esm/common/token/solanaUsdc.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ardrive/turbo-sdk/lib/esm/common/token/spl.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ardrive/turbo-sdk/lib/esm/common/token/usdc.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ardrive/turbo-sdk/lib/esm/common/turbo.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ardrive/turbo-sdk/lib/esm/common/upload.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ardrive/turbo-sdk/lib/esm/types.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ardrive/turbo-sdk/lib/esm/utils/base64.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ardrive/turbo-sdk/lib/esm/utils/common.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ardrive/turbo-sdk/lib/esm/utils/errors.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ardrive/turbo-sdk/lib/esm/utils/folderIndex.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ardrive/turbo-sdk/lib/esm/utils/readableStream.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ardrive/turbo-sdk/lib/esm/utils/uuid.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ardrive/turbo-sdk/lib/esm/version.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ardrive/turbo-sdk/lib/esm/web/factory.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ardrive/turbo-sdk/lib/esm/web/index.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ardrive/turbo-sdk/lib/esm/web/signer.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ardrive/turbo-sdk/lib/esm/web/upload.js"
+      ],
+      "renderedModules": [
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ardrive/turbo-sdk/lib/esm/common/arnsActions.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ardrive/turbo-sdk/lib/esm/common/chunked.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ardrive/turbo-sdk/lib/esm/common/currency.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ardrive/turbo-sdk/lib/esm/common/events.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ardrive/turbo-sdk/lib/esm/common/factory.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ardrive/turbo-sdk/lib/esm/common/folderIndex.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ardrive/turbo-sdk/lib/esm/common/http.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ardrive/turbo-sdk/lib/esm/common/logger.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ardrive/turbo-sdk/lib/esm/common/payment.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ardrive/turbo-sdk/lib/esm/common/signer.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ardrive/turbo-sdk/lib/esm/common/token/ario.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ardrive/turbo-sdk/lib/esm/common/token/arweave.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ardrive/turbo-sdk/lib/esm/common/token/baseEth.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ardrive/turbo-sdk/lib/esm/common/token/erc20.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ardrive/turbo-sdk/lib/esm/common/token/ethereum.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ardrive/turbo-sdk/lib/esm/common/token/index.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ardrive/turbo-sdk/lib/esm/common/token/polygon.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ardrive/turbo-sdk/lib/esm/common/token/solana.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ardrive/turbo-sdk/lib/esm/common/token/solanaUsdc.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ardrive/turbo-sdk/lib/esm/common/token/spl.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ardrive/turbo-sdk/lib/esm/common/token/usdc.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ardrive/turbo-sdk/lib/esm/common/turbo.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ardrive/turbo-sdk/lib/esm/common/upload.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ardrive/turbo-sdk/lib/esm/types.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ardrive/turbo-sdk/lib/esm/utils/base64.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ardrive/turbo-sdk/lib/esm/utils/common.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ardrive/turbo-sdk/lib/esm/utils/errors.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ardrive/turbo-sdk/lib/esm/utils/folderIndex.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ardrive/turbo-sdk/lib/esm/utils/readableStream.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ardrive/turbo-sdk/lib/esm/utils/uuid.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ardrive/turbo-sdk/lib/esm/version.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ardrive/turbo-sdk/lib/esm/web/factory.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ardrive/turbo-sdk/lib/esm/web/signer.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ardrive/turbo-sdk/lib/esm/web/upload.js"
+      ],
+      "sourceMatches": [],
+      "conclusion": "BUNDLE_PRESENCE_NOT_PROOF_OF_EXPLOIT_REACHABILITY"
+    },
+    "@dha-team/arbundles": {
+      "severityAtBaseline": "high",
+      "advisory": [
+        "@ethersproject/hash",
+        "@ethersproject/providers",
+        "@ethersproject/signing-key",
+        "@ethersproject/transactions",
+        "@ethersproject/wallet",
+        "secp256k1"
+      ],
+      "dependencyNodes": [
+        "node_modules/@dha-team/arbundles"
+      ],
+      "includedModules": [
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@dha-team/arbundles/build/web/esm/src/Bundle.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@dha-team/arbundles/build/web/esm/src/BundleInterface.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@dha-team/arbundles/build/web/esm/src/BundleItem.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@dha-team/arbundles/build/web/esm/src/DataItem.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@dha-team/arbundles/build/web/esm/src/ar-data-base.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@dha-team/arbundles/build/web/esm/src/ar-data-bundle.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@dha-team/arbundles/build/web/esm/src/ar-data-create.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@dha-team/arbundles/build/web/esm/src/constants.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@dha-team/arbundles/build/web/esm/src/deepHash.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@dha-team/arbundles/build/web/esm/src/error.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@dha-team/arbundles/build/web/esm/src/index.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@dha-team/arbundles/build/web/esm/src/interface-jwk.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@dha-team/arbundles/build/web/esm/src/signing/Signer.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@dha-team/arbundles/build/web/esm/src/signing/chains/AlgorandSigner.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@dha-team/arbundles/build/web/esm/src/signing/chains/AptosSigner.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@dha-team/arbundles/build/web/esm/src/signing/chains/ArweaveSigner.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@dha-team/arbundles/build/web/esm/src/signing/chains/HexInjectedSolanaSigner.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@dha-team/arbundles/build/web/esm/src/signing/chains/HexSolanaSigner.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@dha-team/arbundles/build/web/esm/src/signing/chains/InjectedAptosSigner.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@dha-team/arbundles/build/web/esm/src/signing/chains/InjectedTypedEthereumSigner.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@dha-team/arbundles/build/web/esm/src/signing/chains/KyveSigner.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@dha-team/arbundles/build/web/esm/src/signing/chains/NearSigner.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@dha-team/arbundles/build/web/esm/src/signing/chains/PolygonSigner.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@dha-team/arbundles/build/web/esm/src/signing/chains/SolanaSigner.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@dha-team/arbundles/build/web/esm/src/signing/chains/TypedEthereumSigner.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@dha-team/arbundles/build/web/esm/src/signing/chains/arconnectSigner.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@dha-team/arbundles/build/web/esm/src/signing/chains/ethereumSigner.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@dha-team/arbundles/build/web/esm/src/signing/chains/index.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@dha-team/arbundles/build/web/esm/src/signing/chains/injectedEthereumSigner.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@dha-team/arbundles/build/web/esm/src/signing/chains/injectedSolanaSigner.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@dha-team/arbundles/build/web/esm/src/signing/chains/multiSignatureAptos.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@dha-team/arbundles/build/web/esm/src/signing/constants.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@dha-team/arbundles/build/web/esm/src/signing/index.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@dha-team/arbundles/build/web/esm/src/signing/keccak256.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@dha-team/arbundles/build/web/esm/src/signing/keys/Rsa4096Pss.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@dha-team/arbundles/build/web/esm/src/signing/keys/curve25519.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@dha-team/arbundles/build/web/esm/src/signing/keys/index.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@dha-team/arbundles/build/web/esm/src/signing/keys/secp256k1.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@dha-team/arbundles/build/web/esm/src/stream/index.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@dha-team/arbundles/build/web/esm/src/tags.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@dha-team/arbundles/build/web/esm/src/utils.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@dha-team/arbundles/build/web/esm/src/webUtils.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@dha-team/arbundles/build/web/esm/webIndex.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@dha-team/arbundles/node_modules/base-x/src/index.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@dha-team/arbundles/node_modules/bs58/index.js"
+      ],
+      "renderedModules": [
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@dha-team/arbundles/build/web/esm/src/Bundle.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@dha-team/arbundles/build/web/esm/src/BundleItem.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@dha-team/arbundles/build/web/esm/src/DataItem.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@dha-team/arbundles/build/web/esm/src/ar-data-base.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@dha-team/arbundles/build/web/esm/src/ar-data-bundle.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@dha-team/arbundles/build/web/esm/src/ar-data-create.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@dha-team/arbundles/build/web/esm/src/constants.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@dha-team/arbundles/build/web/esm/src/deepHash.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@dha-team/arbundles/build/web/esm/src/index.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@dha-team/arbundles/build/web/esm/src/signing/Signer.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@dha-team/arbundles/build/web/esm/src/signing/chains/AlgorandSigner.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@dha-team/arbundles/build/web/esm/src/signing/chains/AptosSigner.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@dha-team/arbundles/build/web/esm/src/signing/chains/ArweaveSigner.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@dha-team/arbundles/build/web/esm/src/signing/chains/HexInjectedSolanaSigner.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@dha-team/arbundles/build/web/esm/src/signing/chains/HexSolanaSigner.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@dha-team/arbundles/build/web/esm/src/signing/chains/InjectedAptosSigner.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@dha-team/arbundles/build/web/esm/src/signing/chains/InjectedTypedEthereumSigner.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@dha-team/arbundles/build/web/esm/src/signing/chains/KyveSigner.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@dha-team/arbundles/build/web/esm/src/signing/chains/NearSigner.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@dha-team/arbundles/build/web/esm/src/signing/chains/PolygonSigner.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@dha-team/arbundles/build/web/esm/src/signing/chains/SolanaSigner.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@dha-team/arbundles/build/web/esm/src/signing/chains/TypedEthereumSigner.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@dha-team/arbundles/build/web/esm/src/signing/chains/arconnectSigner.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@dha-team/arbundles/build/web/esm/src/signing/chains/ethereumSigner.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@dha-team/arbundles/build/web/esm/src/signing/chains/injectedEthereumSigner.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@dha-team/arbundles/build/web/esm/src/signing/chains/injectedSolanaSigner.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@dha-team/arbundles/build/web/esm/src/signing/chains/multiSignatureAptos.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@dha-team/arbundles/build/web/esm/src/signing/constants.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@dha-team/arbundles/build/web/esm/src/signing/keccak256.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@dha-team/arbundles/build/web/esm/src/signing/keys/Rsa4096Pss.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@dha-team/arbundles/build/web/esm/src/signing/keys/curve25519.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@dha-team/arbundles/build/web/esm/src/signing/keys/secp256k1.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@dha-team/arbundles/build/web/esm/src/stream/index.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@dha-team/arbundles/build/web/esm/src/tags.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@dha-team/arbundles/build/web/esm/src/utils.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@dha-team/arbundles/build/web/esm/src/webUtils.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@dha-team/arbundles/build/web/esm/webIndex.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@dha-team/arbundles/node_modules/base-x/src/index.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@dha-team/arbundles/node_modules/bs58/index.js"
+      ],
+      "sourceMatches": [],
+      "conclusion": "BUNDLE_PRESENCE_NOT_PROOF_OF_EXPLOIT_REACHABILITY"
+    },
+    "@ethersproject/abstract-provider": {
+      "severityAtBaseline": "low",
+      "advisory": [
+        "@ethersproject/transactions"
+      ],
+      "dependencyNodes": [
+        "node_modules/@ethersproject/abstract-provider"
+      ],
+      "includedModules": [
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/abstract-provider/lib.esm/_version.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/abstract-provider/lib.esm/index.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/abstract-provider/node_modules/@ethersproject/bytes/lib.esm/_version.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/abstract-provider/node_modules/@ethersproject/bytes/lib.esm/index.js"
+      ],
+      "renderedModules": [
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/abstract-provider/lib.esm/_version.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/abstract-provider/lib.esm/index.js"
+      ],
+      "sourceMatches": [],
+      "conclusion": "BUNDLE_PRESENCE_NOT_PROOF_OF_EXPLOIT_REACHABILITY"
+    },
+    "@ethersproject/abstract-signer": {
+      "severityAtBaseline": "low",
+      "advisory": [
+        "@ethersproject/abstract-provider"
+      ],
+      "dependencyNodes": [
+        "node_modules/@ethersproject/abstract-signer"
+      ],
+      "includedModules": [
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/abstract-signer/lib.esm/_version.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/abstract-signer/lib.esm/index.js"
+      ],
+      "renderedModules": [
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/abstract-signer/lib.esm/_version.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/abstract-signer/lib.esm/index.js"
+      ],
+      "sourceMatches": [],
+      "conclusion": "BUNDLE_PRESENCE_NOT_PROOF_OF_EXPLOIT_REACHABILITY"
+    },
+    "@ethersproject/hash": {
+      "severityAtBaseline": "low",
+      "advisory": [
+        "@ethersproject/abstract-signer"
+      ],
+      "dependencyNodes": [
+        "node_modules/@ethersproject/hash",
+        "node_modules/@ethersproject/wordlists/node_modules/@ethersproject/hash"
+      ],
+      "includedModules": [
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/hash/lib.esm/_version.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/hash/lib.esm/ens-normalize/decoder.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/hash/lib.esm/ens-normalize/include.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/hash/lib.esm/ens-normalize/lib.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/hash/lib.esm/id.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/hash/lib.esm/index.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/hash/lib.esm/message.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/hash/lib.esm/namehash.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/hash/lib.esm/typed-data.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/wordlists/node_modules/@ethersproject/hash/lib.esm/_version.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/wordlists/node_modules/@ethersproject/hash/lib.esm/ens-normalize/decoder.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/wordlists/node_modules/@ethersproject/hash/lib.esm/ens-normalize/include.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/wordlists/node_modules/@ethersproject/hash/lib.esm/ens-normalize/lib.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/wordlists/node_modules/@ethersproject/hash/lib.esm/id.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/wordlists/node_modules/@ethersproject/hash/lib.esm/index.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/wordlists/node_modules/@ethersproject/hash/lib.esm/message.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/wordlists/node_modules/@ethersproject/hash/lib.esm/namehash.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/wordlists/node_modules/@ethersproject/hash/lib.esm/typed-data.js"
+      ],
+      "renderedModules": [
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/hash/lib.esm/_version.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/hash/lib.esm/id.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/hash/lib.esm/message.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/hash/lib.esm/typed-data.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/wordlists/node_modules/@ethersproject/hash/lib.esm/id.js"
+      ],
+      "sourceMatches": [],
+      "conclusion": "BUNDLE_PRESENCE_NOT_PROOF_OF_EXPLOIT_REACHABILITY"
+    },
+    "@ethersproject/hdnode": {
+      "severityAtBaseline": "low",
+      "advisory": [
+        "@ethersproject/abstract-signer",
+        "@ethersproject/signing-key",
+        "@ethersproject/transactions",
+        "@ethersproject/wordlists"
+      ],
+      "dependencyNodes": [
+        "node_modules/@ethersproject/hdnode"
+      ],
+      "includedModules": [
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/hdnode/lib.esm/_version.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/hdnode/lib.esm/index.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/hdnode/node_modules/@ethersproject/bytes/lib.esm/_version.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/hdnode/node_modules/@ethersproject/bytes/lib.esm/index.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/hdnode/node_modules/@ethersproject/signing-key/lib.esm/_version.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/hdnode/node_modules/@ethersproject/signing-key/lib.esm/elliptic.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/hdnode/node_modules/@ethersproject/signing-key/lib.esm/index.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/hdnode/node_modules/@ethersproject/transactions/lib.esm/_version.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/hdnode/node_modules/@ethersproject/transactions/lib.esm/index.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/hdnode/node_modules/bn.js/lib/bn.js"
+      ],
+      "renderedModules": [
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/hdnode/lib.esm/_version.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/hdnode/lib.esm/index.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/hdnode/node_modules/@ethersproject/bytes/lib.esm/_version.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/hdnode/node_modules/@ethersproject/bytes/lib.esm/index.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/hdnode/node_modules/@ethersproject/signing-key/lib.esm/_version.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/hdnode/node_modules/@ethersproject/signing-key/lib.esm/elliptic.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/hdnode/node_modules/@ethersproject/signing-key/lib.esm/index.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/hdnode/node_modules/@ethersproject/transactions/lib.esm/_version.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/hdnode/node_modules/@ethersproject/transactions/lib.esm/index.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/hdnode/node_modules/bn.js/lib/bn.js"
+      ],
+      "sourceMatches": [
+        {
+          "file": "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/hdnode/node_modules/@ethersproject/signing-key/lib.esm/elliptic.js",
+          "matches": [
+            {
+              "line": 2029,
+              "code": "// ECDH"
+            }
+          ]
+        }
+      ],
+      "conclusion": "BUNDLE_PRESENCE_NOT_PROOF_OF_EXPLOIT_REACHABILITY"
+    },
+    "@ethersproject/json-wallets": {
+      "severityAtBaseline": "low",
+      "advisory": [
+        "@ethersproject/abstract-signer",
+        "@ethersproject/hdnode",
+        "@ethersproject/transactions"
+      ],
+      "dependencyNodes": [
+        "node_modules/@ethersproject/json-wallets"
+      ],
+      "includedModules": [
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/json-wallets/lib.esm/_version.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/json-wallets/lib.esm/crowdsale.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/json-wallets/lib.esm/index.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/json-wallets/lib.esm/inspect.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/json-wallets/lib.esm/keystore.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/json-wallets/lib.esm/utils.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/json-wallets/node_modules/@ethersproject/bytes/lib.esm/_version.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/json-wallets/node_modules/@ethersproject/bytes/lib.esm/index.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/json-wallets/node_modules/@ethersproject/signing-key/lib.esm/_version.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/json-wallets/node_modules/@ethersproject/signing-key/lib.esm/elliptic.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/json-wallets/node_modules/@ethersproject/signing-key/lib.esm/index.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/json-wallets/node_modules/@ethersproject/transactions/lib.esm/_version.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/json-wallets/node_modules/@ethersproject/transactions/lib.esm/index.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/json-wallets/node_modules/bn.js/lib/bn.js"
+      ],
+      "renderedModules": [
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/json-wallets/lib.esm/_version.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/json-wallets/lib.esm/crowdsale.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/json-wallets/lib.esm/index.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/json-wallets/lib.esm/inspect.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/json-wallets/lib.esm/keystore.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/json-wallets/lib.esm/utils.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/json-wallets/node_modules/@ethersproject/bytes/lib.esm/_version.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/json-wallets/node_modules/@ethersproject/bytes/lib.esm/index.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/json-wallets/node_modules/@ethersproject/signing-key/lib.esm/_version.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/json-wallets/node_modules/@ethersproject/signing-key/lib.esm/elliptic.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/json-wallets/node_modules/@ethersproject/signing-key/lib.esm/index.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/json-wallets/node_modules/@ethersproject/transactions/lib.esm/_version.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/json-wallets/node_modules/@ethersproject/transactions/lib.esm/index.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/json-wallets/node_modules/bn.js/lib/bn.js"
+      ],
+      "sourceMatches": [
+        {
+          "file": "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/json-wallets/node_modules/@ethersproject/signing-key/lib.esm/elliptic.js",
+          "matches": [
+            {
+              "line": 2029,
+              "code": "// ECDH"
+            }
+          ]
+        }
+      ],
+      "conclusion": "BUNDLE_PRESENCE_NOT_PROOF_OF_EXPLOIT_REACHABILITY"
+    },
+    "@ethersproject/providers": {
+      "severityAtBaseline": "high",
+      "advisory": [
+        "@ethersproject/abstract-provider",
+        "@ethersproject/abstract-signer",
+        "@ethersproject/hash",
+        "@ethersproject/transactions",
+        "ws"
+      ],
+      "dependencyNodes": [
+        "node_modules/@ethersproject/providers"
+      ],
+      "includedModules": [],
+      "renderedModules": [],
+      "sourceMatches": [],
+      "conclusion": "NOT_IN_THIS_BROWSER_BUILD_NOT_A_GLOBAL_SAFETY_CLAIM"
+    },
+    "@ethersproject/signing-key": {
+      "severityAtBaseline": "low",
+      "advisory": [
+        "elliptic"
+      ],
+      "dependencyNodes": [
+        "node_modules/@ethersproject/abstract-provider/node_modules/@ethersproject/signing-key",
+        "node_modules/@ethersproject/hdnode/node_modules/@ethersproject/signing-key",
+        "node_modules/@ethersproject/json-wallets/node_modules/@ethersproject/signing-key",
+        "node_modules/@ethersproject/signing-key"
+      ],
+      "includedModules": [
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/hdnode/node_modules/@ethersproject/signing-key/lib.esm/_version.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/hdnode/node_modules/@ethersproject/signing-key/lib.esm/elliptic.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/hdnode/node_modules/@ethersproject/signing-key/lib.esm/index.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/json-wallets/node_modules/@ethersproject/signing-key/lib.esm/_version.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/json-wallets/node_modules/@ethersproject/signing-key/lib.esm/elliptic.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/json-wallets/node_modules/@ethersproject/signing-key/lib.esm/index.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/signing-key/lib.esm/_version.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/signing-key/lib.esm/elliptic.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/signing-key/lib.esm/index.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/signing-key/node_modules/bn.js/lib/bn.js"
+      ],
+      "renderedModules": [
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/hdnode/node_modules/@ethersproject/signing-key/lib.esm/_version.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/hdnode/node_modules/@ethersproject/signing-key/lib.esm/elliptic.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/hdnode/node_modules/@ethersproject/signing-key/lib.esm/index.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/json-wallets/node_modules/@ethersproject/signing-key/lib.esm/_version.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/json-wallets/node_modules/@ethersproject/signing-key/lib.esm/elliptic.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/json-wallets/node_modules/@ethersproject/signing-key/lib.esm/index.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/signing-key/lib.esm/_version.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/signing-key/lib.esm/elliptic.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/signing-key/lib.esm/index.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/signing-key/node_modules/bn.js/lib/bn.js"
+      ],
+      "sourceMatches": [
+        {
+          "file": "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/signing-key/lib.esm/elliptic.js",
+          "matches": [
+            {
+              "line": 2026,
+              "code": "// ECDH"
+            }
+          ]
+        },
+        {
+          "file": "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/hdnode/node_modules/@ethersproject/signing-key/lib.esm/elliptic.js",
+          "matches": [
+            {
+              "line": 2029,
+              "code": "// ECDH"
+            }
+          ]
+        },
+        {
+          "file": "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/json-wallets/node_modules/@ethersproject/signing-key/lib.esm/elliptic.js",
+          "matches": [
+            {
+              "line": 2029,
+              "code": "// ECDH"
+            }
+          ]
+        }
+      ],
+      "conclusion": "BUNDLE_PRESENCE_NOT_PROOF_OF_EXPLOIT_REACHABILITY"
+    },
+    "@ethersproject/transactions": {
+      "severityAtBaseline": "low",
+      "advisory": [
+        "@ethersproject/signing-key"
+      ],
+      "dependencyNodes": [
+        "node_modules/@ethersproject/abstract-provider/node_modules/@ethersproject/transactions",
+        "node_modules/@ethersproject/hdnode/node_modules/@ethersproject/transactions",
+        "node_modules/@ethersproject/json-wallets/node_modules/@ethersproject/transactions",
+        "node_modules/@ethersproject/transactions"
+      ],
+      "includedModules": [
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/hdnode/node_modules/@ethersproject/transactions/lib.esm/_version.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/hdnode/node_modules/@ethersproject/transactions/lib.esm/index.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/json-wallets/node_modules/@ethersproject/transactions/lib.esm/_version.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/json-wallets/node_modules/@ethersproject/transactions/lib.esm/index.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/transactions/lib.esm/_version.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/transactions/lib.esm/index.js"
+      ],
+      "renderedModules": [
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/hdnode/node_modules/@ethersproject/transactions/lib.esm/_version.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/hdnode/node_modules/@ethersproject/transactions/lib.esm/index.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/json-wallets/node_modules/@ethersproject/transactions/lib.esm/_version.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/json-wallets/node_modules/@ethersproject/transactions/lib.esm/index.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/transactions/lib.esm/_version.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/transactions/lib.esm/index.js"
+      ],
+      "sourceMatches": [],
+      "conclusion": "BUNDLE_PRESENCE_NOT_PROOF_OF_EXPLOIT_REACHABILITY"
+    },
+    "@ethersproject/wallet": {
+      "severityAtBaseline": "low",
+      "advisory": [
+        "@ethersproject/abstract-provider",
+        "@ethersproject/abstract-signer",
+        "@ethersproject/hash",
+        "@ethersproject/hdnode",
+        "@ethersproject/json-wallets",
+        "@ethersproject/signing-key",
+        "@ethersproject/transactions",
+        "@ethersproject/wordlists"
+      ],
+      "dependencyNodes": [
+        "node_modules/@ethersproject/wallet"
+      ],
+      "includedModules": [
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/wallet/lib.esm/_version.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/wallet/lib.esm/index.js"
+      ],
+      "renderedModules": [
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/wallet/lib.esm/_version.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/wallet/lib.esm/index.js"
+      ],
+      "sourceMatches": [],
+      "conclusion": "BUNDLE_PRESENCE_NOT_PROOF_OF_EXPLOIT_REACHABILITY"
+    },
+    "@ethersproject/wordlists": {
+      "severityAtBaseline": "low",
+      "advisory": [
+        "@ethersproject/hash"
+      ],
+      "dependencyNodes": [
+        "node_modules/@ethersproject/wordlists"
+      ],
+      "includedModules": [
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/wordlists/lib.esm/_version.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/wordlists/lib.esm/index.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/wordlists/lib.esm/lang-en.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/wordlists/lib.esm/wordlist.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/wordlists/lib.esm/wordlists.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/wordlists/node_modules/@ethersproject/bytes/lib.esm/_version.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/wordlists/node_modules/@ethersproject/bytes/lib.esm/index.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/wordlists/node_modules/@ethersproject/hash/lib.esm/_version.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/wordlists/node_modules/@ethersproject/hash/lib.esm/ens-normalize/decoder.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/wordlists/node_modules/@ethersproject/hash/lib.esm/ens-normalize/include.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/wordlists/node_modules/@ethersproject/hash/lib.esm/ens-normalize/lib.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/wordlists/node_modules/@ethersproject/hash/lib.esm/id.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/wordlists/node_modules/@ethersproject/hash/lib.esm/index.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/wordlists/node_modules/@ethersproject/hash/lib.esm/message.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/wordlists/node_modules/@ethersproject/hash/lib.esm/namehash.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/wordlists/node_modules/@ethersproject/hash/lib.esm/typed-data.js"
+      ],
+      "renderedModules": [
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/wordlists/lib.esm/_version.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/wordlists/lib.esm/lang-en.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/wordlists/lib.esm/wordlist.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/wordlists/lib.esm/wordlists.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@ethersproject/wordlists/node_modules/@ethersproject/hash/lib.esm/id.js"
+      ],
+      "sourceMatches": [],
+      "conclusion": "BUNDLE_PRESENCE_NOT_PROOF_OF_EXPLOIT_REACHABILITY"
+    },
+    "@solana/buffer-layout-utils": {
+      "severityAtBaseline": "high",
+      "advisory": [
+        "@solana/web3.js",
+        "bigint-buffer"
+      ],
+      "dependencyNodes": [
+        "node_modules/@solana/buffer-layout-utils"
+      ],
+      "includedModules": [
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/buffer-layout-utils/lib/esm/base.mjs",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/buffer-layout-utils/lib/esm/bigint.mjs",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/buffer-layout-utils/lib/esm/decimal.mjs",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/buffer-layout-utils/lib/esm/index.mjs",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/buffer-layout-utils/lib/esm/native.mjs",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/buffer-layout-utils/lib/esm/web3.mjs",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/buffer-layout-utils/node_modules/bigint-buffer/dist/browser.esm.mjs"
+      ],
+      "renderedModules": [
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/buffer-layout-utils/lib/esm/base.mjs",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/buffer-layout-utils/lib/esm/bigint.mjs",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/buffer-layout-utils/lib/esm/native.mjs",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/buffer-layout-utils/lib/esm/web3.mjs",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/buffer-layout-utils/node_modules/bigint-buffer/dist/browser.esm.mjs"
+      ],
+      "sourceMatches": [
+        {
+          "file": "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/buffer-layout-utils/lib/esm/bigint.mjs",
+          "matches": [
+            {
+              "line": 3,
+              "code": "import { toBigIntBE, toBigIntLE, toBufferBE, toBufferLE } from 'bigint-buffer';"
+            },
+            {
+              "line": 18,
+              "code": "return littleEndian ? toBigIntLE(Buffer.from(src)) : toBigIntBE(Buffer.from(src));"
+            }
+          ]
+        },
+        {
+          "file": "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/buffer-layout-utils/node_modules/bigint-buffer/dist/browser.esm.mjs",
+          "matches": [
+            {
+              "line": 52,
+              "code": "var _toBigIntLE = (buffer) => {"
+            },
+            {
+              "line": 63,
+              "code": "var _toBigIntLESigned = createSignedReader(_toBigIntLE);"
+            },
+            {
+              "line": 66,
+              "code": "toBigIntLE: _toBigIntLE,"
+            },
+            {
+              "line": 68,
+              "code": "toBigIntLESigned: _toBigIntLESigned,"
+            },
+            {
+              "line": 135,
+              "code": "var { toBigIntBE, toBigIntLE, toBigIntBESigned, toBigIntLESigned, toBufferBE, toBufferLE, toBufferBEInto, toBufferLEInto } = fallback;"
+            },
+            {
+              "line": 177,
+              "code": "function toBigIntLE2(buffer) {"
+            },
+            {
+              "line": 178,
+              "code": "return _impl.toBigIntLE(buffer);"
+            },
+            {
+              "line": 183,
+              "code": "function toBigIntLESigned2(buffer) {"
+            },
+            {
+              "line": 184,
+              "code": "return _impl.toBigIntLESigned(buffer);"
+            },
+            {
+              "line": 200,
+              "code": "toBigIntLE: toBigIntLE2,"
+            },
+            {
+              "line": 202,
+              "code": "toBigIntLESigned: toBigIntLESigned2,"
+            },
+            {
+              "line": 219,
+              "code": "toBigIntLE2 as toBigIntLE,"
+            }
+          ]
+        }
+      ],
+      "conclusion": "BUNDLE_PRESENCE_NOT_PROOF_OF_EXPLOIT_REACHABILITY"
+    },
+    "@solana/spl-token": {
+      "severityAtBaseline": "high",
+      "advisory": [
+        "@solana/buffer-layout-utils",
+        "@solana/spl-token-group",
+        "@solana/spl-token-metadata",
+        "@solana/web3.js"
+      ],
+      "dependencyNodes": [
+        "node_modules/@solana/spl-token"
+      ],
+      "includedModules": [
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/actions/amountToUiAmount.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/actions/approve.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/actions/approveChecked.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/actions/burn.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/actions/burnChecked.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/actions/closeAccount.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/actions/createAccount.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/actions/createAssociatedTokenAccount.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/actions/createAssociatedTokenAccountIdempotent.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/actions/createMint.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/actions/createMultisig.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/actions/createNativeMint.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/actions/createWrappedNativeAccount.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/actions/freezeAccount.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/actions/getOrCreateAssociatedTokenAccount.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/actions/index.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/actions/internal.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/actions/mintTo.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/actions/mintToChecked.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/actions/recoverNested.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/actions/revoke.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/actions/setAuthority.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/actions/syncNative.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/actions/thawAccount.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/actions/transfer.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/actions/transferChecked.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/actions/uiAmountToAmount.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/actions/unwrapLamports.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/constants.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/errors.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/extensions/accountType.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/extensions/cpiGuard/actions.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/extensions/cpiGuard/index.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/extensions/cpiGuard/instructions.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/extensions/cpiGuard/state.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/extensions/defaultAccountState/actions.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/extensions/defaultAccountState/index.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/extensions/defaultAccountState/instructions.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/extensions/defaultAccountState/state.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/extensions/extensionType.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/extensions/groupMemberPointer/index.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/extensions/groupMemberPointer/instructions.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/extensions/groupMemberPointer/state.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/extensions/groupPointer/index.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/extensions/groupPointer/instructions.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/extensions/groupPointer/state.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/extensions/immutableOwner.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/extensions/index.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/extensions/interestBearingMint/actions.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/extensions/interestBearingMint/index.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/extensions/interestBearingMint/instructions.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/extensions/interestBearingMint/state.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/extensions/memoTransfer/actions.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/extensions/memoTransfer/index.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/extensions/memoTransfer/instructions.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/extensions/memoTransfer/state.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/extensions/metadataPointer/index.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/extensions/metadataPointer/instructions.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/extensions/metadataPointer/state.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/extensions/mintCloseAuthority.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/extensions/nonTransferable.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/extensions/pausable/actions.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/extensions/pausable/index.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/extensions/pausable/instructions.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/extensions/pausable/state.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/extensions/permanentDelegate.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/extensions/permissionedBurn/index.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/extensions/permissionedBurn/instructions.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/extensions/permissionedBurn/state.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/extensions/scaledUiAmount/actions.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/extensions/scaledUiAmount/index.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/extensions/scaledUiAmount/instructions.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/extensions/scaledUiAmount/state.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/extensions/tokenGroup/actions.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/extensions/tokenGroup/index.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/extensions/tokenGroup/state.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/extensions/tokenMetadata/actions.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/extensions/tokenMetadata/index.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/extensions/tokenMetadata/state.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/extensions/transferFee/actions.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/extensions/transferFee/index.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/extensions/transferFee/instructions.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/extensions/transferFee/state.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/extensions/transferHook/actions.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/extensions/transferHook/index.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/extensions/transferHook/instructions.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/extensions/transferHook/pubkeyData.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/extensions/transferHook/seeds.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/extensions/transferHook/state.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/index.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/instructions/amountToUiAmount.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/instructions/approve.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/instructions/approveChecked.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/instructions/associatedTokenAccount.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/instructions/burn.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/instructions/burnChecked.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/instructions/closeAccount.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/instructions/createNativeMint.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/instructions/decode.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/instructions/freezeAccount.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/instructions/index.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/instructions/initializeAccount.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/instructions/initializeAccount2.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/instructions/initializeAccount3.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/instructions/initializeImmutableOwner.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/instructions/initializeMint.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/instructions/initializeMint2.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/instructions/initializeMintCloseAuthority.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/instructions/initializeMultisig.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/instructions/initializeMultisig2.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/instructions/initializeNonTransferableMint.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/instructions/initializePermanentDelegate.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/instructions/internal.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/instructions/mintTo.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/instructions/mintToChecked.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/instructions/reallocate.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/instructions/revoke.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/instructions/setAuthority.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/instructions/syncNative.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/instructions/thawAccount.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/instructions/transfer.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/instructions/transferChecked.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/instructions/types.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/instructions/uiAmountToAmount.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/instructions/unwrapLamports.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/serialization.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/state/account.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/state/index.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/state/mint.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/state/multisig.js"
+      ],
+      "renderedModules": [
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/constants.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/errors.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/instructions/associatedTokenAccount.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/instructions/internal.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/instructions/transferChecked.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/instructions/types.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token/lib/esm/state/mint.js"
+      ],
+      "sourceMatches": [],
+      "conclusion": "BUNDLE_PRESENCE_NOT_PROOF_OF_EXPLOIT_REACHABILITY"
+    },
+    "@solana/spl-token-group": {
+      "severityAtBaseline": "moderate",
+      "advisory": [
+        "@solana/web3.js"
+      ],
+      "dependencyNodes": [
+        "node_modules/@solana/spl-token-group"
+      ],
+      "includedModules": [
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token-group/lib/esm/errors.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token-group/lib/esm/index.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token-group/lib/esm/instruction.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token-group/lib/esm/state/index.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token-group/lib/esm/state/tokenGroup.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token-group/lib/esm/state/tokenGroupMember.js"
+      ],
+      "renderedModules": [],
+      "sourceMatches": [],
+      "conclusion": "BUNDLE_PRESENCE_NOT_PROOF_OF_EXPLOIT_REACHABILITY"
+    },
+    "@solana/spl-token-metadata": {
+      "severityAtBaseline": "moderate",
+      "advisory": [
+        "@solana/web3.js"
+      ],
+      "dependencyNodes": [
+        "node_modules/@solana/spl-token-metadata"
+      ],
+      "includedModules": [
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token-metadata/lib/esm/errors.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token-metadata/lib/esm/field.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token-metadata/lib/esm/index.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token-metadata/lib/esm/instruction.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/spl-token-metadata/lib/esm/state.js"
+      ],
+      "renderedModules": [],
+      "sourceMatches": [],
+      "conclusion": "BUNDLE_PRESENCE_NOT_PROOF_OF_EXPLOIT_REACHABILITY"
+    },
+    "@solana/web3.js": {
+      "severityAtBaseline": "moderate",
+      "advisory": [
+        "jayson"
+      ],
+      "dependencyNodes": [
+        "node_modules/@solana/web3.js"
+      ],
+      "includedModules": [
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/web3.js/lib/index.browser.esm.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/web3.js/node_modules/@noble/hashes/esm/_md.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/web3.js/node_modules/@noble/hashes/esm/_u64.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/web3.js/node_modules/@noble/hashes/esm/crypto.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/web3.js/node_modules/@noble/hashes/esm/sha2.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/web3.js/node_modules/@noble/hashes/esm/sha256.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/web3.js/node_modules/@noble/hashes/esm/sha3.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/web3.js/node_modules/@noble/hashes/esm/utils.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/web3.js/node_modules/@solana/codecs-core/dist/index.browser.mjs",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/web3.js/node_modules/@solana/codecs-numbers/dist/index.browser.mjs",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/web3.js/node_modules/@solana/errors/dist/index.browser.mjs",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/web3.js/node_modules/base-x/src/index.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/web3.js/node_modules/bn.js/lib/bn.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/web3.js/node_modules/bs58/index.js"
+      ],
+      "renderedModules": [
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/web3.js/lib/index.browser.esm.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/web3.js/node_modules/@noble/hashes/esm/_md.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/web3.js/node_modules/@noble/hashes/esm/_u64.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/web3.js/node_modules/@noble/hashes/esm/sha2.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/web3.js/node_modules/@noble/hashes/esm/sha256.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/web3.js/node_modules/@noble/hashes/esm/sha3.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/web3.js/node_modules/@noble/hashes/esm/utils.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/web3.js/node_modules/@solana/codecs-core/dist/index.browser.mjs",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/web3.js/node_modules/@solana/codecs-numbers/dist/index.browser.mjs",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/web3.js/node_modules/@solana/errors/dist/index.browser.mjs",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/web3.js/node_modules/base-x/src/index.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/web3.js/node_modules/bn.js/lib/bn.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/@solana/web3.js/node_modules/bs58/index.js"
+      ],
+      "sourceMatches": [],
+      "conclusion": "BUNDLE_PRESENCE_NOT_PROOF_OF_EXPLOIT_REACHABILITY"
+    },
+    "bigint-buffer": {
+      "severityAtBaseline": "high",
+      "advisory": [
+        {
+          "source": 1103747,
+          "name": "bigint-buffer",
+          "dependency": "bigint-buffer",
+          "title": "bigint-buffer Vulnerable to Buffer Overflow via toBigIntLE() Function",
+          "url": "https://github.com/advisories/GHSA-3gc7-fjrx-p6mg",
+          "severity": "high",
+          "cwe": [
+            "CWE-120"
+          ],
+          "cvss": {
+            "score": 7.5,
+            "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
+          },
+          "range": "<=1.1.5"
+        }
+      ],
+      "dependencyNodes": [
+        "node_modules/bigint-buffer"
+      ],
+      "includedModules": [],
+      "renderedModules": [],
+      "sourceMatches": [],
+      "conclusion": "NOT_IN_THIS_BROWSER_BUILD_NOT_A_GLOBAL_SAFETY_CLAIM"
+    },
+    "elliptic": {
+      "severityAtBaseline": "low",
+      "advisory": [
+        {
+          "source": 1112030,
+          "name": "elliptic",
+          "dependency": "elliptic",
+          "title": "Elliptic Uses a Cryptographic Primitive with a Risky Implementation",
+          "url": "https://github.com/advisories/GHSA-848j-6mx2-7j84",
+          "severity": "low",
+          "cwe": [
+            "CWE-1240"
+          ],
+          "cvss": {
+            "score": 5.6,
+            "vectorString": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:L/I:L/A:L"
+          },
+          "range": "<=6.6.1"
+        }
+      ],
+      "dependencyNodes": [
+        "node_modules/elliptic"
+      ],
+      "includedModules": [
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/elliptic/lib/elliptic.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/elliptic/lib/elliptic/curve/base.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/elliptic/lib/elliptic/curve/edwards.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/elliptic/lib/elliptic/curve/index.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/elliptic/lib/elliptic/curve/mont.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/elliptic/lib/elliptic/curve/short.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/elliptic/lib/elliptic/curves.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/elliptic/lib/elliptic/ec/index.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/elliptic/lib/elliptic/ec/key.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/elliptic/lib/elliptic/ec/signature.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/elliptic/lib/elliptic/eddsa/index.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/elliptic/lib/elliptic/eddsa/key.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/elliptic/lib/elliptic/eddsa/signature.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/elliptic/lib/elliptic/precomputed/secp256k1.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/elliptic/lib/elliptic/utils.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/elliptic/package.json"
+      ],
+      "renderedModules": [
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/elliptic/lib/elliptic.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/elliptic/lib/elliptic/curve/base.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/elliptic/lib/elliptic/curve/edwards.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/elliptic/lib/elliptic/curve/index.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/elliptic/lib/elliptic/curve/mont.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/elliptic/lib/elliptic/curve/short.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/elliptic/lib/elliptic/curves.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/elliptic/lib/elliptic/ec/index.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/elliptic/lib/elliptic/ec/key.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/elliptic/lib/elliptic/ec/signature.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/elliptic/lib/elliptic/eddsa/index.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/elliptic/lib/elliptic/eddsa/key.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/elliptic/lib/elliptic/eddsa/signature.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/elliptic/lib/elliptic/precomputed/secp256k1.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/elliptic/lib/elliptic/utils.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/elliptic/package.json"
+      ],
+      "sourceMatches": [
+        {
+          "file": "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/elliptic/lib/elliptic/ec/key.js",
+          "matches": [
+            {
+              "line": 101,
+              "code": "// ECDH"
+            }
+          ]
+        }
+      ],
+      "conclusion": "BUNDLE_PRESENCE_NOT_PROOF_OF_EXPLOIT_REACHABILITY"
+    },
+    "jayson": {
+      "severityAtBaseline": "moderate",
+      "advisory": [
+        "stream-json",
+        "uuid"
+      ],
+      "dependencyNodes": [
+        "node_modules/jayson"
+      ],
+      "includedModules": [
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/jayson/lib/client/browser/index.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/jayson/lib/generateRequest.js"
+      ],
+      "renderedModules": [
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/jayson/lib/client/browser/index.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/jayson/lib/generateRequest.js"
+      ],
+      "sourceMatches": [],
+      "conclusion": "BUNDLE_PRESENCE_NOT_PROOF_OF_EXPLOIT_REACHABILITY"
+    },
+    "secp256k1": {
+      "severityAtBaseline": "high",
+      "advisory": [
+        {
+          "source": 1100206,
+          "name": "secp256k1",
+          "dependency": "secp256k1",
+          "title": "secp256k1-node allows private key extraction over ECDH",
+          "url": "https://github.com/advisories/GHSA-584q-6j8j-r5pm",
+          "severity": "high",
+          "cwe": [
+            "CWE-200",
+            "CWE-354"
+          ],
+          "cvss": {
+            "score": 0,
+            "vectorString": null
+          },
+          "range": "=5.0.0"
+        },
+        "elliptic"
+      ],
+      "dependencyNodes": [
+        "node_modules/secp256k1"
+      ],
+      "includedModules": [
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/secp256k1/elliptic.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/secp256k1/lib/elliptic.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/secp256k1/lib/index.js"
+      ],
+      "renderedModules": [
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/secp256k1/elliptic.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/secp256k1/lib/elliptic.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/secp256k1/lib/index.js"
+      ],
+      "sourceMatches": [
+        {
+          "file": "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/secp256k1/lib/index.js",
+          "matches": [
+            {
+              "line": 14,
+              "code": "ECDH: 'Scalar was invalid (zero or overflow)'"
+            },
+            {
+              "line": 312,
+              "code": "ecdh (pubkey, seckey, options = {}, output) {"
+            },
+            {
+              "line": 326,
+              "code": "switch (secp256k1.ecdh(output, pubkey, seckey, options.data, options.hashfn, options.xbuf, options.ybuf)) {"
+            },
+            {
+              "line": 332,
+              "code": "throw new Error(errors.ECDH)"
+            }
+          ]
+        },
+        {
+          "file": "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/secp256k1/lib/elliptic.js",
+          "matches": [
+            {
+              "line": 374,
+              "code": "ecdh (output, pubkey, seckey, data, hashfn, xbuf, ybuf) {"
+            }
+          ]
+        }
+      ],
+      "conclusion": "BUNDLE_PRESENCE_NOT_PROOF_OF_EXPLOIT_REACHABILITY"
+    },
+    "stream-json": {
+      "severityAtBaseline": "moderate",
+      "advisory": [
+        {
+          "source": 1164823,
+          "name": "stream-json",
+          "dependency": "stream-json",
+          "title": "stream-json: pick/ignore/filter/replace filters are O(depth²) on nested input — small crafted JSON blocks the event loop for seconds→minutes (DoS)",
+          "url": "https://github.com/advisories/GHSA-528h-pc64-c93x",
+          "severity": "moderate",
+          "cwe": [
+            "CWE-407"
+          ],
+          "cvss": {
+            "score": 6.2,
+            "vectorString": "CVSS:3.1/AV:L/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
+          },
+          "range": "<=3.4.0"
+        }
+      ],
+      "dependencyNodes": [
+        "node_modules/stream-json"
+      ],
+      "includedModules": [],
+      "renderedModules": [],
+      "sourceMatches": [],
+      "conclusion": "NOT_IN_THIS_BROWSER_BUILD_NOT_A_GLOBAL_SAFETY_CLAIM"
+    },
+    "uuid": {
+      "severityAtBaseline": "moderate",
+      "advisory": [
+        {
+          "source": 1119441,
+          "name": "uuid",
+          "dependency": "uuid",
+          "title": "uuid: Missing buffer bounds check in v3/v5/v6 when buf is provided",
+          "url": "https://github.com/advisories/GHSA-w5hq-g745-h8pq",
+          "severity": "moderate",
+          "cwe": [
+            "CWE-787",
+            "CWE-1285"
+          ],
+          "cvss": {
+            "score": 7.5,
+            "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:H/A:N"
+          },
+          "range": "<11.1.1"
+        }
+      ],
+      "dependencyNodes": [
+        "node_modules/uuid"
+      ],
+      "includedModules": [
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/uuid/dist/esm-browser/index.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/uuid/dist/esm-browser/md5.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/uuid/dist/esm-browser/nil.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/uuid/dist/esm-browser/parse.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/uuid/dist/esm-browser/regex.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/uuid/dist/esm-browser/rng.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/uuid/dist/esm-browser/sha1.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/uuid/dist/esm-browser/stringify.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/uuid/dist/esm-browser/v1.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/uuid/dist/esm-browser/v3.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/uuid/dist/esm-browser/v35.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/uuid/dist/esm-browser/v4.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/uuid/dist/esm-browser/v5.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/uuid/dist/esm-browser/validate.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/uuid/dist/esm-browser/version.js"
+      ],
+      "renderedModules": [
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/uuid/dist/esm-browser/index.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/uuid/dist/esm-browser/md5.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/uuid/dist/esm-browser/nil.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/uuid/dist/esm-browser/parse.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/uuid/dist/esm-browser/regex.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/uuid/dist/esm-browser/rng.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/uuid/dist/esm-browser/sha1.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/uuid/dist/esm-browser/stringify.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/uuid/dist/esm-browser/v1.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/uuid/dist/esm-browser/v3.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/uuid/dist/esm-browser/v35.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/uuid/dist/esm-browser/v4.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/uuid/dist/esm-browser/v5.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/uuid/dist/esm-browser/validate.js",
+        "../../0aa608872e5d/sejire-readiness-fix/apps/web/node_modules/uuid/dist/esm-browser/version.js"
+      ],
+      "sourceMatches": [],
+      "conclusion": "BUNDLE_PRESENCE_NOT_PROOF_OF_EXPLOIT_REACHABILITY"
+    },
+    "ws": {
+      "severityAtBaseline": "high",
+      "advisory": [
+        {
+          "source": 1118729,
+          "name": "ws",
+          "dependency": "ws",
+          "title": "ws affected by a DoS when handling a request with many HTTP headers",
+          "url": "https://github.com/advisories/GHSA-3h5v-q93c-6h6q",
+          "severity": "high",
+          "cwe": [
+            "CWE-476"
+          ],
+          "cvss": {
+            "score": 7.5,
+            "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
+          },
+          "range": ">=7.0.0 <7.5.10"
+        },
+        {
+          "source": 1123260,
+          "name": "ws",
+          "dependency": "ws",
+          "title": "ws: Memory exhaustion DoS from tiny fragments and data chunks",
+          "url": "https://github.com/advisories/GHSA-96hv-2xvq-fx4p",
+          "severity": "high",
+          "cwe": [
+            "CWE-400",
+            "CWE-770",
+            "CWE-1050"
+          ],
+          "cvss": {
+            "score": 7.5,
+            "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
+          },
+          "range": ">=7.0.0 <7.5.11"
+        }
+      ],
+      "dependencyNodes": [
+        "node_modules/ws"
+      ],
+      "includedModules": [],
+      "renderedModules": [],
+      "sourceMatches": [],
+      "conclusion": "NOT_IN_THIS_BROWSER_BUILD_NOT_A_GLOBAL_SAFETY_CLAIM"
+    }
+  }
+}

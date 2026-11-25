@@ -1,0 +1,38 @@
+PASS API write: server-issued access token; cross-origin no-store and no secret echo
+PASS API write: A reads own order; B/unknown token/id do not reveal order
+PASS API write: unauthorized submission and reconcile cannot write pendingSignature
+PASS API write: same key normalized intent returns same order; changed intent conflicts
+PASS API write: parallel create gives one order and one reference
+PASS API write: client price/recipient/network/evidence and paid claims rejected
+PASS API write: donation without archive/service; million SOL exact and maximum native amount accepted
+PASS API write: 16 parallel verifications credit once; retries preserve verified/ready semantics
+PASS API write: RPC uncertainty and bad recipient do not create credits; pending cannot be replaced
+PASS API write: body bound works without Content-Length; malformed JSON/precision refused
+PASS API write: origin allowlist and preflight do not replace bearer authorization
+PASS API write: production entry exposes no commit/ledger/fault endpoint or client action
+PASS API write: uploader/account readiness rejects BEFORE order is offered
+PASS API write: paid preservation binds exact ciphertext; B cannot upload A archive
+PASS API write: Turbo acceptance is distinct from retrieval; signed item and receipt are persistent
+PASS API write: persistent verification quota works and unauthorized does not reserve signature
+PASS API write: persistent create quota and anonymous bootstrap quota work
+api write: 17 scenarios PASS
+PASS API restart-read: fresh process recovers access ownership immutable conditions and separate credits
+PASS API restart-read: idempotency survives restart/lost response without creating a second order
+PASS API restart-read: lost verification response after commit resumes without duplicate credit
+PASS API restart-read: pending signature and last uncertainty survive restart; resume credits once
+PASS API restart-read: upload receipt survives restart; concurrent execution reuses one item then retrieval completes
+PASS API restart-read: rate limit persists across process restart
+api restart-read: 6 scenarios PASS
+PASS API disabled: disabled API opens no routes including OPTIONS through production entry
+api disabled: 1 scenarios PASS
+PASS API direct-write: production readiness reaches the real fetch adapter and refuses a free-allowance redirect
+PASS API direct-write: default uploader readiness and RPC preparation create the actual production order
+PASS API direct-write: a redirected real RPC response cannot credit a reserved payment
+PASS API direct-write: same signature is finalized by default RPC reader and credited exactly once
+PASS API direct-write: real SDK signing is persisted, and an upload redirect cannot complete preservation
+PASS API direct-write: retry reuses signed bytes; receipt persists while a raw redirect remains unverified
+api direct-write: 6 scenarios PASS
+PASS API direct-restart: fresh workerd process reads the same production order, payment and accepted item
+PASS API direct-restart: accepted item resumes with one exact-hash read and no signing, upload or payment after restart
+api direct-restart: 2 scenarios PASS
+api.runtime: PASS; real HTTP/default adapters + on-disk DO SQLite, independent process restarts, wire-mocked RPC/upload, no external connections/payments/deployment

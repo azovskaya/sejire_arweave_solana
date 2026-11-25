@@ -1,0 +1,518 @@
+{
+  "schema": "sejire/manual-frontend-review/v1",
+  "dateUTC": "2026-11-25",
+  "baseCommit": "a2b738bf8183c0b0551273e0530ae8f14589b26d",
+  "branch": "fix/release-code-audit-20261125",
+  "scope": "Funded SOL Mainnet + promo + admin runtime and comparison with preserved independent entrypoints",
+  "methodology": "Manual source reading and executable synthetic regressions; full means the file was read, not that every path was dynamically executed. Targeted entries identify the functions/boundaries actually read. Automated listing is not manual review or test coverage.",
+  "manualRuntimeReviewCount": 51,
+  "manualRuntimeReviews": [
+    {
+      "path": "apps/web/src/App.tsx",
+      "sha256": "9df7ff2b194a82f55a4d7bd3270f92eeeaf7d1037d067c87a1523d4fe15ca111",
+      "manualReviewExtent": "full",
+      "purposeAndReviewedBoundary": "Funded route boot, fragment reconciliation, explicit legacy-pilot selection, restore/editor transitions"
+    },
+    {
+      "path": "apps/web/src/App.independent.tsx",
+      "sha256": "49cfb9261cf3af817c00f1948c66b97e85ee6a99fdc63ede751d435405ef6fc4",
+      "manualReviewExtent": "full",
+      "purposeAndReviewedBoundary": "Independent route boot and fragment lifecycle compared with funded entrypoint; not modified"
+    },
+    {
+      "path": "apps/web/src/components/PublishSeedModal.tsx",
+      "sha256": "f794f80d88076556c38241bc4d73be71f411acb2cd6868cdcbecb3ef8b492718",
+      "manualReviewExtent": "targeted",
+      "purposeAndReviewedBoundary": "State/lifetime, sealForPhrase, rememberSession, start/resume paid/promo, finishFunded/finishPaid, legacy save/export callbacks and UI route selection"
+    },
+    {
+      "path": "apps/web/src/components/PublishSeedModal.independent.tsx",
+      "sha256": "ba53efefa30b27912c96bc7f826bba5598418ea8ac62b5c87abe9b6300a009c2",
+      "manualReviewExtent": "targeted",
+      "purposeAndReviewedBoundary": "prepare, durable direct operation before cache, completion, words confirmation and close lifecycle; not modified"
+    },
+    {
+      "path": "apps/web/src/components/RestoreSeed.tsx",
+      "sha256": "ac0970f4bf6b9d3b8b949cf934fa3e3d5502057d9c61bb2ea25c3a50ad6f294a",
+      "manualReviewExtent": "full",
+      "purposeAndReviewedBoundary": "File/receipt/word restore, exact full ciphertext, version selection, quota rollback and request cancellation"
+    },
+    {
+      "path": "apps/web/src/components/RestoreSeed.independent.tsx",
+      "sha256": "15eaf5951a2be82dc916312694f299c8d50a9fef7c677585b8785f6f47182d87",
+      "manualReviewExtent": "targeted",
+      "purposeAndReviewedBoundary": "finish/run/choose/submit lifecycle and native proof/selection contract compared with funded restore; not modified"
+    },
+    {
+      "path": "apps/web/src/components/PaidSolanaFlow.tsx",
+      "sha256": "297bc9f2a417b23ad2957af387ad2ef28363064d84577675a9e7579f0050a31d",
+      "manualReviewExtent": "full",
+      "purposeAndReviewedBoundary": "Policy hydration, source identity, single-flight UI, wallet/payment/recovery flows, completion and amount controls"
+    },
+    {
+      "path": "apps/web/src/components/PromoFundedFlow.tsx",
+      "sha256": "2b719a8597d5b010214ca0e6440dcf771d902c527a105abc94ddaf4eee44ba8f",
+      "manualReviewExtent": "full",
+      "purposeAndReviewedBoundary": "Immutable envelope identity, durable journal before order POST, poll lifecycle, parent/digest/size validation before success, completion"
+    },
+    {
+      "path": "apps/web/src/components/PreservationV2.tsx",
+      "sha256": "3508629f95abe262c8fa3b0dfccad55ec8949b535f2c88c0b3f95419780689ad",
+      "manualReviewExtent": "full",
+      "purposeAndReviewedBoundary": "Editor general checkout versus explicit fixed pilot; default full-ciphertext import and late file read cancellation"
+    },
+    {
+      "path": "apps/web/src/components/Workspace.tsx",
+      "sha256": "04c044a0e30e8108f46bc2f9835616e01ef5ab642aa9b39ef8ed04e063c7005b",
+      "manualReviewExtent": "targeted",
+      "purposeAndReviewedBoundary": "captureEditorStore, profile flush, persistence effects, pending-attempt lookup, openPublish, JSON/PDF snapshot boundaries, importJsonFile, applyVaultVersion, onPublished"
+    },
+    {
+      "path": "apps/web/src/components/VaultVersionsModal.tsx",
+      "sha256": "852a42195079348da8aa030afb7317c17fc6d138cbcb2918bf4901aa18baf6c3",
+      "manualReviewExtent": "targeted",
+      "purposeAndReviewedBoundary": "Version discovery, openListed/openLocal exact ciphertext and active-request cancellation; selected parent/source binding"
+    },
+    {
+      "path": "apps/web/src/components/FundAdmin.tsx",
+      "sha256": "41d3051ff88758466f333e1004f5b12b785744f4e2a27f07602fdeb1bb641a2b",
+      "manualReviewExtent": "full",
+      "purposeAndReviewedBoundary": "Server credential lifetime, dashboard/mutation request paths, limits, promo and recipient administration"
+    },
+    {
+      "path": "apps/web/src/components/SolanaRecipientsAdmin.tsx",
+      "sha256": "89dc59df418e8b6d1cec6eeea1bcb2a1a98405af95d8ff484f4905ef6f148fac",
+      "manualReviewExtent": "targeted",
+      "purposeAndReviewedBoundary": "Credential generation fencing, save/reload locks, address validation, revision conflict and readback confirmation"
+    },
+    {
+      "path": "apps/web/src/components/AdminDesk.tsx",
+      "sha256": "6c0b02ccdfc16acb069208c561f576f5a77f627fa09144adf25086085a40abc8",
+      "manualReviewExtent": "targeted",
+      "purposeAndReviewedBoundary": "V2 boot/login via public local verifier, phase/tab routing, FundAdmin mount and legacy Devnet overview; legacy treasury editor not fully reviewed"
+    },
+    {
+      "path": "apps/web/src/components/PermawebMigrationNotice.tsx",
+      "sha256": "8bdb11feaefb4f7adb24aba3a5ff1475921f01034f1bf5617cc114625e742846",
+      "manualReviewExtent": "full",
+      "purposeAndReviewedBoundary": "Cross-origin storage migration notice without tokens or silent transfer"
+    },
+    {
+      "path": "apps/web/src/lib/arweave/loadVault.ts",
+      "sha256": "c980474dbe2b191e50bd6fed434af9ea2c6f7ddd9a2f841e808a0db8c9356f56",
+      "manualReviewExtent": "full",
+      "purposeAndReviewedBoundary": "Explicit local/file selection priority, exact known network parent and archive fallback, poisoned history, no empty fallback for missing HEAD"
+    },
+    {
+      "path": "apps/web/src/lib/vaultSession/session.ts",
+      "sha256": "533555ad5a1b1fc45fbc26438446e2f7b627266c754ead0b8334cf7df4d4fbb3",
+      "manualReviewExtent": "full",
+      "purposeAndReviewedBoundary": "Memory-only mnemonic, checked session persistence, local cache digest, completion HEAD guard"
+    },
+    {
+      "path": "apps/web/src/lib/vaultSession/selection.ts",
+      "sha256": "005fb5ff2f7e7ef8a066cb5f5385125df394f670be810d07badd33d824175479",
+      "manualReviewExtent": "full",
+      "purposeAndReviewedBoundary": "Atomic accepted full-vault/draft/session selection and prepared ciphertext persistence with rollback/CAS"
+    },
+    {
+      "path": "apps/web/src/lib/vaultSession/localArchive.ts",
+      "sha256": "71c5616d0c9e1487d0d899dba7acd5447f0079321730c3d6dcfee19767be9e75",
+      "manualReviewExtent": "targeted",
+      "purposeAndReviewedBoundary": "Archive/readback/list contract and immutable ciphertext retention used by restore/finalization"
+    },
+    {
+      "path": "apps/web/src/lib/checkout/paidClient.ts",
+      "sha256": "9556c124355b89a17cfddbf3ae466f24f6448ef939b7b3c44a071d52a79770ca",
+      "manualReviewExtent": "full",
+      "purposeAndReviewedBoundary": "Policy/order validation, durable creation and unknown replies, network/payer/amount/signature checks, reserve-before-relay, recovery/cancellation/finalization"
+    },
+    {
+      "path": "apps/web/src/lib/checkout/paidJournal.ts",
+      "sha256": "f0a6e708a568b84162cc586c656711f50ad4d613c53ee4efa1272bfd91101b66",
+      "manualReviewExtent": "full",
+      "purposeAndReviewedBoundary": "IndexedDB schema validation, encrypted byte binding, compare-and-swap revisions, access bootstrap and preservation/contribution separation"
+    },
+    {
+      "path": "apps/web/src/lib/checkout/paidFinalize.ts",
+      "sha256": "3de4027b01c595565bad7919971598f295861cbd5f1ba45f827cde63d0e8b800",
+      "manualReviewExtent": "full",
+      "purposeAndReviewedBoundary": "Verified standalone history, preservation of later explicit local selection, checked HEAD and durable completion"
+    },
+    {
+      "path": "apps/web/src/lib/checkout/paidReceipt.ts",
+      "sha256": "09303c2863cf395a7a87962e105fd5a90700c3f7c26d1304a04d625751657b26",
+      "manualReviewExtent": "full",
+      "purposeAndReviewedBoundary": "Receipt metadata/parent/digest/byte/treasury binding, bounded read signal, mainnet storage restoration"
+    },
+    {
+      "path": "apps/web/src/lib/checkout/vaultGuard.ts",
+      "sha256": "fb9c2165407f9ff739f2413136eafeb7db16a272e0fd4cb545e24b663a85abd6",
+      "manualReviewExtent": "full",
+      "purposeAndReviewedBoundary": "Shared paid/promo attempts lock, operation wallet lock, conflicts, same-tree/vault adoption and change notifications"
+    },
+    {
+      "path": "apps/web/src/lib/fund/client.ts",
+      "sha256": "7905dc6191676c9beb873f1a5668dd67554087b00254d06f6bbbe3c88abb117d",
+      "manualReviewExtent": "full",
+      "purposeAndReviewedBoundary": "Configurable HTTPS origin, static-host fail-closed configuration, request contract, parent binding and admin bearer paths"
+    },
+    {
+      "path": "apps/web/src/lib/fund/journal.ts",
+      "sha256": "4e1a3a37f232b3071f2473e89db2e9f74d7bac84503accce1ac71bd509a82d4f",
+      "manualReviewExtent": "full",
+      "purposeAndReviewedBoundary": "Durable exact envelope, digest/key migration, cross-tab lock, quota/readback/conflict behavior"
+    },
+    {
+      "path": "apps/web/src/lib/fund/status.ts",
+      "sha256": "640459a64ae1b006d1a7360d03b716fe6e29f6385848263aa69d2ac30bd60278",
+      "manualReviewExtent": "full",
+      "purposeAndReviewedBoundary": "Terminal/success and reservation refusal presentation contracts"
+    },
+    {
+      "path": "apps/web/src/lib/fund/preference.ts",
+      "sha256": "3081007f45909622b19f3448a72175d227ba8aeaceaa11f422cf1bfc0fed3844",
+      "manualReviewExtent": "full",
+      "purposeAndReviewedBoundary": "Promo code reuse in memory only"
+    },
+    {
+      "path": "apps/web/src/lib/crypto/vault.ts",
+      "sha256": "8efd5681db6bd7b416853002711182f175c2fb8a55ccd4cd8eaccdb3b11c0595",
+      "manualReviewExtent": "full",
+      "purposeAndReviewedBoundary": "Whole-vault putTree preservation and legacy seal cache side effect"
+    },
+    {
+      "path": "apps/web/src/lib/crypto/encrypt.ts",
+      "sha256": "861ca9501eef769097e062dc78d3d1908274f7b646f21fb3173452fa1cb997f5",
+      "manualReviewExtent": "full",
+      "purposeAndReviewedBoundary": "AES-GCM envelope creation/decryption and random IV contract; no cryptographic certification claimed"
+    },
+    {
+      "path": "apps/web/src/lib/crypto/envelope.ts",
+      "sha256": "b36832840d81acf134ab3c1e8deca13ab90fb4ec0ff84e6c1b8934c475ae4cf6",
+      "manualReviewExtent": "full",
+      "purposeAndReviewedBoundary": "Ciphertext field whitelist, byte/format limits and exact serialization"
+    },
+    {
+      "path": "apps/web/src/lib/crypto/backup.ts",
+      "sha256": "9e3346b17c0312d57a8989a9c221c4e7df7299ecea04f60dab976e95972c7248",
+      "manualReviewExtent": "full",
+      "purposeAndReviewedBoundary": "Portable words/envelope/legacy/native/paid receipt discriminator and import limits"
+    },
+    {
+      "path": "apps/web/src/lib/crypto/bip39.ts",
+      "sha256": "386716b8e7c6b51bd88bcc3f0eea5dea9b7dc524359a2d9806b5d2fe122c7716",
+      "manualReviewExtent": "full",
+      "purposeAndReviewedBoundary": "12-word normalization/validation/random generation contract"
+    },
+    {
+      "path": "apps/web/src/lib/crypto/keys.ts",
+      "sha256": "decc9427eac184cc400fba32587984ea202f006dedbe2f7bfaf834b3986329f9",
+      "manualReviewExtent": "full",
+      "purposeAndReviewedBoundary": "Deterministic vault/key derivation and domain separation contract"
+    },
+    {
+      "path": "apps/web/src/lib/crypto/seedBackup.ts",
+      "sha256": "1db7f176c1331f9b04524d4117d3e22e728bc8926032ba0dc1bc8d417ac43310",
+      "manualReviewExtent": "full",
+      "purposeAndReviewedBoundary": "Explicit plain recovery-word export and seed backup import; no actual recovery phrase read"
+    },
+    {
+      "path": "apps/web/src/lib/treeJson.ts",
+      "sha256": "c7ceda978df1174f98b6b99d5297ba3f1300d0879c223135b722b268aa7c5a64",
+      "manualReviewExtent": "full",
+      "purposeAndReviewedBoundary": "Snapshot/commit/history coercion, unsafe-key filtering, import/export and rejecting accidental full-plaintext-vault import"
+    },
+    {
+      "path": "apps/web/src/lib/draftStorage.ts",
+      "sha256": "8d9b486abbe926a6fdad388e4d3c1137026ff2fdbf938b3eb0e712b2c5c69026",
+      "manualReviewExtent": "full",
+      "purposeAndReviewedBoundary": "Draft persistence return value and validation"
+    },
+    {
+      "path": "apps/web/src/lib/storageQuota.ts",
+      "sha256": "4ef8f93bb48457dc60c5ebd89726f811e92bf19ed3f54aa967b024352208bde2",
+      "manualReviewExtent": "full",
+      "purposeAndReviewedBoundary": "Quota classification, boolean failure versus other exceptions"
+    },
+    {
+      "path": "apps/web/src/lib/lastScreen.ts",
+      "sha256": "dc6ea544115ee99369bf332d22a66686b21456b24bb711b655f1d2000019a95b",
+      "manualReviewExtent": "full",
+      "purposeAndReviewedBoundary": "Session-only editor resume and remembered route behavior"
+    },
+    {
+      "path": "apps/web/src/lib/solana/client.ts",
+      "sha256": "e2346e7ff80f8533f59fd17419f359385add785ea28f48bd05f2d68ad37165e3",
+      "manualReviewExtent": "full",
+      "purposeAndReviewedBoundary": "Wallet provider/account binding, retention of signed result after account change, quote origin/network"
+    },
+    {
+      "path": "apps/web/src/lib/solana/receipt.ts",
+      "sha256": "8099577685d1e775ae8e1c5bed30b022aaf73d3774dee8f13f1b1cfa7a4458cb",
+      "manualReviewExtent": "full",
+      "purposeAndReviewedBoundary": "Legacy receipt validation, fixed network gateway choice, byte/digest bound bounded retrieval"
+    },
+    {
+      "path": "apps/web/src/lib/native/receipt.ts",
+      "sha256": "54e7a1741b0b6bceaa91e81bf00061c4debf45f75b19e45778acaaddf33df8ca",
+      "manualReviewExtent": "targeted",
+      "purposeAndReviewedBoundary": "Native receipt import/retrieve interface used by funded restore; legacy reader implementation not fully audited here"
+    },
+    {
+      "path": "apps/web/src/lib/recovery/recover.ts",
+      "sha256": "d678d164324e4dbc45c1fffcc7023c24ff7e8de7c934eb53925c78383346ac1b",
+      "manualReviewExtent": "full",
+      "purposeAndReviewedBoundary": "Read-only recovery pipeline, candidate concurrency, incomplete/fork status and cancellation propagation"
+    },
+    {
+      "path": "apps/web/src/lib/independentVault.ts",
+      "sha256": "b078c4a78c091bd3054eb53843bcc0515005a3d148dfe3df2791427edfef1347",
+      "manualReviewExtent": "targeted",
+      "purposeAndReviewedBoundary": "Explicit file/local digest branch, known-parent validation, prepared journal and completion reconciliation compared to funded loader"
+    },
+    {
+      "path": "apps/web/src/lib/independentFinalization.ts",
+      "sha256": "859efda7aacfbcc4c17b4e2f3795f0c74ac891a1bd9a6b95ef4e3b57b40b9acc",
+      "manualReviewExtent": "full",
+      "purposeAndReviewedBoundary": "Verified direct journal/cache/HEAD finalization and preservation of later explicit selections; not modified"
+    },
+    {
+      "path": "apps/web/src/lib/opsDesk/adminLock.ts",
+      "sha256": "a1da5a372d270268b23a6481732a16664c657616b6a71a3892aadf2457106390",
+      "manualReviewExtent": "full",
+      "purposeAndReviewedBoundary": "Public local verifier versus server authorization boundary"
+    },
+    {
+      "path": "apps/web/src/lib/opsDesk/route.ts",
+      "sha256": "102d642c1ebd3b87a272b267bdba110e78dd5688c55cc813c92329c37c07ab71",
+      "manualReviewExtent": "full",
+      "purposeAndReviewedBoundary": "Admin fragment helpers"
+    },
+    {
+      "path": "apps/web/src/lib/opsDesk/networkOverview.ts",
+      "sha256": "6f4886cd77278715ebc3c4154270f68b12ab3140f9e7db79d2e9ab9c406205af",
+      "manualReviewExtent": "full",
+      "purposeAndReviewedBoundary": "Read-only fixed Devnet pilot reference/payment verification; documented as legacy analytics, not new Mainnet ledger"
+    },
+    {
+      "path": "apps/web/src/lib/preservationContext.legacy.ts",
+      "sha256": "7524aea46324c8c61e60348fc78f8660346884fd5bf2aed9be88e924b383f767",
+      "manualReviewExtent": "full",
+      "purposeAndReviewedBoundary": "Combined pending funded guards and in-memory promo access"
+    },
+    {
+      "path": "apps/web/src/lib/preservationContext.independent.ts",
+      "sha256": "51fd1e12a18080500407f92422586d5bca7494a4955575464cac9677fc9083f0",
+      "manualReviewExtent": "full",
+      "purposeAndReviewedBoundary": "Independent/legacy pending operation safety boundary; no promo service"
+    },
+    {
+      "path": "apps/web/src/lib/deploymentMode.ts",
+      "sha256": "5b7154bb4b574112879c1c30ebf2052339b606b91f6b1109a56f7015351b5cdf",
+      "manualReviewExtent": "full",
+      "purposeAndReviewedBoundary": "Independent build mode flag boundary"
+    }
+  ],
+  "automatedInventory": {
+    "scope": "src .ts/.tsx excluding declaration/selftest/e2e/fixture files; includes dormant/legacy code and is not a reachability claim",
+    "sourceFileCount": 171,
+    "notManuallyReviewedByThisAgent": [
+      "apps/web/src/components/AddPersonModal.tsx",
+      "apps/web/src/components/CheckoutPublishPanel.tsx",
+      "apps/web/src/components/DateTextInput.tsx",
+      "apps/web/src/components/DirectArweaveFlow.tsx",
+      "apps/web/src/components/DirectSaveHistory.tsx",
+      "apps/web/src/components/ErrorBoundary.tsx",
+      "apps/web/src/components/LanguageSwitch.tsx",
+      "apps/web/src/components/LegacyPreservationNotice.tsx",
+      "apps/web/src/components/NativeAdminDesk.tsx",
+      "apps/web/src/components/NativeCheckoutPanel.tsx",
+      "apps/web/src/components/PaidSaveHistory.tsx",
+      "apps/web/src/components/PedigreeView.tsx",
+      "apps/web/src/components/PersonPanel.tsx",
+      "apps/web/src/components/PreservationV2Diagnostics.tsx",
+      "apps/web/src/components/ShezhireMetaModal.tsx",
+      "apps/web/src/components/ShezhireTemplateModal.tsx",
+      "apps/web/src/components/SolanaPublishPanel.tsx",
+      "apps/web/src/components/Welcome.independent.tsx",
+      "apps/web/src/components/Welcome.tsx",
+      "apps/web/src/components/paymentPanels.legacy.ts",
+      "apps/web/src/components/paymentPanels.native.ts",
+      "apps/web/src/lib/ao/client.ts",
+      "apps/web/src/lib/ao/factoryProcess.ts",
+      "apps/web/src/lib/ao/protocolKinship.ts",
+      "apps/web/src/lib/ao/protocolMirror.ts",
+      "apps/web/src/lib/ao/treeProcess.ts",
+      "apps/web/src/lib/ao/types.ts",
+      "apps/web/src/lib/arweave/client.ts",
+      "apps/web/src/lib/arweave/fetch.ts",
+      "apps/web/src/lib/arweave/gateways.ts",
+      "apps/web/src/lib/arweave/publish.ts",
+      "apps/web/src/lib/arweave/wallet.ts",
+      "apps/web/src/lib/checkout/client.ts",
+      "apps/web/src/lib/checkout/messages.ts",
+      "apps/web/src/lib/checkout/paidAvailabilityMessages.ts",
+      "apps/web/src/lib/checkout/paidTypes.ts",
+      "apps/web/src/lib/dates.ts",
+      "apps/web/src/lib/directArweave/client.ts",
+      "apps/web/src/lib/directArweave/errors.ts",
+      "apps/web/src/lib/directArweave/format.ts",
+      "apps/web/src/lib/directArweave/index.ts",
+      "apps/web/src/lib/directArweave/journal.ts",
+      "apps/web/src/lib/directArweave/network.ts",
+      "apps/web/src/lib/directArweave/nodePreference.ts",
+      "apps/web/src/lib/directArweave/receipt.ts",
+      "apps/web/src/lib/directArweave/transaction.ts",
+      "apps/web/src/lib/directArweave/types.ts",
+      "apps/web/src/lib/download.ts",
+      "apps/web/src/lib/guide.ts",
+      "apps/web/src/lib/i18n/I18nProvider.tsx",
+      "apps/web/src/lib/i18n/landing.ts",
+      "apps/web/src/lib/i18n/locale.ts",
+      "apps/web/src/lib/i18n/messages.ts",
+      "apps/web/src/lib/i18n/pdf.ts",
+      "apps/web/src/lib/independentBackup.ts",
+      "apps/web/src/lib/independentDiscovery.ts",
+      "apps/web/src/lib/independentMessages.ts",
+      "apps/web/src/lib/kinship.ts",
+      "apps/web/src/lib/legacyPreservationGuard.ts",
+      "apps/web/src/lib/native/arweave.ts",
+      "apps/web/src/lib/native/audit.ts",
+      "apps/web/src/lib/native/cache.ts",
+      "apps/web/src/lib/native/config.ts",
+      "apps/web/src/lib/native/diagnostics.ts",
+      "apps/web/src/lib/native/jobs.ts",
+      "apps/web/src/lib/native/payment.ts",
+      "apps/web/src/lib/native/pilot.ts",
+      "apps/web/src/lib/native/presentation.ts",
+      "apps/web/src/lib/native/rpc.ts",
+      "apps/web/src/lib/native/session.ts",
+      "apps/web/src/lib/native/successor.ts",
+      "apps/web/src/lib/opsDesk/feed.ts",
+      "apps/web/src/lib/opsDesk/store.ts",
+      "apps/web/src/lib/opsDesk/treasury.ts",
+      "apps/web/src/lib/opsDesk/types.ts",
+      "apps/web/src/lib/pdf/classicTreePdf.ts",
+      "apps/web/src/lib/pdf/filename.ts",
+      "apps/web/src/lib/pdf/font.ts",
+      "apps/web/src/lib/pdf/lineage.ts",
+      "apps/web/src/lib/pdf/ornaments.ts",
+      "apps/web/src/lib/pdf/poster.ts",
+      "apps/web/src/lib/pdf/shezhirePdf.ts",
+      "apps/web/src/lib/pdf/shezhireTemplates.ts",
+      "apps/web/src/lib/pdf/textLayout.ts",
+      "apps/web/src/lib/pdfRoot.ts",
+      "apps/web/src/lib/pedigree.ts",
+      "apps/web/src/lib/pedigreeFit.ts",
+      "apps/web/src/lib/permawebHost.ts",
+      "apps/web/src/lib/preserveV2/arweave.ts",
+      "apps/web/src/lib/preserveV2/machine.ts",
+      "apps/web/src/lib/preserveV2/policy.ts",
+      "apps/web/src/lib/preserveV2/solana.ts",
+      "apps/web/src/lib/preserveV2/store.ts",
+      "apps/web/src/lib/preserveV2/timeout.ts",
+      "apps/web/src/lib/preserveV2/types.ts",
+      "apps/web/src/lib/preserveV2/verify.ts",
+      "apps/web/src/lib/qaTools.ts",
+      "apps/web/src/lib/recovery/diagnostics.ts",
+      "apps/web/src/lib/recovery/discovery.ts",
+      "apps/web/src/lib/recovery/errors.ts",
+      "apps/web/src/lib/recovery/gateways.ts",
+      "apps/web/src/lib/recovery/head.ts",
+      "apps/web/src/lib/recovery/historicalNative.ts",
+      "apps/web/src/lib/recovery/providers/graphqlVaultProvider.ts",
+      "apps/web/src/lib/recovery/providers/legacyLocatorProvider.ts",
+      "apps/web/src/lib/recovery/providers/localHintProvider.ts",
+      "apps/web/src/lib/recovery/retrieve.ts",
+      "apps/web/src/lib/recovery/types.ts",
+      "apps/web/src/lib/recovery/verify.ts",
+      "apps/web/src/lib/siteMirror.ts",
+      "apps/web/src/lib/solana/journal.ts",
+      "apps/web/src/lib/solana/messages.ts",
+      "apps/web/src/lib/solana/policy.ts",
+      "apps/web/src/lib/solana/upload.ts",
+      "apps/web/src/lib/sponsor/client.ts",
+      "apps/web/src/lib/sponsor/config.ts",
+      "apps/web/src/lib/treeEngine.ts",
+      "apps/web/src/lib/types.ts",
+      "apps/web/src/lib/zhuzRu.ts",
+      "apps/web/src/main.tsx"
+    ]
+  },
+  "changedFrontendFiles": [
+    "apps/web/src/App.tsx",
+    "apps/web/src/components/PreservationV2.tsx",
+    "apps/web/src/components/PromoFundedFlow.tsx",
+    "apps/web/src/components/PublishSeedModal.tsx",
+    "apps/web/src/components/RestoreSeed.tsx",
+    "apps/web/src/lib/arweave/loadVault.selftest.ts",
+    "apps/web/src/lib/arweave/loadVault.ts",
+    "apps/web/src/lib/checkout/paidClient.selftest.ts",
+    "apps/web/src/lib/checkout/paidFinalize.ts",
+    "apps/web/src/lib/vaultSession/selection.selftest.ts",
+    "apps/web/src/lib/vaultSession/selection.ts",
+    "apps/web/src/lib/vaultSession/session.ts",
+    "apps/web/tests/arns-hosted.spec.mjs",
+    "apps/web/tests/editor-safety.spec.mjs",
+    "apps/web/tests/preservation-v2.spec.mjs",
+    "apps/web/tests/promo-funded.spec.mjs"
+  ],
+  "executedTests": [
+    {
+      "command": "node --import tsx src/lib/arweave/loadVault.selftest.ts",
+      "result": "RED before fix, GREEN after fix",
+      "logs": [
+        "load-vault-red.log",
+        "load-vault-green.log"
+      ]
+    },
+    {
+      "command": "node --import tsx src/lib/checkout/paidClient.selftest.ts",
+      "result": "RED before finalization fix, GREEN after fix",
+      "logs": [
+        "paid-finalization-red.log",
+        "paid-client-green.log"
+      ]
+    },
+    {
+      "command": "node --import tsx src/lib/vaultSession/selection.selftest.ts",
+      "result": "GREEN, 15 synthetic assertions/groups",
+      "logs": [
+        "selection-green.log"
+      ]
+    },
+    {
+      "command": "node --check tests/editor-safety.spec.mjs; node --check tests/promo-funded.spec.mjs",
+      "result": "exit 0, syntax only"
+    },
+    {
+      "command": "playwright test --list (editor/fund/v2/recovery configs)",
+      "result": "collection only: 15/27/15/35 tests; exit 0",
+      "logs": [
+        "editor-browser-list.log",
+        "promo-browser-list.log",
+        "legacy-pilot-browser-list.log",
+        "recovery-browser-list.log"
+      ]
+    }
+  ],
+  "browserExecution": {
+    "result": "BLOCKED locally before any test assertion",
+    "reason": "Playwright headless shell absent; /usr/bin/chromium wrapper points to absent /usr/lib/chromium/chromium. Root attempted official install and reported HTTP 403 SiteUnavailable. No alternate network bypass used.",
+    "log": "restore-browser-red.log",
+    "isProductRedEvidence": false
+  },
+  "prohibitedActionsNotPerformed": [
+    "actual wallet connection/signature",
+    "real SOL/AR transfers",
+    "archive upload",
+    "deployment",
+    "push",
+    "reading .env or owner seeds/admin credentials"
+  ],
+  "notes": [
+    "No independent runtime behavior/assertions were intentionally changed. Shared new helpers are additive; funded components use them.",
+    "Build, backend, exact release artifact and GitHub CI evidence are owned by parent audit; do not infer those outcomes from this file."
+  ]
+}

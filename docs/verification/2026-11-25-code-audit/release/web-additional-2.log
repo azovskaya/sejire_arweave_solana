@@ -1,0 +1,12 @@
+PASS an acknowledged but unconfirmed archive can explicitly resume the same transaction at a replacement node
+PASS unconfirmed retry stops on a conflicting header even when a later node is unavailable
+PASS an intent transaction aborts before any wallet call; a signed-result commit failure cannot authorize another prompt
+PASS five upload commit boundaries replay only already signed bytes after reloading the journal
+PASS overlapping client instances produce one signature and one upload before read-only completion checks
+PASS a late definitive decline clears only its original intent; a late transport failure remains unresolved
+PASS quote expiry and backwards clock changes stop before wallet access; exact large integer fees remain unchanged
+PASS nine independently valid signatures cannot replace the transaction authorized by the saved intent
+INFO verified native byte/chunk matrix [{"bytes":262137,"chunks":1},{"bytes":262153,"chunks":2},{"bytes":294905,"chunks":2},{"bytes":294921,"chunks":2},{"bytes":524281,"chunks":2},{"bytes":524297,"chunks":3},{"bytes":10485753,"chunks":40}]
+PASS Merkle proofs and byte offsets cover native chunk split boundaries and an archive near the size limit
+PASS rejected response lengths and active-read cancellation close the response stream
+PASS 10 direct protocol boundary groups (36 fixed cases); payload seed 0x18112026; synthetic keys and transport only.

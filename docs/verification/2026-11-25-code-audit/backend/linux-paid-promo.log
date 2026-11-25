@@ -1,0 +1,11 @@
+PASS Linux paid/promo: default-off HTTP has no payment offer, session or outbound request
+PASS Linux paid/promo: origin and server admin authentication guard management; readiness uses actual synthetic signer
+PASS Linux paid/promo: 512 KiB boundary and tampered archive are rejected before any order or hold
+PASS Linux paid/promo: paid HTTP admission is idempotent and immutable across recipient rotation
+PASS Linux paid/promo: prepared bytes and valid signature are required before durable reserve or relay
+PASS Linux paid/promo: durable Linux alarm continues reserved payment, lost SOL/header replies retain exact obligation
+PASS Linux paid/promo: cold SQLite reopen resumes same owner/key/payment and uploads only missing original chunks
+PASS Linux paid/promo: explicit post-completion repair restores original bytes without changing receipt or spend
+PASS Linux paid/promo: promo admin rotation and lost submission acknowledgement persist real HTTP/SQLite state
+PASS Linux paid/promo: new promo use obeys rotated code and cumulative budget without changing historical receipt
+linux-paid-promo: PASS (10 groups); real HTTP/SQLite, intercepted external network, synthetic keys only

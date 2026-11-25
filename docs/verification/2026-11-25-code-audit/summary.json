@@ -1,0 +1,244 @@
+{
+  "schema": "sejire/prepublication-code-audit/v1",
+  "date": "2026-11-25",
+  "ownerTimezone": "Asia/Almaty",
+  "recordedAt": "2026-11-25T08:45:53.045474+00:00",
+  "verdict": "NO_GO_FOR_PUBLIC_SOL_MAINNET_PROMO_ADMIN_NON_CLOUDFLARE_RELEASE",
+  "scopeCompleted": "Manual source review, targeted defect repair, local verification and complete successful exact-tree GitHub CI",
+  "publicationApproved": false,
+  "source": {
+    "repository": "azovskaya/sejire_arweave_solana",
+    "branch": "fix/release-code-audit-20261125",
+    "remoteCommit": "20adbb1926945ca0b9e7990fdec03a877777ad4b",
+    "localEquivalentCommit": "9315471ba4fd5a6d0c2d8292bef33ab2ce9617ae",
+    "tree": "c43486bf9b605b00edd37de76c1e74dfc26cc55e",
+    "pullRequest": 11,
+    "draft": true,
+    "testedMergeCommit": "8a28b016b9c9ae31b047b509efa379b1ccbdae8e",
+    "testedMergeTree": "c43486bf9b605b00edd37de76c1e74dfc26cc55e"
+  },
+  "fixedGroups": [
+    "FE-01 full selected local/file vault and checked cache/session commit",
+    "FE-02 restore cancellation and storage rollback",
+    "FE-03 completed old operation cannot overwrite newer selected full vault",
+    "FE-04 route/hash synchronization",
+    "FE-05 ordinary save uses general V2 envelope; retained legacy pilot is explicit",
+    "FE-06 validate promo completion before success/journal clearing",
+    "FE-07 ErrorBoundary draft action clears failed deep link",
+    "FE-08 cancel stale editor save after navigation/new tree",
+    "B-01 data-only repair of original signed promo archive",
+    "B-02 bounded native submit/replay with signature/Merkle verification",
+    "B-03 invalid SOL preparation classified before reserve/relay",
+    "R-01 manifest index.id cannot override checked root"
+  ],
+  "additionalEarlierFixIncluded": "Linux SQLite writer exclusion releases on SIGKILL while retaining ledger and fail-closed legacy sentinel",
+  "localTests": {
+    "webStandardEntrypoints": {
+      "total": 35,
+      "passed": 35
+    },
+    "webAdditionalEntrypoints": {
+      "total": 6,
+      "passed": 6
+    },
+    "sponsorAdditionalCommands": {
+      "total": 15,
+      "passed": 15,
+      "note": "fund-runtime also appears in backend evidence; not counted as distinct new coverage twice"
+    },
+    "linuxWriterGroups": 5,
+    "linuxPaidPromoGroups": 10,
+    "promoNativeProviderGroups": 6,
+    "fundSqliteApiGroups": 24,
+    "fundRuntimeAcceptanceChecks": 18,
+    "releasePackageNodeCases": 42,
+    "deploymentAdminGuardNodeCases": 60,
+    "standaloneRecoveryNodeCases": 12,
+    "recoveryAdversarialGroups": 7,
+    "finalBuildAndScanCommands": [
+      {
+        "name": "funded-build",
+        "argv": [
+          "npm",
+          "run",
+          "arns:build:funded"
+        ],
+        "exitCode": 0,
+        "seconds": 19.35,
+        "log": "funded-build.log"
+      },
+      {
+        "name": "fund-security",
+        "argv": [
+          "npm",
+          "run",
+          "security:fund"
+        ],
+        "exitCode": 0,
+        "seconds": 0.43,
+        "log": "fund-security.log"
+      },
+      {
+        "name": "funded-boundary",
+        "argv": [
+          "node",
+          "scripts/native-bundle-audit.mjs"
+        ],
+        "exitCode": 0,
+        "seconds": 2.27,
+        "log": "funded-boundary.log"
+      },
+      {
+        "name": "independent-build",
+        "argv": [
+          "npm",
+          "run",
+          "arns:build"
+        ],
+        "exitCode": 0,
+        "seconds": 18.45,
+        "log": "independent-build.log"
+      },
+      {
+        "name": "independent-verify",
+        "argv": [
+          "npm",
+          "run",
+          "arns:verify"
+        ],
+        "exitCode": 0,
+        "seconds": 3.45,
+        "log": "independent-verify.log"
+      },
+      {
+        "name": "web-lint",
+        "argv": [
+          "npm",
+          "run",
+          "lint",
+          "--prefix",
+          "apps/web"
+        ],
+        "exitCode": 0,
+        "seconds": 0.54,
+        "log": "web-lint.log"
+      }
+    ],
+    "limits": [
+      "Local Node24.22.3; same web/backend TS entrypoints through node --import loader because tsx CLI IPC unavailable",
+      "No local Playwright execution: browser missing and official download returned 403; executed browser evidence is GitHub CI",
+      "Synthetic wallets, family trees and chains; no real production signer, spend or upload"
+    ],
+    "browserEvidence": "Complete GitHub CI passed on the same source tree; local browser execution unavailable"
+  },
+  "finalCi": {
+    "id": 45576450076,
+    "url": "https://github.com/azovskaya/sejire_arweave_solana/actions/runs/45576450076",
+    "status": "completed",
+    "conclusion": "success",
+    "runAttempt": 1,
+    "event": "pull_request",
+    "headSha": "20adbb1926945ca0b9e7990fdec03a877777ad4b",
+    "startedAt": "2026-11-25T08:27:38Z",
+    "updatedAt": "2026-11-25T08:43:32Z",
+    "jobId": 139075481501,
+    "stepCounts": {
+      "success": 77,
+      "skipped": 1
+    },
+    "successfulBrowserExecutions": 320,
+    "browserSuites": 14,
+    "testedMerge": {
+      "sha": "8a28b016b9c9ae31b047b509efa379b1ccbdae8e",
+      "tree": "c43486bf9b605b00edd37de76c1e74dfc26cc55e",
+      "sameTreeAsCandidate": true,
+      "checkoutLog": "2026-11-25T08:27:47.9154272Z HEAD is now at 8a28b01 Merge 20adbb1926945ca0b9e7990fdec03a877777ad4b into 17a254eb13bb999127d9f7b3ecd54905f317e02d"
+    },
+    "separateRecipientAdminRun": {
+      "id": 45576450094,
+      "url": "https://github.com/azovskaya/sejire_arweave_solana/actions/runs/45576450094",
+      "status": "completed",
+      "conclusion": "success",
+      "headSha": "20adbb1926945ca0b9e7990fdec03a877777ad4b",
+      "updatedAt": "2026-11-25T08:29:27Z"
+    },
+    "acceptedPermawebRelease": false,
+    "evidence": "release/ci-45576450076-result.json"
+  },
+  "dependencyAudit": {
+    "web": {
+      "low": 13,
+      "moderate": 10,
+      "high": 0,
+      "critical": 0
+    },
+    "sponsor": {
+      "low": 13,
+      "moderate": 1,
+      "high": 0,
+      "critical": 0
+    },
+    "bothExitNonzero": true,
+    "fullThirdPartySourceAudit": false
+  },
+  "coverageEvidence": "manual-coverage-summary.json",
+  "blockingOrRequiredLaunchGates": [
+    "One accepted funded non-Cloudflare profile with real API/admin origin and standalone recovery files",
+    "Production Linux HTTPS API, persistent storage, trusted ingress, backup/restore, restart, CORS and ownership acceptance",
+    "Promo autonomous continuation and accounting-safe verified treasury refill/ceiling update",
+    "Production server admin authentication and Mainnet order accounting; historical overview is Devnet",
+    "Explicit product handling of whole-envelope 512 KiB limit and shared-draft concurrent editing/debounce boundaries",
+    "Owner-approved live Mainnet SOL and promo end-to-end tests through public bytes and clean-browser full-vault recovery",
+    "Preserve and resolve prior paid AtwLYx509C9jWIFKUNg7dy1GSgiaDbXVK1YEQbBWfHY obligation without a replacement payment/archive",
+    "Exact artifact provenance, upload budget review, public manifest/root/fallback byte verification, actual ArNS owner/controller and explicit cutover"
+  ],
+  "acceptedIndependentArtifact": {
+    "sourceCommit": "17a254eb13bb999127d9f7b3ecd54905f317e02d",
+    "sha256": "f897aa1172986b595e39b76a7a8535da94b4a5be1886d21a7362cd099bcc5b60",
+    "purpose": "separate independent profile; intentionally no SOL/promo/admin",
+    "replaced": false
+  },
+  "externalActions": {
+    "githubWorkingBranchAndDraftPullRequest": true,
+    "mainMerged": false,
+    "realWalletSignature": false,
+    "realSpend": false,
+    "permanentUpload": false,
+    "productionDeployment": false,
+    "arnsTargetChanged": false,
+    "walletSeedsRead": false
+  },
+  "report": "../2026-11-25-code-audit.md",
+  "evidenceBranch": "docs/code-audit-evidence-20261125",
+  "manualCoverage": {
+    "deduplicatedPhysicalFiles": 279,
+    "currentFullManualFiles": 240,
+    "currentTargetedOnlyFiles": 28,
+    "noConfirmedManualExtentFiles": 11,
+    "missingPhysicalFiles": [],
+    "staleHistoricalRecords": 3,
+    "staleHistoricalDistinctFiles": 2,
+    "staleManualRecords": 3,
+    "staleRecordsWithoutCurrentFullReplacement": 1,
+    "unboundManualRows": 0,
+    "trackedFileHashMismatches": [],
+    "evidenceManifestCount": 12,
+    "staleRecordsWithoutAnyCurrentManualReplacement": 0,
+    "fundedModules": 141,
+    "fundedSourceModulesFullRead": 139,
+    "fundedBinaryFontAssets": 2,
+    "componentDirectorySourceFiles": 34,
+    "componentDirectoryFullRead": 34,
+    "componentDirectoryTsx": 32,
+    "componentDirectoryAliasAdapters": 2,
+    "runtimeLibraryTypeScriptFullRead": 134,
+    "sourceHashMismatches": 0,
+    "evidence": "manual-coverage-summary.json"
+  },
+  "freshCiPdf": {
+    "files": 89,
+    "pages": 779,
+    "passing": 89,
+    "findings": 0
+  }
+}

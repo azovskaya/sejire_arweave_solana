@@ -1,0 +1,28 @@
+PASS journal deduplicates exact ciphertext across tabs and local tree associations
+PASS legacy preservation is checked under the shared lock before new creation and signing
+PASS free backup preparation can be cancelled without deleting ciphertext or requiring payment
+PASS price movement, wrong owner, insufficient funds and wrong network stop before signing
+PASS a small archive sends both header and Merkle chunk, then verifies actual bytes before completion
+PASS lost header ACK resumes the exact signed ID and never asks the wallet again
+PASS multi-chunk interruption persists progress and reload resumes without a second signature or header
+PASS a replacement node receives the same signed transaction after the first node becomes unavailable
+PASS header confirmation without bytes stays pending; explicit resume repairs only the same chunks
+PASS a pending wallet signature cannot be requested twice and a late valid response is journaled
+PASS interrupted repair retains the known missing-data warning until fresh readback succeeds
+PASS explicit wallet rejection permits retry, altered wallet transaction does not
+PASS Wander returned decline preserves the backup and permits only an explicit new signing request
+PASS unknown wallet failures remain unresolved and cannot clear the prior signing intent
+PASS a returned invalid transaction cannot masquerade as a wallet decline during validation
+PASS a non-responsive wallet connection is bounded before a signing intent or upload exists
+PASS abort at durable intent commit before the wallet call rolls back only the unrequested signature
+PASS signed portable package imports into clean browser without trusting completion or uploading
+Transaction Verification Failed! 
+Details: {
+  "asymmetricKeyType": "rsa",
+  "modulusLength": 0
+} 
+N.B. ArweaveJS is only guaranteed to verify txs created using ArweaveJS.
+PASS a forged receipt or public header is rejected before decrypting a vault
+PASS invalid endpoints, rate limiting and prior cancellation never start an unapproved request
+PASS failed durable storage stops before any wallet prompt or upload
+PASS 21 direct Arweave tests: synthetic wallet, mocked HTTP, no live signatures, uploads or payments.

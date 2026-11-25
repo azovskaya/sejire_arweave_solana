@@ -1,0 +1,611 @@
+{
+  "schema": "sejire/exact-source-ci-verification/v1",
+  "recordedAt": "2026-11-25 08:44:58 UTC",
+  "run": {
+    "id": 45576450076,
+    "url": "https://github.com/azovskaya/sejire_arweave_solana/actions/runs/45576450076",
+    "status": "completed",
+    "conclusion": "success",
+    "runAttempt": 1,
+    "event": "pull_request",
+    "headSha": "20adbb1926945ca0b9e7990fdec03a877777ad4b",
+    "startedAt": "2026-11-25T08:27:38Z",
+    "updatedAt": "2026-11-25T08:43:32Z"
+  },
+  "checkedOutMerge": {
+    "sha": "8a28b016b9c9ae31b047b509efa379b1ccbdae8e",
+    "tree": "c43486bf9b605b00edd37de76c1e74dfc26cc55e",
+    "sameTreeAsCandidate": true,
+    "checkoutLog": "2026-11-25T08:27:47.9154272Z HEAD is now at 8a28b01 Merge 20adbb1926945ca0b9e7990fdec03a877777ad4b into 17a254eb13bb999127d9f7b3ecd54905f317e02d"
+  },
+  "jobs": [
+    {
+      "id": 139075481501,
+      "name": "verify",
+      "status": "completed",
+      "conclusion": "success",
+      "run_id": 45576450076,
+      "logs_url": null,
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1
+        },
+        {
+          "name": "Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2
+        },
+        {
+          "name": "Run actions/setup-node@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3
+        },
+        {
+          "name": "Worker release gate regressions (offline, no deployment)",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4
+        },
+        {
+          "name": "Run npm ci --prefix apps/web",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5
+        },
+        {
+          "name": "Run npm ci --prefix apps/sponsor",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6
+        },
+        {
+          "name": "Run npm test",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 7
+        },
+        {
+          "name": "Stress-test family tree and шежіре PDF exports",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 8
+        },
+        {
+          "name": "Run npm run check --prefix apps/sponsor",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 9
+        },
+        {
+          "name": "Run npm run test:fund-runtime",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 10
+        },
+        {
+          "name": "Paid SOL archive, durable continuation and mainnet adapters (synthetic network)",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 11
+        },
+        {
+          "name": "Linux checkout adapter, SQLite writer and idempotent order (synthetic network)",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 12
+        },
+        {
+          "name": "Run npm run test:checkout",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 13
+        },
+        {
+          "name": "Run npm run test:rpc",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 14
+        },
+        {
+          "name": "Run npm run test:sqlite",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 15
+        },
+        {
+          "name": "Run npm run test:api",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 16
+        },
+        {
+          "name": "Run npm run test:protocol",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 17
+        },
+        {
+          "name": "AO readiness signer selftest (offline, no secrets or network)",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 18
+        },
+        {
+          "name": "Local Lua boundary checks (not a live AO process)",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 19
+        },
+        {
+          "name": "Run npm run test:preservation",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 20
+        },
+        {
+          "name": "Run npm run lint --prefix apps/web",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 21
+        },
+        {
+          "name": "Run npm run archive:measure",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 22
+        },
+        {
+          "name": "Run npm run solana:build",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 23
+        },
+        {
+          "name": "Run npm run checkout:build",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 24
+        },
+        {
+          "name": "Run npm exec --prefix apps/web -- playwright install --with-deps chromium firefox webkit",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 25
+        },
+        {
+          "name": "Offline recovery format, standalone decoder and current-envelope compatibility",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 26
+        },
+        {
+          "name": "Direct Arweave signing, exact resume and chunk delivery (synthetic network)",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 27
+        },
+        {
+          "name": "Read-only direct Arweave API and CORS readiness",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 28
+        },
+        {
+          "name": "Preserve direct Arweave API readiness evidence (read-only)",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 29
+        },
+        {
+          "name": "Historical native archives retain signature, Merkle and encryption verification",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 30
+        },
+        {
+          "name": "Independent recovery kit, complete local vault and legacy journal boundary",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 31
+        },
+        {
+          "name": "Build independent direct-Arweave application and every emitted chunk boundary",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 32
+        },
+        {
+          "name": "Standalone recovery HTML with OS network isolation in Chromium, Firefox and WebKit (synthetic data)",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 33
+        },
+        {
+          "name": "Independent static app in Chromium, Firefox and WebKit (synthetic network)",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 34
+        },
+        {
+          "name": "Preserve independent desktop and mobile screens (synthetic family, no recovery words)",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 35
+        },
+        {
+          "name": "Prepare independent static pack without upload or payment",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 36
+        },
+        {
+          "name": "Run actions/upload-artifact@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 37
+        },
+        {
+          "name": "Editor safety regressions (synthetic data, no wallets or external writes)",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 38
+        },
+        {
+          "name": "Run npm run test:checkout-browser",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 39
+        },
+        {
+          "name": "Run npm run test:protocol-browser",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 40
+        },
+        {
+          "name": "Run VITE_FUND_API_URL=https://sejire-sponsor.azovskaya-alissa.workers.dev npm run native:build",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 41
+        },
+        {
+          "name": "Run npm run security:fund",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 42
+        },
+        {
+          "name": "Verify built static ArNS client and mocked promo completion",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 43
+        },
+        {
+          "name": "Portable admin verifier is copied into the static build",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 44
+        },
+        {
+          "name": "Pages root publisher and smoke syntax",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 45
+        },
+        {
+          "name": "Native V2 bundle dependency boundary (all dynamic chunks)",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 46
+        },
+        {
+          "name": "Run actions/upload-artifact@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 47
+        },
+        {
+          "name": "Run actions/upload-artifact@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 48
+        },
+        {
+          "name": "Run npm run test:permaweb-prepare",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 49
+        },
+        {
+          "name": "Wallet history timeout regression (read-only, balance preserved)",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 50
+        },
+        {
+          "name": "Run npm run test:native-browser",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 51
+        },
+        {
+          "name": "Run npm run test:native-pilot-browser --prefix apps/web",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 52
+        },
+        {
+          "name": "Run npm run test:v2-browser --prefix apps/web",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 53
+        },
+        {
+          "name": "Run npm run test:admin-browser --prefix apps/web",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 54
+        },
+        {
+          "name": "Run npm run test:v2-recovery-browser --prefix apps/web",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 55
+        },
+        {
+          "name": "Promo save, reload recovery and automatic editor completion (mocked network)",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 56
+        },
+        {
+          "name": "Paid SOL save, cross-method recovery and editor completion (mocked network)",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 57
+        },
+        {
+          "name": "Read-only Arweave recovery gateway and CORS acceptance",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 58
+        },
+        {
+          "name": "Run npm run test:native-journey --prefix apps/web",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 59
+        },
+        {
+          "name": "Preserve synthetic MVP screens (no recovery words or wallet secrets)",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 60
+        },
+        {
+          "name": "Read-only live Solana requests from public Pages browser",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 61
+        },
+        {
+          "name": "Run actions/upload-artifact@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 62
+        },
+        {
+          "name": "Run npm run continuation:package",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 63
+        },
+        {
+          "name": "Run npm run test:continuation",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 64
+        },
+        {
+          "name": "Run actions/upload-artifact@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 65
+        },
+        {
+          "name": "Run npm run preview:package",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 66
+        },
+        {
+          "name": "Preserve preview build for owner review (no deployment)",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 67
+        },
+        {
+          "name": "Run npm run security:reachability",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 68
+        },
+        {
+          "name": "Preserve static security evidence (no site publication)",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 69
+        },
+        {
+          "name": "Web dependency audit (non-blocking; release review required)",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 70
+        },
+        {
+          "name": "Web build-tool dependency audit (non-blocking; release review required)",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 71
+        },
+        {
+          "name": "Sponsor dependency audit (non-blocking; release review required)",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 72
+        },
+        {
+          "name": "Sponsor test-tool dependency audit (non-blocking; release review required)",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 73
+        },
+        {
+          "name": "Preserve complete dependency audit evidence",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 74
+        },
+        {
+          "name": "Preserve checkout failure diagnostics",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 75
+        },
+        {
+          "name": "Post Run actions/setup-node@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 149
+        },
+        {
+          "name": "Post Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 150
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 151
+        }
+      ]
+    }
+  ],
+  "stepCounts": {
+    "success": 77,
+    "skipped": 1
+  },
+  "browserSuites": [
+    {
+      "command": "npm run test:independent-browser",
+      "passed": 72,
+      "logLine": "2026-11-25T08:33:15.4272777Z   72 passed (1.2m)"
+    },
+    {
+      "command": "npx --no-install playwright test --config playwright.editor.config.ts",
+      "passed": 17,
+      "logLine": "2026-11-25T08:33:47.9226467Z   17 passed (28.0s)"
+    },
+    {
+      "command": "npm run test:checkout-browser",
+      "passed": 5,
+      "logLine": "2026-11-25T08:34:07.5016955Z   5 passed (18.6s)"
+    },
+    {
+      "command": "npm run test:protocol-browser",
+      "passed": 5,
+      "logLine": "2026-11-25T08:34:27.9217015Z   5 passed (19.5s)"
+    },
+    {
+      "command": "npm run arns:verify:funded && npm run test:arns-browser",
+      "passed": 9,
+      "logLine": "2026-11-25T08:34:56.4615157Z   9 passed (19.6s)"
+    },
+    {
+      "command": "npm run test:native-browser --prefix apps/web -- --grep 'public balances never wait for history'",
+      "passed": 1,
+      "logLine": "2026-11-25T08:35:17.4828784Z   1 passed (15.0s)"
+    },
+    {
+      "command": "npm run test:native-browser",
+      "passed": 21,
+      "logLine": "2026-11-25T08:36:28.6466992Z   21 passed (1.2m)"
+    },
+    {
+      "command": "npm run test:native-pilot-browser --prefix apps/web",
+      "passed": 3,
+      "logLine": "2026-11-25T08:36:34.5958981Z   3 passed (5.1s)"
+    },
+    {
+      "command": "npm run test:v2-browser --prefix apps/web",
+      "passed": 15,
+      "logLine": "2026-11-25T08:36:56.5477815Z   15 passed (21.1s)"
+    },
+    {
+      "command": "npm run test:admin-browser --prefix apps/web",
+      "passed": 14,
+      "logLine": "2026-11-25T08:37:09.8907219Z   14 passed (12.5s)"
+    },
+    {
+      "command": "npm run test:v2-recovery-browser --prefix apps/web",
+      "passed": 35,
+      "logLine": "2026-11-25T08:38:03.6366123Z   35 passed (52.9s)"
+    },
+    {
+      "command": "npm run test:fund-browser --prefix apps/web",
+      "passed": 27,
+      "logLine": "2026-11-25T08:39:01.4166460Z   27 passed (56.9s)"
+    },
+    {
+      "command": "npm run test:paid-browser",
+      "passed": 48,
+      "logLine": "2026-11-25T08:41:35.3374056Z   48 passed (2.5m)"
+    },
+    {
+      "command": "npm run test:native-journey --prefix apps/web",
+      "passed": 48,
+      "logLine": "2026-11-25T08:43:17.7140078Z   48 passed (1.6m)"
+    }
+  ],
+  "successfulBrowserExecutions": 320,
+  "browserCountNote": "Executions across 14 suites, not a claim of 320 distinct logical scenarios; the 1-test prioritization regression is also present in the 21-case suite.",
+  "pdf": {
+    "files": 89,
+    "pages": 779,
+    "passing": 89,
+    "findings": 0,
+    "log": "2026-11-25T08:29:40.1896264Z files: 89 pages: 779 passing: 89 findings: {}"
+  },
+  "osIsolatedRecovery": {
+    "browsers": [
+      "chromium",
+      "firefox",
+      "webkit"
+    ],
+    "kernelIsolationVerified": true,
+    "nodeTests": 4,
+    "pass": 4
+  },
+  "separateRecipientAdminRun": {
+    "id": 45576450094,
+    "url": "https://github.com/azovskaya/sejire_arweave_solana/actions/runs/45576450094",
+    "status": "completed",
+    "conclusion": "success",
+    "headSha": "20adbb1926945ca0b9e7990fdec03a877777ad4b",
+    "updatedAt": "2026-11-25T08:29:27Z"
+  },
+  "evidenceLog": "ci-45576450076-excerpts.log",
+  "notProvenByThisRun": [
+    "This is pull_request CI, not accepted release-branch permaweb provenance.",
+    "Wallets/payments/promo production paths use synthetic data and mocked chain responses; live read-only checks do not spend real SOL/AR.",
+    "Current production API, treasury binding, owner wallet extension, actual permanent upload and ArNS cutover are not accepted.",
+    "Dependency audit steps are non-blocking; remaining findings are reported separately."
+  ]
+}

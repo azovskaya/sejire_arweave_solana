@@ -1,0 +1,10 @@
+PASS an unset preference uses defaults; a saved origin is canonical and shared by later native calls
+PASS explicit transport options take precedence without reading or falling back from a stored preference
+PASS invalid entered or saved addresses never select defaults or alter an existing valid preference
+PASS unavailable session reads stop implicit native selection; explicit options remain explicit
+PASS failed or silently ignored preference writes preserve the previous choice and unrelated vault metadata
+PASS an uncertain failed clear cannot silently select defaults until an explicit successful setting repairs it
+PASS custom discovery sends one bounded read-only GraphQL query only to the selected origin
+PASS an unsupported or oversized custom index fails without trying public discovery endpoints
+PASS explicit empty input clears only the preference and restores configured defaults
+native node preference: 9 local checks passed; no live network, signatures or uploads

@@ -1,0 +1,56 @@
+2026-11-25T08:21:15.1037943Z   1) tests/editor-safety.spec.mjs:231:1 › ordinary funded save imports a general ciphertext without entering the fixed Devnet pilot 
+2026-11-25T08:21:15.1038668Z 
+2026-11-25T08:21:15.1039314Z     Error: expect(received).toBe(expected) // Object.is equality
+2026-11-25T08:21:15.1039813Z 
+2026-11-25T08:21:15.1040010Z     Expected: 0
+2026-11-25T08:21:15.1040414Z     Received: undefined
+2026-11-25T08:21:15.1040656Z 
+2026-11-25T08:21:15.1041319Z       245 |   await expect(page.getByRole('button', { name: 'По промокоду', exact: true })).toBeVisible();
+2026-11-25T08:21:15.1042322Z       246 |   await expect(page.getByRole('button', { name: 'Через Solana', exact: true })).toBeVisible();
+2026-11-25T08:21:15.1043115Z     > 247 |   expect(await page.evaluate(() => window.auditWalletCalls)).toBe(0);
+2026-11-25T08:21:15.1043719Z           |                                                              ^
+2026-11-25T08:21:15.1044133Z       248 |   f.assertReadOnly();
+2026-11-25T08:21:15.1044459Z       249 | });
+2026-11-25T08:21:15.1044722Z       250 |
+2026-11-25T08:21:15.1045707Z         at /home/runner/work/sejire_arweave_solana/sejire_arweave_solana/apps/web/tests/editor-safety.spec.mjs:247:62
+2026-11-25T08:21:15.1046315Z 
+2026-11-25T08:21:15.1046949Z     Error Context: test-results/editor-safety/editor-safety-ordinary-fun-1830a-ring-the-fixed-Devnet-pilot/error-context.md
+2026-11-25T08:21:15.1047624Z 
+2026-11-25T08:21:15.1047751Z   1 failed
+2026-11-25T08:21:15.1048663Z     tests/editor-safety.spec.mjs:231:1 › ordinary funded save imports a general ciphertext without entering the fixed Devnet pilot 
+2026-11-25T08:21:15.1049380Z   14 passed (27.9s)
+2026-11-25T08:21:15.1324894Z ##[error]Process completed with exit code 1.
+2026-11-25T08:21:15.1467211Z ##[group]Run actions/upload-artifact@v4
+2026-11-25T08:21:15.1467459Z with:
+2026-11-25T08:21:15.1467655Z   name: checkout-failure-diagnostics
+2026-11-25T08:21:15.1467898Z   path: apps/web/test-results/
+2026-11-25T08:21:15.1468115Z   if-no-files-found: warn
+2026-11-25T08:21:15.1468328Z   compression-level: 6
+2026-11-25T08:21:15.1468526Z   overwrite: false
+2026-11-25T08:21:15.1468715Z   include-hidden-files: false
+2026-11-25T08:21:15.1468924Z ##[endgroup]
+2026-11-25T08:21:15.2815612Z (node:13799) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+2026-11-25T08:21:15.2816292Z (Use `node --trace-deprecation ...` to show where the warning was created)
+2026-11-25T08:21:15.2891413Z With the provided path, there will be 7 files uploaded
+2026-11-25T08:21:15.2895813Z Artifact name is valid!
+2026-11-25T08:21:15.2896555Z Root directory input is valid!
+2026-11-25T08:21:15.6842009Z Beginning upload of artifact content to blob storage
+2026-11-25T08:21:15.7133083Z (node:13799) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+2026-11-25T08:21:16.2876747Z Uploaded bytes 256260
+2026-11-25T08:21:16.3683082Z Finished uploading artifact content to blob storage!
+2026-11-25T08:21:16.3684055Z SHA256 digest of uploaded artifact zip is 90fcf1335307a07acbbd55bae40c80192e80929c1c7f43eb28a6e33a2d144ea9
+2026-11-25T08:21:16.3684750Z Finalizing artifact upload
+2026-11-25T08:21:16.8464416Z Artifact checkout-failure-diagnostics.zip successfully finalized. Artifact ID 15004171568
+2026-11-25T08:21:16.8466091Z Artifact checkout-failure-diagnostics has been successfully uploaded! Final size is 256260 bytes. Artifact ID is 15004171568
+2026-11-25T08:21:16.8470550Z Artifact download URL: https://github.com/azovskaya/sejire_arweave_solana/actions/runs/45574583425/artifacts/15004171568
+2026-11-25T08:21:16.8681355Z Post job cleanup.
+2026-11-25T08:21:16.9380411Z [command]/usr/bin/git version
+2026-11-25T08:21:16.9447248Z git version 2.56.1
+2026-11-25T08:21:16.9477136Z Temporarily overriding HOME='/home/runner/work/_temp/382f578a-ddd0-433f-b125-9c719defe125' before making global git config changes
+2026-11-25T08:21:16.9478287Z Adding repository directory to the temporary git global config as a safe directory
+2026-11-25T08:21:16.9481085Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/sejire_arweave_solana/sejire_arweave_solana
+2026-11-25T08:21:16.9514882Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-11-25T08:21:16.9547711Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-11-25T08:21:16.9775403Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-11-25T08:21:16.9802948Z http.https://github.com/.extraheader
+2026-11-25T08:21:16.9811704Z [command]/usr

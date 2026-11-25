@@ -1,0 +1,6318 @@
+{
+  "schema": "sejire/source-import-reachability/v1",
+  "generatedAt": "2026-11-25T08:25:06.732Z",
+  "snapshotCommit": "ca3629c1ed11a4d124f97b5dcb7856f062bfb104",
+  "method": "TypeScript AST local-source import graph from funded main.tsx aliases; type-only edges retained but not traversed.",
+  "caveat": "Conservative source graph only. It does not fold environment branches, remove unused exports, model all dynamic expressions, or prove emitted JS membership. Current local independent dist is intentionally not consulted.",
+  "aliasEvidence": "apps/web/vite.config.ts; scripts/build-arns-promo.sh; VITE_DECENTRALIZED_MODE=false; VITE_NATIVE_AR_ENABLED=1",
+  "aliases": {
+    "@sejire/app": "apps/web/src/App.tsx",
+    "@sejire/publish": "apps/web/src/components/PublishSeedModal.tsx",
+    "@sejire/preservation-context": "apps/web/src/lib/preservationContext.legacy.ts",
+    "@sejire/payment-panels": "apps/web/src/components/paymentPanels.native.ts"
+  },
+  "entrypoint": "apps/web/src/main.tsx",
+  "libraryFileCount": 134,
+  "sourceImportReachableLibraryCount": 115,
+  "localModuleCountIncludingAssets": 156,
+  "libraryFiles": [
+    {
+      "path": "apps/web/src/lib/ao/client.ts",
+      "sha256": "5b9a3337b27d0e2df9c79acb122afb1ba31534c8820f8596c668b1f93cb94f0b",
+      "lines": 208,
+      "sourceImportReachable": true
+    },
+    {
+      "path": "apps/web/src/lib/ao/factoryProcess.ts",
+      "sha256": "725d2880a98918e66ef022d2396e391c1cb5df0743578145c229c552deacc960",
+      "lines": 114,
+      "sourceImportReachable": true
+    },
+    {
+      "path": "apps/web/src/lib/ao/protocolKinship.ts",
+      "sha256": "2173d814ef5b4a130d76de84bffde988a6a2ef5e5c5a2841e7429e59e0b5e0e9",
+      "lines": 145,
+      "sourceImportReachable": true
+    },
+    {
+      "path": "apps/web/src/lib/ao/protocolMirror.ts",
+      "sha256": "afb9b0217439261bea631c9e52684daab129a08fcf9b7e1a4518ede7cae0a92d",
+      "lines": 60,
+      "sourceImportReachable": true
+    },
+    {
+      "path": "apps/web/src/lib/ao/treeProcess.ts",
+      "sha256": "ca069abaca002717f7209e5eb23b03937646052e213e754f8dac38d98e91135b",
+      "lines": 355,
+      "sourceImportReachable": true
+    },
+    {
+      "path": "apps/web/src/lib/ao/types.ts",
+      "sha256": "043ee64cdfa726d8355b01d56d7e3d68f41421332a6fbd7c3c98384f87b4ccb4",
+      "lines": 78,
+      "sourceImportReachable": true
+    },
+    {
+      "path": "apps/web/src/lib/arweave/client.ts",
+      "sha256": "85514fe7b7a21b61e973cad1d85a6cd93fd9e3fc65340583b6573e69c1934fab",
+      "lines": 52,
+      "sourceImportReachable": true
+    },
+    {
+      "path": "apps/web/src/lib/arweave/fetch.ts",
+      "sha256": "caa33b19a3b7946702a40dc865b597bd6d5ff91b0af31141fb34e887d38af669",
+      "lines": 139,
+      "sourceImportReachable": true
+    },
+    {
+      "path": "apps/web/src/lib/arweave/gateways.ts",
+      "sha256": "936e2e54c15eec883c125ffab89b05bb7ff9bf13c1f11ed368593454277c5f0b",
+      "lines": 142,
+      "sourceImportReachable": true
+    },
+    {
+      "path": "apps/web/src/lib/arweave/loadVault.ts",
+      "sha256": "c980474dbe2b191e50bd6fed434af9ea2c6f7ddd9a2f841e808a0db8c9356f56",
+      "lines": 213,
+      "sourceImportReachable": true
+    },
+    {
+      "path": "apps/web/src/lib/arweave/publish.ts",
+      "sha256": "220cfbfced0037cc7d3a1d48820db3a6c87acfdc18967671ac075754ce90a326",
+      "lines": 106,
+      "sourceImportReachable": true
+    },
+    {
+      "path": "apps/web/src/lib/arweave/wallet.ts",
+      "sha256": "80e254ffaa06929acc3bc927062fd29d0ffcdd295cca7065481a87178d2d434e",
+      "lines": 73,
+      "sourceImportReachable": true
+    },
+    {
+      "path": "apps/web/src/lib/checkout/client.ts",
+      "sha256": "0da72ee24c02b49db54de9c25b644be74d01d720c489be7dd14327c716ee685b",
+      "lines": 180,
+      "sourceImportReachable": false
+    },
+    {
+      "path": "apps/web/src/lib/checkout/messages.ts",
+      "sha256": "431dc2bc7e3617a9fa2f6c3807d87471d5ce3e74bef2ffd208090b824c5e802b",
+      "lines": 44,
+      "sourceImportReachable": true
+    },
+    {
+      "path": "apps/web/src/lib/checkout/paidAvailabilityMessages.ts",
+      "sha256": "dfde5d1d87a82a8e3272834c69fbf27b66d5f9e85ccadfcdd64aa9906ab64a96",
+      "lines": 79,
+      "sourceImportReachable": true
+    },
+    {
+      "path": "apps/web/src/lib/checkout/paidClient.ts",
+      "sha256": "9556c124355b89a17cfddbf3ae466f24f6448ef939b7b3c44a071d52a79770ca",
+      "lines": 785,
+      "sourceImportReachable": true
+    },
+    {
+      "path": "apps/web/src/lib/checkout/paidFinalize.ts",
+      "sha256": "3de4027b01c595565bad7919971598f295861cbd5f1ba45f827cde63d0e8b800",
+      "lines": 27,
+      "sourceImportReachable": true
+    },
+    {
+      "path": "apps/web/src/lib/checkout/paidJournal.ts",
+      "sha256": "f0a6e708a568b84162cc586c656711f50ad4d613c53ee4efa1272bfd91101b66",
+      "lines": 282,
+      "sourceImportReachable": true
+    },
+    {
+      "path": "apps/web/src/lib/checkout/paidReceipt.ts",
+      "sha256": "09303c2863cf395a7a87962e105fd5a90700c3f7c26d1304a04d625751657b26",
+      "lines": 43,
+      "sourceImportReachable": true
+    },
+    {
+      "path": "apps/web/src/lib/checkout/paidTypes.ts",
+      "sha256": "fd239a93c367a1d3345164e71a77e3bbe21190f22743e563c2af5368add86372",
+      "lines": 113,
+      "sourceImportReachable": false
+    },
+    {
+      "path": "apps/web/src/lib/checkout/vaultGuard.ts",
+      "sha256": "fb9c2165407f9ff739f2413136eafeb7db16a272e0fd4cb545e24b663a85abd6",
+      "lines": 88,
+      "sourceImportReachable": true
+    },
+    {
+      "path": "apps/web/src/lib/crypto/backup.ts",
+      "sha256": "9e3346b17c0312d57a8989a9c221c4e7df7299ecea04f60dab976e95972c7248",
+      "lines": 30,
+      "sourceImportReachable": true
+    },
+    {
+      "path": "apps/web/src/lib/crypto/bip39.ts",
+      "sha256": "386716b8e7c6b51bd88bcc3f0eea5dea9b7dc524359a2d9806b5d2fe122c7716",
+      "lines": 36,
+      "sourceImportReachable": true
+    },
+    {
+      "path": "apps/web/src/lib/crypto/encrypt.ts",
+      "sha256": "861ca9501eef769097e062dc78d3d1908274f7b646f21fb3173452fa1cb997f5",
+      "lines": 61,
+      "sourceImportReachable": true
+    },
+    {
+      "path": "apps/web/src/lib/crypto/envelope.ts",
+      "sha256": "b36832840d81acf134ab3c1e8deca13ab90fb4ec0ff84e6c1b8934c475ae4cf6",
+      "lines": 30,
+      "sourceImportReachable": true
+    },
+    {
+      "path": "apps/web/src/lib/crypto/keys.ts",
+      "sha256": "decc9427eac184cc400fba32587984ea202f006dedbe2f7bfaf834b3986329f9",
+      "lines": 24,
+      "sourceImportReachable": true
+    },
+    {
+      "path": "apps/web/src/lib/crypto/seedBackup.ts",
+      "sha256": "1db7f176c1331f9b04524d4117d3e22e728bc8926032ba0dc1bc8d417ac43310",
+      "lines": 49,
+      "sourceImportReachable": true
+    },
+    {
+      "path": "apps/web/src/lib/crypto/vault.ts",
+      "sha256": "8efd5681db6bd7b416853002711182f175c2fb8a55ccd4cd8eaccdb3b11c0595",
+      "lines": 67,
+      "sourceImportReachable": true
+    },
+    {
+      "path": "apps/web/src/lib/dates.ts",
+      "sha256": "6fb3ac850a367f2e39181a7b5512c7c5fbd3f034707b1154a419cbb218b50148",
+      "lines": 87,
+      "sourceImportReachable": true
+    },
+    {
+      "path": "apps/web/src/lib/deploymentMode.ts",
+      "sha256": "5b7154bb4b574112879c1c30ebf2052339b606b91f6b1109a56f7015351b5cdf",
+      "lines": 2,
+      "sourceImportReachable": true
+    },
+    {
+      "path": "apps/web/src/lib/directArweave/client.ts",
+      "sha256": "255af10ca876eae08f0b68d05278f4995e4465e26ade37c60e9b6f4be3e2622b",
+      "lines": 215,
+      "sourceImportReachable": false
+    },
+    {
+      "path": "apps/web/src/lib/directArweave/errors.ts",
+      "sha256": "57c5ecd94d5befcedfadd01f1da7f70f016b8d24951a4b117b4e198c74d3f5f5",
+      "lines": 46,
+      "sourceImportReachable": true
+    },
+    {
+      "path": "apps/web/src/lib/directArweave/format.ts",
+      "sha256": "3fbe6bbb4987f2c516a19295e3fe5967418e81e5b6079fb75ffec3e9c842532d",
+      "lines": 106,
+      "sourceImportReachable": true
+    },
+    {
+      "path": "apps/web/src/lib/directArweave/index.ts",
+      "sha256": "f11fb4ca7d0eb7816146d56594446acc85a79f2f377fd7873a142f40b432373b",
+      "lines": 7,
+      "sourceImportReachable": false
+    },
+    {
+      "path": "apps/web/src/lib/directArweave/journal.ts",
+      "sha256": "9949c5933b7744efa6bb99606a27a3b0ecd1ef9d58a91ceb8fd3ba4efd5dca62",
+      "lines": 151,
+      "sourceImportReachable": false
+    },
+    {
+      "path": "apps/web/src/lib/directArweave/network.ts",
+      "sha256": "abe9b9f9b167d629c015208380ff1287071835222922b96770283fc62516fee8",
+      "lines": 138,
+      "sourceImportReachable": true
+    },
+    {
+      "path": "apps/web/src/lib/directArweave/nodePreference.ts",
+      "sha256": "95f37a5150e561d729e705c76591d135899d05b3d46cf3505efb5528df189818",
+      "lines": 61,
+      "sourceImportReachable": true
+    },
+    {
+      "path": "apps/web/src/lib/directArweave/receipt.ts",
+      "sha256": "fe14ed73595f837907b2e3af702d3c48f0fdc81a1959284894dacade358775ce",
+      "lines": 82,
+      "sourceImportReachable": false
+    },
+    {
+      "path": "apps/web/src/lib/directArweave/transaction.ts",
+      "sha256": "116707e1e6c1e3fc9e45730675e2fdac06e80bafcd77cf362637ca518b08c447",
+      "lines": 91,
+      "sourceImportReachable": true
+    },
+    {
+      "path": "apps/web/src/lib/directArweave/types.ts",
+      "sha256": "453235310213533528834239c3f88759e8b8b39468b1073ed578ad793539f1c1",
+      "lines": 81,
+      "sourceImportReachable": false
+    },
+    {
+      "path": "apps/web/src/lib/download.ts",
+      "sha256": "867493976fdf629fc0606ce37d90dac9da585eb51092238c811f2d4d4754d0d7",
+      "lines": 22,
+      "sourceImportReachable": true
+    },
+    {
+      "path": "apps/web/src/lib/draftStorage.ts",
+      "sha256": "8d9b486abbe926a6fdad388e4d3c1137026ff2fdbf938b3eb0e712b2c5c69026",
+      "lines": 24,
+      "sourceImportReachable": true
+    },
+    {
+      "path": "apps/web/src/lib/fund/client.ts",
+      "sha256": "7905dc6191676c9beb873f1a5668dd67554087b00254d06f6bbbe3c88abb117d",
+      "lines": 56,
+      "sourceImportReachable": true
+    },
+    {
+      "path": "apps/web/src/lib/fund/journal.ts",
+      "sha256": "4e1a3a37f232b3071f2473e89db2e9f74d7bac84503accce1ac71bd509a82d4f",
+      "lines": 302,
+      "sourceImportReachable": true
+    },
+    {
+      "path": "apps/web/src/lib/fund/preference.ts",
+      "sha256": "3081007f45909622b19f3448a72175d227ba8aeaceaa11f422cf1bfc0fed3844",
+      "lines": 15,
+      "sourceImportReachable": true
+    },
+    {
+      "path": "apps/web/src/lib/fund/status.ts",
+      "sha256": "640459a64ae1b006d1a7360d03b716fe6e29f6385848263aa69d2ac30bd60278",
+      "lines": 93,
+      "sourceImportReachable": true
+    },
+    {
+      "path": "apps/web/src/lib/guide.ts",
+      "sha256": "69bd6ba7e6bcfdc905396b59496536e7a81e921f81bc988e4014b6eb4e24016a",
+      "lines": 252,
+      "sourceImportReachable": true
+    },
+    {
+      "path": "apps/web/src/lib/i18n/I18nProvider.tsx",
+      "sha256": "93d6c11d9c82dd49180559aaa223d10f12a611bb666a5e880a6d7009936d5980",
+      "lines": 45,
+      "sourceImportReachable": true
+    },
+    {
+      "path": "apps/web/src/lib/i18n/landing.ts",
+      "sha256": "c4a7b05f25af636c05d92239352b31a001ed39a54f263d75ac223f1cef9b66c0",
+      "lines": 53,
+      "sourceImportReachable": true
+    },
+    {
+      "path": "apps/web/src/lib/i18n/locale.ts",
+      "sha256": "7c39be9de09be85bd769670e3b0edfee6c9e63b239bb7c08ffc1fe27a41c3fa1",
+      "lines": 79,
+      "sourceImportReachable": true
+    },
+    {
+      "path": "apps/web/src/lib/i18n/messages.ts",
+      "sha256": "b1cb1dbc2e3b7bfeaa2e385a8e8f6dbebc11dede58afae882daf7155502290a9",
+      "lines": 1706,
+      "sourceImportReachable": true
+    },
+    {
+      "path": "apps/web/src/lib/i18n/pdf.ts",
+      "sha256": "5e58056ab3ec1eccb75b1b58e21f9ea54738518f5b6a65e248af09276850e4ea",
+      "lines": 117,
+      "sourceImportReachable": true
+    },
+    {
+      "path": "apps/web/src/lib/independentBackup.ts",
+      "sha256": "ab007af709eabe5cc2bdb781532e3acf2f5791d5efe1b8dca2037841c69ca77c",
+      "lines": 65,
+      "sourceImportReachable": false
+    },
+    {
+      "path": "apps/web/src/lib/independentDiscovery.ts",
+      "sha256": "17bc753b65e4066a5c1bca7403f918142a3a3356efea266e4a1a1c3782efc400",
+      "lines": 44,
+      "sourceImportReachable": true
+    },
+    {
+      "path": "apps/web/src/lib/independentFinalization.ts",
+      "sha256": "859efda7aacfbcc4c17b4e2f3795f0c74ac891a1bd9a6b95ef4e3b57b40b9acc",
+      "lines": 78,
+      "sourceImportReachable": false
+    },
+    {
+      "path": "apps/web/src/lib/independentMessages.ts",
+      "sha256": "040be0be9ff5eeae4c3f920353a08e472c547bf17429a650c4c209a0459af7c4",
+      "lines": 125,
+      "sourceImportReachable": false
+    },
+    {
+      "path": "apps/web/src/lib/independentVault.ts",
+      "sha256": "b078c4a78c091bd3054eb53843bcc0515005a3d148dfe3df2791427edfef1347",
+      "lines": 142,
+      "sourceImportReachable": false
+    },
+    {
+      "path": "apps/web/src/lib/kinship.ts",
+      "sha256": "9da0244248988d079a02fdf24d1f2d3049048cc978b558998d142c533579830a",
+      "lines": 183,
+      "sourceImportReachable": true
+    },
+    {
+      "path": "apps/web/src/lib/lastScreen.ts",
+      "sha256": "dc6ea544115ee99369bf332d22a66686b21456b24bb711b655f1d2000019a95b",
+      "lines": 26,
+      "sourceImportReachable": true
+    },
+    {
+      "path": "apps/web/src/lib/legacyPreservationGuard.ts",
+      "sha256": "7d57c692c4fdbf5bbc1571ccdeb2200ef6873fe0852869bd2e93546c8ae7d1a3",
+      "lines": 65,
+      "sourceImportReachable": false
+    },
+    {
+      "path": "apps/web/src/lib/native/arweave.ts",
+      "sha256": "e46ae444de37fd570550b64262cea32bb4bc7d01fddec507d0c92019993fbd07",
+      "lines": 109,
+      "sourceImportReachable": true
+    },
+    {
+      "path": "apps/web/src/lib/native/audit.ts",
+      "sha256": "a43a798b0f68fd1e0c8f2a5853972a9e4c24508ab8d686158d66094731fa94e0",
+      "lines": 39,
+      "sourceImportReachable": true
+    },
+    {
+      "path": "apps/web/src/lib/native/cache.ts",
+      "sha256": "9d39b4bc278373876e43b25272dcc853f3a8c194757f9a4360ce9f30e29c7720",
+      "lines": 21,
+      "sourceImportReachable": true
+    },
+    {
+      "path": "apps/web/src/lib/native/config.ts",
+      "sha256": "ebdedcd8e2da67bb34b00b83354202448bee831cfda49e2d9bf4d774bae6a659",
+      "lines": 91,
+      "sourceImportReachable": true
+    },
+    {
+      "path": "apps/web/src/lib/native/diagnostics.ts",
+      "sha256": "9cb004178f0eb3bb50417986d2ed3d7c4a3314f583efe9dff7cb48ccb90434d3",
+      "lines": 16,
+      "sourceImportReachable": true
+    },
+    {
+      "path": "apps/web/src/lib/native/jobs.ts",
+      "sha256": "1f6b6f9b248b086757bdad4cbc46af039d99da0632a8e73757a2c4a04e0d7c45",
+      "lines": 74,
+      "sourceImportReachable": true
+    },
+    {
+      "path": "apps/web/src/lib/native/payment.ts",
+      "sha256": "f96b44b8d0c90dbc779f463c1e06b4c55f68832d41319869a91fa45926ab8f36",
+      "lines": 123,
+      "sourceImportReachable": true
+    },
+    {
+      "path": "apps/web/src/lib/native/pilot.ts",
+      "sha256": "eb2637ad93cfdd364304d79c71ac8c88779f4867e58af0819e665d8593e39d3d",
+      "lines": 101,
+      "sourceImportReachable": true
+    },
+    {
+      "path": "apps/web/src/lib/native/presentation.ts",
+      "sha256": "d3657b5fedc11fe2809c944915e58475204be913f733e667cdcd6b37f8a17c39",
+      "lines": 15,
+      "sourceImportReachable": true
+    },
+    {
+      "path": "apps/web/src/lib/native/receipt.ts",
+      "sha256": "54e7a1741b0b6bceaa91e81bf00061c4debf45f75b19e45778acaaddf33df8ca",
+      "lines": 16,
+      "sourceImportReachable": true
+    },
+    {
+      "path": "apps/web/src/lib/native/rpc.ts",
+      "sha256": "5ae1897e48388064646ddfbae5a146dd2809a16171a7a9072ccba58855d731aa",
+      "lines": 83,
+      "sourceImportReachable": true
+    },
+    {
+      "path": "apps/web/src/lib/native/session.ts",
+      "sha256": "20820f49a9f8e77c7926175416ab7e8ec48626ff94e6dae37e15487040141488",
+      "lines": 49,
+      "sourceImportReachable": true
+    },
+    {
+      "path": "apps/web/src/lib/native/successor.ts",
+      "sha256": "b268ce7ee5d46353257e9a1b49228724d3347340ede3d2390c5abdd83865a986",
+      "lines": 50,
+      "sourceImportReachable": true
+    },
+    {
+      "path": "apps/web/src/lib/opsDesk/adminLock.ts",
+      "sha256": "a1da5a372d270268b23a6481732a16664c657616b6a71a3892aadf2457106390",
+      "lines": 45,
+      "sourceImportReachable": true
+    },
+    {
+      "path": "apps/web/src/lib/opsDesk/feed.ts",
+      "sha256": "595955826d24864ae3a8815842ed8520f1f64a6a5d259972d80063c17c95af8a",
+      "lines": 104,
+      "sourceImportReachable": true
+    },
+    {
+      "path": "apps/web/src/lib/opsDesk/networkOverview.ts",
+      "sha256": "6f4886cd77278715ebc3c4154270f68b12ab3140f9e7db79d2e9ab9c406205af",
+      "lines": 112,
+      "sourceImportReachable": true
+    },
+    {
+      "path": "apps/web/src/lib/opsDesk/route.ts",
+      "sha256": "102d642c1ebd3b87a272b267bdba110e78dd5688c55cc813c92329c37c07ab71",
+      "lines": 22,
+      "sourceImportReachable": true
+    },
+    {
+      "path": "apps/web/src/lib/opsDesk/store.ts",
+      "sha256": "d90dc13636c98953e71741109ed94944adb10d327daa8afb5bddc04b8d13cc93",
+      "lines": 458,
+      "sourceImportReachable": true
+    },
+    {
+      "path": "apps/web/src/lib/opsDesk/treasury.ts",
+      "sha256": "435e01149a4c0798f548cc5b34d0d760352d7f875227ddfb1301a34d936503dc",
+      "lines": 22,
+      "sourceImportReachable": true
+    },
+    {
+      "path": "apps/web/src/lib/opsDesk/types.ts",
+      "sha256": "bca58fd3dd4141e2c0f8ba5ac34efbcd1c55e7195e4938d7fa3fb32b4e6f5caf",
+      "lines": 75,
+      "sourceImportReachable": false
+    },
+    {
+      "path": "apps/web/src/lib/pdf/classicTreePdf.ts",
+      "sha256": "56dfaf73644f97a502d9285933c70521613d2fe9461039e3359828199c5c3f24",
+      "lines": 243,
+      "sourceImportReachable": true
+    },
+    {
+      "path": "apps/web/src/lib/pdf/filename.ts",
+      "sha256": "ef23287ee2a6644b46b4742d5cb8252f6e7f5fecb01978b7d10818eb234ae0ff",
+      "lines": 3,
+      "sourceImportReachable": true
+    },
+    {
+      "path": "apps/web/src/lib/pdf/font.ts",
+      "sha256": "67afb8e8b044f9a9795be75742a2af5b69f55fca953676d670598ac5cbd907be",
+      "lines": 54,
+      "sourceImportReachable": true
+    },
+    {
+      "path": "apps/web/src/lib/pdf/lineage.ts",
+      "sha256": "2356e2eaa931957d7428957212893615c9542015050bc287b4a3fa0a724e4eda",
+      "lines": 315,
+      "sourceImportReachable": true
+    },
+    {
+      "path": "apps/web/src/lib/pdf/ornaments.ts",
+      "sha256": "7e16b887cb8488c94492653b152d351c30a48afab2d3df1e265f67831a8ffd34",
+      "lines": 501,
+      "sourceImportReachable": true
+    },
+    {
+      "path": "apps/web/src/lib/pdf/poster.ts",
+      "sha256": "6a835f827bfa4330326e4a19551e14b7991ca7942f834af2f701feb88a457d8f",
+      "lines": 93,
+      "sourceImportReachable": true
+    },
+    {
+      "path": "apps/web/src/lib/pdf/shezhirePdf.ts",
+      "sha256": "6c137e8de0a06e5865c17be7a6f72e3f3c6e9a02ed2a412130e841b40d157863",
+      "lines": 494,
+      "sourceImportReachable": true
+    },
+    {
+      "path": "apps/web/src/lib/pdf/shezhireTemplates.ts",
+      "sha256": "69055b985ec7a45fabdb55df28a93f8ccb41cad1466dd1083fc4687de89d2c79",
+      "lines": 31,
+      "sourceImportReachable": true
+    },
+    {
+      "path": "apps/web/src/lib/pdf/textLayout.ts",
+      "sha256": "00c0393365d851a16b2876fc1decc669f4ddf6b22ff7219c124c1f7df1a05780",
+      "lines": 128,
+      "sourceImportReachable": true
+    },
+    {
+      "path": "apps/web/src/lib/pdfRoot.ts",
+      "sha256": "d4d991d54922bf511eaf97bb00b595fad88498f28e04a7ac523ef41d3da3ac76",
+      "lines": 11,
+      "sourceImportReachable": true
+    },
+    {
+      "path": "apps/web/src/lib/pedigree.ts",
+      "sha256": "b86ea67257f8b6c4bb4936d7a0bd9b11c82d2381e1ec54be9bb3106a0ed1708c",
+      "lines": 315,
+      "sourceImportReachable": true
+    },
+    {
+      "path": "apps/web/src/lib/pedigreeFit.ts",
+      "sha256": "6d59c83d4ad9f8b74a71818b75410d462e90dfcaac03bbf181098be8e3735505",
+      "lines": 29,
+      "sourceImportReachable": true
+    },
+    {
+      "path": "apps/web/src/lib/permawebHost.ts",
+      "sha256": "6d91d4961d3edde868e6d82b48a58ae88dec3c705c724b02dfcf5961da308ff3",
+      "lines": 13,
+      "sourceImportReachable": true
+    },
+    {
+      "path": "apps/web/src/lib/preservationContext.independent.ts",
+      "sha256": "51fd1e12a18080500407f92422586d5bca7494a4955575464cac9677fc9083f0",
+      "lines": 18,
+      "sourceImportReachable": false
+    },
+    {
+      "path": "apps/web/src/lib/preservationContext.legacy.ts",
+      "sha256": "7524aea46324c8c61e60348fc78f8660346884fd5bf2aed9be88e924b383f767",
+      "lines": 7,
+      "sourceImportReachable": true
+    },
+    {
+      "path": "apps/web/src/lib/preserveV2/arweave.ts",
+      "sha256": "ec71b8d95ceab167849fc312358ce11ca983c7e0109dc28ac3cbdf220512ae3e",
+      "lines": 168,
+      "sourceImportReachable": true
+    },
+    {
+      "path": "apps/web/src/lib/preserveV2/machine.ts",
+      "sha256": "926c9406e34cf9635f7cb3209fd0b389bf9f8cb864ce8a71cf5f12d498b53de1",
+      "lines": 204,
+      "sourceImportReachable": true
+    },
+    {
+      "path": "apps/web/src/lib/preserveV2/policy.ts",
+      "sha256": "92407be96454c98496ebfd29f04fc0ac755575ad68b4e5608e0910e9877fdf4b",
+      "lines": 64,
+      "sourceImportReachable": true
+    },
+    {
+      "path": "apps/web/src/lib/preserveV2/solana.ts",
+      "sha256": "6c5650b34c44301125bebe67efbe88847d6c4fb749b5240c53b5121234ac5579",
+      "lines": 76,
+      "sourceImportReachable": true
+    },
+    {
+      "path": "apps/web/src/lib/preserveV2/store.ts",
+      "sha256": "58e738924761280bb215db66a67412129a2dfbab5c666d506c1368e4acc011a6",
+      "lines": 96,
+      "sourceImportReachable": true
+    },
+    {
+      "path": "apps/web/src/lib/preserveV2/timeout.ts",
+      "sha256": "999b100e5cc90edf33f7238a707d6cb0dd313a35eb543e7c9fa6108b3e309c80",
+      "lines": 8,
+      "sourceImportReachable": true
+    },
+    {
+      "path": "apps/web/src/lib/preserveV2/types.ts",
+      "sha256": "39ca0b5cfb335f7f749d6736a3a2e537384f8ec78f7b6f520c761dd9e38126ad",
+      "lines": 21,
+      "sourceImportReachable": false
+    },
+    {
+      "path": "apps/web/src/lib/preserveV2/verify.ts",
+      "sha256": "107a954fc41b80a5bb0920c6e6ee21cb45a07623bd980a1b32e07fb849c6b049",
+      "lines": 48,
+      "sourceImportReachable": true
+    },
+    {
+      "path": "apps/web/src/lib/qaTools.ts",
+      "sha256": "9119588dd55f5914fbc39137e7e2446191f0d5c71b571f366be97bd49a5d11b0",
+      "lines": 9,
+      "sourceImportReachable": false
+    },
+    {
+      "path": "apps/web/src/lib/recovery/diagnostics.ts",
+      "sha256": "2b23a0f224caaad787a7dfd56748f361615b2d0f55dfc281c499dd53406c703e",
+      "lines": 3,
+      "sourceImportReachable": true
+    },
+    {
+      "path": "apps/web/src/lib/recovery/discovery.ts",
+      "sha256": "aed4e18d6374386a0211fddc10b925ae1b6647b9d465e3a567a50079c1247f4b",
+      "lines": 29,
+      "sourceImportReachable": true
+    },
+    {
+      "path": "apps/web/src/lib/recovery/errors.ts",
+      "sha256": "039f9a669e196d24ef5d1a679a793a2012a5b4de8dcd5cf43375c49fad1ef499",
+      "lines": 5,
+      "sourceImportReachable": true
+    },
+    {
+      "path": "apps/web/src/lib/recovery/gateways.ts",
+      "sha256": "9ed074eb84e249142ce353daeb7ecb528109c3bea14a90b6755160df255ae046",
+      "lines": 116,
+      "sourceImportReachable": true
+    },
+    {
+      "path": "apps/web/src/lib/recovery/head.ts",
+      "sha256": "b31fd12b802799c352caeae9aa0f6d6baad3c17391a5982740e5fcc98cd680e3",
+      "lines": 8,
+      "sourceImportReachable": true
+    },
+    {
+      "path": "apps/web/src/lib/recovery/historicalNative.ts",
+      "sha256": "5fb3561573cb135d070a8a5f1cf41a919beb199fc9a5bb8c55f76b1c2e0ba7b2",
+      "lines": 123,
+      "sourceImportReachable": true
+    },
+    {
+      "path": "apps/web/src/lib/recovery/providers/graphqlVaultProvider.ts",
+      "sha256": "9af1af3d569d8a9b9da14e40e84bce65d5e08de9887565c4361eca9667cee83c",
+      "lines": 28,
+      "sourceImportReachable": true
+    },
+    {
+      "path": "apps/web/src/lib/recovery/providers/legacyLocatorProvider.ts",
+      "sha256": "bff951bf1020fc3259d703800783c0e456b6c505fc03036cb627e422a28bb04d",
+      "lines": 13,
+      "sourceImportReachable": true
+    },
+    {
+      "path": "apps/web/src/lib/recovery/providers/localHintProvider.ts",
+      "sha256": "d9c61471865de6f84f5f9d7bebfe70b3fce4037c055bf6ed55cca8591ffa983c",
+      "lines": 10,
+      "sourceImportReachable": true
+    },
+    {
+      "path": "apps/web/src/lib/recovery/recover.ts",
+      "sha256": "d678d164324e4dbc45c1fffcc7023c24ff7e8de7c934eb53925c78383346ac1b",
+      "lines": 56,
+      "sourceImportReachable": true
+    },
+    {
+      "path": "apps/web/src/lib/recovery/retrieve.ts",
+      "sha256": "20c88a7fbc4de7b48f61ab7010d3086d24f6744b16340cd5b2bb5994dc85a239",
+      "lines": 150,
+      "sourceImportReachable": true
+    },
+    {
+      "path": "apps/web/src/lib/recovery/types.ts",
+      "sha256": "95a880d41e287a46c8e6dde8dc9b5bb87c60f3aec3cd1742eae2a51037f26a48",
+      "lines": 16,
+      "sourceImportReachable": false
+    },
+    {
+      "path": "apps/web/src/lib/recovery/verify.ts",
+      "sha256": "34e9ed23451b8d74b4b05d3192fa852b23d48b1709e7a55f06001b57e1ca9ece",
+      "lines": 23,
+      "sourceImportReachable": true
+    },
+    {
+      "path": "apps/web/src/lib/siteMirror.ts",
+      "sha256": "178c3c73e7783ebe1dfeb3e3889f067fe55bf11dd8300a9d611942d9e1f57058",
+      "lines": 18,
+      "sourceImportReachable": false
+    },
+    {
+      "path": "apps/web/src/lib/solana/client.ts",
+      "sha256": "e2346e7ff80f8533f59fd17419f359385add785ea28f48bd05f2d68ad37165e3",
+      "lines": 57,
+      "sourceImportReachable": true
+    },
+    {
+      "path": "apps/web/src/lib/solana/journal.ts",
+      "sha256": "8b51fa8672652e0c205b6c227bbf738c9b67a65f6ea03d99dcadb7fb31eae097",
+      "lines": 80,
+      "sourceImportReachable": true
+    },
+    {
+      "path": "apps/web/src/lib/solana/messages.ts",
+      "sha256": "b1a7d911581fc77ef3b02c8ecb6767bd3099c4edbde95ef1651ca46135d2ca45",
+      "lines": 130,
+      "sourceImportReachable": true
+    },
+    {
+      "path": "apps/web/src/lib/solana/policy.ts",
+      "sha256": "8c568b7031388452b97cebc107cfb4eea87f9150c92bd062bc1d469969b94335",
+      "lines": 73,
+      "sourceImportReachable": true
+    },
+    {
+      "path": "apps/web/src/lib/solana/receipt.ts",
+      "sha256": "8099577685d1e775ae8e1c5bed30b022aaf73d3774dee8f13f1b1cfa7a4458cb",
+      "lines": 85,
+      "sourceImportReachable": true
+    },
+    {
+      "path": "apps/web/src/lib/solana/upload.ts",
+      "sha256": "d7f585bfadbc53afae127435c2ac961f6c4bb4d7cb64c211f9ca36a86176235a",
+      "lines": 164,
+      "sourceImportReachable": true
+    },
+    {
+      "path": "apps/web/src/lib/sponsor/client.ts",
+      "sha256": "836ef44bb148638fed644259031270800c384528b5bf74df869ab52e07d48b26",
+      "lines": 127,
+      "sourceImportReachable": true
+    },
+    {
+      "path": "apps/web/src/lib/sponsor/config.ts",
+      "sha256": "839706e4a5150ed0be883e0dac4ad19233726ded9a524aa7cef86799c5139a9c",
+      "lines": 36,
+      "sourceImportReachable": true
+    },
+    {
+      "path": "apps/web/src/lib/storageQuota.ts",
+      "sha256": "4ef8f93bb48457dc60c5ebd89726f811e92bf19ed3f54aa967b024352208bde2",
+      "lines": 25,
+      "sourceImportReachable": true
+    },
+    {
+      "path": "apps/web/src/lib/treeEngine.ts",
+      "sha256": "9a3fae9c654f3c017b4485f3c2a45237bf87f2d71ff88b22697ed40940a1c75a",
+      "lines": 214,
+      "sourceImportReachable": true
+    },
+    {
+      "path": "apps/web/src/lib/treeJson.ts",
+      "sha256": "c7ceda978df1174f98b6b99d5297ba3f1300d0879c223135b722b268aa7c5a64",
+      "lines": 249,
+      "sourceImportReachable": true
+    },
+    {
+      "path": "apps/web/src/lib/types.ts",
+      "sha256": "1b26c4d6bf198b40d3122259b71b70b53abcf8f05704dc083a8bc93c9d9ffeab",
+      "lines": 77,
+      "sourceImportReachable": false
+    },
+    {
+      "path": "apps/web/src/lib/vaultSession/localArchive.ts",
+      "sha256": "71c5616d0c9e1487d0d899dba7acd5447f0079321730c3d6dcfee19767be9e75",
+      "lines": 63,
+      "sourceImportReachable": true
+    },
+    {
+      "path": "apps/web/src/lib/vaultSession/selection.ts",
+      "sha256": "005fb5ff2f7e7ef8a066cb5f5385125df394f670be810d07badd33d824175479",
+      "lines": 137,
+      "sourceImportReachable": true
+    },
+    {
+      "path": "apps/web/src/lib/vaultSession/session.ts",
+      "sha256": "533555ad5a1b1fc45fbc26438446e2f7b627266c754ead0b8334cf7df4d4fbb3",
+      "lines": 128,
+      "sourceImportReachable": true
+    },
+    {
+      "path": "apps/web/src/lib/zhuzRu.ts",
+      "sha256": "3d2773cab72b813a91491fdd41de0200e35aacd6e85ee0df973048fb0e0e76b3",
+      "lines": 79,
+      "sourceImportReachable": true
+    }
+  ],
+  "modules": [
+    {
+      "path": "apps/sponsor/src/checkout/paymentValidator.ts",
+      "sha256": "e4d6ed099d49dd08caef18f5bc69a955d9523cc35166748fc4bccaa88fdd50fc",
+      "bytes": 6048,
+      "edges": [
+        {
+          "specifier": "../../../../packages/checkout/amounts",
+          "kind": "static",
+          "line": 1,
+          "target": "packages/checkout/amounts.ts"
+        },
+        {
+          "specifier": "../../../../packages/checkout/order",
+          "kind": "static",
+          "line": 2,
+          "target": "packages/checkout/order.ts"
+        },
+        {
+          "specifier": "../../../../packages/checkout/paid",
+          "kind": "static",
+          "line": 3,
+          "target": "packages/checkout/paid.ts"
+        },
+        {
+          "specifier": "../../../../packages/checkout/order",
+          "kind": "type-only",
+          "line": 4,
+          "target": "packages/checkout/order.ts"
+        }
+      ]
+    },
+    {
+      "path": "apps/sponsor/src/checkout/rpcDecoder.ts",
+      "sha256": "9e3c29d1d4885615aae95a515c87ff5b2070df04129756b4f7284f0ae8f04643",
+      "bytes": 10826,
+      "edges": [
+        {
+          "specifier": "../../../../packages/checkout/order",
+          "kind": "static",
+          "line": 1,
+          "target": "packages/checkout/order.ts"
+        },
+        {
+          "specifier": "../../../../packages/checkout/amounts",
+          "kind": "static",
+          "line": 2,
+          "target": "packages/checkout/amounts.ts"
+        },
+        {
+          "specifier": "./paymentValidator",
+          "kind": "type-only",
+          "line": 3,
+          "target": "apps/sponsor/src/checkout/paymentValidator.ts"
+        },
+        {
+          "specifier": "./rpcErrors",
+          "kind": "static",
+          "line": 4,
+          "target": "apps/sponsor/src/checkout/rpcErrors.ts"
+        },
+        {
+          "specifier": "../../../../packages/checkout/paid",
+          "kind": "static",
+          "line": 5,
+          "target": "packages/checkout/paid.ts"
+        }
+      ]
+    },
+    {
+      "path": "apps/sponsor/src/checkout/rpcErrors.ts",
+      "sha256": "8d830524882e7e1e15e3a1d2e19b7515f78645f560dfacbbfe720331db166ecc",
+      "bytes": 647,
+      "edges": []
+    },
+    {
+      "path": "apps/sponsor/src/checkout/rpcReader.ts",
+      "sha256": "42bb8aa37735dba74df122a64edd1d39cda43e23a8f33a2eabbef3bf5e8c9f99",
+      "bytes": 12060,
+      "edges": [
+        {
+          "specifier": "../../../../packages/checkout/order",
+          "kind": "static",
+          "line": 1,
+          "target": "packages/checkout/order.ts"
+        },
+        {
+          "specifier": "../../../../packages/checkout/paid",
+          "kind": "static",
+          "line": 2,
+          "target": "packages/checkout/paid.ts"
+        },
+        {
+          "specifier": "./paymentValidator",
+          "kind": "static",
+          "line": 3,
+          "target": "apps/sponsor/src/checkout/paymentValidator.ts"
+        },
+        {
+          "specifier": "./reconciliation",
+          "kind": "type-only",
+          "line": 4,
+          "target": "apps/sponsor/src/checkout/reconciliation.ts"
+        },
+        {
+          "specifier": "./rpcDecoder",
+          "kind": "static",
+          "line": 5,
+          "target": "apps/sponsor/src/checkout/rpcDecoder.ts"
+        },
+        {
+          "specifier": "./rpcErrors",
+          "kind": "static",
+          "line": 6,
+          "target": "apps/sponsor/src/checkout/rpcErrors.ts"
+        },
+        {
+          "specifier": "../../../../packages/checkout/rpcJson",
+          "kind": "static",
+          "line": 7,
+          "target": "packages/checkout/rpcJson.ts"
+        }
+      ]
+    },
+    {
+      "path": "apps/web/src/App.tsx",
+      "sha256": "9df7ff2b194a82f55a4d7bd3270f92eeeaf7d1037d067c87a1523d4fe15ca111",
+      "bytes": 6280,
+      "edges": [
+        {
+          "specifier": "react",
+          "kind": "static",
+          "line": 1,
+          "external": true,
+          "unresolved": false
+        },
+        {
+          "specifier": "./components/Welcome",
+          "kind": "static",
+          "line": 2,
+          "target": "apps/web/src/components/Welcome.tsx"
+        },
+        {
+          "specifier": "./components/Workspace",
+          "kind": "static",
+          "line": 3,
+          "target": "apps/web/src/components/Workspace.tsx"
+        },
+        {
+          "specifier": "./components/RestoreSeed",
+          "kind": "static",
+          "line": 4,
+          "target": "apps/web/src/components/RestoreSeed.tsx"
+        },
+        {
+          "specifier": "./components/NativeCheckoutPanel",
+          "kind": "static",
+          "line": 5,
+          "target": "apps/web/src/components/NativeCheckoutPanel.tsx"
+        },
+        {
+          "specifier": "./components/PreservationV2",
+          "kind": "static",
+          "line": 6,
+          "target": "apps/web/src/components/PreservationV2.tsx"
+        },
+        {
+          "specifier": "./components/NativeAdminDesk",
+          "kind": "static",
+          "line": 7,
+          "target": "apps/web/src/components/NativeAdminDesk.tsx"
+        },
+        {
+          "specifier": "./components/AdminDesk",
+          "kind": "static",
+          "line": 8,
+          "target": "apps/web/src/components/AdminDesk.tsx"
+        },
+        {
+          "specifier": "./components/FundAdmin",
+          "kind": "static",
+          "line": 9,
+          "target": "apps/web/src/components/FundAdmin.tsx"
+        },
+        {
+          "specifier": "./lib/opsDesk/route",
+          "kind": "static",
+          "line": 10,
+          "target": "apps/web/src/lib/opsDesk/route.ts"
+        },
+        {
+          "specifier": "./lib/types",
+          "kind": "type-only",
+          "line": 11,
+          "target": "apps/web/src/lib/types.ts"
+        },
+        {
+          "specifier": "./lib/draftStorage",
+          "kind": "static",
+          "line": 12,
+          "target": "apps/web/src/lib/draftStorage.ts"
+        },
+        {
+          "specifier": "./lib/treeJson",
+          "kind": "static",
+          "line": 13,
+          "target": "apps/web/src/lib/treeJson.ts"
+        },
+        {
+          "specifier": "./lib/guide",
+          "kind": "static",
+          "line": 14,
+          "target": "apps/web/src/lib/guide.ts"
+        },
+        {
+          "specifier": "./lib/lastScreen",
+          "kind": "static",
+          "line": 22,
+          "target": "apps/web/src/lib/lastScreen.ts"
+        }
+      ]
+    },
+    {
+      "path": "apps/web/src/assets/fonts/NotoSans-Bold.ttf",
+      "sha256": "c976e4b1b99edc88775377fcc21692ca4bfa46b6d6ca6522bfda505b28ff9d6a",
+      "bytes": 575740,
+      "edges": []
+    },
+    {
+      "path": "apps/web/src/assets/fonts/NotoSans-Regular.ttf",
+      "sha256": "b85c38ecea8a7cfb39c24e395a4007474fa5a4fc864f6ee33309eb4948d232d5",
+      "bytes": 569208,
+      "edges": []
+    },
+    {
+      "path": "apps/web/src/components/AddPersonModal.tsx",
+      "sha256": "e87cb10533134ec12aeefa306e6791e240c3a243bbd4986f7319da1f316148d8",
+      "bytes": 2796,
+      "edges": [
+        {
+          "specifier": "react",
+          "kind": "static",
+          "line": 1,
+          "external": true,
+          "unresolved": false
+        },
+        {
+          "specifier": "react",
+          "kind": "type-only",
+          "line": 2,
+          "external": true,
+          "unresolved": false
+        },
+        {
+          "specifier": "../lib/types",
+          "kind": "type-only",
+          "line": 3,
+          "target": "apps/web/src/lib/types.ts"
+        },
+        {
+          "specifier": "../lib/i18n/I18nProvider",
+          "kind": "static",
+          "line": 4,
+          "target": "apps/web/src/lib/i18n/I18nProvider.tsx"
+        }
+      ]
+    },
+    {
+      "path": "apps/web/src/components/AdminDesk.tsx",
+      "sha256": "6c0b02ccdfc16acb069208c561f576f5a77f627fa09144adf25086085a40abc8",
+      "bytes": 25466,
+      "edges": [
+        {
+          "specifier": "react",
+          "kind": "static",
+          "line": 1,
+          "external": true,
+          "unresolved": false
+        },
+        {
+          "specifier": "../lib/i18n/I18nProvider",
+          "kind": "static",
+          "line": 2,
+          "target": "apps/web/src/lib/i18n/I18nProvider.tsx"
+        },
+        {
+          "specifier": "../lib/i18n/messages",
+          "kind": "static",
+          "line": 3,
+          "target": "apps/web/src/lib/i18n/messages.ts"
+        },
+        {
+          "specifier": "./LanguageSwitch",
+          "kind": "static",
+          "line": 4,
+          "target": "apps/web/src/components/LanguageSwitch.tsx"
+        },
+        {
+          "specifier": "../lib/opsDesk/feed",
+          "kind": "static",
+          "line": 5,
+          "target": "apps/web/src/lib/opsDesk/feed.ts"
+        },
+        {
+          "specifier": "../lib/opsDesk/networkOverview",
+          "kind": "static",
+          "line": 6,
+          "target": "apps/web/src/lib/opsDesk/networkOverview.ts"
+        },
+        {
+          "specifier": "../lib/opsDesk/store",
+          "kind": "static",
+          "line": 7,
+          "target": "apps/web/src/lib/opsDesk/store.ts"
+        },
+        {
+          "specifier": "../lib/opsDesk/adminLock",
+          "kind": "static",
+          "line": 23,
+          "target": "apps/web/src/lib/opsDesk/adminLock.ts"
+        },
+        {
+          "specifier": "../lib/opsDesk/treasury",
+          "kind": "static",
+          "line": 24,
+          "target": "apps/web/src/lib/opsDesk/treasury.ts"
+        },
+        {
+          "specifier": "../lib/opsDesk/types",
+          "kind": "type-only",
+          "line": 25,
+          "target": "apps/web/src/lib/opsDesk/types.ts"
+        },
+        {
+          "specifier": "./PreservationV2Diagnostics",
+          "kind": "static",
+          "line": 26,
+          "target": "apps/web/src/components/PreservationV2Diagnostics.tsx"
+        },
+        {
+          "specifier": "./FundAdmin",
+          "kind": "static",
+          "line": 27,
+          "target": "apps/web/src/components/FundAdmin.tsx"
+        }
+      ]
+    },
+    {
+      "path": "apps/web/src/components/DateTextInput.tsx",
+      "sha256": "ca930728543b696053ead806cb7abcd802aa5c99f3d7548625d63766d9e51077",
+      "bytes": 1162,
+      "edges": [
+        {
+          "specifier": "react",
+          "kind": "type-only",
+          "line": 1,
+          "external": true,
+          "unresolved": false
+        },
+        {
+          "specifier": "../lib/dates",
+          "kind": "static",
+          "line": 2,
+          "target": "apps/web/src/lib/dates.ts"
+        }
+      ]
+    },
+    {
+      "path": "apps/web/src/components/ErrorBoundary.tsx",
+      "sha256": "fdb16b3550b79c5b0b1de5caeb9819c01366ee92036b3a8b0660464ff2a5220b",
+      "bytes": 2609,
+      "edges": [
+        {
+          "specifier": "react",
+          "kind": "static",
+          "line": 1,
+          "external": true,
+          "unresolved": false
+        },
+        {
+          "specifier": "../lib/draftStorage",
+          "kind": "static",
+          "line": 2,
+          "target": "apps/web/src/lib/draftStorage.ts"
+        },
+        {
+          "specifier": "../lib/lastScreen",
+          "kind": "static",
+          "line": 3,
+          "target": "apps/web/src/lib/lastScreen.ts"
+        },
+        {
+          "specifier": "../lib/guide",
+          "kind": "static",
+          "line": 4,
+          "target": "apps/web/src/lib/guide.ts"
+        },
+        {
+          "specifier": "../lib/treeJson",
+          "kind": "static",
+          "line": 5,
+          "target": "apps/web/src/lib/treeJson.ts"
+        },
+        {
+          "specifier": "../lib/i18n/locale",
+          "kind": "static",
+          "line": 6,
+          "target": "apps/web/src/lib/i18n/locale.ts"
+        },
+        {
+          "specifier": "../lib/i18n/messages",
+          "kind": "static",
+          "line": 7,
+          "target": "apps/web/src/lib/i18n/messages.ts"
+        }
+      ]
+    },
+    {
+      "path": "apps/web/src/components/FundAdmin.tsx",
+      "sha256": "41d3051ff88758466f333e1004f5b12b785744f4e2a27f07602fdeb1bb641a2b",
+      "bytes": 10509,
+      "edges": [
+        {
+          "specifier": "react",
+          "kind": "static",
+          "line": 1,
+          "external": true,
+          "unresolved": false
+        },
+        {
+          "specifier": "./SolanaRecipientsAdmin",
+          "kind": "static",
+          "line": 2,
+          "target": "apps/web/src/components/SolanaRecipientsAdmin.tsx"
+        },
+        {
+          "specifier": "../lib/fund/client",
+          "kind": "static",
+          "line": 3,
+          "target": "apps/web/src/lib/fund/client.ts"
+        }
+      ]
+    },
+    {
+      "path": "apps/web/src/components/LanguageSwitch.tsx",
+      "sha256": "63b8a5cc45948705c254d911392cc9e5cef9a35872f36147f418fa2905ffff6b",
+      "bytes": 1881,
+      "edges": [
+        {
+          "specifier": "react",
+          "kind": "static",
+          "line": 1,
+          "external": true,
+          "unresolved": false
+        },
+        {
+          "specifier": "../lib/i18n/locale",
+          "kind": "static",
+          "line": 2,
+          "target": "apps/web/src/lib/i18n/locale.ts"
+        },
+        {
+          "specifier": "../lib/i18n/I18nProvider",
+          "kind": "static",
+          "line": 3,
+          "target": "apps/web/src/lib/i18n/I18nProvider.tsx"
+        }
+      ]
+    },
+    {
+      "path": "apps/web/src/components/NativeAdminDesk.tsx",
+      "sha256": "23f23ae7d70e7b2c60e7780122aa2622c5afa3be2397abd52c1b72e5a9c06f34",
+      "bytes": 84046,
+      "edges": [
+        {
+          "specifier": "../lib/native/diagnostics",
+          "kind": "static",
+          "line": 1,
+          "target": "apps/web/src/lib/native/diagnostics.ts"
+        },
+        {
+          "specifier": "../lib/native/presentation",
+          "kind": "static",
+          "line": 2,
+          "target": "apps/web/src/lib/native/presentation.ts"
+        },
+        {
+          "specifier": "../lib/native/pilot",
+          "kind": "static",
+          "line": 3,
+          "target": "apps/web/src/lib/native/pilot.ts"
+        },
+        {
+          "specifier": "react",
+          "kind": "static",
+          "line": 4,
+          "external": true,
+          "unresolved": false
+        },
+        {
+          "specifier": "./LanguageSwitch",
+          "kind": "static",
+          "line": 5,
+          "target": "apps/web/src/components/LanguageSwitch.tsx"
+        },
+        {
+          "specifier": "../lib/download",
+          "kind": "static",
+          "line": 6,
+          "target": "apps/web/src/lib/download.ts"
+        },
+        {
+          "specifier": "../lib/native/config",
+          "kind": "static",
+          "line": 7,
+          "target": "apps/web/src/lib/native/config.ts"
+        },
+        {
+          "specifier": "../lib/native/cache",
+          "kind": "static",
+          "line": 8,
+          "target": "apps/web/src/lib/native/cache.ts"
+        },
+        {
+          "specifier": "../lib/native/session",
+          "kind": "static",
+          "line": 9,
+          "target": "apps/web/src/lib/native/session.ts"
+        },
+        {
+          "specifier": "../lib/native/payment",
+          "kind": "static",
+          "line": 10,
+          "target": "apps/web/src/lib/native/payment.ts"
+        },
+        {
+          "specifier": "../lib/native/jobs",
+          "kind": "static",
+          "line": 11,
+          "target": "apps/web/src/lib/native/jobs.ts"
+        },
+        {
+          "specifier": "../lib/native/arweave",
+          "kind": "static",
+          "line": 12,
+          "target": "apps/web/src/lib/native/arweave.ts"
+        },
+        {
+          "specifier": "../lib/native/rpc",
+          "kind": "static",
+          "line": 13,
+          "target": "apps/web/src/lib/native/rpc.ts"
+        },
+        {
+          "specifier": "../../../../packages/checkout/amounts",
+          "kind": "static",
+          "line": 14,
+          "target": "packages/checkout/amounts.ts"
+        },
+        {
+          "specifier": "../../../../packages/protocol/wire",
+          "kind": "static",
+          "line": 15,
+          "target": "packages/protocol/wire.ts"
+        },
+        {
+          "specifier": "../lib/crypto/envelope",
+          "kind": "static",
+          "line": 16,
+          "target": "apps/web/src/lib/crypto/envelope.ts"
+        },
+        {
+          "specifier": "../lib/native/audit",
+          "kind": "static",
+          "line": 17,
+          "target": "apps/web/src/lib/native/audit.ts"
+        },
+        {
+          "specifier": "../../../../packages/checkout/order",
+          "kind": "static",
+          "line": 18,
+          "target": "packages/checkout/order.ts"
+        },
+        {
+          "specifier": "../lib/native/receipt",
+          "kind": "static",
+          "line": 19,
+          "target": "apps/web/src/lib/native/receipt.ts"
+        }
+      ]
+    },
+    {
+      "path": "apps/web/src/components/NativeCheckoutPanel.tsx",
+      "sha256": "5469d4624d605967610e2c4932f97a2331ac5f64d9bd6525ce24ffdd6990d491",
+      "bytes": 32604,
+      "edges": [
+        {
+          "specifier": "../lib/native/successor",
+          "kind": "static",
+          "line": 1,
+          "target": "apps/web/src/lib/native/successor.ts"
+        },
+        {
+          "specifier": "../lib/native/diagnostics",
+          "kind": "static",
+          "line": 2,
+          "target": "apps/web/src/lib/native/diagnostics.ts"
+        },
+        {
+          "specifier": "../lib/native/presentation",
+          "kind": "static",
+          "line": 3,
+          "target": "apps/web/src/lib/native/presentation.ts"
+        },
+        {
+          "specifier": "../lib/crypto/envelope",
+          "kind": "static",
+          "line": 4,
+          "target": "apps/web/src/lib/crypto/envelope.ts"
+        },
+        {
+          "specifier": "../lib/solana/policy",
+          "kind": "static",
+          "line": 5,
+          "target": "apps/web/src/lib/solana/policy.ts"
+        },
+        {
+          "specifier": "../lib/native/rpc",
+          "kind": "static",
+          "line": 6,
+          "target": "apps/web/src/lib/native/rpc.ts"
+        },
+        {
+          "specifier": "../lib/native/arweave",
+          "kind": "static",
+          "line": 7,
+          "target": "apps/web/src/lib/native/arweave.ts"
+        },
+        {
+          "specifier": "../lib/native/pilot",
+          "kind": "static",
+          "line": 8,
+          "target": "apps/web/src/lib/native/pilot.ts"
+        },
+        {
+          "specifier": "react",
+          "kind": "static",
+          "line": 9,
+          "external": true,
+          "unresolved": false
+        },
+        {
+          "specifier": "../lib/crypto/encrypt",
+          "kind": "type-only",
+          "line": 10,
+          "target": "apps/web/src/lib/crypto/encrypt.ts"
+        },
+        {
+          "specifier": "../lib/crypto/vault",
+          "kind": "static",
+          "line": 11,
+          "target": "apps/web/src/lib/crypto/vault.ts"
+        },
+        {
+          "specifier": "../lib/download",
+          "kind": "static",
+          "line": 12,
+          "target": "apps/web/src/lib/download.ts"
+        },
+        {
+          "specifier": "../lib/native/cache",
+          "kind": "static",
+          "line": 13,
+          "target": "apps/web/src/lib/native/cache.ts"
+        },
+        {
+          "specifier": "../lib/native/session",
+          "kind": "static",
+          "line": 14,
+          "target": "apps/web/src/lib/native/session.ts"
+        },
+        {
+          "specifier": "../lib/native/config",
+          "kind": "type-only",
+          "line": 15,
+          "target": "apps/web/src/lib/native/config.ts"
+        },
+        {
+          "specifier": "../lib/native/jobs",
+          "kind": "static",
+          "line": 16,
+          "target": "apps/web/src/lib/native/jobs.ts"
+        },
+        {
+          "specifier": "../lib/native/payment",
+          "kind": "static",
+          "line": 17,
+          "target": "apps/web/src/lib/native/payment.ts"
+        },
+        {
+          "specifier": "../../../../packages/checkout/amounts",
+          "kind": "static",
+          "line": 18,
+          "target": "packages/checkout/amounts.ts"
+        }
+      ]
+    },
+    {
+      "path": "apps/web/src/components/PaidSaveHistory.tsx",
+      "sha256": "31ddf5be941c9c44ca96344b14f429032ec23bccb5753cd966302e7b0288b858",
+      "bytes": 2483,
+      "edges": [
+        {
+          "specifier": "react",
+          "kind": "static",
+          "line": 1,
+          "external": true,
+          "unresolved": false
+        },
+        {
+          "specifier": "../lib/checkout/paidJournal",
+          "kind": "static",
+          "line": 2,
+          "target": "apps/web/src/lib/checkout/paidJournal.ts"
+        },
+        {
+          "specifier": "../lib/checkout/paidAvailabilityMessages",
+          "kind": "static",
+          "line": 3,
+          "target": "apps/web/src/lib/checkout/paidAvailabilityMessages.ts"
+        },
+        {
+          "specifier": "../lib/checkout/paidTypes",
+          "kind": "type-only",
+          "line": 4,
+          "target": "apps/web/src/lib/checkout/paidTypes.ts"
+        },
+        {
+          "specifier": "../lib/i18n/I18nProvider",
+          "kind": "static",
+          "line": 5,
+          "target": "apps/web/src/lib/i18n/I18nProvider.tsx"
+        },
+        {
+          "specifier": "../lib/i18n/messages",
+          "kind": "static",
+          "line": 6,
+          "target": "apps/web/src/lib/i18n/messages.ts"
+        },
+        {
+          "specifier": "./PaidSolanaFlow",
+          "kind": "static",
+          "line": 7,
+          "target": "apps/web/src/components/PaidSolanaFlow.tsx"
+        },
+        {
+          "specifier": "./PermawebMigrationNotice",
+          "kind": "static",
+          "line": 8,
+          "target": "apps/web/src/components/PermawebMigrationNotice.tsx"
+        }
+      ]
+    },
+    {
+      "path": "apps/web/src/components/PaidSolanaFlow.tsx",
+      "sha256": "297bc9f2a417b23ad2957af387ad2ef28363064d84577675a9e7579f0050a31d",
+      "bytes": 55851,
+      "edges": [
+        {
+          "specifier": "react",
+          "kind": "static",
+          "line": 1,
+          "external": true,
+          "unresolved": false
+        },
+        {
+          "specifier": "@ardrive/turbo-sdk/web",
+          "kind": "type-only",
+          "line": 2,
+          "external": true,
+          "unresolved": false
+        },
+        {
+          "specifier": "../../../../packages/checkout/amounts",
+          "kind": "static",
+          "line": 3,
+          "target": "packages/checkout/amounts.ts"
+        },
+        {
+          "specifier": "../lib/crypto/vault",
+          "kind": "static",
+          "line": 4,
+          "target": "apps/web/src/lib/crypto/vault.ts"
+        },
+        {
+          "specifier": "../lib/crypto/envelope",
+          "kind": "static",
+          "line": 5,
+          "target": "apps/web/src/lib/crypto/envelope.ts"
+        },
+        {
+          "specifier": "../lib/download",
+          "kind": "static",
+          "line": 6,
+          "target": "apps/web/src/lib/download.ts"
+        },
+        {
+          "specifier": "../lib/solana/client",
+          "kind": "static",
+          "line": 7,
+          "target": "apps/web/src/lib/solana/client.ts"
+        },
+        {
+          "specifier": "../lib/checkout/paidJournal",
+          "kind": "static",
+          "line": 8,
+          "target": "apps/web/src/lib/checkout/paidJournal.ts"
+        },
+        {
+          "specifier": "../lib/checkout/vaultGuard",
+          "kind": "static",
+          "line": 9,
+          "target": "apps/web/src/lib/checkout/vaultGuard.ts"
+        },
+        {
+          "specifier": "../lib/checkout/paidFinalize",
+          "kind": "static",
+          "line": 10,
+          "target": "apps/web/src/lib/checkout/paidFinalize.ts"
+        },
+        {
+          "specifier": "../lib/checkout/paidClient",
+          "kind": "static",
+          "line": 11,
+          "target": "apps/web/src/lib/checkout/paidClient.ts"
+        },
+        {
+          "specifier": "../lib/checkout/paidTypes",
+          "kind": "type-only",
+          "line": 16,
+          "target": "apps/web/src/lib/checkout/paidTypes.ts"
+        },
+        {
+          "specifier": "../lib/i18n/I18nProvider",
+          "kind": "static",
+          "line": 17,
+          "target": "apps/web/src/lib/i18n/I18nProvider.tsx"
+        },
+        {
+          "specifier": "../lib/checkout/paidAvailabilityMessages",
+          "kind": "static",
+          "line": 18,
+          "target": "apps/web/src/lib/checkout/paidAvailabilityMessages.ts"
+        },
+        {
+          "specifier": "./PermawebMigrationNotice",
+          "kind": "static",
+          "line": 19,
+          "target": "apps/web/src/components/PermawebMigrationNotice.tsx"
+        }
+      ]
+    },
+    {
+      "path": "apps/web/src/components/paymentPanels.native.ts",
+      "sha256": "4dc38d28da39f0c0f03fa086f8c2a108c2e6327243ad1dffcac20183e29c4d67",
+      "bytes": 206,
+      "edges": [
+        {
+          "specifier": "./NativeCheckoutPanel",
+          "kind": "re-export",
+          "line": 2,
+          "target": "apps/web/src/components/NativeCheckoutPanel.tsx"
+        }
+      ]
+    },
+    {
+      "path": "apps/web/src/components/PedigreeView.tsx",
+      "sha256": "faf0d28938bcf4152cdf4971bb1972dfe12524a3f22a30e6325f7ecc75eb6f7e",
+      "bytes": 12228,
+      "edges": [
+        {
+          "specifier": "react",
+          "kind": "static",
+          "line": 1,
+          "external": true,
+          "unresolved": false
+        },
+        {
+          "specifier": "react",
+          "kind": "type-only",
+          "line": 2,
+          "external": true,
+          "unresolved": false
+        },
+        {
+          "specifier": "../lib/types",
+          "kind": "type-only",
+          "line": 3,
+          "target": "apps/web/src/lib/types.ts"
+        },
+        {
+          "specifier": "../lib/pedigree",
+          "kind": "static",
+          "line": 4,
+          "target": "apps/web/src/lib/pedigree.ts"
+        },
+        {
+          "specifier": "../lib/pedigreeFit",
+          "kind": "static",
+          "line": 11,
+          "target": "apps/web/src/lib/pedigreeFit.ts"
+        },
+        {
+          "specifier": "../lib/i18n/I18nProvider",
+          "kind": "static",
+          "line": 12,
+          "target": "apps/web/src/lib/i18n/I18nProvider.tsx"
+        },
+        {
+          "specifier": "../lib/i18n/messages",
+          "kind": "type-only",
+          "line": 13,
+          "target": "apps/web/src/lib/i18n/messages.ts"
+        }
+      ]
+    },
+    {
+      "path": "apps/web/src/components/PermawebMigrationNotice.tsx",
+      "sha256": "8bdb11feaefb4f7adb24aba3a5ff1475921f01034f1bf5617cc114625e742846",
+      "bytes": 880,
+      "edges": [
+        {
+          "specifier": "../lib/i18n/I18nProvider",
+          "kind": "static",
+          "line": 1,
+          "target": "apps/web/src/lib/i18n/I18nProvider.tsx"
+        },
+        {
+          "specifier": "../lib/checkout/paidAvailabilityMessages",
+          "kind": "static",
+          "line": 2,
+          "target": "apps/web/src/lib/checkout/paidAvailabilityMessages.ts"
+        },
+        {
+          "specifier": "../lib/permawebHost",
+          "kind": "static",
+          "line": 3,
+          "target": "apps/web/src/lib/permawebHost.ts"
+        }
+      ]
+    },
+    {
+      "path": "apps/web/src/components/PersonPanel.tsx",
+      "sha256": "97e0aeba67b9e11f269bbc7f2642ac5733009e8689f75d8c1915dd931392a3eb",
+      "bytes": 15251,
+      "edges": [
+        {
+          "specifier": "react",
+          "kind": "static",
+          "line": 1,
+          "external": true,
+          "unresolved": false
+        },
+        {
+          "specifier": "../lib/types",
+          "kind": "type-only",
+          "line": 2,
+          "target": "apps/web/src/lib/types.ts"
+        },
+        {
+          "specifier": "../lib/pedigree",
+          "kind": "static",
+          "line": 3,
+          "target": "apps/web/src/lib/pedigree.ts"
+        },
+        {
+          "specifier": "../lib/dates",
+          "kind": "static",
+          "line": 4,
+          "target": "apps/web/src/lib/dates.ts"
+        },
+        {
+          "specifier": "../lib/ao/protocolKinship",
+          "kind": "static",
+          "line": 5,
+          "target": "apps/web/src/lib/ao/protocolKinship.ts"
+        },
+        {
+          "specifier": "./DateTextInput",
+          "kind": "static",
+          "line": 9,
+          "target": "apps/web/src/components/DateTextInput.tsx"
+        },
+        {
+          "specifier": "../lib/i18n/I18nProvider",
+          "kind": "static",
+          "line": 10,
+          "target": "apps/web/src/lib/i18n/I18nProvider.tsx"
+        },
+        {
+          "specifier": "../lib/kinship",
+          "kind": "type-only",
+          "line": 11,
+          "target": "apps/web/src/lib/kinship.ts"
+        }
+      ]
+    },
+    {
+      "path": "apps/web/src/components/PreservationV2.tsx",
+      "sha256": "3508629f95abe262c8fa3b0dfccad55ec8949b535f2c88c0b3f95419780689ad",
+      "bytes": 17272,
+      "edges": [
+        {
+          "specifier": "react",
+          "kind": "static",
+          "line": 1,
+          "external": true,
+          "unresolved": false
+        },
+        {
+          "specifier": "../lib/crypto/encrypt",
+          "kind": "type-only",
+          "line": 2,
+          "target": "apps/web/src/lib/crypto/encrypt.ts"
+        },
+        {
+          "specifier": "../lib/crypto/envelope",
+          "kind": "static",
+          "line": 3,
+          "target": "apps/web/src/lib/crypto/envelope.ts"
+        },
+        {
+          "specifier": "../lib/preserveV2/policy",
+          "kind": "static",
+          "line": 4,
+          "target": "apps/web/src/lib/preserveV2/policy.ts"
+        },
+        {
+          "specifier": "../lib/preserveV2/machine",
+          "kind": "static",
+          "line": 5,
+          "target": "apps/web/src/lib/preserveV2/machine.ts"
+        },
+        {
+          "specifier": "../lib/preserveV2/types",
+          "kind": "type-only",
+          "line": 6,
+          "target": "apps/web/src/lib/preserveV2/types.ts"
+        },
+        {
+          "specifier": "../lib/fund/client",
+          "kind": "type-only",
+          "line": 7,
+          "target": "apps/web/src/lib/fund/client.ts"
+        },
+        {
+          "specifier": "./PromoFundedFlow",
+          "kind": "static",
+          "line": 8,
+          "target": "apps/web/src/components/PromoFundedFlow.tsx"
+        },
+        {
+          "specifier": "../lib/i18n/I18nProvider",
+          "kind": "static",
+          "line": 9,
+          "target": "apps/web/src/lib/i18n/I18nProvider.tsx"
+        },
+        {
+          "specifier": "./PaidSolanaFlow",
+          "kind": "static",
+          "line": 10,
+          "target": "apps/web/src/components/PaidSolanaFlow.tsx"
+        },
+        {
+          "specifier": "../lib/checkout/vaultGuard",
+          "kind": "static",
+          "line": 11,
+          "target": "apps/web/src/lib/checkout/vaultGuard.ts"
+        },
+        {
+          "specifier": "../lib/checkout/paidTypes",
+          "kind": "type-only",
+          "line": 12,
+          "target": "apps/web/src/lib/checkout/paidTypes.ts"
+        }
+      ]
+    },
+    {
+      "path": "apps/web/src/components/PreservationV2Diagnostics.tsx",
+      "sha256": "20c51ebfbc48d8cff30f105b525400f574e42c06c31884f845085a9794970f4c",
+      "bytes": 1766,
+      "edges": [
+        {
+          "specifier": "react",
+          "kind": "static",
+          "line": 1,
+          "external": true,
+          "unresolved": false
+        },
+        {
+          "specifier": "../lib/preserveV2/machine",
+          "kind": "static",
+          "line": 2,
+          "target": "apps/web/src/lib/preserveV2/machine.ts"
+        },
+        {
+          "specifier": "../lib/preserveV2/types",
+          "kind": "type-only",
+          "line": 3,
+          "target": "apps/web/src/lib/preserveV2/types.ts"
+        }
+      ]
+    },
+    {
+      "path": "apps/web/src/components/PromoFundedFlow.tsx",
+      "sha256": "2b719a8597d5b010214ca0e6440dcf771d902c527a105abc94ddaf4eee44ba8f",
+      "bytes": 19904,
+      "edges": [
+        {
+          "specifier": "react",
+          "kind": "static",
+          "line": 1,
+          "external": true,
+          "unresolved": false
+        },
+        {
+          "specifier": "../lib/crypto/encrypt",
+          "kind": "type-only",
+          "line": 2,
+          "target": "apps/web/src/lib/crypto/encrypt.ts"
+        },
+        {
+          "specifier": "../lib/crypto/envelope",
+          "kind": "static",
+          "line": 3,
+          "target": "apps/web/src/lib/crypto/envelope.ts"
+        },
+        {
+          "specifier": "../lib/fund/client",
+          "kind": "static",
+          "line": 4,
+          "target": "apps/web/src/lib/fund/client.ts"
+        },
+        {
+          "specifier": "../lib/fund/status",
+          "kind": "static",
+          "line": 5,
+          "target": "apps/web/src/lib/fund/status.ts"
+        },
+        {
+          "specifier": "../lib/checkout/vaultGuard",
+          "kind": "static",
+          "line": 6,
+          "target": "apps/web/src/lib/checkout/vaultGuard.ts"
+        },
+        {
+          "specifier": "../lib/fund/preference",
+          "kind": "static",
+          "line": 7,
+          "target": "apps/web/src/lib/fund/preference.ts"
+        },
+        {
+          "specifier": "../lib/solana/policy",
+          "kind": "static",
+          "line": 8,
+          "target": "apps/web/src/lib/solana/policy.ts"
+        }
+      ]
+    },
+    {
+      "path": "apps/web/src/components/PublishSeedModal.tsx",
+      "sha256": "f794f80d88076556c38241bc4d73be71f411acb2cd6868cdcbecb3ef8b492718",
+      "bytes": 50466,
+      "edges": [
+        {
+          "specifier": "react",
+          "kind": "static",
+          "line": 1,
+          "external": true,
+          "unresolved": false
+        },
+        {
+          "specifier": "react",
+          "kind": "type-only",
+          "line": 2,
+          "external": true,
+          "unresolved": false
+        },
+        {
+          "specifier": "../lib/crypto/bip39",
+          "kind": "static",
+          "line": 3,
+          "target": "apps/web/src/lib/crypto/bip39.ts"
+        },
+        {
+          "specifier": "../lib/crypto/keys",
+          "kind": "static",
+          "line": 9,
+          "target": "apps/web/src/lib/crypto/keys.ts"
+        },
+        {
+          "specifier": "../lib/crypto/seedBackup",
+          "kind": "static",
+          "line": 10,
+          "target": "apps/web/src/lib/crypto/seedBackup.ts"
+        },
+        {
+          "specifier": "../lib/types",
+          "kind": "type-only",
+          "line": 11,
+          "target": "apps/web/src/lib/types.ts"
+        },
+        {
+          "specifier": "../lib/crypto/vault",
+          "kind": "static",
+          "line": 12,
+          "target": "apps/web/src/lib/crypto/vault.ts"
+        },
+        {
+          "specifier": "../lib/crypto/encrypt",
+          "kind": "static",
+          "line": 16,
+          "target": "apps/web/src/lib/crypto/encrypt.ts"
+        },
+        {
+          "specifier": "../lib/crypto/envelope",
+          "kind": "static",
+          "line": 17,
+          "target": "apps/web/src/lib/crypto/envelope.ts"
+        },
+        {
+          "specifier": "../lib/arweave/loadVault",
+          "kind": "static",
+          "line": 18,
+          "target": "apps/web/src/lib/arweave/loadVault.ts"
+        },
+        {
+          "specifier": "../lib/arweave/wallet",
+          "kind": "static",
+          "line": 19,
+          "target": "apps/web/src/lib/arweave/wallet.ts"
+        },
+        {
+          "specifier": "../lib/arweave/publish",
+          "kind": "static",
+          "line": 20,
+          "target": "apps/web/src/lib/arweave/publish.ts"
+        },
+        {
+          "specifier": "../lib/sponsor/config",
+          "kind": "static",
+          "line": 21,
+          "target": "apps/web/src/lib/sponsor/config.ts"
+        },
+        {
+          "specifier": "../lib/opsDesk/store",
+          "kind": "static",
+          "line": 22,
+          "target": "apps/web/src/lib/opsDesk/store.ts"
+        },
+        {
+          "specifier": "../lib/sponsor/client",
+          "kind": "static",
+          "line": 28,
+          "target": "apps/web/src/lib/sponsor/client.ts"
+        },
+        {
+          "specifier": "../lib/vaultSession/session",
+          "kind": "static",
+          "line": 36,
+          "target": "apps/web/src/lib/vaultSession/session.ts"
+        },
+        {
+          "specifier": "../lib/vaultSession/selection",
+          "kind": "static",
+          "line": 42,
+          "target": "apps/web/src/lib/vaultSession/selection.ts"
+        },
+        {
+          "specifier": "../lib/vaultSession/localArchive",
+          "kind": "static",
+          "line": 43,
+          "target": "apps/web/src/lib/vaultSession/localArchive.ts"
+        },
+        {
+          "specifier": "../lib/i18n/I18nProvider",
+          "kind": "static",
+          "line": 48,
+          "target": "apps/web/src/lib/i18n/I18nProvider.tsx"
+        },
+        {
+          "specifier": "./NativeCheckoutPanel",
+          "kind": "static",
+          "line": 50,
+          "target": "apps/web/src/components/NativeCheckoutPanel.tsx"
+        },
+        {
+          "specifier": "./PreservationV2",
+          "kind": "static",
+          "line": 51,
+          "target": "apps/web/src/components/PreservationV2.tsx"
+        },
+        {
+          "specifier": "@sejire/payment-panels",
+          "kind": "static",
+          "line": 52,
+          "target": "apps/web/src/components/paymentPanels.native.ts"
+        },
+        {
+          "specifier": "../lib/solana/messages",
+          "kind": "static",
+          "line": 53,
+          "target": "apps/web/src/lib/solana/messages.ts"
+        },
+        {
+          "specifier": "../lib/solana/client",
+          "kind": "type-only",
+          "line": 54,
+          "target": "apps/web/src/lib/solana/client.ts"
+        },
+        {
+          "specifier": "../lib/fund/client",
+          "kind": "type-only",
+          "line": 55,
+          "target": "apps/web/src/lib/fund/client.ts"
+        },
+        {
+          "specifier": "../lib/fund/journal",
+          "kind": "type-only",
+          "line": 56,
+          "target": "apps/web/src/lib/fund/journal.ts"
+        },
+        {
+          "specifier": "../lib/checkout/vaultGuard",
+          "kind": "static",
+          "line": 57,
+          "target": "apps/web/src/lib/checkout/vaultGuard.ts"
+        },
+        {
+          "specifier": "../lib/checkout/paidClient",
+          "kind": "static",
+          "line": 58,
+          "target": "apps/web/src/lib/checkout/paidClient.ts"
+        },
+        {
+          "specifier": "../lib/checkout/paidJournal",
+          "kind": "static",
+          "line": 59,
+          "target": "apps/web/src/lib/checkout/paidJournal.ts"
+        },
+        {
+          "specifier": "../lib/checkout/paidTypes",
+          "kind": "type-only",
+          "line": 60,
+          "target": "apps/web/src/lib/checkout/paidTypes.ts"
+        },
+        {
+          "specifier": "../lib/solana/policy",
+          "kind": "static",
+          "line": 61,
+          "target": "apps/web/src/lib/solana/policy.ts"
+        }
+      ]
+    },
+    {
+      "path": "apps/web/src/components/RestoreSeed.tsx",
+      "sha256": "ac0970f4bf6b9d3b8b949cf934fa3e3d5502057d9c61bb2ea25c3a50ad6f294a",
+      "bytes": 22810,
+      "edges": [
+        {
+          "specifier": "react",
+          "kind": "static",
+          "line": 1,
+          "external": true,
+          "unresolved": false
+        },
+        {
+          "specifier": "react",
+          "kind": "type-only",
+          "line": 2,
+          "external": true,
+          "unresolved": false
+        },
+        {
+          "specifier": "../lib/crypto/bip39",
+          "kind": "static",
+          "line": 3,
+          "target": "apps/web/src/lib/crypto/bip39.ts"
+        },
+        {
+          "specifier": "../lib/crypto/keys",
+          "kind": "static",
+          "line": 4,
+          "target": "apps/web/src/lib/crypto/keys.ts"
+        },
+        {
+          "specifier": "../lib/crypto/backup",
+          "kind": "static",
+          "line": 5,
+          "target": "apps/web/src/lib/crypto/backup.ts"
+        },
+        {
+          "specifier": "../lib/native/cache",
+          "kind": "static",
+          "line": 6,
+          "target": "apps/web/src/lib/native/cache.ts"
+        },
+        {
+          "specifier": "../lib/native/receipt",
+          "kind": "static",
+          "line": 7,
+          "target": "apps/web/src/lib/native/receipt.ts"
+        },
+        {
+          "specifier": "../lib/arweave/gateways",
+          "kind": "static",
+          "line": 8,
+          "target": "apps/web/src/lib/arweave/gateways.ts"
+        },
+        {
+          "specifier": "../lib/solana/receipt",
+          "kind": "static",
+          "line": 9,
+          "target": "apps/web/src/lib/solana/receipt.ts"
+        },
+        {
+          "specifier": "../lib/checkout/paidReceipt",
+          "kind": "static",
+          "line": 10,
+          "target": "apps/web/src/lib/checkout/paidReceipt.ts"
+        },
+        {
+          "specifier": "../lib/solana/messages",
+          "kind": "static",
+          "line": 11,
+          "target": "apps/web/src/lib/solana/messages.ts"
+        },
+        {
+          "specifier": "../lib/crypto/envelope",
+          "kind": "static",
+          "line": 12,
+          "target": "apps/web/src/lib/crypto/envelope.ts"
+        },
+        {
+          "specifier": "../lib/crypto/encrypt",
+          "kind": "type-only",
+          "line": 13,
+          "target": "apps/web/src/lib/crypto/encrypt.ts"
+        },
+        {
+          "specifier": "../lib/crypto/vault",
+          "kind": "static",
+          "line": 14,
+          "target": "apps/web/src/lib/crypto/vault.ts"
+        },
+        {
+          "specifier": "../lib/recovery/recover",
+          "kind": "static",
+          "line": 15,
+          "target": "apps/web/src/lib/recovery/recover.ts"
+        },
+        {
+          "specifier": "../lib/recovery/types",
+          "kind": "type-only",
+          "line": 16,
+          "target": "apps/web/src/lib/recovery/types.ts"
+        },
+        {
+          "specifier": "../lib/draftStorage",
+          "kind": "static",
+          "line": 17,
+          "target": "apps/web/src/lib/draftStorage.ts"
+        },
+        {
+          "specifier": "../lib/types",
+          "kind": "type-only",
+          "line": 18,
+          "target": "apps/web/src/lib/types.ts"
+        },
+        {
+          "specifier": "../lib/guide",
+          "kind": "static",
+          "line": 19,
+          "target": "apps/web/src/lib/guide.ts"
+        },
+        {
+          "specifier": "../lib/pedigree",
+          "kind": "static",
+          "line": 20,
+          "target": "apps/web/src/lib/pedigree.ts"
+        },
+        {
+          "specifier": "../lib/treeEngine",
+          "kind": "static",
+          "line": 21,
+          "target": "apps/web/src/lib/treeEngine.ts"
+        },
+        {
+          "specifier": "../lib/vaultSession/selection",
+          "kind": "static",
+          "line": 22,
+          "target": "apps/web/src/lib/vaultSession/selection.ts"
+        },
+        {
+          "specifier": "../lib/vaultSession/localArchive",
+          "kind": "static",
+          "line": 23,
+          "target": "apps/web/src/lib/vaultSession/localArchive.ts"
+        },
+        {
+          "specifier": "../lib/i18n/I18nProvider",
+          "kind": "static",
+          "line": 25,
+          "target": "apps/web/src/lib/i18n/I18nProvider.tsx"
+        },
+        {
+          "specifier": "../lib/i18n/messages",
+          "kind": "static",
+          "line": 26,
+          "target": "apps/web/src/lib/i18n/messages.ts"
+        }
+      ]
+    },
+    {
+      "path": "apps/web/src/components/ShezhireMetaModal.tsx",
+      "sha256": "b8327ca9da5468ba49323e637e30d46b5b29bcd51f8afe28b977baeecbf04c87",
+      "bytes": 3098,
+      "edges": [
+        {
+          "specifier": "react",
+          "kind": "static",
+          "line": 1,
+          "external": true,
+          "unresolved": false
+        },
+        {
+          "specifier": "react",
+          "kind": "type-only",
+          "line": 2,
+          "external": true,
+          "unresolved": false
+        },
+        {
+          "specifier": "../lib/types",
+          "kind": "type-only",
+          "line": 3,
+          "target": "apps/web/src/lib/types.ts"
+        },
+        {
+          "specifier": "../lib/zhuzRu",
+          "kind": "static",
+          "line": 4,
+          "target": "apps/web/src/lib/zhuzRu.ts"
+        },
+        {
+          "specifier": "../lib/i18n/I18nProvider",
+          "kind": "static",
+          "line": 10,
+          "target": "apps/web/src/lib/i18n/I18nProvider.tsx"
+        }
+      ]
+    },
+    {
+      "path": "apps/web/src/components/ShezhireTemplateModal.tsx",
+      "sha256": "b7e7625037214141110fabafcdd73ecc90e22520999f817cd754bc44d556bec6",
+      "bytes": 1459,
+      "edges": [
+        {
+          "specifier": "../lib/pdf/shezhireTemplates",
+          "kind": "static",
+          "line": 1,
+          "target": "apps/web/src/lib/pdf/shezhireTemplates.ts"
+        },
+        {
+          "specifier": "../lib/i18n/I18nProvider",
+          "kind": "static",
+          "line": 2,
+          "target": "apps/web/src/lib/i18n/I18nProvider.tsx"
+        }
+      ]
+    },
+    {
+      "path": "apps/web/src/components/SolanaRecipientsAdmin.tsx",
+      "sha256": "89dc59df418e8b6d1cec6eeea1bcb2a1a98405af95d8ff484f4905ef6f148fac",
+      "bytes": 8385,
+      "edges": [
+        {
+          "specifier": "react",
+          "kind": "static",
+          "line": 1,
+          "external": true,
+          "unresolved": false
+        },
+        {
+          "specifier": "../lib/fund/client",
+          "kind": "static",
+          "line": 2,
+          "target": "apps/web/src/lib/fund/client.ts"
+        },
+        {
+          "specifier": "../../../../packages/checkout/recipients",
+          "kind": "static",
+          "line": 3,
+          "target": "packages/checkout/recipients.ts"
+        }
+      ]
+    },
+    {
+      "path": "apps/web/src/components/VaultVersionsModal.tsx",
+      "sha256": "852a42195079348da8aa030afb7317c17fc6d138cbcb2918bf4901aa18baf6c3",
+      "bytes": 12738,
+      "edges": [
+        {
+          "specifier": "react",
+          "kind": "static",
+          "line": 1,
+          "external": true,
+          "unresolved": false
+        },
+        {
+          "specifier": "../lib/arweave/fetch",
+          "kind": "static",
+          "line": 2,
+          "target": "apps/web/src/lib/arweave/fetch.ts"
+        },
+        {
+          "specifier": "../lib/crypto/keys",
+          "kind": "static",
+          "line": 9,
+          "target": "apps/web/src/lib/crypto/keys.ts"
+        },
+        {
+          "specifier": "../lib/crypto/vault",
+          "kind": "static",
+          "line": 10,
+          "target": "apps/web/src/lib/crypto/vault.ts"
+        },
+        {
+          "specifier": "../lib/crypto/encrypt",
+          "kind": "type-only",
+          "line": 11,
+          "target": "apps/web/src/lib/crypto/encrypt.ts"
+        },
+        {
+          "specifier": "../lib/crypto/envelope",
+          "kind": "static",
+          "line": 12,
+          "target": "apps/web/src/lib/crypto/envelope.ts"
+        },
+        {
+          "specifier": "../lib/crypto/bip39",
+          "kind": "static",
+          "line": 13,
+          "target": "apps/web/src/lib/crypto/bip39.ts"
+        },
+        {
+          "specifier": "../lib/vaultSession/session",
+          "kind": "static",
+          "line": 14,
+          "target": "apps/web/src/lib/vaultSession/session.ts"
+        },
+        {
+          "specifier": "../lib/vaultSession/selection",
+          "kind": "type-only",
+          "line": 18,
+          "target": "apps/web/src/lib/vaultSession/selection.ts"
+        },
+        {
+          "specifier": "../lib/recovery/historicalNative",
+          "kind": "static",
+          "line": 19,
+          "target": "apps/web/src/lib/recovery/historicalNative.ts"
+        },
+        {
+          "specifier": "../lib/deploymentMode",
+          "kind": "static",
+          "line": 20,
+          "target": "apps/web/src/lib/deploymentMode.ts"
+        },
+        {
+          "specifier": "../lib/independentDiscovery",
+          "kind": "static",
+          "line": 21,
+          "target": "apps/web/src/lib/independentDiscovery.ts"
+        },
+        {
+          "specifier": "../lib/vaultSession/localArchive",
+          "kind": "static",
+          "line": 22,
+          "target": "apps/web/src/lib/vaultSession/localArchive.ts"
+        },
+        {
+          "specifier": "../lib/treeEngine",
+          "kind": "static",
+          "line": 27,
+          "target": "apps/web/src/lib/treeEngine.ts"
+        },
+        {
+          "specifier": "../lib/i18n/I18nProvider",
+          "kind": "static",
+          "line": 28,
+          "target": "apps/web/src/lib/i18n/I18nProvider.tsx"
+        },
+        {
+          "specifier": "../lib/i18n/messages",
+          "kind": "static",
+          "line": 29,
+          "target": "apps/web/src/lib/i18n/messages.ts"
+        }
+      ]
+    },
+    {
+      "path": "apps/web/src/components/Welcome.tsx",
+      "sha256": "3037c692d1b905aea2c10c7b4d35c984a2f4f7e04df5cb3506c1930b8075b714",
+      "bytes": 4829,
+      "edges": [
+        {
+          "specifier": "react",
+          "kind": "static",
+          "line": 1,
+          "external": true,
+          "unresolved": false
+        },
+        {
+          "specifier": "./NativeCheckoutPanel",
+          "kind": "static",
+          "line": 2,
+          "target": "apps/web/src/components/NativeCheckoutPanel.tsx"
+        },
+        {
+          "specifier": "@sejire/payment-panels",
+          "kind": "static",
+          "line": 3,
+          "target": "apps/web/src/components/paymentPanels.native.ts"
+        },
+        {
+          "specifier": "../lib/checkout/messages",
+          "kind": "static",
+          "line": 4,
+          "target": "apps/web/src/lib/checkout/messages.ts"
+        },
+        {
+          "specifier": "../lib/draftStorage",
+          "kind": "static",
+          "line": 5,
+          "target": "apps/web/src/lib/draftStorage.ts"
+        },
+        {
+          "specifier": "../lib/i18n/I18nProvider",
+          "kind": "static",
+          "line": 6,
+          "target": "apps/web/src/lib/i18n/I18nProvider.tsx"
+        },
+        {
+          "specifier": "../lib/i18n/landing",
+          "kind": "static",
+          "line": 7,
+          "target": "apps/web/src/lib/i18n/landing.ts"
+        },
+        {
+          "specifier": "./LanguageSwitch",
+          "kind": "static",
+          "line": 8,
+          "target": "apps/web/src/components/LanguageSwitch.tsx"
+        },
+        {
+          "specifier": "../lib/vaultSession/session",
+          "kind": "static",
+          "line": 9,
+          "target": "apps/web/src/lib/vaultSession/session.ts"
+        },
+        {
+          "specifier": "../lib/fund/preference",
+          "kind": "static",
+          "line": 10,
+          "target": "apps/web/src/lib/fund/preference.ts"
+        },
+        {
+          "specifier": "./PaidSolanaFlow",
+          "kind": "static",
+          "line": 11,
+          "target": "apps/web/src/components/PaidSolanaFlow.tsx"
+        },
+        {
+          "specifier": "./PaidSaveHistory",
+          "kind": "static",
+          "line": 12,
+          "target": "apps/web/src/components/PaidSaveHistory.tsx"
+        },
+        {
+          "specifier": "./PermawebMigrationNotice",
+          "kind": "static",
+          "line": 13,
+          "target": "apps/web/src/components/PermawebMigrationNotice.tsx"
+        },
+        {
+          "specifier": "../lib/checkout/paidAvailabilityMessages",
+          "kind": "static",
+          "line": 14,
+          "target": "apps/web/src/lib/checkout/paidAvailabilityMessages.ts"
+        }
+      ]
+    },
+    {
+      "path": "apps/web/src/components/Workspace.tsx",
+      "sha256": "3e7a139f3f476364e36d91252c56b24a8ec8592986e13913941f60afde9acf16",
+      "bytes": 29412,
+      "edges": [
+        {
+          "specifier": "react",
+          "kind": "static",
+          "line": 1,
+          "external": true,
+          "unresolved": false
+        },
+        {
+          "specifier": "react-dom",
+          "kind": "static",
+          "line": 2,
+          "external": true,
+          "unresolved": false
+        },
+        {
+          "specifier": "../lib/types",
+          "kind": "type-only",
+          "line": 3,
+          "target": "apps/web/src/lib/types.ts"
+        },
+        {
+          "specifier": "../lib/draftStorage",
+          "kind": "static",
+          "line": 4,
+          "target": "apps/web/src/lib/draftStorage.ts"
+        },
+        {
+          "specifier": "../lib/guide",
+          "kind": "static",
+          "line": 5,
+          "target": "apps/web/src/lib/guide.ts"
+        },
+        {
+          "specifier": "../lib/pedigree",
+          "kind": "static",
+          "line": 6,
+          "target": "apps/web/src/lib/pedigree.ts"
+        },
+        {
+          "specifier": "./PedigreeView",
+          "kind": "static",
+          "line": 7,
+          "target": "apps/web/src/components/PedigreeView.tsx"
+        },
+        {
+          "specifier": "./PersonPanel",
+          "kind": "static",
+          "line": 8,
+          "target": "apps/web/src/components/PersonPanel.tsx"
+        },
+        {
+          "specifier": "./AddPersonModal",
+          "kind": "static",
+          "line": 9,
+          "target": "apps/web/src/components/AddPersonModal.tsx"
+        },
+        {
+          "specifier": "@sejire/publish",
+          "kind": "static",
+          "line": 10,
+          "target": "apps/web/src/components/PublishSeedModal.tsx"
+        },
+        {
+          "specifier": "./VaultVersionsModal",
+          "kind": "static",
+          "line": 11,
+          "target": "apps/web/src/components/VaultVersionsModal.tsx"
+        },
+        {
+          "specifier": "../lib/vaultSession/selection",
+          "kind": "static",
+          "line": 12,
+          "target": "apps/web/src/lib/vaultSession/selection.ts"
+        },
+        {
+          "specifier": "../lib/treeEngine",
+          "kind": "static",
+          "line": 13,
+          "target": "apps/web/src/lib/treeEngine.ts"
+        },
+        {
+          "specifier": "../lib/i18n/pdf",
+          "kind": "type-only",
+          "line": 20,
+          "target": "apps/web/src/lib/i18n/pdf.ts"
+        },
+        {
+          "specifier": "../lib/pdf/shezhireTemplates",
+          "kind": "type-only",
+          "line": 21,
+          "target": "apps/web/src/lib/pdf/shezhireTemplates.ts"
+        },
+        {
+          "specifier": "../lib/treeJson",
+          "kind": "static",
+          "line": 22,
+          "target": "apps/web/src/lib/treeJson.ts"
+        },
+        {
+          "specifier": "../lib/zhuzRu",
+          "kind": "static",
+          "line": 23,
+          "target": "apps/web/src/lib/zhuzRu.ts"
+        },
+        {
+          "specifier": "./ShezhireMetaModal",
+          "kind": "static",
+          "line": 24,
+          "target": "apps/web/src/components/ShezhireMetaModal.tsx"
+        },
+        {
+          "specifier": "./ShezhireTemplateModal",
+          "kind": "static",
+          "line": 25,
+          "target": "apps/web/src/components/ShezhireTemplateModal.tsx"
+        },
+        {
+          "specifier": "../lib/vaultSession/session",
+          "kind": "static",
+          "line": 26,
+          "target": "apps/web/src/lib/vaultSession/session.ts"
+        },
+        {
+          "specifier": "../lib/pdfRoot",
+          "kind": "static",
+          "line": 30,
+          "target": "apps/web/src/lib/pdfRoot.ts"
+        },
+        {
+          "specifier": "../lib/ao/protocolMirror",
+          "kind": "static",
+          "line": 31,
+          "target": "apps/web/src/lib/ao/protocolMirror.ts"
+        },
+        {
+          "specifier": "../lib/ao/protocolKinship",
+          "kind": "static",
+          "line": 32,
+          "target": "apps/web/src/lib/ao/protocolKinship.ts"
+        },
+        {
+          "specifier": "../lib/i18n/I18nProvider",
+          "kind": "static",
+          "line": 36,
+          "target": "apps/web/src/lib/i18n/I18nProvider.tsx"
+        },
+        {
+          "specifier": "../lib/solana/messages",
+          "kind": "static",
+          "line": 37,
+          "target": "apps/web/src/lib/solana/messages.ts"
+        },
+        {
+          "specifier": "./LanguageSwitch",
+          "kind": "static",
+          "line": 38,
+          "target": "apps/web/src/components/LanguageSwitch.tsx"
+        },
+        {
+          "specifier": "@sejire/preservation-context",
+          "kind": "static",
+          "line": 39,
+          "target": "apps/web/src/lib/preservationContext.legacy.ts"
+        },
+        {
+          "specifier": "../lib/deploymentMode",
+          "kind": "static",
+          "line": 40,
+          "target": "apps/web/src/lib/deploymentMode.ts"
+        },
+        {
+          "specifier": "../lib/download",
+          "kind": "static",
+          "line": 41,
+          "target": "apps/web/src/lib/download.ts"
+        },
+        {
+          "specifier": "../lib/pdf/classicTreePdf",
+          "kind": "dynamic-literal",
+          "line": 410,
+          "target": "apps/web/src/lib/pdf/classicTreePdf.ts"
+        },
+        {
+          "specifier": "../lib/pdf/shezhirePdf",
+          "kind": "dynamic-literal",
+          "line": 442,
+          "target": "apps/web/src/lib/pdf/shezhirePdf.ts"
+        }
+      ]
+    },
+    {
+      "path": "apps/web/src/index.css",
+      "sha256": "9981d8cfc68fc1e7b7c38b3e1aa435fe0aeaccb3818913004363b08bec748ee2",
+      "bytes": 48026,
+      "edges": []
+    },
+    {
+      "path": "apps/web/src/lib/ao/client.ts",
+      "sha256": "5b9a3337b27d0e2df9c79acb122afb1ba31534c8820f8596c668b1f93cb94f0b",
+      "bytes": 7267,
+      "edges": [
+        {
+          "specifier": "./factoryProcess",
+          "kind": "static",
+          "line": 11,
+          "target": "apps/web/src/lib/ao/factoryProcess.ts"
+        },
+        {
+          "specifier": "./treeProcess",
+          "kind": "static",
+          "line": 12,
+          "target": "apps/web/src/lib/ao/treeProcess.ts"
+        },
+        {
+          "specifier": "./types",
+          "kind": "static",
+          "line": 13,
+          "target": "apps/web/src/lib/ao/types.ts"
+        },
+        {
+          "specifier": "./types",
+          "kind": "re-export",
+          "line": 15,
+          "target": "apps/web/src/lib/ao/types.ts"
+        },
+        {
+          "specifier": "./types",
+          "kind": "type-only",
+          "line": 28,
+          "target": "apps/web/src/lib/ao/types.ts"
+        },
+        {
+          "specifier": "./treeProcess",
+          "kind": "re-export",
+          "line": 29,
+          "target": "apps/web/src/lib/ao/treeProcess.ts"
+        },
+        {
+          "specifier": "./factoryProcess",
+          "kind": "re-export",
+          "line": 30,
+          "target": "apps/web/src/lib/ao/factoryProcess.ts"
+        }
+      ]
+    },
+    {
+      "path": "apps/web/src/lib/ao/factoryProcess.ts",
+      "sha256": "725d2880a98918e66ef022d2396e391c1cb5df0743578145c229c552deacc960",
+      "bytes": 3684,
+      "edges": [
+        {
+          "specifier": "./types",
+          "kind": "static",
+          "line": 4,
+          "target": "apps/web/src/lib/ao/types.ts"
+        },
+        {
+          "specifier": "./treeProcess",
+          "kind": "static",
+          "line": 5,
+          "target": "apps/web/src/lib/ao/treeProcess.ts"
+        }
+      ]
+    },
+    {
+      "path": "apps/web/src/lib/ao/protocolKinship.ts",
+      "sha256": "2173d814ef5b4a130d76de84bffde988a6a2ef5e5c5a2841e7429e59e0b5e0e9",
+      "bytes": 4103,
+      "edges": [
+        {
+          "specifier": "./treeProcess",
+          "kind": "static",
+          "line": 1,
+          "target": "apps/web/src/lib/ao/treeProcess.ts"
+        },
+        {
+          "specifier": "./types",
+          "kind": "static",
+          "line": 2,
+          "target": "apps/web/src/lib/ao/types.ts"
+        },
+        {
+          "specifier": "./types",
+          "kind": "type-only",
+          "line": 3,
+          "target": "apps/web/src/lib/ao/types.ts"
+        },
+        {
+          "specifier": "../treeEngine",
+          "kind": "static",
+          "line": 4,
+          "target": "apps/web/src/lib/treeEngine.ts"
+        },
+        {
+          "specifier": "../kinship",
+          "kind": "static",
+          "line": 5,
+          "target": "apps/web/src/lib/kinship.ts"
+        },
+        {
+          "specifier": "../types",
+          "kind": "type-only",
+          "line": 6,
+          "target": "apps/web/src/lib/types.ts"
+        }
+      ]
+    },
+    {
+      "path": "apps/web/src/lib/ao/protocolMirror.ts",
+      "sha256": "afb9b0217439261bea631c9e52684daab129a08fcf9b7e1a4518ede7cae0a92d",
+      "bytes": 2071,
+      "edges": [
+        {
+          "specifier": "./client",
+          "kind": "static",
+          "line": 1,
+          "target": "apps/web/src/lib/ao/client.ts"
+        },
+        {
+          "specifier": "../types",
+          "kind": "type-only",
+          "line": 2,
+          "target": "apps/web/src/lib/types.ts"
+        }
+      ]
+    },
+    {
+      "path": "apps/web/src/lib/ao/treeProcess.ts",
+      "sha256": "ca069abaca002717f7209e5eb23b03937646052e213e754f8dac38d98e91135b",
+      "bytes": 11674,
+      "edges": [
+        {
+          "specifier": "../pedigree",
+          "kind": "static",
+          "line": 5,
+          "target": "apps/web/src/lib/pedigree.ts"
+        },
+        {
+          "specifier": "../kinship",
+          "kind": "static",
+          "line": 6,
+          "target": "apps/web/src/lib/kinship.ts"
+        },
+        {
+          "specifier": "../types",
+          "kind": "type-only",
+          "line": 7,
+          "target": "apps/web/src/lib/types.ts"
+        },
+        {
+          "specifier": "./types",
+          "kind": "static",
+          "line": 8,
+          "target": "apps/web/src/lib/ao/types.ts"
+        }
+      ]
+    },
+    {
+      "path": "apps/web/src/lib/ao/types.ts",
+      "sha256": "043ee64cdfa726d8355b01d56d7e3d68f41421332a6fbd7c3c98384f87b4ccb4",
+      "bytes": 1997,
+      "edges": []
+    },
+    {
+      "path": "apps/web/src/lib/arweave/client.ts",
+      "sha256": "85514fe7b7a21b61e973cad1d85a6cd93fd9e3fc65340583b6573e69c1934fab",
+      "bytes": 1658,
+      "edges": [
+        {
+          "specifier": "arweave",
+          "kind": "static",
+          "line": 1,
+          "external": true,
+          "unresolved": false
+        },
+        {
+          "specifier": "arweave",
+          "kind": "type-only",
+          "line": 2,
+          "external": true,
+          "unresolved": false
+        },
+        {
+          "specifier": "./gateways",
+          "kind": "static",
+          "line": 3,
+          "target": "apps/web/src/lib/arweave/gateways.ts"
+        }
+      ]
+    },
+    {
+      "path": "apps/web/src/lib/arweave/fetch.ts",
+      "sha256": "caa33b19a3b7946702a40dc865b597bd6d5ff91b0af31141fb34e887d38af669",
+      "bytes": 4096,
+      "edges": [
+        {
+          "specifier": "../crypto/encrypt",
+          "kind": "type-only",
+          "line": 1,
+          "target": "apps/web/src/lib/crypto/encrypt.ts"
+        },
+        {
+          "specifier": "./gateways",
+          "kind": "static",
+          "line": 2,
+          "target": "apps/web/src/lib/arweave/gateways.ts"
+        },
+        {
+          "specifier": "./gateways",
+          "kind": "re-export",
+          "line": 4,
+          "target": "apps/web/src/lib/arweave/gateways.ts"
+        }
+      ]
+    },
+    {
+      "path": "apps/web/src/lib/arweave/gateways.ts",
+      "sha256": "936e2e54c15eec883c125ffab89b05bb7ff9bf13c1f11ed368593454277c5f0b",
+      "bytes": 5073,
+      "edges": [
+        {
+          "specifier": "../recovery/gateways",
+          "kind": "static",
+          "line": 5,
+          "target": "apps/web/src/lib/recovery/gateways.ts"
+        },
+        {
+          "specifier": "../crypto/envelope",
+          "kind": "static",
+          "line": 141,
+          "target": "apps/web/src/lib/crypto/envelope.ts"
+        },
+        {
+          "specifier": "../crypto/encrypt",
+          "kind": "type-only",
+          "line": 142,
+          "target": "apps/web/src/lib/crypto/encrypt.ts"
+        }
+      ]
+    },
+    {
+      "path": "apps/web/src/lib/arweave/loadVault.ts",
+      "sha256": "c980474dbe2b191e50bd6fed434af9ea2c6f7ddd9a2f841e808a0db8c9356f56",
+      "bytes": 10350,
+      "edges": [
+        {
+          "specifier": "../crypto/keys",
+          "kind": "type-only",
+          "line": 5,
+          "target": "apps/web/src/lib/crypto/keys.ts"
+        },
+        {
+          "specifier": "../crypto/vault",
+          "kind": "static",
+          "line": 6,
+          "target": "apps/web/src/lib/crypto/vault.ts"
+        },
+        {
+          "specifier": "../crypto/envelope",
+          "kind": "static",
+          "line": 11,
+          "target": "apps/web/src/lib/crypto/envelope.ts"
+        },
+        {
+          "specifier": "../treeJson",
+          "kind": "static",
+          "line": 12,
+          "target": "apps/web/src/lib/treeJson.ts"
+        },
+        {
+          "specifier": "../vaultSession/localArchive",
+          "kind": "static",
+          "line": 13,
+          "target": "apps/web/src/lib/vaultSession/localArchive.ts"
+        },
+        {
+          "specifier": "../vaultSession/session",
+          "kind": "static",
+          "line": 14,
+          "target": "apps/web/src/lib/vaultSession/session.ts"
+        },
+        {
+          "specifier": "../recovery/diagnostics",
+          "kind": "static",
+          "line": 15,
+          "target": "apps/web/src/lib/recovery/diagnostics.ts"
+        },
+        {
+          "specifier": "../recovery/errors",
+          "kind": "static",
+          "line": 16,
+          "target": "apps/web/src/lib/recovery/errors.ts"
+        },
+        {
+          "specifier": "../recovery/providers/legacyLocatorProvider",
+          "kind": "static",
+          "line": 17,
+          "target": "apps/web/src/lib/recovery/providers/legacyLocatorProvider.ts"
+        },
+        {
+          "specifier": "../recovery/retrieve",
+          "kind": "static",
+          "line": 18,
+          "target": "apps/web/src/lib/recovery/retrieve.ts"
+        },
+        {
+          "specifier": "../recovery/verify",
+          "kind": "static",
+          "line": 19,
+          "target": "apps/web/src/lib/recovery/verify.ts"
+        },
+        {
+          "specifier": "../recovery/types",
+          "kind": "type-only",
+          "line": 20,
+          "target": "apps/web/src/lib/recovery/types.ts"
+        },
+        {
+          "specifier": "./fetch",
+          "kind": "static",
+          "line": 21,
+          "target": "apps/web/src/lib/arweave/fetch.ts"
+        },
+        {
+          "specifier": "./gateways",
+          "kind": "static",
+          "line": 26,
+          "target": "apps/web/src/lib/arweave/gateways.ts"
+        }
+      ]
+    },
+    {
+      "path": "apps/web/src/lib/arweave/publish.ts",
+      "sha256": "220cfbfced0037cc7d3a1d48820db3a6c87acfdc18967671ac075754ce90a326",
+      "bytes": 3941,
+      "edges": [
+        {
+          "specifier": "arweave/web/lib/wallet",
+          "kind": "type-only",
+          "line": 1,
+          "external": true,
+          "unresolved": false
+        },
+        {
+          "specifier": "../crypto/encrypt",
+          "kind": "type-only",
+          "line": 2,
+          "target": "apps/web/src/lib/crypto/encrypt.ts"
+        },
+        {
+          "specifier": "./client",
+          "kind": "static",
+          "line": 3,
+          "target": "apps/web/src/lib/arweave/client.ts"
+        },
+        {
+          "specifier": "./gateways",
+          "kind": "static",
+          "line": 4,
+          "target": "apps/web/src/lib/arweave/gateways.ts"
+        }
+      ]
+    },
+    {
+      "path": "apps/web/src/lib/arweave/wallet.ts",
+      "sha256": "80e254ffaa06929acc3bc927062fd29d0ffcdd295cca7065481a87178d2d434e",
+      "bytes": 2051,
+      "edges": [
+        {
+          "specifier": "node-forge",
+          "kind": "static",
+          "line": 1,
+          "external": true,
+          "unresolved": false
+        },
+        {
+          "specifier": "arweave/web/lib/wallet",
+          "kind": "type-only",
+          "line": 2,
+          "external": true,
+          "unresolved": false
+        },
+        {
+          "specifier": "@noble/hashes/utils.js",
+          "kind": "static",
+          "line": 3,
+          "external": true,
+          "unresolved": false
+        },
+        {
+          "specifier": "@noble/hashes/sha2.js",
+          "kind": "static",
+          "line": 4,
+          "external": true,
+          "unresolved": false
+        },
+        {
+          "specifier": "./client",
+          "kind": "static",
+          "line": 5,
+          "target": "apps/web/src/lib/arweave/client.ts"
+        }
+      ]
+    },
+    {
+      "path": "apps/web/src/lib/checkout/messages.ts",
+      "sha256": "431dc2bc7e3617a9fa2f6c3807d87471d5ce3e74bef2ffd208090b824c5e802b",
+      "bytes": 7284,
+      "edges": []
+    },
+    {
+      "path": "apps/web/src/lib/checkout/paidAvailabilityMessages.ts",
+      "sha256": "dfde5d1d87a82a8e3272834c69fbf27b66d5f9e85ccadfcdd64aa9906ab64a96",
+      "bytes": 7726,
+      "edges": []
+    },
+    {
+      "path": "apps/web/src/lib/checkout/paidClient.ts",
+      "sha256": "9556c124355b89a17cfddbf3ae466f24f6448ef939b7b3c44a071d52a79770ca",
+      "bytes": 51990,
+      "edges": [
+        {
+          "specifier": "buffer",
+          "kind": "static",
+          "line": 1,
+          "external": true,
+          "unresolved": false
+        },
+        {
+          "specifier": "bs58",
+          "kind": "static",
+          "line": 2,
+          "external": true,
+          "unresolved": false
+        },
+        {
+          "specifier": "@solana/web3.js",
+          "kind": "static",
+          "line": 3,
+          "external": true,
+          "unresolved": false
+        },
+        {
+          "specifier": "@ardrive/turbo-sdk/web",
+          "kind": "type-only",
+          "line": 4,
+          "external": true,
+          "unresolved": false
+        },
+        {
+          "specifier": "../../../../../packages/protocol/wire",
+          "kind": "static",
+          "line": 5,
+          "target": "packages/protocol/wire.ts"
+        },
+        {
+          "specifier": "../../../../../packages/checkout/amounts",
+          "kind": "static",
+          "line": 6,
+          "target": "packages/checkout/amounts.ts"
+        },
+        {
+          "specifier": "../../../../../packages/checkout/rpcJson",
+          "kind": "static",
+          "line": 7,
+          "target": "packages/checkout/rpcJson.ts"
+        },
+        {
+          "specifier": "../../../../../packages/checkout/order",
+          "kind": "static",
+          "line": 8,
+          "target": "packages/checkout/order.ts"
+        },
+        {
+          "specifier": "../../../../../packages/checkout/paid",
+          "kind": "static",
+          "line": 9,
+          "target": "packages/checkout/paid.ts"
+        },
+        {
+          "specifier": "../crypto/envelope",
+          "kind": "static",
+          "line": 13,
+          "target": "apps/web/src/lib/crypto/envelope.ts"
+        },
+        {
+          "specifier": "../permawebHost",
+          "kind": "static",
+          "line": 14,
+          "target": "apps/web/src/lib/permawebHost.ts"
+        },
+        {
+          "specifier": "../solana/policy",
+          "kind": "static",
+          "line": 15,
+          "target": "apps/web/src/lib/solana/policy.ts"
+        },
+        {
+          "specifier": "./paidJournal",
+          "kind": "static",
+          "line": 16,
+          "target": "apps/web/src/lib/checkout/paidJournal.ts"
+        },
+        {
+          "specifier": "./vaultGuard",
+          "kind": "static",
+          "line": 17,
+          "target": "apps/web/src/lib/checkout/vaultGuard.ts"
+        },
+        {
+          "specifier": "./paidTypes",
+          "kind": "type-only",
+          "line": 18,
+          "target": "apps/web/src/lib/checkout/paidTypes.ts"
+        }
+      ]
+    },
+    {
+      "path": "apps/web/src/lib/checkout/paidFinalize.ts",
+      "sha256": "3de4027b01c595565bad7919971598f295861cbd5f1ba45f827cde63d0e8b800",
+      "bytes": 1991,
+      "edges": [
+        {
+          "specifier": "./paidClient",
+          "kind": "static",
+          "line": 1,
+          "target": "apps/web/src/lib/checkout/paidClient.ts"
+        },
+        {
+          "specifier": "./paidJournal",
+          "kind": "static",
+          "line": 2,
+          "target": "apps/web/src/lib/checkout/paidJournal.ts"
+        },
+        {
+          "specifier": "./paidTypes",
+          "kind": "type-only",
+          "line": 3,
+          "target": "apps/web/src/lib/checkout/paidTypes.ts"
+        },
+        {
+          "specifier": "../vaultSession/localArchive",
+          "kind": "static",
+          "line": 4,
+          "target": "apps/web/src/lib/vaultSession/localArchive.ts"
+        },
+        {
+          "specifier": "../vaultSession/session",
+          "kind": "static",
+          "line": 5,
+          "target": "apps/web/src/lib/vaultSession/session.ts"
+        },
+        {
+          "specifier": "../crypto/keys",
+          "kind": "static",
+          "line": 6,
+          "target": "apps/web/src/lib/crypto/keys.ts"
+        },
+        {
+          "specifier": "../crypto/envelope",
+          "kind": "static",
+          "line": 7,
+          "target": "apps/web/src/lib/crypto/envelope.ts"
+        }
+      ]
+    },
+    {
+      "path": "apps/web/src/lib/checkout/paidJournal.ts",
+      "sha256": "f0a6e708a568b84162cc586c656711f50ad4d613c53ee4efa1272bfd91101b66",
+      "bytes": 18406,
+      "edges": [
+        {
+          "specifier": "../../../../../packages/protocol/wire",
+          "kind": "static",
+          "line": 1,
+          "target": "packages/protocol/wire.ts"
+        },
+        {
+          "specifier": "../../../../../packages/checkout/order",
+          "kind": "static",
+          "line": 2,
+          "target": "packages/checkout/order.ts"
+        },
+        {
+          "specifier": "../../../../../packages/checkout/paid",
+          "kind": "static",
+          "line": 3,
+          "target": "packages/checkout/paid.ts"
+        },
+        {
+          "specifier": "../../../../../packages/checkout/amounts",
+          "kind": "static",
+          "line": 4,
+          "target": "packages/checkout/amounts.ts"
+        },
+        {
+          "specifier": "../crypto/envelope",
+          "kind": "static",
+          "line": 5,
+          "target": "apps/web/src/lib/crypto/envelope.ts"
+        },
+        {
+          "specifier": "../solana/policy",
+          "kind": "static",
+          "line": 6,
+          "target": "apps/web/src/lib/solana/policy.ts"
+        },
+        {
+          "specifier": "./paidTypes",
+          "kind": "type-only",
+          "line": 7,
+          "target": "apps/web/src/lib/checkout/paidTypes.ts"
+        }
+      ]
+    },
+    {
+      "path": "apps/web/src/lib/checkout/paidReceipt.ts",
+      "sha256": "09303c2863cf395a7a87962e105fd5a90700c3f7c26d1304a04d625751657b26",
+      "bytes": 3323,
+      "edges": [
+        {
+          "specifier": "../../../../../packages/checkout/paid",
+          "kind": "static",
+          "line": 1,
+          "target": "packages/checkout/paid.ts"
+        },
+        {
+          "specifier": "../crypto/envelope",
+          "kind": "static",
+          "line": 2,
+          "target": "apps/web/src/lib/crypto/envelope.ts"
+        },
+        {
+          "specifier": "../crypto/encrypt",
+          "kind": "type-only",
+          "line": 3,
+          "target": "apps/web/src/lib/crypto/encrypt.ts"
+        },
+        {
+          "specifier": "../recovery/diagnostics",
+          "kind": "static",
+          "line": 4,
+          "target": "apps/web/src/lib/recovery/diagnostics.ts"
+        },
+        {
+          "specifier": "../recovery/gateways",
+          "kind": "static",
+          "line": 5,
+          "target": "apps/web/src/lib/recovery/gateways.ts"
+        },
+        {
+          "specifier": "../recovery/retrieve",
+          "kind": "static",
+          "line": 6,
+          "target": "apps/web/src/lib/recovery/retrieve.ts"
+        },
+        {
+          "specifier": "../recovery/types",
+          "kind": "type-only",
+          "line": 7,
+          "target": "apps/web/src/lib/recovery/types.ts"
+        }
+      ]
+    },
+    {
+      "path": "apps/web/src/lib/checkout/vaultGuard.ts",
+      "sha256": "fb9c2165407f9ff739f2413136eafeb7db16a272e0fd4cb545e24b663a85abd6",
+      "bytes": 4368,
+      "edges": [
+        {
+          "specifier": "../fund/journal",
+          "kind": "static",
+          "line": 1,
+          "target": "apps/web/src/lib/fund/journal.ts"
+        },
+        {
+          "specifier": "./paidJournal",
+          "kind": "static",
+          "line": 2,
+          "target": "apps/web/src/lib/checkout/paidJournal.ts"
+        },
+        {
+          "specifier": "./paidTypes",
+          "kind": "type-only",
+          "line": 3,
+          "target": "apps/web/src/lib/checkout/paidTypes.ts"
+        }
+      ]
+    },
+    {
+      "path": "apps/web/src/lib/crypto/backup.ts",
+      "sha256": "9e3346b17c0312d57a8989a9c221c4e7df7299ecea04f60dab976e95972c7248",
+      "bytes": 1653,
+      "edges": [
+        {
+          "specifier": "./encrypt",
+          "kind": "type-only",
+          "line": 1,
+          "target": "apps/web/src/lib/crypto/encrypt.ts"
+        },
+        {
+          "specifier": "./envelope",
+          "kind": "static",
+          "line": 2,
+          "target": "apps/web/src/lib/crypto/envelope.ts"
+        },
+        {
+          "specifier": "./seedBackup",
+          "kind": "static",
+          "line": 3,
+          "target": "apps/web/src/lib/crypto/seedBackup.ts"
+        },
+        {
+          "specifier": "../solana/receipt",
+          "kind": "static",
+          "line": 4,
+          "target": "apps/web/src/lib/solana/receipt.ts"
+        },
+        {
+          "specifier": "../native/receipt",
+          "kind": "static",
+          "line": 6,
+          "target": "apps/web/src/lib/native/receipt.ts"
+        },
+        {
+          "specifier": "../../../../../packages/checkout/paid",
+          "kind": "static",
+          "line": 7,
+          "target": "packages/checkout/paid.ts"
+        }
+      ]
+    },
+    {
+      "path": "apps/web/src/lib/crypto/bip39.ts",
+      "sha256": "386716b8e7c6b51bd88bcc3f0eea5dea9b7dc524359a2d9806b5d2fe122c7716",
+      "bytes": 990,
+      "edges": [
+        {
+          "specifier": "@scure/bip39",
+          "kind": "static",
+          "line": 1,
+          "external": true,
+          "unresolved": false
+        },
+        {
+          "specifier": "@scure/bip39/wordlists/english.js",
+          "kind": "static",
+          "line": 2,
+          "external": true,
+          "unresolved": false
+        }
+      ]
+    },
+    {
+      "path": "apps/web/src/lib/crypto/encrypt.ts",
+      "sha256": "861ca9501eef769097e062dc78d3d1908274f7b646f21fb3173452fa1cb997f5",
+      "bytes": 1741,
+      "edges": []
+    },
+    {
+      "path": "apps/web/src/lib/crypto/envelope.ts",
+      "sha256": "b36832840d81acf134ab3c1e8deca13ab90fb4ec0ff84e6c1b8934c475ae4cf6",
+      "bytes": 1578,
+      "edges": [
+        {
+          "specifier": "./encrypt",
+          "kind": "type-only",
+          "line": 1,
+          "target": "apps/web/src/lib/crypto/encrypt.ts"
+        }
+      ]
+    },
+    {
+      "path": "apps/web/src/lib/crypto/keys.ts",
+      "sha256": "decc9427eac184cc400fba32587984ea202f006dedbe2f7bfaf834b3986329f9",
+      "bytes": 870,
+      "edges": [
+        {
+          "specifier": "@noble/hashes/hkdf.js",
+          "kind": "static",
+          "line": 1,
+          "external": true,
+          "unresolved": false
+        },
+        {
+          "specifier": "@noble/hashes/sha2.js",
+          "kind": "static",
+          "line": 2,
+          "external": true,
+          "unresolved": false
+        },
+        {
+          "specifier": "@noble/hashes/utils.js",
+          "kind": "static",
+          "line": 3,
+          "external": true,
+          "unresolved": false
+        },
+        {
+          "specifier": "./bip39",
+          "kind": "static",
+          "line": 4,
+          "target": "apps/web/src/lib/crypto/bip39.ts"
+        }
+      ]
+    },
+    {
+      "path": "apps/web/src/lib/crypto/seedBackup.ts",
+      "sha256": "1db7f176c1331f9b04524d4117d3e22e728bc8926032ba0dc1bc8d417ac43310",
+      "bytes": 1553,
+      "edges": [
+        {
+          "specifier": "./bip39",
+          "kind": "static",
+          "line": 1,
+          "target": "apps/web/src/lib/crypto/bip39.ts"
+        },
+        {
+          "specifier": "../download",
+          "kind": "static",
+          "line": 2,
+          "target": "apps/web/src/lib/download.ts"
+        }
+      ]
+    },
+    {
+      "path": "apps/web/src/lib/crypto/vault.ts",
+      "sha256": "8efd5681db6bd7b416853002711182f175c2fb8a55ccd4cd8eaccdb3b11c0595",
+      "bytes": 2070,
+      "edges": [
+        {
+          "specifier": "../types",
+          "kind": "type-only",
+          "line": 1,
+          "target": "apps/web/src/lib/types.ts"
+        },
+        {
+          "specifier": "./encrypt",
+          "kind": "type-only",
+          "line": 2,
+          "target": "apps/web/src/lib/crypto/encrypt.ts"
+        },
+        {
+          "specifier": "./encrypt",
+          "kind": "static",
+          "line": 3,
+          "target": "apps/web/src/lib/crypto/encrypt.ts"
+        },
+        {
+          "specifier": "./keys",
+          "kind": "type-only",
+          "line": 4,
+          "target": "apps/web/src/lib/crypto/keys.ts"
+        },
+        {
+          "specifier": "../storageQuota",
+          "kind": "static",
+          "line": 5,
+          "target": "apps/web/src/lib/storageQuota.ts"
+        },
+        {
+          "specifier": "../download",
+          "kind": "static",
+          "line": 6,
+          "target": "apps/web/src/lib/download.ts"
+        }
+      ]
+    },
+    {
+      "path": "apps/web/src/lib/dates.ts",
+      "sha256": "6fb3ac850a367f2e39181a7b5512c7c5fbd3f034707b1154a419cbb218b50148",
+      "bytes": 2712,
+      "edges": []
+    },
+    {
+      "path": "apps/web/src/lib/deploymentMode.ts",
+      "sha256": "5b7154bb4b574112879c1c30ebf2052339b606b91f6b1109a56f7015351b5cdf",
+      "bytes": 170,
+      "edges": []
+    },
+    {
+      "path": "apps/web/src/lib/directArweave/errors.ts",
+      "sha256": "57c5ecd94d5befcedfadd01f1da7f70f016b8d24951a4b117b4e198c74d3f5f5",
+      "bytes": 4627,
+      "edges": [
+        {
+          "specifier": "./types",
+          "kind": "type-only",
+          "line": 1,
+          "target": "apps/web/src/lib/directArweave/types.ts"
+        }
+      ]
+    },
+    {
+      "path": "apps/web/src/lib/directArweave/format.ts",
+      "sha256": "3fbe6bbb4987f2c516a19295e3fe5967418e81e5b6079fb75ffec3e9c842532d",
+      "bytes": 9123,
+      "edges": [
+        {
+          "specifier": "../crypto/envelope",
+          "kind": "static",
+          "line": 1,
+          "target": "apps/web/src/lib/crypto/envelope.ts"
+        },
+        {
+          "specifier": "./errors",
+          "kind": "static",
+          "line": 2,
+          "target": "apps/web/src/lib/directArweave/errors.ts"
+        },
+        {
+          "specifier": "./types",
+          "kind": "type-only",
+          "line": 3,
+          "target": "apps/web/src/lib/directArweave/types.ts"
+        }
+      ]
+    },
+    {
+      "path": "apps/web/src/lib/directArweave/network.ts",
+      "sha256": "abe9b9f9b167d629c015208380ff1287071835222922b96770283fc62516fee8",
+      "bytes": 8745,
+      "edges": [
+        {
+          "specifier": "./errors",
+          "kind": "static",
+          "line": 1,
+          "target": "apps/web/src/lib/directArweave/errors.ts"
+        },
+        {
+          "specifier": "./format",
+          "kind": "static",
+          "line": 2,
+          "target": "apps/web/src/lib/directArweave/format.ts"
+        },
+        {
+          "specifier": "./types",
+          "kind": "type-only",
+          "line": 3,
+          "target": "apps/web/src/lib/directArweave/types.ts"
+        },
+        {
+          "specifier": "./nodePreference",
+          "kind": "static",
+          "line": 4,
+          "target": "apps/web/src/lib/directArweave/nodePreference.ts"
+        },
+        {
+          "specifier": "./nodePreference",
+          "kind": "re-export",
+          "line": 5,
+          "target": "apps/web/src/lib/directArweave/nodePreference.ts"
+        }
+      ]
+    },
+    {
+      "path": "apps/web/src/lib/directArweave/nodePreference.ts",
+      "sha256": "95f37a5150e561d729e705c76591d135899d05b3d46cf3505efb5528df189818",
+      "bytes": 2836,
+      "edges": [
+        {
+          "specifier": "./errors",
+          "kind": "static",
+          "line": 1,
+          "target": "apps/web/src/lib/directArweave/errors.ts"
+        }
+      ]
+    },
+    {
+      "path": "apps/web/src/lib/directArweave/transaction.ts",
+      "sha256": "116707e1e6c1e3fc9e45730675e2fdac06e80bafcd77cf362637ca518b08c447",
+      "bytes": 6914,
+      "edges": [
+        {
+          "specifier": "arweave/web/lib/transaction",
+          "kind": "type-only",
+          "line": 1,
+          "external": true,
+          "unresolved": false
+        },
+        {
+          "specifier": "../arweave/client",
+          "kind": "static",
+          "line": 2,
+          "target": "apps/web/src/lib/arweave/client.ts"
+        },
+        {
+          "specifier": "./errors",
+          "kind": "static",
+          "line": 3,
+          "target": "apps/web/src/lib/directArweave/errors.ts"
+        },
+        {
+          "specifier": "./format",
+          "kind": "static",
+          "line": 4,
+          "target": "apps/web/src/lib/directArweave/format.ts"
+        },
+        {
+          "specifier": "./network",
+          "kind": "static",
+          "line": 5,
+          "target": "apps/web/src/lib/directArweave/network.ts"
+        },
+        {
+          "specifier": "./types",
+          "kind": "type-only",
+          "line": 6,
+          "target": "apps/web/src/lib/directArweave/types.ts"
+        }
+      ]
+    },
+    {
+      "path": "apps/web/src/lib/download.ts",
+      "sha256": "867493976fdf629fc0606ce37d90dac9da585eb51092238c811f2d4d4754d0d7",
+      "bytes": 819,
+      "edges": []
+    },
+    {
+      "path": "apps/web/src/lib/draftStorage.ts",
+      "sha256": "8d9b486abbe926a6fdad388e4d3c1137026ff2fdbf938b3eb0e712b2c5c69026",
+      "bytes": 711,
+      "edges": [
+        {
+          "specifier": "./types",
+          "kind": "type-only",
+          "line": 1,
+          "target": "apps/web/src/lib/types.ts"
+        },
+        {
+          "specifier": "./treeJson",
+          "kind": "static",
+          "line": 2,
+          "target": "apps/web/src/lib/treeJson.ts"
+        },
+        {
+          "specifier": "./storageQuota",
+          "kind": "static",
+          "line": 3,
+          "target": "apps/web/src/lib/storageQuota.ts"
+        }
+      ]
+    },
+    {
+      "path": "apps/web/src/lib/fund/client.ts",
+      "sha256": "7905dc6191676c9beb873f1a5668dd67554087b00254d06f6bbbe3c88abb117d",
+      "bytes": 6365,
+      "edges": [
+        {
+          "specifier": "../crypto/encrypt",
+          "kind": "type-only",
+          "line": 1,
+          "target": "apps/web/src/lib/crypto/encrypt.ts"
+        },
+        {
+          "specifier": "../crypto/envelope",
+          "kind": "static",
+          "line": 2,
+          "target": "apps/web/src/lib/crypto/envelope.ts"
+        },
+        {
+          "specifier": "../permawebHost",
+          "kind": "static",
+          "line": 3,
+          "target": "apps/web/src/lib/permawebHost.ts"
+        },
+        {
+          "specifier": "../solana/policy",
+          "kind": "static",
+          "line": 4,
+          "target": "apps/web/src/lib/solana/policy.ts"
+        },
+        {
+          "specifier": "../../../../../packages/checkout/recipients",
+          "kind": "type-only",
+          "line": 5,
+          "target": "packages/checkout/recipients.ts"
+        }
+      ]
+    },
+    {
+      "path": "apps/web/src/lib/fund/journal.ts",
+      "sha256": "4e1a3a37f232b3071f2473e89db2e9f74d7bac84503accce1ac71bd509a82d4f",
+      "bytes": 15373,
+      "edges": [
+        {
+          "specifier": "../crypto/encrypt",
+          "kind": "type-only",
+          "line": 1,
+          "target": "apps/web/src/lib/crypto/encrypt.ts"
+        },
+        {
+          "specifier": "../crypto/envelope",
+          "kind": "static",
+          "line": 2,
+          "target": "apps/web/src/lib/crypto/envelope.ts"
+        },
+        {
+          "specifier": "../solana/policy",
+          "kind": "static",
+          "line": 3,
+          "target": "apps/web/src/lib/solana/policy.ts"
+        },
+        {
+          "specifier": "./status",
+          "kind": "static",
+          "line": 4,
+          "target": "apps/web/src/lib/fund/status.ts"
+        }
+      ]
+    },
+    {
+      "path": "apps/web/src/lib/fund/preference.ts",
+      "sha256": "3081007f45909622b19f3448a72175d227ba8aeaceaa11f422cf1bfc0fed3844",
+      "bytes": 540,
+      "edges": []
+    },
+    {
+      "path": "apps/web/src/lib/fund/status.ts",
+      "sha256": "640459a64ae1b006d1a7360d03b716fe6e29f6385848263aa69d2ac30bd60278",
+      "bytes": 7161,
+      "edges": [
+        {
+          "specifier": "./client",
+          "kind": "type-only",
+          "line": 1,
+          "target": "apps/web/src/lib/fund/client.ts"
+        }
+      ]
+    },
+    {
+      "path": "apps/web/src/lib/guide.ts",
+      "sha256": "69bd6ba7e6bcfdc905396b59496536e7a81e921f81bc988e4014b6eb4e24016a",
+      "bytes": 7019,
+      "edges": [
+        {
+          "specifier": "./types",
+          "kind": "type-only",
+          "line": 1,
+          "target": "apps/web/src/lib/types.ts"
+        },
+        {
+          "specifier": "./treeEngine",
+          "kind": "static",
+          "line": 2,
+          "target": "apps/web/src/lib/treeEngine.ts"
+        },
+        {
+          "specifier": "./storageQuota",
+          "kind": "static",
+          "line": 3,
+          "target": "apps/web/src/lib/storageQuota.ts"
+        }
+      ]
+    },
+    {
+      "path": "apps/web/src/lib/i18n/I18nProvider.tsx",
+      "sha256": "93d6c11d9c82dd49180559aaa223d10f12a611bb666a5e880a6d7009936d5980",
+      "bytes": 1224,
+      "edges": [
+        {
+          "specifier": "react",
+          "kind": "static",
+          "line": 1,
+          "external": true,
+          "unresolved": false
+        },
+        {
+          "specifier": "./locale",
+          "kind": "static",
+          "line": 2,
+          "target": "apps/web/src/lib/i18n/locale.ts"
+        },
+        {
+          "specifier": "./messages",
+          "kind": "static",
+          "line": 8,
+          "target": "apps/web/src/lib/i18n/messages.ts"
+        }
+      ]
+    },
+    {
+      "path": "apps/web/src/lib/i18n/landing.ts",
+      "sha256": "c4a7b05f25af636c05d92239352b31a001ed39a54f263d75ac223f1cef9b66c0",
+      "bytes": 5402,
+      "edges": [
+        {
+          "specifier": "./locale",
+          "kind": "type-only",
+          "line": 1,
+          "target": "apps/web/src/lib/i18n/locale.ts"
+        }
+      ]
+    },
+    {
+      "path": "apps/web/src/lib/i18n/locale.ts",
+      "sha256": "7c39be9de09be85bd769670e3b0edfee6c9e63b239bb7c08ffc1fe27a41c3fa1",
+      "bytes": 2057,
+      "edges": []
+    },
+    {
+      "path": "apps/web/src/lib/i18n/messages.ts",
+      "sha256": "b1cb1dbc2e3b7bfeaa2e385a8e8f6dbebc11dede58afae882daf7155502290a9",
+      "bytes": 78785,
+      "edges": [
+        {
+          "specifier": "./locale",
+          "kind": "static",
+          "line": 1,
+          "target": "apps/web/src/lib/i18n/locale.ts"
+        },
+        {
+          "specifier": "../kinship",
+          "kind": "type-only",
+          "line": 2,
+          "target": "apps/web/src/lib/kinship.ts"
+        },
+        {
+          "specifier": "../pdf/shezhireTemplates",
+          "kind": "type-only",
+          "line": 3,
+          "target": "apps/web/src/lib/pdf/shezhireTemplates.ts"
+        }
+      ]
+    },
+    {
+      "path": "apps/web/src/lib/i18n/pdf.ts",
+      "sha256": "5e58056ab3ec1eccb75b1b58e21f9ea54738518f5b6a65e248af09276850e4ea",
+      "bytes": 4644,
+      "edges": []
+    },
+    {
+      "path": "apps/web/src/lib/independentDiscovery.ts",
+      "sha256": "17bc753b65e4066a5c1bca7403f918142a3a3356efea266e4a1a1c3782efc400",
+      "bytes": 2681,
+      "edges": [
+        {
+          "specifier": "./arweave/fetch",
+          "kind": "static",
+          "line": 1,
+          "target": "apps/web/src/lib/arweave/fetch.ts"
+        },
+        {
+          "specifier": "./directArweave/nodePreference",
+          "kind": "static",
+          "line": 2,
+          "target": "apps/web/src/lib/directArweave/nodePreference.ts"
+        },
+        {
+          "specifier": "./directArweave/network",
+          "kind": "static",
+          "line": 3,
+          "target": "apps/web/src/lib/directArweave/network.ts"
+        }
+      ]
+    },
+    {
+      "path": "apps/web/src/lib/kinship.ts",
+      "sha256": "9da0244248988d079a02fdf24d1f2d3049048cc978b558998d142c533579830a",
+      "bytes": 5391,
+      "edges": [
+        {
+          "specifier": "./types",
+          "kind": "type-only",
+          "line": 1,
+          "target": "apps/web/src/lib/types.ts"
+        },
+        {
+          "specifier": "./treeEngine",
+          "kind": "static",
+          "line": 2,
+          "target": "apps/web/src/lib/treeEngine.ts"
+        }
+      ]
+    },
+    {
+      "path": "apps/web/src/lib/lastScreen.ts",
+      "sha256": "dc6ea544115ee99369bf332d22a66686b21456b24bb711b655f1d2000019a95b",
+      "bytes": 727,
+      "edges": []
+    },
+    {
+      "path": "apps/web/src/lib/native/arweave.ts",
+      "sha256": "e46ae444de37fd570550b64262cea32bb4bc7d01fddec507d0c92019993fbd07",
+      "bytes": 9509,
+      "edges": [
+        {
+          "specifier": "./pilot",
+          "kind": "static",
+          "line": 1,
+          "target": "apps/web/src/lib/native/pilot.ts"
+        },
+        {
+          "specifier": "arweave",
+          "kind": "type-only",
+          "line": 2,
+          "external": true,
+          "unresolved": false
+        },
+        {
+          "specifier": "../arweave/client",
+          "kind": "static",
+          "line": 3,
+          "target": "apps/web/src/lib/arweave/client.ts"
+        },
+        {
+          "specifier": "arweave/web/lib/transaction",
+          "kind": "type-only",
+          "line": 4,
+          "external": true,
+          "unresolved": false
+        },
+        {
+          "specifier": "arweave/web/lib/transaction-uploader",
+          "kind": "type-only",
+          "line": 5,
+          "external": true,
+          "unresolved": false
+        },
+        {
+          "specifier": "./config",
+          "kind": "static",
+          "line": 6,
+          "target": "apps/web/src/lib/native/config.ts"
+        },
+        {
+          "specifier": "../../../../../packages/protocol/wire",
+          "kind": "static",
+          "line": 7,
+          "target": "packages/protocol/wire.ts"
+        },
+        {
+          "specifier": "../solana/policy",
+          "kind": "static",
+          "line": 8,
+          "target": "apps/web/src/lib/solana/policy.ts"
+        },
+        {
+          "specifier": "../crypto/envelope",
+          "kind": "static",
+          "line": 9,
+          "target": "apps/web/src/lib/crypto/envelope.ts"
+        }
+      ]
+    },
+    {
+      "path": "apps/web/src/lib/native/audit.ts",
+      "sha256": "a43a798b0f68fd1e0c8f2a5853972a9e4c24508ab8d686158d66094731fa94e0",
+      "bytes": 4059,
+      "edges": [
+        {
+          "specifier": "../../../../../packages/protocol/wire",
+          "kind": "static",
+          "line": 2,
+          "target": "packages/protocol/wire.ts"
+        },
+        {
+          "specifier": "../solana/policy",
+          "kind": "static",
+          "line": 3,
+          "target": "apps/web/src/lib/solana/policy.ts"
+        },
+        {
+          "specifier": "./config",
+          "kind": "static",
+          "line": 4,
+          "target": "apps/web/src/lib/native/config.ts"
+        },
+        {
+          "specifier": "./jobs",
+          "kind": "type-only",
+          "line": 5,
+          "target": "apps/web/src/lib/native/jobs.ts"
+        },
+        {
+          "specifier": "../../../../../apps/sponsor/src/checkout/paymentValidator",
+          "kind": "type-only",
+          "line": 6,
+          "target": "apps/sponsor/src/checkout/paymentValidator.ts"
+        },
+        {
+          "specifier": "../../../../../apps/sponsor/src/checkout/paymentValidator",
+          "kind": "static",
+          "line": 7,
+          "target": "apps/sponsor/src/checkout/paymentValidator.ts"
+        },
+        {
+          "specifier": "./config",
+          "kind": "static",
+          "line": 8,
+          "target": "apps/web/src/lib/native/config.ts"
+        }
+      ]
+    },
+    {
+      "path": "apps/web/src/lib/native/cache.ts",
+      "sha256": "9d39b4bc278373876e43b25272dcc853f3a8c194757f9a4360ce9f30e29c7720",
+      "bytes": 3077,
+      "edges": [
+        {
+          "specifier": "../../../../../packages/protocol/wire",
+          "kind": "static",
+          "line": 2,
+          "target": "packages/protocol/wire.ts"
+        },
+        {
+          "specifier": "./jobs",
+          "kind": "type-only",
+          "line": 3,
+          "target": "apps/web/src/lib/native/jobs.ts"
+        },
+        {
+          "specifier": "./config",
+          "kind": "type-only",
+          "line": 4,
+          "target": "apps/web/src/lib/native/config.ts"
+        }
+      ]
+    },
+    {
+      "path": "apps/web/src/lib/native/config.ts",
+      "sha256": "ebdedcd8e2da67bb34b00b83354202448bee831cfda49e2d9bf4d774bae6a659",
+      "bytes": 7864,
+      "edges": [
+        {
+          "specifier": "bs58",
+          "kind": "static",
+          "line": 1,
+          "external": true,
+          "unresolved": false
+        },
+        {
+          "specifier": "@noble/curves/ed25519",
+          "kind": "static",
+          "line": 2,
+          "external": true,
+          "unresolved": false
+        },
+        {
+          "specifier": "../../../../../packages/protocol/wire",
+          "kind": "static",
+          "line": 3,
+          "target": "packages/protocol/wire.ts"
+        },
+        {
+          "specifier": "../../../../../packages/checkout/order",
+          "kind": "static",
+          "line": 4,
+          "target": "packages/checkout/order.ts"
+        },
+        {
+          "specifier": "../../../../../packages/checkout/amounts",
+          "kind": "static",
+          "line": 5,
+          "target": "packages/checkout/amounts.ts"
+        },
+        {
+          "specifier": "../crypto/envelope",
+          "kind": "static",
+          "line": 6,
+          "target": "apps/web/src/lib/crypto/envelope.ts"
+        },
+        {
+          "specifier": "../solana/policy",
+          "kind": "static",
+          "line": 7,
+          "target": "apps/web/src/lib/solana/policy.ts"
+        }
+      ]
+    },
+    {
+      "path": "apps/web/src/lib/native/diagnostics.ts",
+      "sha256": "9cb004178f0eb3bb50417986d2ed3d7c4a3314f583efe9dff7cb48ccb90434d3",
+      "bytes": 2273,
+      "edges": [
+        {
+          "specifier": "./cache",
+          "kind": "static",
+          "line": 1,
+          "target": "apps/web/src/lib/native/cache.ts"
+        },
+        {
+          "specifier": "./config",
+          "kind": "static",
+          "line": 2,
+          "target": "apps/web/src/lib/native/config.ts"
+        }
+      ]
+    },
+    {
+      "path": "apps/web/src/lib/native/jobs.ts",
+      "sha256": "1f6b6f9b248b086757bdad4cbc46af039d99da0632a8e73757a2c4a04e0d7c45",
+      "bytes": 7462,
+      "edges": [
+        {
+          "specifier": "./pilot",
+          "kind": "static",
+          "line": 1,
+          "target": "apps/web/src/lib/native/pilot.ts"
+        },
+        {
+          "specifier": "../../../../../packages/protocol/wire",
+          "kind": "static",
+          "line": 2,
+          "target": "packages/protocol/wire.ts"
+        },
+        {
+          "specifier": "../../../../../packages/checkout/order",
+          "kind": "static",
+          "line": 3,
+          "target": "packages/checkout/order.ts"
+        },
+        {
+          "specifier": "../../../../../packages/checkout/amounts",
+          "kind": "static",
+          "line": 4,
+          "target": "packages/checkout/amounts.ts"
+        },
+        {
+          "specifier": "../crypto/envelope",
+          "kind": "static",
+          "line": 5,
+          "target": "apps/web/src/lib/crypto/envelope.ts"
+        },
+        {
+          "specifier": "../crypto/encrypt",
+          "kind": "type-only",
+          "line": 6,
+          "target": "apps/web/src/lib/crypto/encrypt.ts"
+        },
+        {
+          "specifier": "../solana/policy",
+          "kind": "static",
+          "line": 7,
+          "target": "apps/web/src/lib/solana/policy.ts"
+        },
+        {
+          "specifier": "./config",
+          "kind": "static",
+          "line": 8,
+          "target": "apps/web/src/lib/native/config.ts"
+        },
+        {
+          "specifier": "./arweave",
+          "kind": "static",
+          "line": 9,
+          "target": "apps/web/src/lib/native/arweave.ts"
+        },
+        {
+          "specifier": "./rpc",
+          "kind": "static",
+          "line": 10,
+          "target": "apps/web/src/lib/native/rpc.ts"
+        },
+        {
+          "specifier": "./payment",
+          "kind": "dynamic-literal",
+          "line": 39,
+          "target": "apps/web/src/lib/native/payment.ts"
+        },
+        {
+          "specifier": "../../../../../packages/checkout/order",
+          "kind": "dynamic-literal",
+          "line": 40,
+          "target": "packages/checkout/order.ts"
+        },
+        {
+          "specifier": "../../../../../packages/checkout/order",
+          "kind": "dynamic-literal",
+          "line": 41,
+          "target": "packages/checkout/order.ts"
+        },
+        {
+          "specifier": "./payment",
+          "kind": "dynamic-literal",
+          "line": 41,
+          "target": "apps/web/src/lib/native/payment.ts"
+        },
+        {
+          "specifier": "bs58",
+          "kind": "dynamic-literal",
+          "line": 46,
+          "external": true,
+          "unresolved": false
+        }
+      ]
+    },
+    {
+      "path": "apps/web/src/lib/native/payment.ts",
+      "sha256": "f96b44b8d0c90dbc779f463c1e06b4c55f68832d41319869a91fa45926ab8f36",
+      "bytes": 15634,
+      "edges": [
+        {
+          "specifier": "@solana/web3.js",
+          "kind": "static",
+          "line": 1,
+          "external": true,
+          "unresolved": false
+        },
+        {
+          "specifier": "buffer",
+          "kind": "static",
+          "line": 2,
+          "external": true,
+          "unresolved": false
+        },
+        {
+          "specifier": "bs58",
+          "kind": "static",
+          "line": 3,
+          "external": true,
+          "unresolved": false
+        },
+        {
+          "specifier": "./config",
+          "kind": "type-only",
+          "line": 4,
+          "target": "apps/web/src/lib/native/config.ts"
+        },
+        {
+          "specifier": "./jobs",
+          "kind": "type-only",
+          "line": 5,
+          "target": "apps/web/src/lib/native/jobs.ts"
+        },
+        {
+          "specifier": "./jobs",
+          "kind": "static",
+          "line": 6,
+          "target": "apps/web/src/lib/native/jobs.ts"
+        },
+        {
+          "specifier": "./rpc",
+          "kind": "static",
+          "line": 7,
+          "target": "apps/web/src/lib/native/rpc.ts"
+        },
+        {
+          "specifier": "./cache",
+          "kind": "static",
+          "line": 8,
+          "target": "apps/web/src/lib/native/cache.ts"
+        },
+        {
+          "specifier": "./cache",
+          "kind": "dynamic-literal",
+          "line": 26,
+          "target": "apps/web/src/lib/native/cache.ts"
+        },
+        {
+          "specifier": "./cache",
+          "kind": "dynamic-literal",
+          "line": 49,
+          "target": "apps/web/src/lib/native/cache.ts"
+        }
+      ]
+    },
+    {
+      "path": "apps/web/src/lib/native/pilot.ts",
+      "sha256": "eb2637ad93cfdd364304d79c71ac8c88779f4867e58af0819e665d8593e39d3d",
+      "bytes": 14208,
+      "edges": [
+        {
+          "specifier": "./config",
+          "kind": "type-only",
+          "line": 1,
+          "target": "apps/web/src/lib/native/config.ts"
+        },
+        {
+          "specifier": "../solana/policy",
+          "kind": "static",
+          "line": 2,
+          "target": "apps/web/src/lib/solana/policy.ts"
+        },
+        {
+          "specifier": "../crypto/envelope",
+          "kind": "static",
+          "line": 3,
+          "target": "apps/web/src/lib/crypto/envelope.ts"
+        }
+      ]
+    },
+    {
+      "path": "apps/web/src/lib/native/presentation.ts",
+      "sha256": "d3657b5fedc11fe2809c944915e58475204be913f733e667cdcd6b37f8a17c39",
+      "bytes": 1986,
+      "edges": [
+        {
+          "specifier": "./jobs",
+          "kind": "type-only",
+          "line": 1,
+          "target": "apps/web/src/lib/native/jobs.ts"
+        }
+      ]
+    },
+    {
+      "path": "apps/web/src/lib/native/receipt.ts",
+      "sha256": "54e7a1741b0b6bceaa91e81bf00061c4debf45f75b19e45778acaaddf33df8ca",
+      "bytes": 2011,
+      "edges": [
+        {
+          "specifier": "./jobs",
+          "kind": "type-only",
+          "line": 1,
+          "target": "apps/web/src/lib/native/jobs.ts"
+        },
+        {
+          "specifier": "./config",
+          "kind": "static",
+          "line": 2,
+          "target": "apps/web/src/lib/native/config.ts"
+        },
+        {
+          "specifier": "./arweave",
+          "kind": "static",
+          "line": 3,
+          "target": "apps/web/src/lib/native/arweave.ts"
+        },
+        {
+          "specifier": "../crypto/envelope",
+          "kind": "static",
+          "line": 4,
+          "target": "apps/web/src/lib/crypto/envelope.ts"
+        }
+      ]
+    },
+    {
+      "path": "apps/web/src/lib/native/rpc.ts",
+      "sha256": "5ae1897e48388064646ddfbae5a146dd2809a16171a7a9072ccba58855d731aa",
+      "bytes": 7868,
+      "edges": [
+        {
+          "specifier": "../../../../../apps/sponsor/src/checkout/rpcReader",
+          "kind": "static",
+          "line": 2,
+          "target": "apps/sponsor/src/checkout/rpcReader.ts"
+        },
+        {
+          "specifier": "../../../../../apps/sponsor/src/checkout/rpcDecoder",
+          "kind": "static",
+          "line": 3,
+          "target": "apps/sponsor/src/checkout/rpcDecoder.ts"
+        },
+        {
+          "specifier": "../../../../../apps/sponsor/src/checkout/paymentValidator",
+          "kind": "static",
+          "line": 4,
+          "target": "apps/sponsor/src/checkout/paymentValidator.ts"
+        },
+        {
+          "specifier": "../../../../../packages/checkout/order",
+          "kind": "type-only",
+          "line": 5,
+          "target": "packages/checkout/order.ts"
+        },
+        {
+          "specifier": "../../../../../packages/checkout/order",
+          "kind": "static",
+          "line": 6,
+          "target": "packages/checkout/order.ts"
+        },
+        {
+          "specifier": "./config",
+          "kind": "static",
+          "line": 7,
+          "target": "apps/web/src/lib/native/config.ts"
+        }
+      ]
+    },
+    {
+      "path": "apps/web/src/lib/native/session.ts",
+      "sha256": "20820f49a9f8e77c7926175416ab7e8ec48626ff94e6dae37e15487040141488",
+      "bytes": 4072,
+      "edges": [
+        {
+          "specifier": "./config",
+          "kind": "type-only",
+          "line": 1,
+          "target": "apps/web/src/lib/native/config.ts"
+        },
+        {
+          "specifier": "./config",
+          "kind": "static",
+          "line": 2,
+          "target": "apps/web/src/lib/native/config.ts"
+        },
+        {
+          "specifier": "./cache",
+          "kind": "static",
+          "line": 3,
+          "target": "apps/web/src/lib/native/cache.ts"
+        },
+        {
+          "specifier": "./jobs",
+          "kind": "static",
+          "line": 4,
+          "target": "apps/web/src/lib/native/jobs.ts"
+        }
+      ]
+    },
+    {
+      "path": "apps/web/src/lib/native/successor.ts",
+      "sha256": "b268ce7ee5d46353257e9a1b49228724d3347340ede3d2390c5abdd83865a986",
+      "bytes": 5206,
+      "edges": [
+        {
+          "specifier": "./cache",
+          "kind": "static",
+          "line": 1,
+          "target": "apps/web/src/lib/native/cache.ts"
+        },
+        {
+          "specifier": "./jobs",
+          "kind": "static",
+          "line": 2,
+          "target": "apps/web/src/lib/native/jobs.ts"
+        },
+        {
+          "specifier": "../crypto/envelope",
+          "kind": "static",
+          "line": 3,
+          "target": "apps/web/src/lib/crypto/envelope.ts"
+        },
+        {
+          "specifier": "./rpc",
+          "kind": "static",
+          "line": 4,
+          "target": "apps/web/src/lib/native/rpc.ts"
+        },
+        {
+          "specifier": "./presentation",
+          "kind": "static",
+          "line": 5,
+          "target": "apps/web/src/lib/native/presentation.ts"
+        },
+        {
+          "specifier": "./session",
+          "kind": "static",
+          "line": 6,
+          "target": "apps/web/src/lib/native/session.ts"
+        },
+        {
+          "specifier": "./config",
+          "kind": "static",
+          "line": 7,
+          "target": "apps/web/src/lib/native/config.ts"
+        },
+        {
+          "specifier": "./jobs",
+          "kind": "static",
+          "line": 8,
+          "target": "apps/web/src/lib/native/jobs.ts"
+        },
+        {
+          "specifier": "./payment",
+          "kind": "type-only",
+          "line": 10,
+          "target": "apps/web/src/lib/native/payment.ts"
+        },
+        {
+          "specifier": "./diagnostics",
+          "kind": "type-only",
+          "line": 11,
+          "target": "apps/web/src/lib/native/diagnostics.ts"
+        },
+        {
+          "specifier": "./payment",
+          "kind": "dynamic-literal",
+          "line": 21,
+          "target": "apps/web/src/lib/native/payment.ts"
+        }
+      ]
+    },
+    {
+      "path": "apps/web/src/lib/opsDesk/adminLock.ts",
+      "sha256": "a1da5a372d270268b23a6481732a16664c657616b6a71a3892aadf2457106390",
+      "bytes": 1626,
+      "edges": [
+        {
+          "specifier": "./store",
+          "kind": "static",
+          "line": 1,
+          "target": "apps/web/src/lib/opsDesk/store.ts"
+        }
+      ]
+    },
+    {
+      "path": "apps/web/src/lib/opsDesk/feed.ts",
+      "sha256": "595955826d24864ae3a8815842ed8520f1f64a6a5d259972d80063c17c95af8a",
+      "bytes": 3115,
+      "edges": [
+        {
+          "specifier": "../crypto/keys",
+          "kind": "static",
+          "line": 1,
+          "target": "apps/web/src/lib/crypto/keys.ts"
+        },
+        {
+          "specifier": "../arweave/gateways",
+          "kind": "static",
+          "line": 2,
+          "target": "apps/web/src/lib/arweave/gateways.ts"
+        },
+        {
+          "specifier": "./types",
+          "kind": "type-only",
+          "line": 3,
+          "target": "apps/web/src/lib/opsDesk/types.ts"
+        }
+      ]
+    },
+    {
+      "path": "apps/web/src/lib/opsDesk/networkOverview.ts",
+      "sha256": "6f4886cd77278715ebc3c4154270f68b12ab3140f9e7db79d2e9ab9c406205af",
+      "bytes": 6186,
+      "edges": [
+        {
+          "specifier": "@solana/web3.js",
+          "kind": "static",
+          "line": 1,
+          "external": true,
+          "unresolved": false
+        },
+        {
+          "specifier": "../crypto/keys",
+          "kind": "static",
+          "line": 2,
+          "target": "apps/web/src/lib/crypto/keys.ts"
+        },
+        {
+          "specifier": "./feed",
+          "kind": "static",
+          "line": 3,
+          "target": "apps/web/src/lib/opsDesk/feed.ts"
+        },
+        {
+          "specifier": "../recovery/legacy-locators.v1.json",
+          "kind": "static",
+          "line": 4,
+          "target": "apps/web/src/lib/recovery/legacy-locators.v1.json"
+        },
+        {
+          "specifier": "../preserveV2/policy",
+          "kind": "static",
+          "line": 5,
+          "target": "apps/web/src/lib/preserveV2/policy.ts"
+        },
+        {
+          "specifier": "../preserveV2/solana",
+          "kind": "static",
+          "line": 6,
+          "target": "apps/web/src/lib/preserveV2/solana.ts"
+        },
+        {
+          "specifier": "../preserveV2/types",
+          "kind": "type-only",
+          "line": 7,
+          "target": "apps/web/src/lib/preserveV2/types.ts"
+        },
+        {
+          "specifier": "../preserveV2/verify",
+          "kind": "static",
+          "line": 8,
+          "target": "apps/web/src/lib/preserveV2/verify.ts"
+        }
+      ]
+    },
+    {
+      "path": "apps/web/src/lib/opsDesk/route.ts",
+      "sha256": "102d642c1ebd3b87a272b267bdba110e78dd5688c55cc813c92329c37c07ab71",
+      "bytes": 656,
+      "edges": []
+    },
+    {
+      "path": "apps/web/src/lib/opsDesk/store.ts",
+      "sha256": "d90dc13636c98953e71741109ed94944adb10d327daa8afb5bddc04b8d13cc93",
+      "bytes": 15974,
+      "edges": [
+        {
+          "specifier": "../crypto/keys",
+          "kind": "static",
+          "line": 1,
+          "target": "apps/web/src/lib/crypto/keys.ts"
+        },
+        {
+          "specifier": "./types",
+          "kind": "type-only",
+          "line": 2,
+          "target": "apps/web/src/lib/opsDesk/types.ts"
+        }
+      ]
+    },
+    {
+      "path": "apps/web/src/lib/opsDesk/treasury.ts",
+      "sha256": "435e01149a4c0798f548cc5b34d0d760352d7f875227ddfb1301a34d936503dc",
+      "bytes": 1008,
+      "edges": [
+        {
+          "specifier": "arweave/web/lib/wallet",
+          "kind": "type-only",
+          "line": 1,
+          "external": true,
+          "unresolved": false
+        },
+        {
+          "specifier": "../arweave/client",
+          "kind": "static",
+          "line": 2,
+          "target": "apps/web/src/lib/arweave/client.ts"
+        },
+        {
+          "specifier": "../arweave/publish",
+          "kind": "static",
+          "line": 3,
+          "target": "apps/web/src/lib/arweave/publish.ts"
+        },
+        {
+          "specifier": "./store",
+          "kind": "static",
+          "line": 4,
+          "target": "apps/web/src/lib/opsDesk/store.ts"
+        }
+      ]
+    },
+    {
+      "path": "apps/web/src/lib/pdf/classicTreePdf.ts",
+      "sha256": "56dfaf73644f97a502d9285933c70521613d2fe9461039e3359828199c5c3f24",
+      "bytes": 9773,
+      "edges": [
+        {
+          "specifier": "jspdf",
+          "kind": "static",
+          "line": 1,
+          "external": true,
+          "unresolved": false
+        },
+        {
+          "specifier": "../types",
+          "kind": "type-only",
+          "line": 2,
+          "target": "apps/web/src/lib/types.ts"
+        },
+        {
+          "specifier": "../i18n/pdf",
+          "kind": "static",
+          "line": 3,
+          "target": "apps/web/src/lib/i18n/pdf.ts"
+        },
+        {
+          "specifier": "../pedigree",
+          "kind": "static",
+          "line": 4,
+          "target": "apps/web/src/lib/pedigree.ts"
+        },
+        {
+          "specifier": "./lineage",
+          "kind": "static",
+          "line": 5,
+          "target": "apps/web/src/lib/pdf/lineage.ts"
+        },
+        {
+          "specifier": "./font",
+          "kind": "static",
+          "line": 14,
+          "target": "apps/web/src/lib/pdf/font.ts"
+        },
+        {
+          "specifier": "./poster",
+          "kind": "static",
+          "line": 15,
+          "target": "apps/web/src/lib/pdf/poster.ts"
+        },
+        {
+          "specifier": "./textLayout",
+          "kind": "static",
+          "line": 22,
+          "target": "apps/web/src/lib/pdf/textLayout.ts"
+        }
+      ]
+    },
+    {
+      "path": "apps/web/src/lib/pdf/filename.ts",
+      "sha256": "ef23287ee2a6644b46b4742d5cb8252f6e7f5fecb01978b7d10818eb234ae0ff",
+      "bytes": 177,
+      "edges": []
+    },
+    {
+      "path": "apps/web/src/lib/pdf/font.ts",
+      "sha256": "67afb8e8b044f9a9795be75742a2af5b69f55fca953676d670598ac5cbd907be",
+      "bytes": 1843,
+      "edges": [
+        {
+          "specifier": "jspdf",
+          "kind": "type-only",
+          "line": 1,
+          "external": true,
+          "unresolved": false
+        },
+        {
+          "specifier": "../../assets/fonts/NotoSans-Regular.ttf?url",
+          "kind": "static",
+          "line": 2,
+          "target": "apps/web/src/assets/fonts/NotoSans-Regular.ttf"
+        },
+        {
+          "specifier": "../../assets/fonts/NotoSans-Bold.ttf?url",
+          "kind": "static",
+          "line": 3,
+          "target": "apps/web/src/assets/fonts/NotoSans-Bold.ttf"
+        }
+      ]
+    },
+    {
+      "path": "apps/web/src/lib/pdf/lineage.ts",
+      "sha256": "2356e2eaa931957d7428957212893615c9542015050bc287b4a3fa0a724e4eda",
+      "bytes": 10940,
+      "edges": [
+        {
+          "specifier": "../types",
+          "kind": "type-only",
+          "line": 1,
+          "target": "apps/web/src/lib/types.ts"
+        },
+        {
+          "specifier": "../pedigree",
+          "kind": "static",
+          "line": 2,
+          "target": "apps/web/src/lib/pedigree.ts"
+        },
+        {
+          "specifier": "../dates",
+          "kind": "static",
+          "line": 3,
+          "target": "apps/web/src/lib/dates.ts"
+        }
+      ]
+    },
+    {
+      "path": "apps/web/src/lib/pdf/ornaments.ts",
+      "sha256": "7e16b887cb8488c94492653b152d351c30a48afab2d3df1e265f67831a8ffd34",
+      "bytes": 15428,
+      "edges": [
+        {
+          "specifier": "jspdf",
+          "kind": "type-only",
+          "line": 5,
+          "external": true,
+          "unresolved": false
+        }
+      ]
+    },
+    {
+      "path": "apps/web/src/lib/pdf/poster.ts",
+      "sha256": "6a835f827bfa4330326e4a19551e14b7991ca7942f834af2f701feb88a457d8f",
+      "bytes": 2597,
+      "edges": [
+        {
+          "specifier": "jspdf",
+          "kind": "type-only",
+          "line": 4,
+          "external": true,
+          "unresolved": false
+        },
+        {
+          "specifier": "./filename",
+          "kind": "static",
+          "line": 5,
+          "target": "apps/web/src/lib/pdf/filename.ts"
+        }
+      ]
+    },
+    {
+      "path": "apps/web/src/lib/pdf/shezhirePdf.ts",
+      "sha256": "6c137e8de0a06e5865c17be7a6f72e3f3c6e9a02ed2a412130e841b40d157863",
+      "bytes": 18118,
+      "edges": [
+        {
+          "specifier": "jspdf",
+          "kind": "static",
+          "line": 1,
+          "external": true,
+          "unresolved": false
+        },
+        {
+          "specifier": "../types",
+          "kind": "type-only",
+          "line": 2,
+          "target": "apps/web/src/lib/types.ts"
+        },
+        {
+          "specifier": "../i18n/pdf",
+          "kind": "static",
+          "line": 3,
+          "target": "apps/web/src/lib/i18n/pdf.ts"
+        },
+        {
+          "specifier": "./lineage",
+          "kind": "static",
+          "line": 4,
+          "target": "apps/web/src/lib/pdf/lineage.ts"
+        },
+        {
+          "specifier": "./font",
+          "kind": "static",
+          "line": 5,
+          "target": "apps/web/src/lib/pdf/font.ts"
+        },
+        {
+          "specifier": "./poster",
+          "kind": "static",
+          "line": 6,
+          "target": "apps/web/src/lib/pdf/poster.ts"
+        },
+        {
+          "specifier": "../zhuzRu",
+          "kind": "static",
+          "line": 7,
+          "target": "apps/web/src/lib/zhuzRu.ts"
+        },
+        {
+          "specifier": "./ornaments",
+          "kind": "static",
+          "line": 8,
+          "target": "apps/web/src/lib/pdf/ornaments.ts"
+        },
+        {
+          "specifier": "./textLayout",
+          "kind": "static",
+          "line": 20,
+          "target": "apps/web/src/lib/pdf/textLayout.ts"
+        },
+        {
+          "specifier": "./shezhireTemplates",
+          "kind": "type-only",
+          "line": 21,
+          "target": "apps/web/src/lib/pdf/shezhireTemplates.ts"
+        },
+        {
+          "specifier": "./shezhireTemplates",
+          "kind": "type-only",
+          "line": 23,
+          "target": "apps/web/src/lib/pdf/shezhireTemplates.ts"
+        },
+        {
+          "specifier": "./shezhireTemplates",
+          "kind": "re-export",
+          "line": 24,
+          "target": "apps/web/src/lib/pdf/shezhireTemplates.ts"
+        }
+      ]
+    },
+    {
+      "path": "apps/web/src/lib/pdf/shezhireTemplates.ts",
+      "sha256": "69055b985ec7a45fabdb55df28a93f8ccb41cad1466dd1083fc4687de89d2c79",
+      "bytes": 954,
+      "edges": []
+    },
+    {
+      "path": "apps/web/src/lib/pdf/textLayout.ts",
+      "sha256": "00c0393365d851a16b2876fc1decc669f4ddf6b22ff7219c124c1f7df1a05780",
+      "bytes": 4742,
+      "edges": [
+        {
+          "specifier": "jspdf",
+          "kind": "type-only",
+          "line": 1,
+          "external": true,
+          "unresolved": false
+        },
+        {
+          "specifier": "../i18n/pdf",
+          "kind": "static",
+          "line": 2,
+          "target": "apps/web/src/lib/i18n/pdf.ts"
+        },
+        {
+          "specifier": "./font",
+          "kind": "static",
+          "line": 3,
+          "target": "apps/web/src/lib/pdf/font.ts"
+        }
+      ]
+    },
+    {
+      "path": "apps/web/src/lib/pdfRoot.ts",
+      "sha256": "d4d991d54922bf511eaf97bb00b595fad88498f28e04a7ac523ef41d3da3ac76",
+      "bytes": 346,
+      "edges": []
+    },
+    {
+      "path": "apps/web/src/lib/pedigree.ts",
+      "sha256": "b86ea67257f8b6c4bb4936d7a0bd9b11c82d2381e1ec54be9bb3106a0ed1708c",
+      "bytes": 10649,
+      "edges": [
+        {
+          "specifier": "./types",
+          "kind": "type-only",
+          "line": 1,
+          "target": "apps/web/src/lib/types.ts"
+        },
+        {
+          "specifier": "./treeEngine",
+          "kind": "static",
+          "line": 2,
+          "target": "apps/web/src/lib/treeEngine.ts"
+        },
+        {
+          "specifier": "./dates",
+          "kind": "static",
+          "line": 3,
+          "target": "apps/web/src/lib/dates.ts"
+        }
+      ]
+    },
+    {
+      "path": "apps/web/src/lib/pedigreeFit.ts",
+      "sha256": "6d59c83d4ad9f8b74a71818b75410d462e90dfcaac03bbf181098be8e3735505",
+      "bytes": 957,
+      "edges": []
+    },
+    {
+      "path": "apps/web/src/lib/permawebHost.ts",
+      "sha256": "6d91d4961d3edde868e6d82b48a58ae88dec3c705c724b02dfcf5961da308ff3",
+      "bytes": 491,
+      "edges": []
+    },
+    {
+      "path": "apps/web/src/lib/preservationContext.legacy.ts",
+      "sha256": "7524aea46324c8c61e60348fc78f8660346884fd5bf2aed9be88e924b383f767",
+      "bytes": 451,
+      "edges": [
+        {
+          "specifier": "./checkout/vaultGuard",
+          "kind": "static",
+          "line": 1,
+          "target": "apps/web/src/lib/checkout/vaultGuard.ts"
+        },
+        {
+          "specifier": "./checkout/paidJournal",
+          "kind": "static",
+          "line": 2,
+          "target": "apps/web/src/lib/checkout/paidJournal.ts"
+        },
+        {
+          "specifier": "./fund/preference",
+          "kind": "re-export",
+          "line": 3,
+          "target": "apps/web/src/lib/fund/preference.ts"
+        }
+      ]
+    },
+    {
+      "path": "apps/web/src/lib/preserveV2/arweave.ts",
+      "sha256": "ec71b8d95ceab167849fc312358ce11ca983c7e0109dc28ac3cbdf220512ae3e",
+      "bytes": 9746,
+      "edges": [
+        {
+          "specifier": "arweave",
+          "kind": "type-only",
+          "line": 1,
+          "external": true,
+          "unresolved": false
+        },
+        {
+          "specifier": "arweave/web/lib/transaction",
+          "kind": "type-only",
+          "line": 2,
+          "external": true,
+          "unresolved": false
+        },
+        {
+          "specifier": "../arweave/client",
+          "kind": "static",
+          "line": 3,
+          "target": "apps/web/src/lib/arweave/client.ts"
+        },
+        {
+          "specifier": "./policy",
+          "kind": "static",
+          "line": 4,
+          "target": "apps/web/src/lib/preserveV2/policy.ts"
+        },
+        {
+          "specifier": "./verify",
+          "kind": "static",
+          "line": 5,
+          "target": "apps/web/src/lib/preserveV2/verify.ts"
+        },
+        {
+          "specifier": "./timeout",
+          "kind": "static",
+          "line": 6,
+          "target": "apps/web/src/lib/preserveV2/timeout.ts"
+        },
+        {
+          "specifier": "../recovery/legacy-locators.v1.json",
+          "kind": "static",
+          "line": 7,
+          "target": "apps/web/src/lib/recovery/legacy-locators.v1.json"
+        },
+        {
+          "specifier": "./types",
+          "kind": "type-only",
+          "line": 8,
+          "target": "apps/web/src/lib/preserveV2/types.ts"
+        }
+      ]
+    },
+    {
+      "path": "apps/web/src/lib/preserveV2/machine.ts",
+      "sha256": "926c9406e34cf9635f7cb3209fd0b389bf9f8cb864ce8a71cf5f12d498b53de1",
+      "bytes": 12148,
+      "edges": [
+        {
+          "specifier": "./policy",
+          "kind": "static",
+          "line": 1,
+          "target": "apps/web/src/lib/preserveV2/policy.ts"
+        },
+        {
+          "specifier": "./store",
+          "kind": "static",
+          "line": 2,
+          "target": "apps/web/src/lib/preserveV2/store.ts"
+        },
+        {
+          "specifier": "./solana",
+          "kind": "static",
+          "line": 3,
+          "target": "apps/web/src/lib/preserveV2/solana.ts"
+        },
+        {
+          "specifier": "./verify",
+          "kind": "static",
+          "line": 4,
+          "target": "apps/web/src/lib/preserveV2/verify.ts"
+        },
+        {
+          "specifier": "./arweave",
+          "kind": "static",
+          "line": 5,
+          "target": "apps/web/src/lib/preserveV2/arweave.ts"
+        },
+        {
+          "specifier": "./timeout",
+          "kind": "static",
+          "line": 6,
+          "target": "apps/web/src/lib/preserveV2/timeout.ts"
+        },
+        {
+          "specifier": "./types",
+          "kind": "type-only",
+          "line": 7,
+          "target": "apps/web/src/lib/preserveV2/types.ts"
+        }
+      ]
+    },
+    {
+      "path": "apps/web/src/lib/preserveV2/policy.ts",
+      "sha256": "92407be96454c98496ebfd29f04fc0ac755575ad68b4e5608e0910e9877fdf4b",
+      "bytes": 2906,
+      "edges": [
+        {
+          "specifier": "../crypto/envelope",
+          "kind": "static",
+          "line": 1,
+          "target": "apps/web/src/lib/crypto/envelope.ts"
+        },
+        {
+          "specifier": "../crypto/encrypt",
+          "kind": "type-only",
+          "line": 2,
+          "target": "apps/web/src/lib/crypto/encrypt.ts"
+        }
+      ]
+    },
+    {
+      "path": "apps/web/src/lib/preserveV2/solana.ts",
+      "sha256": "6c5650b34c44301125bebe67efbe88847d6c4fb749b5240c53b5121234ac5579",
+      "bytes": 4638,
+      "edges": [
+        {
+          "specifier": "@solana/web3.js",
+          "kind": "static",
+          "line": 1,
+          "external": true,
+          "unresolved": false
+        },
+        {
+          "specifier": "./policy",
+          "kind": "static",
+          "line": 2,
+          "target": "apps/web/src/lib/preserveV2/policy.ts"
+        },
+        {
+          "specifier": "./types",
+          "kind": "type-only",
+          "line": 3,
+          "target": "apps/web/src/lib/preserveV2/types.ts"
+        },
+        {
+          "specifier": "./timeout",
+          "kind": "static",
+          "line": 4,
+          "target": "apps/web/src/lib/preserveV2/timeout.ts"
+        }
+      ]
+    },
+    {
+      "path": "apps/web/src/lib/preserveV2/store.ts",
+      "sha256": "58e738924761280bb215db66a67412129a2dfbab5c666d506c1368e4acc011a6",
+      "bytes": 4952,
+      "edges": [
+        {
+          "specifier": "@solana/web3.js",
+          "kind": "static",
+          "line": 1,
+          "external": true,
+          "unresolved": false
+        },
+        {
+          "specifier": "./policy",
+          "kind": "static",
+          "line": 2,
+          "target": "apps/web/src/lib/preserveV2/policy.ts"
+        },
+        {
+          "specifier": "./types",
+          "kind": "type-only",
+          "line": 3,
+          "target": "apps/web/src/lib/preserveV2/types.ts"
+        }
+      ]
+    },
+    {
+      "path": "apps/web/src/lib/preserveV2/timeout.ts",
+      "sha256": "999b100e5cc90edf33f7238a707d6cb0dd313a35eb543e7c9fa6108b3e309c80",
+      "bytes": 455,
+      "edges": []
+    },
+    {
+      "path": "apps/web/src/lib/preserveV2/verify.ts",
+      "sha256": "107a954fc41b80a5bb0920c6e6ee21cb45a07623bd980a1b32e07fb849c6b049",
+      "bytes": 3140,
+      "edges": [
+        {
+          "specifier": "@solana/web3.js",
+          "kind": "static",
+          "line": 1,
+          "external": true,
+          "unresolved": false
+        },
+        {
+          "specifier": "bs58",
+          "kind": "static",
+          "line": 2,
+          "external": true,
+          "unresolved": false
+        },
+        {
+          "specifier": "../crypto/envelope",
+          "kind": "static",
+          "line": 3,
+          "target": "apps/web/src/lib/crypto/envelope.ts"
+        },
+        {
+          "specifier": "./policy",
+          "kind": "static",
+          "line": 4,
+          "target": "apps/web/src/lib/preserveV2/policy.ts"
+        },
+        {
+          "specifier": "./solana",
+          "kind": "static",
+          "line": 5,
+          "target": "apps/web/src/lib/preserveV2/solana.ts"
+        },
+        {
+          "specifier": "./types",
+          "kind": "type-only",
+          "line": 6,
+          "target": "apps/web/src/lib/preserveV2/types.ts"
+        }
+      ]
+    },
+    {
+      "path": "apps/web/src/lib/recovery/diagnostics.ts",
+      "sha256": "2b23a0f224caaad787a7dfd56748f361615b2d0f55dfc281c499dd53406c703e",
+      "bytes": 307,
+      "edges": [
+        {
+          "specifier": "./types",
+          "kind": "type-only",
+          "line": 1,
+          "target": "apps/web/src/lib/recovery/types.ts"
+        }
+      ]
+    },
+    {
+      "path": "apps/web/src/lib/recovery/discovery.ts",
+      "sha256": "aed4e18d6374386a0211fddc10b925ae1b6647b9d465e3a567a50079c1247f4b",
+      "bytes": 2577,
+      "edges": [
+        {
+          "specifier": "./types",
+          "kind": "type-only",
+          "line": 1,
+          "target": "apps/web/src/lib/recovery/types.ts"
+        },
+        {
+          "specifier": "./providers/graphqlVaultProvider",
+          "kind": "static",
+          "line": 2,
+          "target": "apps/web/src/lib/recovery/providers/graphqlVaultProvider.ts"
+        },
+        {
+          "specifier": "./providers/legacyLocatorProvider",
+          "kind": "static",
+          "line": 3,
+          "target": "apps/web/src/lib/recovery/providers/legacyLocatorProvider.ts"
+        },
+        {
+          "specifier": "./providers/localHintProvider",
+          "kind": "static",
+          "line": 4,
+          "target": "apps/web/src/lib/recovery/providers/localHintProvider.ts"
+        }
+      ]
+    },
+    {
+      "path": "apps/web/src/lib/recovery/errors.ts",
+      "sha256": "039f9a669e196d24ef5d1a679a793a2012a5b4de8dcd5cf43375c49fad1ef499",
+      "bytes": 225,
+      "edges": [
+        {
+          "specifier": "./types",
+          "kind": "type-only",
+          "line": 1,
+          "target": "apps/web/src/lib/recovery/types.ts"
+        }
+      ]
+    },
+    {
+      "path": "apps/web/src/lib/recovery/gateways.ts",
+      "sha256": "9ed074eb84e249142ce353daeb7ecb528109c3bea14a90b6755160df255ae046",
+      "bytes": 7224,
+      "edges": [
+        {
+          "specifier": "./types",
+          "kind": "type-only",
+          "line": 1,
+          "target": "apps/web/src/lib/recovery/types.ts"
+        }
+      ]
+    },
+    {
+      "path": "apps/web/src/lib/recovery/head.ts",
+      "sha256": "b31fd12b802799c352caeae9aa0f6d6baad3c17391a5982740e5fcc98cd680e3",
+      "bytes": 612,
+      "edges": [
+        {
+          "specifier": "./types",
+          "kind": "type-only",
+          "line": 1,
+          "target": "apps/web/src/lib/recovery/types.ts"
+        }
+      ]
+    },
+    {
+      "path": "apps/web/src/lib/recovery/historicalNative.ts",
+      "sha256": "5fb3561573cb135d070a8a5f1cf41a919beb199fc9a5bb8c55f76b1c2e0ba7b2",
+      "bytes": 8107,
+      "edges": [
+        {
+          "specifier": "../crypto/keys",
+          "kind": "static",
+          "line": 1,
+          "target": "apps/web/src/lib/crypto/keys.ts"
+        },
+        {
+          "specifier": "../crypto/envelope",
+          "kind": "static",
+          "line": 2,
+          "target": "apps/web/src/lib/crypto/envelope.ts"
+        },
+        {
+          "specifier": "../directArweave/errors",
+          "kind": "static",
+          "line": 3,
+          "target": "apps/web/src/lib/directArweave/errors.ts"
+        },
+        {
+          "specifier": "../directArweave/network",
+          "kind": "static",
+          "line": 4,
+          "target": "apps/web/src/lib/directArweave/network.ts"
+        },
+        {
+          "specifier": "../directArweave/transaction",
+          "kind": "static",
+          "line": 5,
+          "target": "apps/web/src/lib/directArweave/transaction.ts"
+        },
+        {
+          "specifier": "../directArweave/types",
+          "kind": "type-only",
+          "line": 6,
+          "target": "apps/web/src/lib/directArweave/types.ts"
+        },
+        {
+          "specifier": "../directArweave/format",
+          "kind": "static",
+          "line": 7,
+          "target": "apps/web/src/lib/directArweave/format.ts"
+        },
+        {
+          "specifier": "./legacy-locators.v1.json",
+          "kind": "static",
+          "line": 8,
+          "target": "apps/web/src/lib/recovery/legacy-locators.v1.json"
+        },
+        {
+          "specifier": "./retrieve",
+          "kind": "static",
+          "line": 9,
+          "target": "apps/web/src/lib/recovery/retrieve.ts"
+        },
+        {
+          "specifier": "./verify",
+          "kind": "static",
+          "line": 10,
+          "target": "apps/web/src/lib/recovery/verify.ts"
+        },
+        {
+          "specifier": "./types",
+          "kind": "type-only",
+          "line": 11,
+          "target": "apps/web/src/lib/recovery/types.ts"
+        }
+      ]
+    },
+    {
+      "path": "apps/web/src/lib/recovery/legacy-locators.v1.json",
+      "sha256": "3cbc24bf1cfaef3834c4316272d1452fa37a894c7a81d93c2bfb58604473abde",
+      "bytes": 355,
+      "edges": []
+    },
+    {
+      "path": "apps/web/src/lib/recovery/providers/graphqlVaultProvider.ts",
+      "sha256": "9af1af3d569d8a9b9da14e40e84bce65d5e08de9887565c4361eca9667cee83c",
+      "bytes": 2216,
+      "edges": [
+        {
+          "specifier": "../types",
+          "kind": "type-only",
+          "line": 1,
+          "target": "apps/web/src/lib/recovery/types.ts"
+        },
+        {
+          "specifier": "../gateways",
+          "kind": "static",
+          "line": 2,
+          "target": "apps/web/src/lib/recovery/gateways.ts"
+        }
+      ]
+    },
+    {
+      "path": "apps/web/src/lib/recovery/providers/legacyLocatorProvider.ts",
+      "sha256": "bff951bf1020fc3259d703800783c0e456b6c505fc03036cb627e422a28bb04d",
+      "bytes": 808,
+      "edges": [
+        {
+          "specifier": "../legacy-locators.v1.json",
+          "kind": "static",
+          "line": 1,
+          "target": "apps/web/src/lib/recovery/legacy-locators.v1.json"
+        },
+        {
+          "specifier": "../types",
+          "kind": "type-only",
+          "line": 2,
+          "target": "apps/web/src/lib/recovery/types.ts"
+        }
+      ]
+    },
+    {
+      "path": "apps/web/src/lib/recovery/providers/localHintProvider.ts",
+      "sha256": "d9c61471865de6f84f5f9d7bebfe70b3fce4037c055bf6ed55cca8591ffa983c",
+      "bytes": 539,
+      "edges": [
+        {
+          "specifier": "../types",
+          "kind": "type-only",
+          "line": 1,
+          "target": "apps/web/src/lib/recovery/types.ts"
+        }
+      ]
+    },
+    {
+      "path": "apps/web/src/lib/recovery/recover.ts",
+      "sha256": "d678d164324e4dbc45c1fffcc7023c24ff7e8de7c934eb53925c78383346ac1b",
+      "bytes": 3922,
+      "edges": [
+        {
+          "specifier": "../crypto/bip39",
+          "kind": "static",
+          "line": 1,
+          "target": "apps/web/src/lib/crypto/bip39.ts"
+        },
+        {
+          "specifier": "../crypto/keys",
+          "kind": "static",
+          "line": 2,
+          "target": "apps/web/src/lib/crypto/keys.ts"
+        },
+        {
+          "specifier": "./discovery",
+          "kind": "static",
+          "line": 3,
+          "target": "apps/web/src/lib/recovery/discovery.ts"
+        },
+        {
+          "specifier": "./diagnostics",
+          "kind": "static",
+          "line": 4,
+          "target": "apps/web/src/lib/recovery/diagnostics.ts"
+        },
+        {
+          "specifier": "./errors",
+          "kind": "static",
+          "line": 5,
+          "target": "apps/web/src/lib/recovery/errors.ts"
+        },
+        {
+          "specifier": "./gateways",
+          "kind": "static",
+          "line": 6,
+          "target": "apps/web/src/lib/recovery/gateways.ts"
+        },
+        {
+          "specifier": "./head",
+          "kind": "static",
+          "line": 7,
+          "target": "apps/web/src/lib/recovery/head.ts"
+        },
+        {
+          "specifier": "./retrieve",
+          "kind": "static",
+          "line": 8,
+          "target": "apps/web/src/lib/recovery/retrieve.ts"
+        },
+        {
+          "specifier": "./verify",
+          "kind": "static",
+          "line": 9,
+          "target": "apps/web/src/lib/recovery/verify.ts"
+        },
+        {
+          "specifier": "./types",
+          "kind": "type-only",
+          "line": 10,
+          "target": "apps/web/src/lib/recovery/types.ts"
+        }
+      ]
+    },
+    {
+      "path": "apps/web/src/lib/recovery/retrieve.ts",
+      "sha256": "20c88a7fbc4de7b48f61ab7010d3086d24f6744b16340cd5b2bb5994dc85a239",
+      "bytes": 10924,
+      "edges": [
+        {
+          "specifier": "../crypto/envelope",
+          "kind": "static",
+          "line": 1,
+          "target": "apps/web/src/lib/crypto/envelope.ts"
+        },
+        {
+          "specifier": "./errors",
+          "kind": "static",
+          "line": 2,
+          "target": "apps/web/src/lib/recovery/errors.ts"
+        },
+        {
+          "specifier": "./gateways",
+          "kind": "static",
+          "line": 3,
+          "target": "apps/web/src/lib/recovery/gateways.ts"
+        },
+        {
+          "specifier": "./diagnostics",
+          "kind": "static",
+          "line": 4,
+          "target": "apps/web/src/lib/recovery/diagnostics.ts"
+        },
+        {
+          "specifier": "./types",
+          "kind": "type-only",
+          "line": 5,
+          "target": "apps/web/src/lib/recovery/types.ts"
+        }
+      ]
+    },
+    {
+      "path": "apps/web/src/lib/recovery/verify.ts",
+      "sha256": "34e9ed23451b8d74b4b05d3192fa852b23d48b1709e7a55f06001b57e1ca9ece",
+      "bytes": 1738,
+      "edges": [
+        {
+          "specifier": "../crypto/envelope",
+          "kind": "static",
+          "line": 1,
+          "target": "apps/web/src/lib/crypto/envelope.ts"
+        },
+        {
+          "specifier": "../crypto/vault",
+          "kind": "static",
+          "line": 2,
+          "target": "apps/web/src/lib/crypto/vault.ts"
+        },
+        {
+          "specifier": "../crypto/keys",
+          "kind": "type-only",
+          "line": 3,
+          "target": "apps/web/src/lib/crypto/keys.ts"
+        },
+        {
+          "specifier": "../treeJson",
+          "kind": "static",
+          "line": 4,
+          "target": "apps/web/src/lib/treeJson.ts"
+        },
+        {
+          "specifier": "./errors",
+          "kind": "static",
+          "line": 5,
+          "target": "apps/web/src/lib/recovery/errors.ts"
+        },
+        {
+          "specifier": "./retrieve",
+          "kind": "static",
+          "line": 6,
+          "target": "apps/web/src/lib/recovery/retrieve.ts"
+        },
+        {
+          "specifier": "./types",
+          "kind": "type-only",
+          "line": 7,
+          "target": "apps/web/src/lib/recovery/types.ts"
+        }
+      ]
+    },
+    {
+      "path": "apps/web/src/lib/solana/client.ts",
+      "sha256": "e2346e7ff80f8533f59fd17419f359385add785ea28f48bd05f2d68ad37165e3",
+      "bytes": 3308,
+      "edges": [
+        {
+          "specifier": "@ardrive/turbo-sdk/web",
+          "kind": "type-only",
+          "line": 1,
+          "external": true,
+          "unresolved": false
+        },
+        {
+          "specifier": "../crypto/encrypt",
+          "kind": "type-only",
+          "line": 2,
+          "target": "apps/web/src/lib/crypto/encrypt.ts"
+        },
+        {
+          "specifier": "../download",
+          "kind": "static",
+          "line": 3,
+          "target": "apps/web/src/lib/download.ts"
+        },
+        {
+          "specifier": "./policy",
+          "kind": "static",
+          "line": 4,
+          "target": "apps/web/src/lib/solana/policy.ts"
+        },
+        {
+          "specifier": "./receipt",
+          "kind": "type-only",
+          "line": 5,
+          "target": "apps/web/src/lib/solana/receipt.ts"
+        },
+        {
+          "specifier": "./receipt",
+          "kind": "type-only",
+          "line": 6,
+          "target": "apps/web/src/lib/solana/receipt.ts"
+        },
+        {
+          "specifier": "./upload",
+          "kind": "re-export",
+          "line": 7,
+          "target": "apps/web/src/lib/solana/upload.ts"
+        },
+        {
+          "specifier": "@solana/web3.js",
+          "kind": "dynamic-literal",
+          "line": 28,
+          "external": true,
+          "unresolved": false
+        },
+        {
+          "specifier": "@ardrive/turbo-sdk/web",
+          "kind": "dynamic-literal",
+          "line": 47,
+          "external": true,
+          "unresolved": false
+        }
+      ]
+    },
+    {
+      "path": "apps/web/src/lib/solana/journal.ts",
+      "sha256": "8b51fa8672652e0c205b6c227bbf738c9b67a65f6ea03d99dcadb7fb31eae097",
+      "bytes": 3401,
+      "edges": [
+        {
+          "specifier": "../crypto/encrypt",
+          "kind": "type-only",
+          "line": 1,
+          "target": "apps/web/src/lib/crypto/encrypt.ts"
+        },
+        {
+          "specifier": "./policy",
+          "kind": "type-only",
+          "line": 2,
+          "target": "apps/web/src/lib/solana/policy.ts"
+        },
+        {
+          "specifier": "./receipt",
+          "kind": "type-only",
+          "line": 3,
+          "target": "apps/web/src/lib/solana/receipt.ts"
+        }
+      ]
+    },
+    {
+      "path": "apps/web/src/lib/solana/messages.ts",
+      "sha256": "b1a7d911581fc77ef3b02c8ecb6767bd3099c4edbde95ef1651ca46135d2ca45",
+      "bytes": 20077,
+      "edges": [
+        {
+          "specifier": "../i18n/locale",
+          "kind": "type-only",
+          "line": 1,
+          "target": "apps/web/src/lib/i18n/locale.ts"
+        }
+      ]
+    },
+    {
+      "path": "apps/web/src/lib/solana/policy.ts",
+      "sha256": "8c568b7031388452b97cebc107cfb4eea87f9150c92bd062bc1d469969b94335",
+      "bytes": 3452,
+      "edges": [
+        {
+          "specifier": "../crypto/encrypt",
+          "kind": "type-only",
+          "line": 1,
+          "target": "apps/web/src/lib/crypto/encrypt.ts"
+        },
+        {
+          "specifier": "../crypto/envelope",
+          "kind": "re-export",
+          "line": 2,
+          "target": "apps/web/src/lib/crypto/envelope.ts"
+        }
+      ]
+    },
+    {
+      "path": "apps/web/src/lib/solana/receipt.ts",
+      "sha256": "8099577685d1e775ae8e1c5bed30b022aaf73d3774dee8f13f1b1cfa7a4458cb",
+      "bytes": 3889,
+      "edges": [
+        {
+          "specifier": "@ardrive/turbo-sdk/web",
+          "kind": "type-only",
+          "line": 1,
+          "external": true,
+          "unresolved": false
+        },
+        {
+          "specifier": "../crypto/envelope",
+          "kind": "static",
+          "line": 2,
+          "target": "apps/web/src/lib/crypto/envelope.ts"
+        },
+        {
+          "specifier": "./policy",
+          "kind": "static",
+          "line": 3,
+          "target": "apps/web/src/lib/solana/policy.ts"
+        }
+      ]
+    },
+    {
+      "path": "apps/web/src/lib/solana/upload.ts",
+      "sha256": "d7f585bfadbc53afae127435c2ac961f6c4bb4d7cb64c211f9ca36a86176235a",
+      "bytes": 8902,
+      "edges": [
+        {
+          "specifier": "@ardrive/turbo-sdk/web",
+          "kind": "type-only",
+          "line": 1,
+          "external": true,
+          "unresolved": false
+        },
+        {
+          "specifier": "../crypto/encrypt",
+          "kind": "type-only",
+          "line": 2,
+          "target": "apps/web/src/lib/crypto/encrypt.ts"
+        },
+        {
+          "specifier": "../crypto/envelope",
+          "kind": "static",
+          "line": 3,
+          "target": "apps/web/src/lib/crypto/envelope.ts"
+        },
+        {
+          "specifier": "./policy",
+          "kind": "static",
+          "line": 4,
+          "target": "apps/web/src/lib/solana/policy.ts"
+        },
+        {
+          "specifier": "./journal",
+          "kind": "static",
+          "line": 5,
+          "target": "apps/web/src/lib/solana/journal.ts"
+        },
+        {
+          "specifier": "./receipt",
+          "kind": "type-only",
+          "line": 6,
+          "target": "apps/web/src/lib/solana/receipt.ts"
+        },
+        {
+          "specifier": "@ardrive/turbo-sdk/web",
+          "kind": "dynamic-literal",
+          "line": 39,
+          "external": true,
+          "unresolved": false
+        },
+        {
+          "specifier": "@dha-team/arbundles/web",
+          "kind": "dynamic-literal",
+          "line": 40,
+          "external": true,
+          "unresolved": false
+        },
+        {
+          "specifier": "@solana/web3.js",
+          "kind": "dynamic-literal",
+          "line": 41,
+          "external": true,
+          "unresolved": false
+        },
+        {
+          "specifier": "bs58",
+          "kind": "dynamic-literal",
+          "line": 42,
+          "external": true,
+          "unresolved": false
+        }
+      ]
+    },
+    {
+      "path": "apps/web/src/lib/sponsor/client.ts",
+      "sha256": "836ef44bb148638fed644259031270800c384528b5bf74df869ab52e07d48b26",
+      "bytes": 3358,
+      "edges": [
+        {
+          "specifier": "../crypto/encrypt",
+          "kind": "type-only",
+          "line": 4,
+          "target": "apps/web/src/lib/crypto/encrypt.ts"
+        },
+        {
+          "specifier": "./config",
+          "kind": "static",
+          "line": 5,
+          "target": "apps/web/src/lib/sponsor/config.ts"
+        }
+      ]
+    },
+    {
+      "path": "apps/web/src/lib/sponsor/config.ts",
+      "sha256": "839706e4a5150ed0be883e0dac4ad19233726ded9a524aa7cef86799c5139a9c",
+      "bytes": 1264,
+      "edges": []
+    },
+    {
+      "path": "apps/web/src/lib/storageQuota.ts",
+      "sha256": "4ef8f93bb48457dc60c5ebd89726f811e92bf19ed3f54aa967b024352208bde2",
+      "bytes": 906,
+      "edges": []
+    },
+    {
+      "path": "apps/web/src/lib/treeEngine.ts",
+      "sha256": "9a3fae9c654f3c017b4485f3c2a45237bf87f2d71ff88b22697ed40940a1c75a",
+      "bytes": 6540,
+      "edges": [
+        {
+          "specifier": "./types",
+          "kind": "type-only",
+          "line": 5,
+          "target": "apps/web/src/lib/types.ts"
+        },
+        {
+          "specifier": "./storageQuota",
+          "kind": "static",
+          "line": 6,
+          "target": "apps/web/src/lib/storageQuota.ts"
+        }
+      ]
+    },
+    {
+      "path": "apps/web/src/lib/treeJson.ts",
+      "sha256": "c7ceda978df1174f98b6b99d5297ba3f1300d0879c223135b722b268aa7c5a64",
+      "bytes": 10626,
+      "edges": [
+        {
+          "specifier": "./guide",
+          "kind": "type-only",
+          "line": 1,
+          "target": "apps/web/src/lib/guide.ts"
+        },
+        {
+          "specifier": "./guide",
+          "kind": "static",
+          "line": 2,
+          "target": "apps/web/src/lib/guide.ts"
+        },
+        {
+          "specifier": "./types",
+          "kind": "type-only",
+          "line": 3,
+          "target": "apps/web/src/lib/types.ts"
+        },
+        {
+          "specifier": "./pdf/filename",
+          "kind": "static",
+          "line": 4,
+          "target": "apps/web/src/lib/pdf/filename.ts"
+        },
+        {
+          "specifier": "./zhuzRu",
+          "kind": "static",
+          "line": 5,
+          "target": "apps/web/src/lib/zhuzRu.ts"
+        }
+      ]
+    },
+    {
+      "path": "apps/web/src/lib/vaultSession/localArchive.ts",
+      "sha256": "71c5616d0c9e1487d0d899dba7acd5447f0079321730c3d6dcfee19767be9e75",
+      "bytes": 2006,
+      "edges": [
+        {
+          "specifier": "../crypto/encrypt",
+          "kind": "type-only",
+          "line": 7,
+          "target": "apps/web/src/lib/crypto/encrypt.ts"
+        }
+      ]
+    },
+    {
+      "path": "apps/web/src/lib/vaultSession/selection.ts",
+      "sha256": "005fb5ff2f7e7ef8a066cb5f5385125df394f670be810d07badd33d824175479",
+      "bytes": 6714,
+      "edges": [
+        {
+          "specifier": "../crypto/encrypt",
+          "kind": "type-only",
+          "line": 1,
+          "target": "apps/web/src/lib/crypto/encrypt.ts"
+        },
+        {
+          "specifier": "../crypto/envelope",
+          "kind": "static",
+          "line": 2,
+          "target": "apps/web/src/lib/crypto/envelope.ts"
+        },
+        {
+          "specifier": "../crypto/vault",
+          "kind": "type-only",
+          "line": 3,
+          "target": "apps/web/src/lib/crypto/vault.ts"
+        },
+        {
+          "specifier": "../draftStorage",
+          "kind": "static",
+          "line": 4,
+          "target": "apps/web/src/lib/draftStorage.ts"
+        },
+        {
+          "specifier": "../treeJson",
+          "kind": "static",
+          "line": 5,
+          "target": "apps/web/src/lib/treeJson.ts"
+        },
+        {
+          "specifier": "../types",
+          "kind": "type-only",
+          "line": 6,
+          "target": "apps/web/src/lib/types.ts"
+        },
+        {
+          "specifier": "./session",
+          "kind": "static",
+          "line": 7,
+          "target": "apps/web/src/lib/vaultSession/session.ts"
+        }
+      ]
+    },
+    {
+      "path": "apps/web/src/lib/vaultSession/session.ts",
+      "sha256": "533555ad5a1b1fc45fbc26438446e2f7b627266c754ead0b8334cf7df4d4fbb3",
+      "bytes": 4720,
+      "edges": [
+        {
+          "specifier": "@noble/hashes/sha2.js",
+          "kind": "static",
+          "line": 6,
+          "external": true,
+          "unresolved": false
+        },
+        {
+          "specifier": "@noble/hashes/utils.js",
+          "kind": "static",
+          "line": 7,
+          "external": true,
+          "unresolved": false
+        },
+        {
+          "specifier": "../crypto/encrypt",
+          "kind": "type-only",
+          "line": 8,
+          "target": "apps/web/src/lib/crypto/encrypt.ts"
+        },
+        {
+          "specifier": "../crypto/envelope",
+          "kind": "static",
+          "line": 9,
+          "target": "apps/web/src/lib/crypto/envelope.ts"
+        }
+      ]
+    },
+    {
+      "path": "apps/web/src/lib/zhuzRu.ts",
+      "sha256": "3d2773cab72b813a91491fdd41de0200e35aacd6e85ee0df973048fb0e0e76b3",
+      "bytes": 2401,
+      "edges": []
+    },
+    {
+      "path": "apps/web/src/main.tsx",
+      "sha256": "b0074c0ea2606442a992bbb42a3c6229c76a10f5a1b519a74aad683c76f05916",
+      "bytes": 457,
+      "edges": [
+        {
+          "specifier": "react",
+          "kind": "static",
+          "line": 1,
+          "external": true,
+          "unresolved": false
+        },
+        {
+          "specifier": "react-dom/client",
+          "kind": "static",
+          "line": 2,
+          "external": true,
+          "unresolved": false
+        },
+        {
+          "specifier": "./index.css",
+          "kind": "static",
+          "line": 3,
+          "target": "apps/web/src/index.css"
+        },
+        {
+          "specifier": "@sejire/app",
+          "kind": "static",
+          "line": 4,
+          "target": "apps/web/src/App.tsx"
+        },
+        {
+          "specifier": "./components/ErrorBoundary.tsx",
+          "kind": "static",
+          "line": 5,
+          "target": "apps/web/src/components/ErrorBoundary.tsx"
+        },
+        {
+          "specifier": "./lib/i18n/I18nProvider.tsx",
+          "kind": "static",
+          "line": 6,
+          "target": "apps/web/src/lib/i18n/I18nProvider.tsx"
+        }
+      ]
+    },
+    {
+      "path": "packages/checkout/amounts.ts",
+      "sha256": "fe01f512cfc7c09750f1ea35e6a2039c7f82d5faa1a212dcb46e1760c602401f",
+      "bytes": 2015,
+      "edges": []
+    },
+    {
+      "path": "packages/checkout/order.ts",
+      "sha256": "9afeb1b018745d66d58c1119b18b8ab1c66123425a8a525af1b2a4b40251565a",
+      "bytes": 10948,
+      "edges": [
+        {
+          "specifier": "./amounts",
+          "kind": "static",
+          "line": 1,
+          "target": "packages/checkout/amounts.ts"
+        }
+      ]
+    },
+    {
+      "path": "packages/checkout/paid.ts",
+      "sha256": "c4a023a516654475f9ac77ffe177ed0c4d4c73735fb9e30a9cbaa78a81794249",
+      "bytes": 29356,
+      "edges": [
+        {
+          "specifier": "./order",
+          "kind": "static",
+          "line": 1,
+          "target": "packages/checkout/order.ts"
+        },
+        {
+          "specifier": "./amounts",
+          "kind": "static",
+          "line": 6,
+          "target": "packages/checkout/amounts.ts"
+        },
+        {
+          "specifier": "../protocol/wire",
+          "kind": "static",
+          "line": 7,
+          "target": "packages/protocol/wire.ts"
+        },
+        {
+          "specifier": "./order",
+          "kind": "re-export",
+          "line": 9,
+          "target": "packages/checkout/order.ts"
+        }
+      ]
+    },
+    {
+      "path": "packages/checkout/recipients.ts",
+      "sha256": "31c2619261e7a08dd045f707cc40c3f9a7fd60be87dbc0be1e6e5777b2b51967",
+      "bytes": 2798,
+      "edges": [
+        {
+          "specifier": "./order",
+          "kind": "static",
+          "line": 1,
+          "target": "packages/checkout/order.ts"
+        }
+      ]
+    },
+    {
+      "path": "packages/checkout/rpcJson.ts",
+      "sha256": "1ec11289392269849ebccf8ea419e9b7a50b2443c909aad23f8346cf49a8cf68",
+      "bytes": 2183,
+      "edges": [
+        {
+          "specifier": "./amounts",
+          "kind": "static",
+          "line": 1,
+          "target": "packages/checkout/amounts.ts"
+        }
+      ]
+    },
+    {
+      "path": "packages/protocol/wire.ts",
+      "sha256": "07f36cf19d2b6e9a4b400f3a9d223b632b050e412c90a2e876550f4efcb674d5",
+      "bytes": 745,
+      "edges": []
+    }
+  ]
+}

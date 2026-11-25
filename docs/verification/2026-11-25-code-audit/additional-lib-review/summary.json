@@ -1,0 +1,100 @@
+{
+  "schema": "sejire/additional-lib-review-summary/v1",
+  "dateUTC": "2026-11-25T08:34:32.084388+00:00",
+  "snapshotCommit": "9315471ba4fd5a6d0c2d8292bef33ab2ce9617ae",
+  "status": "MANUAL_SOURCE_REVIEW_COMPLETE",
+  "publicationApproval": false,
+  "runtimeOrTestEditsByReviewer": 0,
+  "newRuntimeTestOrBuildRunsByReviewer": 0,
+  "newPublicNetworkWalletPaymentOrDeployActions": 0,
+  "libraryCoverage": {
+    "inventoryTypeScriptFiles": 134,
+    "manualFullUnionFiles": 134,
+    "manualTargetedUnionFiles": 0,
+    "totalLibraryTypeScriptLines": 15078,
+    "initiallyUnlistedFilesRead": 96,
+    "additionalFullRereads": 5,
+    "additionalRuntimeJsonFilesRead": 1,
+    "additionalTypeScriptFiles": 101,
+    "additionalLibraryFilesTotal": 102,
+    "additionalLibraryLinesIncludingJson": 11818,
+    "reviewShaMatches": 134,
+    "reviewShaMismatches": 0
+  },
+  "sharedPackages": {
+    "additionalFullFiles": 5,
+    "additionalLines": 277,
+    "backendFullFilesCrosschecked": 4,
+    "parentReportedFullFiles": 1,
+    "parentReportedFile": "packages/checkout/paid.ts"
+  },
+  "sourceImportGraph": {
+    "fundedAliasTypeScriptLibraryReachable": 115,
+    "unresolvedLocalImports": 0,
+    "proofKind": "conservative source graph, not emitted JS"
+  },
+  "fundedRenderedBoundary": {
+    "evidence": "../release/funded-bundle-boundary.json",
+    "sha256": "1d9070e63d24f93cfb150412befc732fca5bf66657e1968c6214eab0319c9d41",
+    "chunks": 13,
+    "allModules": 725,
+    "appModules": 141,
+    "libraryModules": 113,
+    "libraryTypeScript": 112,
+    "libraryJson": 1,
+    "manuallyReviewed": 113,
+    "missing": 0,
+    "sourceBindingLimitation": "The producer records sha=local, not per-source build hashes. This crosscheck binds reviewed current files to module paths; parent build log/current-worktree provenance remains necessary. Emitted module membership does not mean every export or branch survived."
+  },
+  "newProvableFundedPathBlockersFound": [],
+  "nonblockingBoundaries": [
+    "Legacy local-admin quota and late logout completions are not fully fenced; current V2 UI hides key/password controls and disables local treasury publish.",
+    "Unused exported helpers are not hardened for all adversarial inputs; no production call sites found for listHistory/layoutTree/applyGuidePerson.",
+    "Full source reading is not exhaustive runtime execution or a full dependency security audit."
+  ],
+  "uiPatchReview": {
+    "status": "PASS_TARGETED_REVIEW_PENDING_BROWSER_EXECUTION",
+    "evidence": "ui-patch-addendum.json"
+  },
+  "evidence": {
+    "coverage.json": {
+      "sha256": "05598e1645757336063a1952814d936996c4e2bc1c9053c0396fce64448dad77",
+      "bytes": 91282
+    },
+    "funded-boundary-coverage.json": {
+      "sha256": "43ef84f6a007b1383ca1c3a363b0f50bb9f2f74e211c9da183840654d1961cf5",
+      "bytes": 29721
+    },
+    "independent-components-full-read.json": {
+      "sha256": "2e674a2ac28f2674918ed2bba537f5e0520a0fad533fa2dead9286661936a8e2",
+      "bytes": 2077
+    },
+    "review.md": {
+      "sha256": "6e51473bfd229329872f350bf98fb45bc798bbbcaf4e45f61086d07119afdecb",
+      "bytes": 20616
+    },
+    "shared-dependency-coverage.json": {
+      "sha256": "7f3b196ea085ca1c6d98c988799c3ccacaa7b3e5afe4d2daf5ec85f93d6d5bf4",
+      "bytes": 3267
+    },
+    "source-import-audit.mjs": {
+      "sha256": "004e401697dec75bb21c7e26c6130904dc6a0ef6981fa0c2ff217229ee6136ec",
+      "bytes": 5969
+    },
+    "source-import-reachability.json": {
+      "sha256": "f884b1037ae63e15be9ac042731f7a4283875567d80bedd469fca6ed6169b764",
+      "bytes": 184198
+    },
+    "ui-patch-addendum.json": {
+      "sha256": "2b08b8ea1e6d3802a02fbe6a800983b691d700169bf536e614bc72b128b79504",
+      "bytes": 1330
+    }
+  },
+  "independentComponentFullReads": {
+    "files": 2,
+    "lines": 345,
+    "extent": "full",
+    "evidence": "independent-components-full-read.json",
+    "newProvenBlockers": []
+  }
+}

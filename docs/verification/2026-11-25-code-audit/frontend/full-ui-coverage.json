@@ -1,0 +1,69 @@
+{
+  "schema": "sejire/manual-frontend-full-ui-followup/v1",
+  "dateUTC": "2026-11-25",
+  "observedLocalHead": "9315471ba4fd5a6d0c2d8292bef33ab2ce9617ae",
+  "branch": "fix/release-code-audit-20261125",
+  "methodology": "Four explicitly assigned components were read in full, through consecutive complete source ranges, including all retained legacy branches and JSX. No runtime or test edits, commands executing application code, browser, Vite or builds in this pass. SHA hashes identify reviewed bytes; full read is not all-path dynamic coverage.",
+  "manualFullReadCount": 4,
+  "manualFullReads": [
+    {
+      "path": "apps/web/src/components/AdminDesk.tsx",
+      "sha256": "6c0b02ccdfc16acb069208c561f576f5a77f627fa09144adf25086085a40abc8",
+      "lines": 571,
+      "manualReviewExtent": "full",
+      "previousExtent": "targeted",
+      "unchangedSinceOriginalCoverage": true,
+      "profileReachability": "Funded V2 admin route plus retained legacy implementation",
+      "purposeAndReviewedBoundary": "All state, boot/login/setup/logout, local public-verifier versus server-admin boundary, V2 early refresh path, historical Devnet overview, hidden legacy keys/password/treasury form, wallet/config generation handlers and full JSX."
+    },
+    {
+      "path": "apps/web/src/components/PublishSeedModal.tsx",
+      "sha256": "f794f80d88076556c38241bc4d73be71f411acb2cd6868cdcbecb3ef8b492718",
+      "lines": 1266,
+      "manualReviewExtent": "full",
+      "previousExtent": "targeted",
+      "unchangedSinceOriginalCoverage": true,
+      "profileReachability": "Funded editor publication; retained legacy paths gated by preservationV2",
+      "purposeAndReviewedBoundary": "Entire modal state machine and JSX: existing/new words, seed confirmation/download, pending-attempt initialization and unmatched-choice handling, lifetime fencing, full-vault preparation, exact paid/promo finalization, Back/Escape/busy behavior, legacy local/demo/sponsor/treasury/self-funded branches and compile-time reachability."
+    },
+    {
+      "path": "apps/web/src/components/SolanaRecipientsAdmin.tsx",
+      "sha256": "89dc59df418e8b6d1cec6eeea1bcb2a1a98405af95d8ff484f4905ef6f148fac",
+      "lines": 99,
+      "manualReviewExtent": "full",
+      "previousExtent": "targeted",
+      "unchangedSinceOriginalCoverage": true,
+      "profileReachability": "Current server-authorized recipient settings inside FundAdmin",
+      "purposeAndReviewedBoundary": "Entire credential-generation lifecycle, initial read, dirty-state/validation, reload confirmation, expected revision on mutation, post-write readback, late-result fencing and full form/status copy."
+    },
+    {
+      "path": "apps/web/src/components/VaultVersionsModal.tsx",
+      "sha256": "852a42195079348da8aa030afb7317c17fc6d138cbcb2918bf4901aa18baf6c3",
+      "lines": 338,
+      "manualReviewExtent": "full",
+      "previousExtent": "targeted",
+      "unchangedSinceOriginalCoverage": true,
+      "profileReachability": "Shared funded/independent version chooser",
+      "purposeAndReviewedBoundary": "Entire discovery/list merge, known phrase or manual words, network/archived/local ciphertext selection, native-reader branch, lifecycle abort checks before callback, local versus network HEAD classification, key-buffer cleanup and full picker JSX."
+    }
+  ],
+  "newConcreteDefectsFound": [],
+  "conclusion": "No additional source-confirmed blocker in these four components beyond already recorded findings/limits. Prior targeted entries for these paths are upgraded to full; no additional unique file is counted.",
+  "combinedFrontendCoverageNote": "Original 51 + 22 additional runtime files remains 73 unique runtime source files. Components: 32 of 34 are now full-file reads by this agent; the two independent components are assigned to the separate artifact reviewer. Do not infer dependency or total published-bundle coverage from this number.",
+  "otherReviewerAssignedComponents": [
+    "apps/web/src/components/PublishSeedModal.independent.tsx",
+    "apps/web/src/components/RestoreSeed.independent.tsx"
+  ],
+  "preservedLimits": [
+    "AdminDesk V2 uses a public local-verifier UI gate and separate server authorization in FundAdmin; the public gate is not protection for server endpoints.",
+    "The V2 network overview is historical Devnet analytics, not a complete Mainnet paid-order ledger.",
+    "Legacy key/treasury/password handlers were read but are hidden by current V2 route conditions; their historical state must not be treated as production Mainnet readiness.",
+    "Browser execution, real wallet behavior, exact release byte provenance and production service acceptance remain parent-owned evidence."
+  ],
+  "executedTests": [],
+  "runtimeOrTestChanges": [],
+  "reportFiles": [
+    "full-ui-review.md",
+    "full-ui-coverage.json"
+  ]
+}

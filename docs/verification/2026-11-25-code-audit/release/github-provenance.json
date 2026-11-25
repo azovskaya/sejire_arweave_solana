@@ -1,0 +1,165 @@
+{
+  "schema": "sejire/github-audit-snapshot/v1",
+  "recordedAt": "2026-11-25 08:40:25 UTC",
+  "sourceCommit": "20adbb1926945ca0b9e7990fdec03a877777ad4b",
+  "sourceTree": "c43486bf9b605b00edd37de76c1e74dfc26cc55e",
+  "sourceCommitDetails": {
+    "sha": "20adbb1926945ca0b9e7990fdec03a877777ad4b",
+    "tree": "c43486bf9b605b00edd37de76c1e74dfc26cc55e",
+    "parents": [
+      "bf278bdaa19773b772a2be3258c706b3f7587e04"
+    ],
+    "url": "https://github.com/azovskaya/sejire_arweave_solana/commit/20adbb1926945ca0b9e7990fdec03a877777ad4b"
+  },
+  "mergeCommitDetails": {
+    "sha": "8a28b016b9c9ae31b047b509efa379b1ccbdae8e",
+    "tree": "c43486bf9b605b00edd37de76c1e74dfc26cc55e",
+    "parents": [
+      "17a254eb13bb999127d9f7b3ecd54905f317e02d",
+      "20adbb1926945ca0b9e7990fdec03a877777ad4b"
+    ],
+    "url": "https://github.com/azovskaya/sejire_arweave_solana/commit/8a28b016b9c9ae31b047b509efa379b1ccbdae8e"
+  },
+  "pullRequest": {
+    "number": 11,
+    "url": "https://github.com/azovskaya/sejire_arweave_solana/pull/11",
+    "draft": true,
+    "state": "open",
+    "head": "20adbb1926945ca0b9e7990fdec03a877777ad4b",
+    "base": "17a254eb13bb999127d9f7b3ecd54905f317e02d",
+    "mergeCommit": "8a28b016b9c9ae31b047b509efa379b1ccbdae8e"
+  },
+  "branches": [
+    {
+      "name": "checkpoint/ario-repair-before-decentralization-20261116",
+      "sha": "f7be2f6d5ff9a2c106d9d188750efbd83aaa8e62"
+    },
+    {
+      "name": "cursor/ario-migration-audit-5150",
+      "sha": "4778bb48476569895dad9ee6ad06e21d61c4e545"
+    },
+    {
+      "name": "cursor/ario-permaweb-release-5150",
+      "sha": "3e674ea0a8f09e59bd8c068c79e55e840011628c"
+    },
+    {
+      "name": "cursor/arns-promo-cutover-5150",
+      "sha": "375739d5736aca3be70dc36adc3d05bb5bb1c543"
+    },
+    {
+      "name": "cursor/project-analysis-5150",
+      "sha": "7ad5aee5b18334dca098a96ad1c384a0be1ad5a9"
+    },
+    {
+      "name": "diagnose/native-info-20261123",
+      "sha": "66e37797677c889e81226f9a40eb5d2988626c9d"
+    },
+    {
+      "name": "diagnostic/worker-rpc-health",
+      "sha": "957afa998b49f1f4c89be06c5413bfbae89a390d"
+    },
+    {
+      "name": "docs/independent-release-evidence-20261116",
+      "sha": "d4f13ba0d40eb5d47bb9283a6d3f28ce9521267c"
+    },
+    {
+      "name": "docs/pilot-release-evidence-20261116",
+      "sha": "035233ccbc4322aea55e5e78b6f4898d5ca3b171"
+    },
+    {
+      "name": "docs/prepublication-evidence-20261118",
+      "sha": "bdbebb4f259e119120d2c83b9bc0f896f458f2d0"
+    },
+    {
+      "name": "docs/publication-20261123",
+      "sha": "8eb827aef420d33017ac7f41ecc538683c8cd886"
+    },
+    {
+      "name": "docs/readiness-evidence-20261117",
+      "sha": "b57feec5b934fc88a8f920c676c37fb2440ab1b9"
+    },
+    {
+      "name": "feat/admin-sol-recipients",
+      "sha": "f6fd9a2251152bf9138f1b18b04c10ca05d7b90b"
+    },
+    {
+      "name": "feat/decentralized-arweave-20261116",
+      "sha": "17a254eb13bb999127d9f7b3ecd54905f317e02d"
+    },
+    {
+      "name": "feat/preservation-v2-simple",
+      "sha": "1eb63e084ae86477feaf1ab58237f3eb05930948"
+    },
+    {
+      "name": "feat/promo-funded-preservation",
+      "sha": "8b07f9f5a3dae939f7d519f4e3c65ac9d49dfa09"
+    },
+    {
+      "name": "feat/recovery-independent",
+      "sha": "2bd3ad4880e920d176c19925e743847050244514"
+    },
+    {
+      "name": "feat/solana-preservation",
+      "sha": "7431a0427da8c804b7a1e7fe9b72991f6397e691"
+    },
+    {
+      "name": "fix/ario-20261110-editor-safety",
+      "sha": "91d2acce72bb8c701736bf5c34ec9394033c8e42"
+    },
+    {
+      "name": "fix/ario-20261110-release-gates",
+      "sha": "ea70ea1a2ff65007850c7ef7126379a5a3afd54a"
+    },
+    {
+      "name": "fix/paid-one-action",
+      "sha": "b8d21b732947e17af8fc93c00b336f14c0902bbd"
+    },
+    {
+      "name": "fix/paid-rpc-rotation",
+      "sha": "550ae6d3da886726b3502df4d3df509992e85638"
+    },
+    {
+      "name": "fix/pilot-release-20261116",
+      "sha": "8b07f9f5a3dae939f7d519f4e3c65ac9d49dfa09"
+    },
+    {
+      "name": "fix/register-independent-permaweb-20261116",
+      "sha": "7022b8740c18cbf752a30bc371adc5cdeb38abb3"
+    },
+    {
+      "name": "fix/register-manual-worker-release",
+      "sha": "506fe0da0bb06006fb048b00afc42bc8d023cfa6"
+    },
+    {
+      "name": "fix/release-code-audit-20261125",
+      "sha": "20adbb1926945ca0b9e7990fdec03a877777ad4b"
+    },
+    {
+      "name": "fix/restore-direct-data",
+      "sha": "b84eba7dd335b74a46b02ab3500c5dee568227e9"
+    },
+    {
+      "name": "gh-pages",
+      "sha": "ad85ec0dc2a4f03a16927584e59a385dd211b2f8"
+    },
+    {
+      "name": "main",
+      "sha": "897559c197bc90ae9fac66abaefe000df2a2b51c"
+    },
+    {
+      "name": "research/tumalas-mobi-extract",
+      "sha": "ed0e8118420be519e84a2efeb4da93b06bdc2055"
+    }
+  ],
+  "initialFinalRunObservation": {
+    "id": 45576450076,
+    "headSha": "20adbb1926945ca0b9e7990fdec03a877777ad4b",
+    "event": "pull_request",
+    "status": "in_progress",
+    "conclusion": null,
+    "runAttempt": 1,
+    "url": "https://github.com/azovskaya/sejire_arweave_solana/actions/runs/45576450076",
+    "updatedAt": "2026-11-25T08:27:42Z"
+  },
+  "observationNote": "Resources were read during 2026-11-25 08:38–08:39 UTC; recordedAt is evidence serialization time, not a fabricated earlier retrieval timestamp. Final CI completion is recorded separately."
+}

@@ -1,0 +1,67 @@
+[
+  {
+    "name": "funded-build",
+    "argv": [
+      "npm",
+      "run",
+      "arns:build:funded"
+    ],
+    "exitCode": 0,
+    "seconds": 15.29,
+    "log": "funded-build.log"
+  },
+  {
+    "name": "fund-security",
+    "argv": [
+      "npm",
+      "run",
+      "security:fund"
+    ],
+    "exitCode": 0,
+    "seconds": 0.28,
+    "log": "fund-security.log"
+  },
+  {
+    "name": "funded-boundary",
+    "argv": [
+      "node",
+      "scripts/native-bundle-audit.mjs"
+    ],
+    "exitCode": 0,
+    "seconds": 1.62,
+    "log": "funded-boundary.log"
+  },
+  {
+    "name": "dependency-reachability",
+    "argv": [
+      "npm",
+      "run",
+      "security:reachability"
+    ],
+    "exitCode": 0,
+    "seconds": 1.82,
+    "log": "dependency-reachability.log"
+  },
+  {
+    "name": "independent-build",
+    "argv": [
+      "npm",
+      "run",
+      "arns:build"
+    ],
+    "exitCode": 0,
+    "seconds": 16.58,
+    "log": "independent-build.log"
+  },
+  {
+    "name": "independent-verify",
+    "argv": [
+      "npm",
+      "run",
+      "arns:verify"
+    ],
+    "exitCode": 0,
+    "seconds": 3.34,
+    "log": "independent-verify.log"
+  }
+]

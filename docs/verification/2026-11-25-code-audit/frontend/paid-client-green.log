@@ -1,0 +1,1 @@
+paidClient.selftest: PASS (preserved legacy journal, serialized session bootstrap, independent help policy/receipt, u64 RPC precision, cross-tab single payment, lost create/reserve/wallet, cancellation, exact full-vault receipt, no help archive/head change, bounded body)

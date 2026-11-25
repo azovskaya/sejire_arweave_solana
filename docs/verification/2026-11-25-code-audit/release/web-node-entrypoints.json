@@ -1,0 +1,496 @@
+{
+  "node": "v24.22.3",
+  "reason": "tsx CLI IPC listen is denied by environment; same test entrypoints and tsx loader, no test logic changed",
+  "tests": [
+    {
+      "original": [
+        "tsx",
+        "src/lib/treeEngine.selftest.ts"
+      ],
+      "invoked": [
+        "node",
+        "--import",
+        "./node_modules/tsx/dist/loader.mjs",
+        "src/lib/treeEngine.selftest.ts"
+      ],
+      "exitCode": 0,
+      "seconds": 0.32
+    },
+    {
+      "original": [
+        "tsx",
+        "src/lib/crypto/crypto.selftest.ts"
+      ],
+      "invoked": [
+        "node",
+        "--import",
+        "./node_modules/tsx/dist/loader.mjs",
+        "src/lib/crypto/crypto.selftest.ts"
+      ],
+      "exitCode": 0,
+      "seconds": 0.52
+    },
+    {
+      "original": [
+        "tsx",
+        "src/lib/crypto/backup.selftest.ts"
+      ],
+      "invoked": [
+        "node",
+        "--import",
+        "./node_modules/tsx/dist/loader.mjs",
+        "src/lib/crypto/backup.selftest.ts"
+      ],
+      "exitCode": 0,
+      "seconds": 0.52
+    },
+    {
+      "original": [
+        "tsx",
+        "src/lib/kinship.selftest.ts"
+      ],
+      "invoked": [
+        "node",
+        "--import",
+        "./node_modules/tsx/dist/loader.mjs",
+        "src/lib/kinship.selftest.ts"
+      ],
+      "exitCode": 0,
+      "seconds": 0.26
+    },
+    {
+      "original": [
+        "tsx",
+        "src/lib/pedigree.selftest.ts"
+      ],
+      "invoked": [
+        "node",
+        "--import",
+        "./node_modules/tsx/dist/loader.mjs",
+        "src/lib/pedigree.selftest.ts"
+      ],
+      "exitCode": 0,
+      "seconds": 0.31
+    },
+    {
+      "original": [
+        "tsx",
+        "src/lib/pdf/lineage.selftest.ts"
+      ],
+      "invoked": [
+        "node",
+        "--import",
+        "./node_modules/tsx/dist/loader.mjs",
+        "src/lib/pdf/lineage.selftest.ts"
+      ],
+      "exitCode": 0,
+      "seconds": 0.32
+    },
+    {
+      "original": [
+        "tsx",
+        "src/lib/pdf/thirteenLineage.fixture.selftest.ts"
+      ],
+      "invoked": [
+        "node",
+        "--import",
+        "./node_modules/tsx/dist/loader.mjs",
+        "src/lib/pdf/thirteenLineage.fixture.selftest.ts"
+      ],
+      "exitCode": 0,
+      "seconds": 0.42
+    },
+    {
+      "original": [
+        "tsx",
+        "src/lib/dates.selftest.ts"
+      ],
+      "invoked": [
+        "node",
+        "--import",
+        "./node_modules/tsx/dist/loader.mjs",
+        "src/lib/dates.selftest.ts"
+      ],
+      "exitCode": 0,
+      "seconds": 0.31
+    },
+    {
+      "original": [
+        "tsx",
+        "src/lib/treeJson.selftest.ts"
+      ],
+      "invoked": [
+        "node",
+        "--import",
+        "./node_modules/tsx/dist/loader.mjs",
+        "src/lib/treeJson.selftest.ts"
+      ],
+      "exitCode": 0,
+      "seconds": 0.32
+    },
+    {
+      "original": [
+        "tsx",
+        "src/lib/zhuzRu.selftest.ts"
+      ],
+      "invoked": [
+        "node",
+        "--import",
+        "./node_modules/tsx/dist/loader.mjs",
+        "src/lib/zhuzRu.selftest.ts"
+      ],
+      "exitCode": 0,
+      "seconds": 0.27
+    },
+    {
+      "original": [
+        "tsx",
+        "src/lib/sponsor/client.selftest.ts"
+      ],
+      "invoked": [
+        "node",
+        "--import",
+        "./node_modules/tsx/dist/loader.mjs",
+        "src/lib/sponsor/client.selftest.ts"
+      ],
+      "exitCode": 0,
+      "seconds": 0.27
+    },
+    {
+      "original": [
+        "tsx",
+        "src/lib/arweave/loadVault.selftest.ts"
+      ],
+      "invoked": [
+        "node",
+        "--import",
+        "./node_modules/tsx/dist/loader.mjs",
+        "src/lib/arweave/loadVault.selftest.ts"
+      ],
+      "exitCode": 0,
+      "seconds": 12.48
+    },
+    {
+      "original": [
+        "tsx",
+        "src/lib/siteMirror.selftest.ts"
+      ],
+      "invoked": [
+        "node",
+        "--import",
+        "./node_modules/tsx/dist/loader.mjs",
+        "src/lib/siteMirror.selftest.ts"
+      ],
+      "exitCode": 0,
+      "seconds": 0.32
+    },
+    {
+      "original": [
+        "tsx",
+        "src/lib/permawebHost.selftest.ts"
+      ],
+      "invoked": [
+        "node",
+        "--import",
+        "./node_modules/tsx/dist/loader.mjs",
+        "src/lib/permawebHost.selftest.ts"
+      ],
+      "exitCode": 0,
+      "seconds": 0.32
+    },
+    {
+      "original": [
+        "tsx",
+        "src/lib/lastScreen.selftest.ts"
+      ],
+      "invoked": [
+        "node",
+        "--import",
+        "./node_modules/tsx/dist/loader.mjs",
+        "src/lib/lastScreen.selftest.ts"
+      ],
+      "exitCode": 0,
+      "seconds": 0.27
+    },
+    {
+      "original": [
+        "tsx",
+        "src/lib/arweave/fetch.selftest.ts"
+      ],
+      "invoked": [
+        "node",
+        "--import",
+        "./node_modules/tsx/dist/loader.mjs",
+        "src/lib/arweave/fetch.selftest.ts"
+      ],
+      "exitCode": 0,
+      "seconds": 0.72
+    },
+    {
+      "original": [
+        "tsx",
+        "src/lib/arweave/gateways.selftest.ts"
+      ],
+      "invoked": [
+        "node",
+        "--import",
+        "./node_modules/tsx/dist/loader.mjs",
+        "src/lib/arweave/gateways.selftest.ts"
+      ],
+      "exitCode": 0,
+      "seconds": 0.27
+    },
+    {
+      "original": [
+        "tsx",
+        "src/lib/storageQuota.selftest.ts"
+      ],
+      "invoked": [
+        "node",
+        "--import",
+        "./node_modules/tsx/dist/loader.mjs",
+        "src/lib/storageQuota.selftest.ts"
+      ],
+      "exitCode": 0,
+      "seconds": 0.32
+    },
+    {
+      "original": [
+        "tsx",
+        "src/lib/vaultSession/localArchive.selftest.ts"
+      ],
+      "invoked": [
+        "node",
+        "--import",
+        "./node_modules/tsx/dist/loader.mjs",
+        "src/lib/vaultSession/localArchive.selftest.ts"
+      ],
+      "exitCode": 0,
+      "seconds": 0.37
+    },
+    {
+      "original": [
+        "tsx",
+        "src/lib/vaultSession/selection.selftest.ts"
+      ],
+      "invoked": [
+        "node",
+        "--import",
+        "./node_modules/tsx/dist/loader.mjs",
+        "src/lib/vaultSession/selection.selftest.ts"
+      ],
+      "exitCode": 0,
+      "seconds": 0.27
+    },
+    {
+      "original": [
+        "tsx",
+        "src/lib/ao/protocol.selftest.ts"
+      ],
+      "invoked": [
+        "node",
+        "--import",
+        "./node_modules/tsx/dist/loader.mjs",
+        "src/lib/ao/protocol.selftest.ts"
+      ],
+      "exitCode": 0,
+      "seconds": 0.47
+    },
+    {
+      "original": [
+        "tsx",
+        "src/lib/i18n/i18n.selftest.ts"
+      ],
+      "invoked": [
+        "node",
+        "--import",
+        "./node_modules/tsx/dist/loader.mjs",
+        "src/lib/i18n/i18n.selftest.ts"
+      ],
+      "exitCode": 0,
+      "seconds": 0.47
+    },
+    {
+      "original": [
+        "tsx",
+        "src/lib/opsDesk/store.selftest.ts"
+      ],
+      "invoked": [
+        "node",
+        "--import",
+        "./node_modules/tsx/dist/loader.mjs",
+        "src/lib/opsDesk/store.selftest.ts"
+      ],
+      "exitCode": 0,
+      "seconds": 0.84
+    },
+    {
+      "original": [
+        "tsx",
+        "src/lib/opsDesk/networkOverview.selftest.ts"
+      ],
+      "invoked": [
+        "node",
+        "--import",
+        "./node_modules/tsx/dist/loader.mjs",
+        "src/lib/opsDesk/networkOverview.selftest.ts"
+      ],
+      "exitCode": 0,
+      "seconds": 0.72
+    },
+    {
+      "original": [
+        "tsx",
+        "src/lib/solana/policy.selftest.ts"
+      ],
+      "invoked": [
+        "node",
+        "--import",
+        "./node_modules/tsx/dist/loader.mjs",
+        "src/lib/solana/policy.selftest.ts"
+      ],
+      "exitCode": 0,
+      "seconds": 0.42
+    },
+    {
+      "original": [
+        "tsx",
+        "src/lib/solana/wallet.selftest.ts"
+      ],
+      "invoked": [
+        "node",
+        "--import",
+        "./node_modules/tsx/dist/loader.mjs",
+        "src/lib/solana/wallet.selftest.ts"
+      ],
+      "exitCode": 0,
+      "seconds": 3.25
+    },
+    {
+      "original": [
+        "tsx",
+        "src/lib/solana/upload.selftest.ts"
+      ],
+      "invoked": [
+        "node",
+        "--import",
+        "./node_modules/tsx/dist/loader.mjs",
+        "src/lib/solana/upload.selftest.ts"
+      ],
+      "exitCode": 0,
+      "seconds": 3.23
+    },
+    {
+      "original": [
+        "tsx",
+        "src/lib/solana/receipt.selftest.ts"
+      ],
+      "invoked": [
+        "node",
+        "--import",
+        "./node_modules/tsx/dist/loader.mjs",
+        "src/lib/solana/receipt.selftest.ts"
+      ],
+      "exitCode": 0,
+      "seconds": 1.09
+    },
+    {
+      "original": [
+        "tsx",
+        "src/lib/solana/boundaries.selftest.ts"
+      ],
+      "invoked": [
+        "node",
+        "--import",
+        "./node_modules/tsx/dist/loader.mjs",
+        "src/lib/solana/boundaries.selftest.ts"
+      ],
+      "exitCode": 0,
+      "seconds": 0.77
+    },
+    {
+      "original": [
+        "tsx",
+        "src/lib/native/native.selftest.ts"
+      ],
+      "invoked": [
+        "node",
+        "--import",
+        "./node_modules/tsx/dist/loader.mjs",
+        "src/lib/native/native.selftest.ts"
+      ],
+      "exitCode": 0,
+      "seconds": 3.23
+    },
+    {
+      "original": [
+        "tsx",
+        "src/lib/preserveV2/v2.selftest.ts"
+      ],
+      "invoked": [
+        "node",
+        "--import",
+        "./node_modules/tsx/dist/loader.mjs",
+        "src/lib/preserveV2/v2.selftest.ts"
+      ],
+      "exitCode": 0,
+      "seconds": 0.67
+    },
+    {
+      "original": [
+        "tsx",
+        "src/lib/preserveV2/machine.selftest.ts"
+      ],
+      "invoked": [
+        "node",
+        "--import",
+        "./node_modules/tsx/dist/loader.mjs",
+        "src/lib/preserveV2/machine.selftest.ts"
+      ],
+      "exitCode": 0,
+      "seconds": 0.72
+    },
+    {
+      "original": [
+        "tsx",
+        "src/lib/recovery/recovery.selftest.ts"
+      ],
+      "invoked": [
+        "node",
+        "--import",
+        "./node_modules/tsx/dist/loader.mjs",
+        "src/lib/recovery/recovery.selftest.ts"
+      ],
+      "exitCode": 0,
+      "seconds": 1.63
+    },
+    {
+      "original": [
+        "tsx",
+        "src/lib/fund/journal.selftest.ts"
+      ],
+      "invoked": [
+        "node",
+        "--import",
+        "./node_modules/tsx/dist/loader.mjs",
+        "src/lib/fund/journal.selftest.ts"
+      ],
+      "exitCode": 0,
+      "seconds": 0.31
+    },
+    {
+      "original": [
+        "tsx",
+        "src/lib/checkout/paidClient.selftest.ts"
+      ],
+      "invoked": [
+        "node",
+        "--import",
+        "./node_modules/tsx/dist/loader.mjs",
+        "src/lib/checkout/paidClient.selftest.ts"
+      ],
+      "exitCode": 0,
+      "seconds": 2.62
+    }
+  ]
+}

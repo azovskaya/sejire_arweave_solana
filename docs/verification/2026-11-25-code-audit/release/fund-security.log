@@ -1,0 +1,6 @@
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+> sejire@0.3.0 security:fund
+> node scripts/fund-security-scan.mjs
+
+fund security scan: PASS (16 frontend source and built JS files; no private RSA JWK/PEM, fund secret names or recovery payload fields)

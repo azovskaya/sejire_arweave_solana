@@ -1,0 +1,229 @@
+{
+  "schema": "sejire/independent-code-review/v1",
+  "reviewer": "artifact_pdf_audit",
+  "reviewedAt": "2026-11-25T08:10:06.989023+00:00",
+  "status": "PASS_CODE_REVIEW_PENDING_BROWSER",
+  "branch": "fix/release-code-audit-20261125",
+  "baseCommit": "a2b738bf8183c0b0551273e0530ae8f14589b26d",
+  "sourceState": "local uncommitted working tree",
+  "newUnresolvedCodeBlockers": [],
+  "latestReview": {
+    "explicitLegacyPilotGate": "PASS_STATIC",
+    "generalCiphertextImport": "PASS_STATIC",
+    "fileTextLifecycle": "PASS_STATIC",
+    "completedPromoPostAndPollingBinding": "PASS_STATIC",
+    "legacyPilotAssertionsPreserved": true,
+    "legacyPilotScenariosInSource": 14,
+    "separateAdminScenarioInSource": 1
+  },
+  "observedLogs": {
+    "vaultSelectionChecks": 15,
+    "loader": "PASS",
+    "paidClient": "PASS",
+    "promoSubmissionGroups": 6,
+    "linuxWriterGroups": 5,
+    "linuxPaidPromoGroups": 10,
+    "releaseUnitTests": 42,
+    "releaseUnitFailures": 0,
+    "sponsorTypecheckExitCodeAuthorConfirmed": 0
+  },
+  "reviewerExecuted": {
+    "gitDiffCheck": {
+      "exitCode": 0
+    },
+    "fullSuiteRerun": false,
+    "browserTests": false
+  },
+  "pendingGates": [
+    "Actual browser CI for final source snapshot",
+    "Final funded build and boundary verification after latest runtime edits",
+    "Root publication decision for the concrete accepted package"
+  ],
+  "browserBlocker": {
+    "localBrowser": "Chromium missing",
+    "officialDownloader": "HTTP 403",
+    "finalBrowserLogsAvailable": false,
+    "followup": "Root preparing isolated draft PR for full CI; add evidence after actual run"
+  },
+  "limits": [
+    "No live wallet, payment, production signing, upload, deployment or ArNS change",
+    "Backend transport and signing evidence uses synthetic fixtures",
+    "Previous 89-PDF/779-page result is historical, not rerun for this review"
+  ],
+  "productionFiles": [
+    {
+      "path": "apps/web/src/App.tsx",
+      "bytes": 6280,
+      "sha256": "9df7ff2b194a82f55a4d7bd3270f92eeeaf7d1037d067c87a1523d4fe15ca111"
+    },
+    {
+      "path": "apps/web/src/components/PreservationV2.tsx",
+      "bytes": 17272,
+      "sha256": "3508629f95abe262c8fa3b0dfccad55ec8949b535f2c88c0b3f95419780689ad"
+    },
+    {
+      "path": "apps/web/src/components/PromoFundedFlow.tsx",
+      "bytes": 19904,
+      "sha256": "2b719a8597d5b010214ca0e6440dcf771d902c527a105abc94ddaf4eee44ba8f"
+    },
+    {
+      "path": "apps/web/src/components/PublishSeedModal.tsx",
+      "bytes": 50466,
+      "sha256": "f794f80d88076556c38241bc4d73be71f411acb2cd6868cdcbecb3ef8b492718"
+    },
+    {
+      "path": "apps/web/src/components/RestoreSeed.tsx",
+      "bytes": 22810,
+      "sha256": "ac0970f4bf6b9d3b8b949cf934fa3e3d5502057d9c61bb2ea25c3a50ad6f294a"
+    },
+    {
+      "path": "apps/web/src/components/Workspace.tsx",
+      "bytes": 28877,
+      "sha256": "04c044a0e30e8108f46bc2f9835616e01ef5ab642aa9b39ef8ed04e063c7005b"
+    },
+    {
+      "path": "apps/web/src/lib/arweave/loadVault.ts",
+      "bytes": 10350,
+      "sha256": "c980474dbe2b191e50bd6fed434af9ea2c6f7ddd9a2f841e808a0db8c9356f56"
+    },
+    {
+      "path": "apps/web/src/lib/vaultSession/selection.ts",
+      "bytes": 6714,
+      "sha256": "005fb5ff2f7e7ef8a066cb5f5385125df394f670be810d07badd33d824175479"
+    },
+    {
+      "path": "apps/web/src/lib/vaultSession/session.ts",
+      "bytes": 4720,
+      "sha256": "533555ad5a1b1fc45fbc26438446e2f7b627266c754ead0b8334cf7df4d4fbb3"
+    },
+    {
+      "path": "apps/web/src/lib/checkout/paidFinalize.ts",
+      "bytes": 1991,
+      "sha256": "3de4027b01c595565bad7919971598f295861cbd5f1ba45f827cde63d0e8b800"
+    },
+    {
+      "path": "apps/web/src/lib/crypto/vault.ts",
+      "bytes": 2070,
+      "sha256": "8efd5681db6bd7b416853002711182f175c2fb8a55ccd4cd8eaccdb3b11c0595"
+    },
+    {
+      "path": "apps/web/src/lib/fund/client.ts",
+      "bytes": 6365,
+      "sha256": "7905dc6191676c9beb873f1a5668dd67554087b00254d06f6bbbe3c88abb117d"
+    },
+    {
+      "path": "apps/sponsor/src/fund/provider.ts",
+      "bytes": 30520,
+      "sha256": "06eb47faebdf238d5802828dd2f4695f8980c61bcb0923c5af87e7daf898d0d1"
+    },
+    {
+      "path": "apps/sponsor/src/fund/api.ts",
+      "bytes": 25042,
+      "sha256": "aac281bee69f0dd577c283a560693855cdbc5fa86b3514095aa2a591893b70da"
+    },
+    {
+      "path": "scripts/verify-arns-published.mjs",
+      "bytes": 8128,
+      "sha256": "d0de5f74297a968521ed3b2032556b210656d6109a717f6eaa4bb531025199da"
+    }
+  ],
+  "testFiles": [
+    {
+      "path": "apps/web/src/lib/arweave/loadVault.selftest.ts",
+      "bytes": 19113,
+      "sha256": "0e6176ac7aa339d317f573c4fd58ed570f45e85708002cbbdada559f0832dc35"
+    },
+    {
+      "path": "apps/web/src/lib/vaultSession/selection.selftest.ts",
+      "bytes": 12010,
+      "sha256": "3f2a65e3136318d9deb32c358819fb97dcd0e9920ba1454e59da7525b14ae3f2"
+    },
+    {
+      "path": "apps/web/src/lib/checkout/paidClient.selftest.ts",
+      "bytes": 68698,
+      "sha256": "e950bb8c4469cc3a3ec55a91c4d07f4ac7ba68f2141bf4f5c19a3e88d303e3c1"
+    },
+    {
+      "path": "apps/web/tests/editor-safety.spec.mjs",
+      "bytes": 20723,
+      "sha256": "1d5f509f0dfee2bfa73052a841f237be7c28fa1b580bfc558d7480d75b0a7f53"
+    },
+    {
+      "path": "apps/web/tests/preservation-v2.spec.mjs",
+      "bytes": 13586,
+      "sha256": "08d2210dbb52c67ae38c93d9d2536a4db8f3762141bb820c5e79138f0bbe0a68"
+    },
+    {
+      "path": "apps/web/tests/promo-funded.spec.mjs",
+      "bytes": 75297,
+      "sha256": "40a5440fec1a0cde5e84208935ae17c71375539e11109b82edc6b848faca6d32"
+    },
+    {
+      "path": "apps/web/tests/arns-hosted.spec.mjs",
+      "bytes": 9422,
+      "sha256": "1bc781407114d0ae44a89ba333516448d31cfd53d134301c345c9c5b1885641e"
+    },
+    {
+      "path": "apps/sponsor/tests/fund-submit-recovery.mjs",
+      "bytes": 5792,
+      "sha256": "946bff9f86765aab20ee2c475cd8a3bc9ae41556214fba8d9ce5ca2cf2caa1ce"
+    },
+    {
+      "path": "apps/sponsor/tests/linux-paid-promo.mjs",
+      "bytes": 28718,
+      "sha256": "d83e79cb20965d64675d9995ee0e37e76304cff87ed852445abc4926761c7183"
+    },
+    {
+      "path": "scripts/permaweb-release.test.mjs",
+      "bytes": 39636,
+      "sha256": "c0566fbfe2c57cba20a89e99a307a3b4fb0bda412bb8cddf22176725a674860b"
+    }
+  ],
+  "evidenceFiles": [
+    {
+      "path": "docs/verification/2026-11-25-code-audit/frontend/selection-green.log",
+      "bytes": 1336,
+      "sha256": "ecfa4a422af71d7c51c6f832c7b1502ea2abb2f6285813f78e220a379ed536a8"
+    },
+    {
+      "path": "docs/verification/2026-11-25-code-audit/frontend/load-vault-green.log",
+      "bytes": 106,
+      "sha256": "97a9e28f573b945075d225479c75c312bb3fec6c611cef289e442297d42fe22c"
+    },
+    {
+      "path": "docs/verification/2026-11-25-code-audit/frontend/paid-client-green.log",
+      "bytes": 272,
+      "sha256": "8a892bd161b9acecbaa8299cad188c3378712e087f56d642e638812103f0e6df"
+    },
+    {
+      "path": "docs/verification/2026-11-25-code-audit/backend/fund-submit-recovery.log",
+      "bytes": 614,
+      "sha256": "c441e1b445dfe52b17ff58a8d0c9ab861f5449e8c0127ebf0258b15904e0ad0a"
+    },
+    {
+      "path": "docs/verification/2026-11-25-code-audit/backend/test-linux.log",
+      "bytes": 2132,
+      "sha256": "f4e0edec2dd08610d80db103561abde42dd1fb679306345fb5ca4b0ca89282fb"
+    },
+    {
+      "path": "docs/verification/2026-11-25-code-audit/backend/test-fund.log",
+      "bytes": 4625,
+      "sha256": "361f66ab13ae6bd9d238001743734cca3732ce452e743fab0489dabe53b161ea"
+    },
+    {
+      "path": "docs/verification/2026-11-25-code-audit/backend/typecheck.log",
+      "bytes": 213,
+      "sha256": "dcd62b990aafd5ea7e4367a39268c6c31c77dfb4701193dd007efae1384c69ea"
+    },
+    {
+      "path": "docs/verification/2026-11-25-code-audit/release/release-package-unit.log",
+      "bytes": 5720,
+      "sha256": "bc723d3a9c516a459f457160e1e927c6c5d951dffbab2dc0feedd6a8af1c4805"
+    }
+  ],
+  "report": {
+    "path": "docs/verification/2026-11-25-code-audit/review/reviewer.md",
+    "bytes": 14134,
+    "sha256": "67659bae7e3eb90663001feabf6837f2f6998dad6c30101f35b191a81bc51f7c"
+  }
+}

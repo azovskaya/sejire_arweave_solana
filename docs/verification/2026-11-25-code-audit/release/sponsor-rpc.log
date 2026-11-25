@@ -1,0 +1,62 @@
+PASS RPC finalized legacy USDC uses account owners, not token account addresses
+PASS RPC actual reader requests the workerd-supported manual redirect mode
+PASS RPC canonical RPC response URL with trailing slash is accepted
+PASS RPC RPC HTTP 301 cannot follow Location or credit a payment
+PASS RPC RPC HTTP 302 cannot follow Location or credit a payment
+PASS RPC RPC HTTP 303 cannot follow Location or credit a payment
+PASS RPC RPC HTTP 307 cannot follow Location or credit a payment
+PASS RPC RPC HTTP 308 cannot follow Location or credit a payment
+PASS RPC an unexpected RPC response URL is rejected before accepting its valid body
+PASS RPC legacy SOL direct transfers
+PASS RPC v0 resolves writable/readonly loaded addresses in correct order
+PASS RPC v0 supports writable token accounts loaded from lookup table
+PASS RPC optional compute unit limit/price before transfers
+PASS RPC u64 instruction amount never passes through floating point
+PASS RPC reject signature mismatch
+PASS RPC reject failed execution
+PASS RPC reject unsupported version
+PASS RPC reject missing meta
+PASS RPC reject missing block time
+PASS RPC reject counterfeit mint
+PASS RPC reject wrong token program
+PASS RPC reject changed token owner
+PASS RPC reject recipient token account mistaken for owner
+PASS RPC reject wrong recipient
+PASS RPC reject wrong amount
+PASS RPC reject wrong reference
+PASS RPC reject wrong payer
+PASS RPC reject non-signer authority
+PASS RPC reject missing signer
+PASS RPC reject readonly fee payer
+PASS RPC reject arbitrary CPI
+PASS RPC reject ATA instruction
+PASS RPC reject unknown program
+PASS RPC reject unchecked token transfer
+PASS RPC reject unsafe JSON fee
+PASS RPC reject missing token owner
+PASS RPC reject out-of-range account index
+PASS RPC reject writable reference
+PASS RPC reject extra transfer
+PASS RPC wrong genesis remains unresolved
+PASS RPC HTTP 429 remains unresolved
+PASS RPC HTTP 503 remains unresolved
+PASS RPC malformed JSON remains unresolved
+PASS RPC RPC response id mismatch remains unresolved
+PASS RPC RPC unsupported version error remains unresolved
+PASS RPC confirmed status remains unresolved
+PASS RPC processed status remains unresolved
+PASS RPC failed status remains unresolved
+PASS RPC missing status context remains unresolved
+PASS RPC status/transaction slot mismatch remains unresolved
+PASS RPC RPC 500 remains unresolved
+PASS RPC null transaction remains unresolved
+PASS RPC null signature status remains unresolved
+PASS RPC timeout remains unresolved
+PASS RPC late server response uses original inclusion time; retry credits only once
+PASS RPC client cannot provide paid/evidence/finalized/recipient/amount/RPC
+PASS RPC bounded RPC response and missing result reject without credit
+PASS RPC raw RPC u64 balances stay exact while ordinary context numbers remain numbers
+PASS RPC preparation compares a large balance and network fee without rounding a single lamport
+PASS RPC balance preparation rejects invalid monetary tokens before any wallet action
+PASS RPC legacy SOL preparation also preserves exact large balances
+rpc.selftest: 61 scenarios PASS; synthetic encoding=json RPC fixtures, zero external requests/signatures/transfers

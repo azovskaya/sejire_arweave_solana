@@ -1,0 +1,21 @@
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+> sejire-sponsor@0.2.0 test:linux
+> node --experimental-sqlite --import tsx tests/linux-server.mjs && node --experimental-sqlite --import tsx tests/linux-paid-promo.mjs
+
+PASS Linux storage: async alarm contract, Date input, replacement, durable reopen, cold constructor preserves future/due alarm
+PASS Linux startup: initialization awaited, future alarm preserved, due alarm processed
+PASS Linux backend: shared ledger contracts, one writer, same key/token after restart, one synthetic order
+PASS Linux writer processes: live competitor and symlink aliases rejected; SIGKILL releases guard; same order/key/token recovered without RPC; legacy wx remains excluded
+PASS Linux writer migration/lifecycle: legacy sentinel unchanged; failed listen releases guard; concurrent close awaits shared shutdown
+PASS Linux paid/promo: default-off HTTP has no payment offer, session or outbound request
+PASS Linux paid/promo: origin and server admin authentication guard management; readiness uses actual synthetic signer
+PASS Linux paid/promo: 512 KiB boundary and tampered archive are rejected before any order or hold
+PASS Linux paid/promo: paid HTTP admission is idempotent and immutable across recipient rotation
+PASS Linux paid/promo: prepared bytes and valid signature are required before durable reserve or relay
+PASS Linux paid/promo: durable Linux alarm continues reserved payment, lost SOL/header replies retain exact obligation
+PASS Linux paid/promo: cold SQLite reopen resumes same owner/key/payment and uploads only missing original chunks
+PASS Linux paid/promo: explicit post-completion repair restores original bytes without changing receipt or spend
+PASS Linux paid/promo: promo admin rotation and lost submission acknowledgement persist real HTTP/SQLite state
+PASS Linux paid/promo: new promo use obeys rotated code and cumulative budget without changing historical receipt
+linux-paid-promo: PASS (10 groups); real HTTP/SQLite, intercepted external network, synthetic keys only

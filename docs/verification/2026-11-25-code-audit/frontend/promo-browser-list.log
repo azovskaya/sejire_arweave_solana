@@ -1,0 +1,29 @@
+Listing tests:
+  promo-funded.spec.mjs:354:1 › Admin changes one promo and cumulative limit; user preserves encrypted archive without Solana
+  promo-funded.spec.mjs:410:1 › Pending transaction explains confirmation and archive verification before showing success
+  promo-funded.spec.mjs:441:1 › A genuinely new tree confirms its words and saves directly by promo with only two network choices
+  promo-funded.spec.mjs:465:1 › Existing vault offers direct native choices despite legacy settings and Solana stays unavailable without payment
+  promo-funded.spec.mjs:494:1 › Existing words continue to the same two methods and promo preserves every tree in that vault
+  promo-funded.spec.mjs:519:1 › Editor completion is automatic and local storage failures only retry local completion on mobile
+  promo-funded.spec.mjs:611:1 › Closing and reopening the actual editor resumes the exact pending archive without a successor
+  promo-funded.spec.mjs:638:1 › Reloading the editor without session words or metadata recovers the pending attempt by tree
+  promo-funded.spec.mjs:675:1 › A confirmed editor save finishes automatically and the next edited version needs one explicit free-save click
+  promo-funded.spec.mjs:713:1 › Completing an older funded attempt preserves a newer editor head
+  promo-funded.spec.mjs:729:1 › A completed response with a changed parent cannot finalize the editor or discard its pending archive
+  promo-funded.spec.mjs:751:1 › Three new trees stay in one unlocked archive, preserve a parent chain and restore by words in a clean browser
+  promo-funded.spec.mjs:823:1 › Closing the archive explicitly clears only the unlocked session and promo choice
+  promo-funded.spec.mjs:851:2 › FAILED is an explicit unfinished result, not an endless saving indicator
+  promo-funded.spec.mjs:851:2 › RELEASED is an explicit unfinished result, not an endless saving indicator
+  promo-funded.spec.mjs:865:1 › An uncertain submission explains the check and preserves its existing transaction
+  promo-funded.spec.mjs:879:1 › An unavailable provider reports a failed check and recovers the same existing attempt without a new save
+  promo-funded.spec.mjs:940:1 › A failed status request is visible and a later automatic check recovers
+  promo-funded.spec.mjs:960:43 › a mismatched COMPLETED POST response keeps the journal and never shows verified success
+  promo-funded.spec.mjs:960:43 › a mismatched COMPLETED GET response keeps the journal and never shows verified success
+  promo-funded.spec.mjs:983:1 › A lost POST response and reopening the same archive only read the original order
+  promo-funded.spec.mjs:1005:1 › A temporarily missing order after response loss never enables a replacement save
+  promo-funded.spec.mjs:1020:1 › The old sessionStorage order resumes after upgrading without asking to save again
+  promo-funded.spec.mjs:1034:2 › fund_exhausted before reservation offers an explicit retry of the same request
+  promo-funded.spec.mjs:1034:2 › fund_prepare_failed before reservation offers an explicit retry of the same request
+  promo-funded.spec.mjs:1056:1 › Preflight network failure keeps the form and does not promise nonexistent automatic tracking
+  promo-funded.spec.mjs:1072:1 › Polling waits for a slow request to finish and cannot overlap a manual check
+Total: 27 tests in 1 file

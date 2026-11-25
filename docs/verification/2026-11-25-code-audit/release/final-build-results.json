@@ -1,0 +1,72 @@
+{
+  "recordedAt": "2026-11-25T08:25:52.468021+00:00",
+  "checks": [
+    {
+      "name": "funded-build",
+      "argv": [
+        "npm",
+        "run",
+        "arns:build:funded"
+      ],
+      "exitCode": 0,
+      "seconds": 19.35,
+      "log": "funded-build.log"
+    },
+    {
+      "name": "fund-security",
+      "argv": [
+        "npm",
+        "run",
+        "security:fund"
+      ],
+      "exitCode": 0,
+      "seconds": 0.43,
+      "log": "fund-security.log"
+    },
+    {
+      "name": "funded-boundary",
+      "argv": [
+        "node",
+        "scripts/native-bundle-audit.mjs"
+      ],
+      "exitCode": 0,
+      "seconds": 2.27,
+      "log": "funded-boundary.log"
+    },
+    {
+      "name": "independent-build",
+      "argv": [
+        "npm",
+        "run",
+        "arns:build"
+      ],
+      "exitCode": 0,
+      "seconds": 18.45,
+      "log": "independent-build.log"
+    },
+    {
+      "name": "independent-verify",
+      "argv": [
+        "npm",
+        "run",
+        "arns:verify"
+      ],
+      "exitCode": 0,
+      "seconds": 3.45,
+      "log": "independent-verify.log"
+    },
+    {
+      "name": "web-lint",
+      "argv": [
+        "npm",
+        "run",
+        "lint",
+        "--prefix",
+        "apps/web"
+      ],
+      "exitCode": 0,
+      "seconds": 0.54,
+      "log": "web-lint.log"
+    }
+  ]
+}

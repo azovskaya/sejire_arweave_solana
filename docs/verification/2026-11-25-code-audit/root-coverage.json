@@ -1,0 +1,171 @@
+{
+  "schema": "sejire/root-code-review/v1",
+  "date": "2026-11-25",
+  "runtimeSourceCommit": "20adbb1926945ca0b9e7990fdec03a877777ad4b",
+  "runtimeSourceTree": "c43486bf9b605b00edd37de76c1e74dfc26cc55e",
+  "entries": [
+    {
+      "path": "packages/checkout/amounts.ts",
+      "sha256": "fe01f512cfc7c09750f1ea35e6a2039c7f82d5faa1a212dcb46e1760c602401f",
+      "review": "full-file manual read; final deltas independently reviewed where edited",
+      "bytes": 2015
+    },
+    {
+      "path": "packages/checkout/recipients.ts",
+      "sha256": "31c2619261e7a08dd045f707cc40c3f9a7fd60be87dbc0be1e6e5777b2b51967",
+      "review": "full-file manual read; final deltas independently reviewed where edited",
+      "bytes": 2798
+    },
+    {
+      "path": "packages/checkout/order.ts",
+      "sha256": "9afeb1b018745d66d58c1119b18b8ab1c66123425a8a525af1b2a4b40251565a",
+      "review": "full-file manual read; final deltas independently reviewed where edited",
+      "bytes": 10948
+    },
+    {
+      "path": "packages/checkout/paid.ts",
+      "sha256": "c4a023a516654475f9ac77ffe177ed0c4d4c73735fb9e30a9cbaa78a81794249",
+      "review": "full-file manual read; final deltas independently reviewed where edited",
+      "bytes": 29356
+    },
+    {
+      "path": "packages/checkout/rpcJson.ts",
+      "sha256": "1ec11289392269849ebccf8ea419e9b7a50b2443c909aad23f8346cf49a8cf68",
+      "review": "full-file manual read; final deltas independently reviewed where edited",
+      "bytes": 2183
+    },
+    {
+      "path": "packages/checkout/states.ts",
+      "sha256": "c400ad02d9e94e8c9e4be9e9a979720b876fae644a85609439d2fa1b3955a09d",
+      "review": "full-file manual read; final deltas independently reviewed where edited",
+      "bytes": 568
+    },
+    {
+      "path": "packages/protocol/wire.ts",
+      "sha256": "07f36cf19d2b6e9a4b400f3a9d223b632b050e412c90a2e876550f4efcb674d5",
+      "review": "full-file manual read; final deltas independently reviewed where edited",
+      "bytes": 745
+    },
+    {
+      "path": "scripts/build-arns-independent.mjs",
+      "sha256": "7e17d39d259e97a63d812aeb8d6ab15ba0595b078c10d4c76cd3f263bbc8746b",
+      "review": "full-file manual read; final deltas independently reviewed where edited",
+      "bytes": 3355
+    },
+    {
+      "path": "scripts/build-arns-promo.sh",
+      "sha256": "3d024d9b93ad025a943ab6b412b86e15e76df633915e2889c5877e5625ec15cd",
+      "review": "full-file manual read; final deltas independently reviewed where edited",
+      "bytes": 2044
+    },
+    {
+      "path": "scripts/verify-arns-dist.mjs",
+      "sha256": "f6bd7e52bd9f83674ea59b34cf4964be402d63072c8e84c123e4f7f1f1ff1183",
+      "review": "full-file manual read; final deltas independently reviewed where edited",
+      "bytes": 2218
+    },
+    {
+      "path": "scripts/static-release-profile.mjs",
+      "sha256": "9ed9186fae0eb404fba8117d28410c7e8ac3891cf5bee9972819245deb9ac4e0",
+      "review": "full-file manual read; final deltas independently reviewed where edited",
+      "bytes": 8351
+    },
+    {
+      "path": "scripts/prepare-permaweb.mjs",
+      "sha256": "7769965d9a99b2f62f28cf482c1bf0d9e62cecb8b6cf5e96a5b9e0510a3a93ac",
+      "review": "full-file manual read; final deltas independently reviewed where edited",
+      "bytes": 3165
+    },
+    {
+      "path": "scripts/permaweb-release.mjs",
+      "sha256": "04b92c463f7708f7e8ba1f590e3015e01b9cea8065ec935ee91654081e1387f9",
+      "review": "full-file manual read; final deltas independently reviewed where edited",
+      "bytes": 16018
+    },
+    {
+      "path": "scripts/upload-permaweb.mjs",
+      "sha256": "2b06ba98b64da391190f8f72e4680bf15a42b6b4034580645213b00fe4edaec8",
+      "review": "full-file manual read; final deltas independently reviewed where edited",
+      "bytes": 13096
+    },
+    {
+      "path": "scripts/verify-arns-published.mjs",
+      "sha256": "d0de5f74297a968521ed3b2032556b210656d6109a717f6eaa4bb531025199da",
+      "review": "full-file manual read; final deltas independently reviewed where edited",
+      "bytes": 8128
+    },
+    {
+      "path": "scripts/verify-arns-independent.mjs",
+      "sha256": "93ed4bd8ea1120eabd74a7e54e246498c41f332e1abc17c3a03a5d91ee3e53d9",
+      "review": "full-file manual read; final deltas independently reviewed where edited",
+      "bytes": 409
+    },
+    {
+      "path": "scripts/deploy-permaweb.sh",
+      "sha256": "5b894aa9122c6d7080f1e65ac63e0c21eb0b101a28c0c92faf3bd93ded5e1c65",
+      "review": "full-file manual read; final deltas independently reviewed where edited",
+      "bytes": 416
+    },
+    {
+      "path": "scripts/fund-security-scan.mjs",
+      "sha256": "bf85e69793a07b770cf447656e8b45290b769e1633307c789535a61b37f26099",
+      "review": "full-file manual read; final deltas independently reviewed where edited",
+      "bytes": 1723
+    },
+    {
+      "path": "scripts/native-bundle-audit.mjs",
+      "sha256": "3624b840ae7c9091e58aa398b0255f8c48e7d08bb4a1004798f01862bbb9e857",
+      "review": "full-file manual read; final deltas independently reviewed where edited",
+      "bytes": 3449
+    },
+    {
+      "path": "scripts/dependency-reachability.mjs",
+      "sha256": "6286885809b695e7784890b83920bf5865c4130ede3b5ab1b39577d432376a95",
+      "review": "full-file manual read; final deltas independently reviewed where edited",
+      "bytes": 3210
+    },
+    {
+      "path": "apps/web/vite.config.ts",
+      "sha256": "2204a3b478d18dce686ec3a2c90a2e24c601c9465d6e13d2495b1580595d641a",
+      "review": "full-file manual read; final deltas independently reviewed where edited",
+      "bytes": 3512
+    },
+    {
+      "path": ".github/workflows/checks.yml",
+      "sha256": "43940bba7964bb234d8ba6b84460a116849e2eb93992bfbd47d66a104322d32d",
+      "review": "full-file manual read; final deltas independently reviewed where edited",
+      "bytes": 10576
+    },
+    {
+      "path": ".github/workflows/permaweb.yml",
+      "sha256": "cdacff3026982c7064fca151c28520654fc40341e9fb7ad935018870b6a60c3f",
+      "review": "full-file manual read; final deltas independently reviewed where edited",
+      "bytes": 3478
+    },
+    {
+      "path": ".github/workflows/promo-preview-pages.yml",
+      "sha256": "7dfb3d89772effcde5f182e34c024e3d0707f96ca705a7bb7ea9314b8ca70af3",
+      "review": "full-file manual read; final deltas independently reviewed where edited",
+      "bytes": 3050
+    }
+  ],
+  "targetedAdditionalReview": [
+    "apps/sponsor/src/fund/provider.ts",
+    "apps/sponsor/src/fund/api.ts",
+    "apps/sponsor/linux-server.mjs",
+    "apps/web/src/components/PublishSeedModal.tsx",
+    "apps/web/src/components/RestoreSeed.tsx",
+    "apps/web/src/components/PreservationV2.tsx",
+    "apps/web/src/components/Workspace.tsx",
+    "apps/web/src/components/ErrorBoundary.tsx",
+    "apps/web/src/lib/vaultSession/selection.ts",
+    "apps/web/src/lib/vaultSession/session.ts",
+    "apps/web/src/lib/checkout/paidFinalize.ts",
+    "scripts/permaweb-release.test.mjs"
+  ],
+  "limits": [
+    "Manual source review is distinct from statement/branch coverage and from a proof for every future input.",
+    "Third-party packages have dependency/reachability and targeted SDK review, not complete line-by-line audit.",
+    "Final intended non-Cloudflare funded release artifact does not yet exist."
+  ]
+}

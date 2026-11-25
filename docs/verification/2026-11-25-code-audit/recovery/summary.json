@@ -1,0 +1,121 @@
+{
+  "schema": "sejire/recovery-code-audit/v1",
+  "checkedAt": "2026-11-25T07:52:30.756708+00:00",
+  "baseCommit": "a2b738bf8183c0b0551273e0530ae8f14589b26d",
+  "status": "PASS_WITH_DOCUMENTED_LIMITS",
+  "runtime": "Node v24.22.3",
+  "ownedFileCount": 19,
+  "newCodeDefectsFound": 0,
+  "runtimeChanged": false,
+  "tests": [
+    {
+      "command": "node --test tools/recovery/recovery.test.mjs",
+      "exitCode": 0,
+      "passed": 12,
+      "failed": 0,
+      "skipped": 0,
+      "evidence": "standalone-node-tests.log"
+    },
+    {
+      "command": "node --import ./apps/web/node_modules/tsx/dist/loader.mjs tools/recovery/interop.mts",
+      "exitCode": 0,
+      "productionCryptoInterop": "PASS",
+      "adversarialGroups": 7,
+      "fullVaultCases": 16,
+      "malformedEnvelopes": 54,
+      "authenticatedMutations": 51,
+      "wrongPhrases": 16,
+      "invalidKitsAndReceipts": 41,
+      "truncatedMalformedFiles": 22,
+      "copiedCliRoundTrips": 4,
+      "overwriteProtections": 2,
+      "externalFetchRequests": 0,
+      "evidence": "production-interop.log"
+    }
+  ],
+  "browserHtml": {
+    "reproducibleFromSharedCore": true,
+    "cspHashesVerified": true,
+    "connectSrc": "none",
+    "formAction": "none",
+    "untrustedDataSink": "Ciphertext/metadata/plaintext never inserted as HTML; UI output is fixed textContent, plaintext download is a Blob(application/json)",
+    "newBrowserRun": false,
+    "reason": "Decoder/HTML/browser-harness bytes unchanged; parent requested reuse of existing OS-offline CI evidence rather than a redundant expensive run",
+    "priorExactShaCi": {
+      "id": 45122610001,
+      "attempt": 1,
+      "number": 425,
+      "url": "https://github.com/azovskaya/sejire_arweave_solana/actions/runs/45122610001",
+      "workflow": ".github/workflows/checks.yml",
+      "event": "push",
+      "branch": "feat/decentralized-arweave-20261116",
+      "sourceCommit": "17a254eb13bb999127d9f7b3ecd54905f317e02d",
+      "sourceTree": "38dc06bd1eec7b06bdd21fea450d86e21aa236e4",
+      "status": "completed",
+      "conclusion": "success",
+      "startedAt": "2026-11-23T06:12:54Z",
+      "updatedAt": "2026-11-23T06:28:19Z"
+    },
+    "priorOfflineGate": {
+      "name": "OS-isolated standalone recovery",
+      "passed": 4,
+      "browsers": [
+        "chromium",
+        "firefox",
+        "webkit"
+      ],
+      "parserTests": 1,
+      "verifiedKernelNetworkIsolation": true,
+      "evidence": [
+        "2026-11-23T06:17:02.3371119Z # chromium: kernel network isolation verified (different namespace, loopback only, no usable default routes)",
+        "2026-11-23T06:17:05.7567130Z # firefox: kernel network isolation verified (different namespace, loopback only, no usable default routes)",
+        "2026-11-23T06:17:13.6290980Z # webkit: kernel network isolation verified (different namespace, loopback only, no usable default routes)"
+      ]
+    }
+  },
+  "pdf": {
+    "newGenerationOrMassValidation": false,
+    "unchangedSourceHashes": {
+      "apps/web/src/lib/pdf/classicTreePdf.ts": true,
+      "apps/web/src/lib/pdf/shezhirePdf.ts": true,
+      "apps/web/scripts/export-layout-stress.mjs": true,
+      "apps/web/scripts/check-layout-pdfs.py": true
+    },
+    "priorEvidenceDate": "2026-11-23",
+    "priorExactShaCi": 45122610001,
+    "priorResults": {
+      "fixtures": 20,
+      "files": 89,
+      "pages": 779,
+      "passingFiles": 89,
+      "findings": {},
+      "maxFixturePeople": 8191,
+      "maxLineageGenerations": 103,
+      "boundaryMatrix": true,
+      "evidence": "2026-11-23T06:14:55.6159372Z files: 89 pages: 779 passing: 89 findings: {}"
+    },
+    "scriptsNotInEmittedRuntime": true,
+    "scope": "Only own export/QA/check scripts reviewed here; frontend exporter source byte identity compared, not edited. Trusted synthetic test manifests are not a public upload parser."
+  },
+  "utf8Boundary": {
+    "classification": "Nonblocking compatibility boundary; not an AES-authentication bypass and no authenticated bytes lost",
+    "probe": "Synthetic AES-GCM authenticated plaintext with byte 0xff inside a JSON string",
+    "strictUtf8Valid": false,
+    "standaloneAccepted": true,
+    "originalAuthenticatedBytesPreserved": true,
+    "productionDecoderUsesSameReplacementBehavior": true,
+    "decision": "Preserve existing acceptance as requested by parent; no writer-generated invalid UTF-8 was found",
+    "outerSchemaRemainsStrict": true
+  },
+  "acceptedZipEvidence": "accepted-zip-structure.json",
+  "limits": [
+    "Checks verify known v1 encryption compatibility and preservation of the bytes supplied, not every possible future input or exhaustive cryptographic security.",
+    "The standalone decoder intentionally accepts authenticated generic JSON and does not validate tree semantics, merge/select versions or prove completeness of all archives.",
+    "Receipt structure and archive binding do not independently prove payment, transaction signature, inclusion, final settlement or future network availability.",
+    "Browser OS-offline results and PDF geometry results are historical exact-SHA evidence, not freshly rerun today.",
+    "Accepted ZIP is the independent 17a254e artifact and is not a new SOL+promo/admin release or a build of the audit working tree.",
+    "Path/type allowlisting is not a scan proving absence of all secrets in Git history. Public synthetic cryptographic vectors are intentionally shipped.",
+    "No real user archives, wallet phrases/keys, transaction approvals, uploads, deployment or external network requests were used by this audit."
+  ],
+  "safeLogs": true
+}

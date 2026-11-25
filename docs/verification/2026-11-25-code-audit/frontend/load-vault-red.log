@@ -1,0 +1,142 @@
+loadVault.selftest: OK
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: funded save must keep the other tree in an explicitly selected complete archive
++ actual - expected
+... Skipped lines
+
+  {
++   active_tree_id: 'tree_synthetic_A',
+-   active_tree_id: 'tree_synthetic_B',
+    schema: 'sejire/vault/v1',
+    trees: {
+      tree_synthetic_A: {
+        commits: {
+          c_1_mwvtpiij: {
+...
+      },
+-     tree_synthetic_B: {
+-       commits: {},
+-       dirty: false,
+-       draft: {
+-         persons: {}
+-       },
+-       meta: {
+-         author: 'local:draft-author',
+-         clanName: null,
+-         created_at: '2026-11-25T07:49:55.579Z',
+-         head: null,
+-         id: 'tree_synthetic_B',
+-         next_version: 1,
+-         tamgaUrl: null,
+-         title: 'Synthetic family B',
+-         zhuz: null
+-       },
+-       versions: {}
+-     }
+    },
+    updated_at: '2026-11-25T07:49:55.579Z',
+    vault_id: 'f6128c8c810a8d358f4d93c81ee695ed'
+  }
+
+    at <anonymous> (/workspace/scratch/ec55c66d48ac/sejire-code-audit-20261125/apps/web/src/lib/arweave/loadVault.selftest.ts:283:12) {
+  generatedMessage: false,
+  code: 'ERR_ASSERTION',
+  actual: {
+    schema: 'sejire/vault/v1',
+    vault_id: 'f6128c8c810a8d358f4d93c81ee695ed',
+    updated_at: '2026-11-25T07:49:55.579Z',
+    trees: {
+      tree_synthetic_A: {
+        meta: {
+          id: 'tree_synthetic_A',
+          title: 'Synthetic family A',
+          head: 'c_1_mwvtpiij',
+          next_version: 2,
+          created_at: '2026-11-25T07:49:55.579Z',
+          author: 'local:draft-author',
+          zhuz: null,
+          clanName: null,
+          tamgaUrl: null
+        },
+        commits: {
+          c_1_mwvtpiij: {
+            schema: 'sejire/commit/v1',
+            tree_id: 'tree_synthetic_A',
+            commit_id: 'c_1_mwvtpiij',
+            parent_commit_id: null,
+            version: 1,
+            author: 'local:draft-author',
+            created_at: '2026-11-25T07:49:55.579Z',
+            message: 'Synthetic first version',
+            snapshot: [Object]
+          }
+        },
+        versions: { '1': 'c_1_mwvtpiij' },
+        draft: { persons: { p_synthetic_A: [Object] } },
+        dirty: false
+      }
+    },
+    active_tree_id: 'tree_synthetic_A'
+  },
+  expected: {
+    schema: 'sejire/vault/v1',
+    vault_id: 'f6128c8c810a8d358f4d93c81ee695ed',
+    updated_at: '2026-11-25T07:49:55.579Z',
+    trees: {
+      tree_synthetic_A: {
+        meta: {
+          id: 'tree_synthetic_A',
+          title: 'Synthetic family A',
+          head: 'c_1_mwvtpiij',
+          next_version: 2,
+          created_at: '2026-11-25T07:49:55.579Z',
+          author: 'local:draft-author',
+          zhuz: null,
+          clanName: null,
+          tamgaUrl: null
+        },
+        commits: {
+          c_1_mwvtpiij: {
+            schema: 'sejire/commit/v1',
+            tree_id: 'tree_synthetic_A',
+            commit_id: 'c_1_mwvtpiij',
+            parent_commit_id: null,
+            version: 1,
+            author: 'local:draft-author',
+            created_at: '2026-11-25T07:49:55.579Z',
+            message: 'Synthetic first version',
+            snapshot: [Object]
+          }
+        },
+        versions: { '1': 'c_1_mwvtpiij' },
+        draft: { persons: { p_synthetic_A: [Object] } },
+        dirty: false
+      },
+      tree_synthetic_B: {
+        meta: {
+          id: 'tree_synthetic_B',
+          title: 'Synthetic family B',
+          head: null,
+          next_version: 1,
+          created_at: '2026-11-25T07:49:55.579Z',
+          author: 'local:draft-author',
+          zhuz: null,
+          clanName: null,
+          tamgaUrl: null
+        },
+        commits: {},
+        versions: {},
+        draft: { persons: {} },
+        dirty: false
+      }
+    },
+    active_tree_id: 'tree_synthetic_B'
+  },
+  operator: 'deepStrictEqual',
+  diff: 'simple'
+}
+
+Node.js v24.22.3

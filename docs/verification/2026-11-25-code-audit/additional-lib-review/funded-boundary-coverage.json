@@ -1,0 +1,811 @@
+{
+  "schema": "sejire/funded-emitted-lib-review-crosscheck/v1",
+  "checkedAt": "2026-11-25T08:27:51.307402+00:00",
+  "snapshotCommit": "9315471ba4fd5a6d0c2d8292bef33ab2ce9617ae",
+  "boundaryEvidence": "../release/funded-bundle-boundary.json",
+  "boundarySha256": "1d9070e63d24f93cfb150412befc732fca5bf66657e1968c6214eab0319c9d41",
+  "boundaryReportedSha": "local",
+  "mode": "native",
+  "method": "Match parent-supplied fresh Vite renderedLength>0 module list to manually reviewed current library SHA-256. No build was rerun by this reviewer.",
+  "caveat": "The producer records sha=local, not per-source build hashes. This crosscheck binds reviewed current files to module paths; parent build log/current-worktree provenance remains necessary. Emitted module membership does not mean every export or branch survived.",
+  "allChunks": 13,
+  "totalEmittedModulesIncludingDependencies": 725,
+  "appModules": 141,
+  "emittedLibraryModules": 113,
+  "emittedLibraryTypeScript": 112,
+  "emittedLibraryData": 1,
+  "manualCoverageMissing": [],
+  "sources": [
+    {
+      "path": "apps/web/src/lib/ao/client.ts",
+      "sha256": "5b9a3337b27d0e2df9c79acb122afb1ba31534c8820f8596c668b1f93cb94f0b",
+      "manualReviewExtent": "full",
+      "evidence": "coverage.json",
+      "hashMatchesReview": true
+    },
+    {
+      "path": "apps/web/src/lib/ao/factoryProcess.ts",
+      "sha256": "725d2880a98918e66ef022d2396e391c1cb5df0743578145c229c552deacc960",
+      "manualReviewExtent": "full",
+      "evidence": "coverage.json",
+      "hashMatchesReview": true
+    },
+    {
+      "path": "apps/web/src/lib/ao/protocolKinship.ts",
+      "sha256": "2173d814ef5b4a130d76de84bffde988a6a2ef5e5c5a2841e7429e59e0b5e0e9",
+      "manualReviewExtent": "full",
+      "evidence": "coverage.json",
+      "hashMatchesReview": true
+    },
+    {
+      "path": "apps/web/src/lib/ao/protocolMirror.ts",
+      "sha256": "afb9b0217439261bea631c9e52684daab129a08fcf9b7e1a4518ede7cae0a92d",
+      "manualReviewExtent": "full",
+      "evidence": "coverage.json",
+      "hashMatchesReview": true
+    },
+    {
+      "path": "apps/web/src/lib/ao/treeProcess.ts",
+      "sha256": "ca069abaca002717f7209e5eb23b03937646052e213e754f8dac38d98e91135b",
+      "manualReviewExtent": "full",
+      "evidence": "coverage.json",
+      "hashMatchesReview": true
+    },
+    {
+      "path": "apps/web/src/lib/ao/types.ts",
+      "sha256": "043ee64cdfa726d8355b01d56d7e3d68f41421332a6fbd7c3c98384f87b4ccb4",
+      "manualReviewExtent": "full",
+      "evidence": "coverage.json",
+      "hashMatchesReview": true
+    },
+    {
+      "path": "apps/web/src/lib/arweave/client.ts",
+      "sha256": "85514fe7b7a21b61e973cad1d85a6cd93fd9e3fc65340583b6573e69c1934fab",
+      "manualReviewExtent": "full",
+      "evidence": "coverage.json",
+      "hashMatchesReview": true
+    },
+    {
+      "path": "apps/web/src/lib/arweave/fetch.ts",
+      "sha256": "caa33b19a3b7946702a40dc865b597bd6d5ff91b0af31141fb34e887d38af669",
+      "manualReviewExtent": "full",
+      "evidence": "coverage.json",
+      "hashMatchesReview": true
+    },
+    {
+      "path": "apps/web/src/lib/arweave/gateways.ts",
+      "sha256": "936e2e54c15eec883c125ffab89b05bb7ff9bf13c1f11ed368593454277c5f0b",
+      "manualReviewExtent": "full",
+      "evidence": "coverage.json",
+      "hashMatchesReview": true
+    },
+    {
+      "path": "apps/web/src/lib/arweave/loadVault.ts",
+      "sha256": "c980474dbe2b191e50bd6fed434af9ea2c6f7ddd9a2f841e808a0db8c9356f56",
+      "manualReviewExtent": "full",
+      "evidence": "coverage.json",
+      "hashMatchesReview": true
+    },
+    {
+      "path": "apps/web/src/lib/arweave/publish.ts",
+      "sha256": "220cfbfced0037cc7d3a1d48820db3a6c87acfdc18967671ac075754ce90a326",
+      "manualReviewExtent": "full",
+      "evidence": "coverage.json",
+      "hashMatchesReview": true
+    },
+    {
+      "path": "apps/web/src/lib/arweave/wallet.ts",
+      "sha256": "80e254ffaa06929acc3bc927062fd29d0ffcdd295cca7065481a87178d2d434e",
+      "manualReviewExtent": "full",
+      "evidence": "coverage.json",
+      "hashMatchesReview": true
+    },
+    {
+      "path": "apps/web/src/lib/checkout/paidAvailabilityMessages.ts",
+      "sha256": "dfde5d1d87a82a8e3272834c69fbf27b66d5f9e85ccadfcdd64aa9906ab64a96",
+      "manualReviewExtent": "full",
+      "evidence": "coverage.json",
+      "hashMatchesReview": true
+    },
+    {
+      "path": "apps/web/src/lib/checkout/paidClient.ts",
+      "sha256": "9556c124355b89a17cfddbf3ae466f24f6448ef939b7b3c44a071d52a79770ca",
+      "manualReviewExtent": "full",
+      "evidence": "coverage.json",
+      "hashMatchesReview": true
+    },
+    {
+      "path": "apps/web/src/lib/checkout/paidFinalize.ts",
+      "sha256": "3de4027b01c595565bad7919971598f295861cbd5f1ba45f827cde63d0e8b800",
+      "manualReviewExtent": "full",
+      "evidence": "coverage.json",
+      "hashMatchesReview": true
+    },
+    {
+      "path": "apps/web/src/lib/checkout/paidJournal.ts",
+      "sha256": "f0a6e708a568b84162cc586c656711f50ad4d613c53ee4efa1272bfd91101b66",
+      "manualReviewExtent": "full",
+      "evidence": "coverage.json",
+      "hashMatchesReview": true
+    },
+    {
+      "path": "apps/web/src/lib/checkout/paidReceipt.ts",
+      "sha256": "09303c2863cf395a7a87962e105fd5a90700c3f7c26d1304a04d625751657b26",
+      "manualReviewExtent": "full",
+      "evidence": "coverage.json",
+      "hashMatchesReview": true
+    },
+    {
+      "path": "apps/web/src/lib/checkout/vaultGuard.ts",
+      "sha256": "fb9c2165407f9ff739f2413136eafeb7db16a272e0fd4cb545e24b663a85abd6",
+      "manualReviewExtent": "full",
+      "evidence": "coverage.json",
+      "hashMatchesReview": true
+    },
+    {
+      "path": "apps/web/src/lib/crypto/backup.ts",
+      "sha256": "9e3346b17c0312d57a8989a9c221c4e7df7299ecea04f60dab976e95972c7248",
+      "manualReviewExtent": "full",
+      "evidence": "coverage.json",
+      "hashMatchesReview": true
+    },
+    {
+      "path": "apps/web/src/lib/crypto/bip39.ts",
+      "sha256": "386716b8e7c6b51bd88bcc3f0eea5dea9b7dc524359a2d9806b5d2fe122c7716",
+      "manualReviewExtent": "full",
+      "evidence": "coverage.json",
+      "hashMatchesReview": true
+    },
+    {
+      "path": "apps/web/src/lib/crypto/encrypt.ts",
+      "sha256": "861ca9501eef769097e062dc78d3d1908274f7b646f21fb3173452fa1cb997f5",
+      "manualReviewExtent": "full",
+      "evidence": "coverage.json",
+      "hashMatchesReview": true
+    },
+    {
+      "path": "apps/web/src/lib/crypto/envelope.ts",
+      "sha256": "b36832840d81acf134ab3c1e8deca13ab90fb4ec0ff84e6c1b8934c475ae4cf6",
+      "manualReviewExtent": "full",
+      "evidence": "coverage.json",
+      "hashMatchesReview": true
+    },
+    {
+      "path": "apps/web/src/lib/crypto/keys.ts",
+      "sha256": "decc9427eac184cc400fba32587984ea202f006dedbe2f7bfaf834b3986329f9",
+      "manualReviewExtent": "full",
+      "evidence": "coverage.json",
+      "hashMatchesReview": true
+    },
+    {
+      "path": "apps/web/src/lib/crypto/seedBackup.ts",
+      "sha256": "1db7f176c1331f9b04524d4117d3e22e728bc8926032ba0dc1bc8d417ac43310",
+      "manualReviewExtent": "full",
+      "evidence": "coverage.json",
+      "hashMatchesReview": true
+    },
+    {
+      "path": "apps/web/src/lib/crypto/vault.ts",
+      "sha256": "8efd5681db6bd7b416853002711182f175c2fb8a55ccd4cd8eaccdb3b11c0595",
+      "manualReviewExtent": "full",
+      "evidence": "coverage.json",
+      "hashMatchesReview": true
+    },
+    {
+      "path": "apps/web/src/lib/dates.ts",
+      "sha256": "6fb3ac850a367f2e39181a7b5512c7c5fbd3f034707b1154a419cbb218b50148",
+      "manualReviewExtent": "full",
+      "evidence": "coverage.json",
+      "hashMatchesReview": true
+    },
+    {
+      "path": "apps/web/src/lib/directArweave/errors.ts",
+      "sha256": "57c5ecd94d5befcedfadd01f1da7f70f016b8d24951a4b117b4e198c74d3f5f5",
+      "manualReviewExtent": "full",
+      "evidence": "coverage.json",
+      "hashMatchesReview": true
+    },
+    {
+      "path": "apps/web/src/lib/directArweave/format.ts",
+      "sha256": "3fbe6bbb4987f2c516a19295e3fe5967418e81e5b6079fb75ffec3e9c842532d",
+      "manualReviewExtent": "full",
+      "evidence": "coverage.json",
+      "hashMatchesReview": true
+    },
+    {
+      "path": "apps/web/src/lib/directArweave/network.ts",
+      "sha256": "abe9b9f9b167d629c015208380ff1287071835222922b96770283fc62516fee8",
+      "manualReviewExtent": "full",
+      "evidence": "coverage.json",
+      "hashMatchesReview": true
+    },
+    {
+      "path": "apps/web/src/lib/directArweave/nodePreference.ts",
+      "sha256": "95f37a5150e561d729e705c76591d135899d05b3d46cf3505efb5528df189818",
+      "manualReviewExtent": "full",
+      "evidence": "coverage.json",
+      "hashMatchesReview": true
+    },
+    {
+      "path": "apps/web/src/lib/directArweave/transaction.ts",
+      "sha256": "116707e1e6c1e3fc9e45730675e2fdac06e80bafcd77cf362637ca518b08c447",
+      "manualReviewExtent": "full",
+      "evidence": "coverage.json",
+      "hashMatchesReview": true
+    },
+    {
+      "path": "apps/web/src/lib/download.ts",
+      "sha256": "867493976fdf629fc0606ce37d90dac9da585eb51092238c811f2d4d4754d0d7",
+      "manualReviewExtent": "full",
+      "evidence": "coverage.json",
+      "hashMatchesReview": true
+    },
+    {
+      "path": "apps/web/src/lib/draftStorage.ts",
+      "sha256": "8d9b486abbe926a6fdad388e4d3c1137026ff2fdbf938b3eb0e712b2c5c69026",
+      "manualReviewExtent": "full",
+      "evidence": "coverage.json",
+      "hashMatchesReview": true
+    },
+    {
+      "path": "apps/web/src/lib/fund/client.ts",
+      "sha256": "7905dc6191676c9beb873f1a5668dd67554087b00254d06f6bbbe3c88abb117d",
+      "manualReviewExtent": "full",
+      "evidence": "coverage.json",
+      "hashMatchesReview": true
+    },
+    {
+      "path": "apps/web/src/lib/fund/journal.ts",
+      "sha256": "4e1a3a37f232b3071f2473e89db2e9f74d7bac84503accce1ac71bd509a82d4f",
+      "manualReviewExtent": "full",
+      "evidence": "coverage.json",
+      "hashMatchesReview": true
+    },
+    {
+      "path": "apps/web/src/lib/fund/preference.ts",
+      "sha256": "3081007f45909622b19f3448a72175d227ba8aeaceaa11f422cf1bfc0fed3844",
+      "manualReviewExtent": "full",
+      "evidence": "coverage.json",
+      "hashMatchesReview": true
+    },
+    {
+      "path": "apps/web/src/lib/fund/status.ts",
+      "sha256": "640459a64ae1b006d1a7360d03b716fe6e29f6385848263aa69d2ac30bd60278",
+      "manualReviewExtent": "full",
+      "evidence": "coverage.json",
+      "hashMatchesReview": true
+    },
+    {
+      "path": "apps/web/src/lib/guide.ts",
+      "sha256": "69bd6ba7e6bcfdc905396b59496536e7a81e921f81bc988e4014b6eb4e24016a",
+      "manualReviewExtent": "full",
+      "evidence": "coverage.json",
+      "hashMatchesReview": true
+    },
+    {
+      "path": "apps/web/src/lib/i18n/I18nProvider.tsx",
+      "sha256": "93d6c11d9c82dd49180559aaa223d10f12a611bb666a5e880a6d7009936d5980",
+      "manualReviewExtent": "full",
+      "evidence": "coverage.json",
+      "hashMatchesReview": true
+    },
+    {
+      "path": "apps/web/src/lib/i18n/landing.ts",
+      "sha256": "c4a7b05f25af636c05d92239352b31a001ed39a54f263d75ac223f1cef9b66c0",
+      "manualReviewExtent": "full",
+      "evidence": "coverage.json",
+      "hashMatchesReview": true
+    },
+    {
+      "path": "apps/web/src/lib/i18n/locale.ts",
+      "sha256": "7c39be9de09be85bd769670e3b0edfee6c9e63b239bb7c08ffc1fe27a41c3fa1",
+      "manualReviewExtent": "full",
+      "evidence": "coverage.json",
+      "hashMatchesReview": true
+    },
+    {
+      "path": "apps/web/src/lib/i18n/messages.ts",
+      "sha256": "b1cb1dbc2e3b7bfeaa2e385a8e8f6dbebc11dede58afae882daf7155502290a9",
+      "manualReviewExtent": "full",
+      "evidence": "coverage.json",
+      "hashMatchesReview": true
+    },
+    {
+      "path": "apps/web/src/lib/i18n/pdf.ts",
+      "sha256": "5e58056ab3ec1eccb75b1b58e21f9ea54738518f5b6a65e248af09276850e4ea",
+      "manualReviewExtent": "full",
+      "evidence": "coverage.json",
+      "hashMatchesReview": true
+    },
+    {
+      "path": "apps/web/src/lib/independentDiscovery.ts",
+      "sha256": "17bc753b65e4066a5c1bca7403f918142a3a3356efea266e4a1a1c3782efc400",
+      "manualReviewExtent": "full",
+      "evidence": "coverage.json",
+      "hashMatchesReview": true
+    },
+    {
+      "path": "apps/web/src/lib/kinship.ts",
+      "sha256": "9da0244248988d079a02fdf24d1f2d3049048cc978b558998d142c533579830a",
+      "manualReviewExtent": "full",
+      "evidence": "coverage.json",
+      "hashMatchesReview": true
+    },
+    {
+      "path": "apps/web/src/lib/lastScreen.ts",
+      "sha256": "dc6ea544115ee99369bf332d22a66686b21456b24bb711b655f1d2000019a95b",
+      "manualReviewExtent": "full",
+      "evidence": "coverage.json",
+      "hashMatchesReview": true
+    },
+    {
+      "path": "apps/web/src/lib/native/arweave.ts",
+      "sha256": "e46ae444de37fd570550b64262cea32bb4bc7d01fddec507d0c92019993fbd07",
+      "manualReviewExtent": "full",
+      "evidence": "coverage.json",
+      "hashMatchesReview": true
+    },
+    {
+      "path": "apps/web/src/lib/native/cache.ts",
+      "sha256": "9d39b4bc278373876e43b25272dcc853f3a8c194757f9a4360ce9f30e29c7720",
+      "manualReviewExtent": "full",
+      "evidence": "coverage.json",
+      "hashMatchesReview": true
+    },
+    {
+      "path": "apps/web/src/lib/native/config.ts",
+      "sha256": "ebdedcd8e2da67bb34b00b83354202448bee831cfda49e2d9bf4d774bae6a659",
+      "manualReviewExtent": "full",
+      "evidence": "coverage.json",
+      "hashMatchesReview": true
+    },
+    {
+      "path": "apps/web/src/lib/native/diagnostics.ts",
+      "sha256": "9cb004178f0eb3bb50417986d2ed3d7c4a3314f583efe9dff7cb48ccb90434d3",
+      "manualReviewExtent": "full",
+      "evidence": "coverage.json",
+      "hashMatchesReview": true
+    },
+    {
+      "path": "apps/web/src/lib/native/jobs.ts",
+      "sha256": "1f6b6f9b248b086757bdad4cbc46af039d99da0632a8e73757a2c4a04e0d7c45",
+      "manualReviewExtent": "full",
+      "evidence": "coverage.json",
+      "hashMatchesReview": true
+    },
+    {
+      "path": "apps/web/src/lib/native/payment.ts",
+      "sha256": "f96b44b8d0c90dbc779f463c1e06b4c55f68832d41319869a91fa45926ab8f36",
+      "manualReviewExtent": "full",
+      "evidence": "coverage.json",
+      "hashMatchesReview": true
+    },
+    {
+      "path": "apps/web/src/lib/native/pilot.ts",
+      "sha256": "eb2637ad93cfdd364304d79c71ac8c88779f4867e58af0819e665d8593e39d3d",
+      "manualReviewExtent": "full",
+      "evidence": "coverage.json",
+      "hashMatchesReview": true
+    },
+    {
+      "path": "apps/web/src/lib/native/presentation.ts",
+      "sha256": "d3657b5fedc11fe2809c944915e58475204be913f733e667cdcd6b37f8a17c39",
+      "manualReviewExtent": "full",
+      "evidence": "coverage.json",
+      "hashMatchesReview": true
+    },
+    {
+      "path": "apps/web/src/lib/native/receipt.ts",
+      "sha256": "54e7a1741b0b6bceaa91e81bf00061c4debf45f75b19e45778acaaddf33df8ca",
+      "manualReviewExtent": "full",
+      "evidence": "coverage.json",
+      "hashMatchesReview": true
+    },
+    {
+      "path": "apps/web/src/lib/native/rpc.ts",
+      "sha256": "5ae1897e48388064646ddfbae5a146dd2809a16171a7a9072ccba58855d731aa",
+      "manualReviewExtent": "full",
+      "evidence": "coverage.json",
+      "hashMatchesReview": true
+    },
+    {
+      "path": "apps/web/src/lib/native/session.ts",
+      "sha256": "20820f49a9f8e77c7926175416ab7e8ec48626ff94e6dae37e15487040141488",
+      "manualReviewExtent": "full",
+      "evidence": "coverage.json",
+      "hashMatchesReview": true
+    },
+    {
+      "path": "apps/web/src/lib/native/successor.ts",
+      "sha256": "b268ce7ee5d46353257e9a1b49228724d3347340ede3d2390c5abdd83865a986",
+      "manualReviewExtent": "full",
+      "evidence": "coverage.json",
+      "hashMatchesReview": true
+    },
+    {
+      "path": "apps/web/src/lib/opsDesk/adminLock.ts",
+      "sha256": "a1da5a372d270268b23a6481732a16664c657616b6a71a3892aadf2457106390",
+      "manualReviewExtent": "full",
+      "evidence": "coverage.json",
+      "hashMatchesReview": true
+    },
+    {
+      "path": "apps/web/src/lib/opsDesk/feed.ts",
+      "sha256": "595955826d24864ae3a8815842ed8520f1f64a6a5d259972d80063c17c95af8a",
+      "manualReviewExtent": "full",
+      "evidence": "coverage.json",
+      "hashMatchesReview": true
+    },
+    {
+      "path": "apps/web/src/lib/opsDesk/networkOverview.ts",
+      "sha256": "6f4886cd77278715ebc3c4154270f68b12ab3140f9e7db79d2e9ab9c406205af",
+      "manualReviewExtent": "full",
+      "evidence": "coverage.json",
+      "hashMatchesReview": true
+    },
+    {
+      "path": "apps/web/src/lib/opsDesk/route.ts",
+      "sha256": "102d642c1ebd3b87a272b267bdba110e78dd5688c55cc813c92329c37c07ab71",
+      "manualReviewExtent": "full",
+      "evidence": "coverage.json",
+      "hashMatchesReview": true
+    },
+    {
+      "path": "apps/web/src/lib/opsDesk/store.ts",
+      "sha256": "d90dc13636c98953e71741109ed94944adb10d327daa8afb5bddc04b8d13cc93",
+      "manualReviewExtent": "full",
+      "evidence": "coverage.json",
+      "hashMatchesReview": true
+    },
+    {
+      "path": "apps/web/src/lib/opsDesk/treasury.ts",
+      "sha256": "435e01149a4c0798f548cc5b34d0d760352d7f875227ddfb1301a34d936503dc",
+      "manualReviewExtent": "full",
+      "evidence": "coverage.json",
+      "hashMatchesReview": true
+    },
+    {
+      "path": "apps/web/src/lib/pdf/classicTreePdf.ts",
+      "sha256": "56dfaf73644f97a502d9285933c70521613d2fe9461039e3359828199c5c3f24",
+      "manualReviewExtent": "full",
+      "evidence": "coverage.json",
+      "hashMatchesReview": true
+    },
+    {
+      "path": "apps/web/src/lib/pdf/filename.ts",
+      "sha256": "ef23287ee2a6644b46b4742d5cb8252f6e7f5fecb01978b7d10818eb234ae0ff",
+      "manualReviewExtent": "full",
+      "evidence": "coverage.json",
+      "hashMatchesReview": true
+    },
+    {
+      "path": "apps/web/src/lib/pdf/font.ts",
+      "sha256": "67afb8e8b044f9a9795be75742a2af5b69f55fca953676d670598ac5cbd907be",
+      "manualReviewExtent": "full",
+      "evidence": "coverage.json",
+      "hashMatchesReview": true
+    },
+    {
+      "path": "apps/web/src/lib/pdf/lineage.ts",
+      "sha256": "2356e2eaa931957d7428957212893615c9542015050bc287b4a3fa0a724e4eda",
+      "manualReviewExtent": "full",
+      "evidence": "coverage.json",
+      "hashMatchesReview": true
+    },
+    {
+      "path": "apps/web/src/lib/pdf/ornaments.ts",
+      "sha256": "7e16b887cb8488c94492653b152d351c30a48afab2d3df1e265f67831a8ffd34",
+      "manualReviewExtent": "full",
+      "evidence": "coverage.json",
+      "hashMatchesReview": true
+    },
+    {
+      "path": "apps/web/src/lib/pdf/poster.ts",
+      "sha256": "6a835f827bfa4330326e4a19551e14b7991ca7942f834af2f701feb88a457d8f",
+      "manualReviewExtent": "full",
+      "evidence": "coverage.json",
+      "hashMatchesReview": true
+    },
+    {
+      "path": "apps/web/src/lib/pdf/shezhirePdf.ts",
+      "sha256": "6c137e8de0a06e5865c17be7a6f72e3f3c6e9a02ed2a412130e841b40d157863",
+      "manualReviewExtent": "full",
+      "evidence": "coverage.json",
+      "hashMatchesReview": true
+    },
+    {
+      "path": "apps/web/src/lib/pdf/shezhireTemplates.ts",
+      "sha256": "69055b985ec7a45fabdb55df28a93f8ccb41cad1466dd1083fc4687de89d2c79",
+      "manualReviewExtent": "full",
+      "evidence": "coverage.json",
+      "hashMatchesReview": true
+    },
+    {
+      "path": "apps/web/src/lib/pdf/textLayout.ts",
+      "sha256": "00c0393365d851a16b2876fc1decc669f4ddf6b22ff7219c124c1f7df1a05780",
+      "manualReviewExtent": "full",
+      "evidence": "coverage.json",
+      "hashMatchesReview": true
+    },
+    {
+      "path": "apps/web/src/lib/pdfRoot.ts",
+      "sha256": "d4d991d54922bf511eaf97bb00b595fad88498f28e04a7ac523ef41d3da3ac76",
+      "manualReviewExtent": "full",
+      "evidence": "coverage.json",
+      "hashMatchesReview": true
+    },
+    {
+      "path": "apps/web/src/lib/pedigree.ts",
+      "sha256": "b86ea67257f8b6c4bb4936d7a0bd9b11c82d2381e1ec54be9bb3106a0ed1708c",
+      "manualReviewExtent": "full",
+      "evidence": "coverage.json",
+      "hashMatchesReview": true
+    },
+    {
+      "path": "apps/web/src/lib/pedigreeFit.ts",
+      "sha256": "6d59c83d4ad9f8b74a71818b75410d462e90dfcaac03bbf181098be8e3735505",
+      "manualReviewExtent": "full",
+      "evidence": "coverage.json",
+      "hashMatchesReview": true
+    },
+    {
+      "path": "apps/web/src/lib/permawebHost.ts",
+      "sha256": "6d91d4961d3edde868e6d82b48a58ae88dec3c705c724b02dfcf5961da308ff3",
+      "manualReviewExtent": "full",
+      "evidence": "coverage.json",
+      "hashMatchesReview": true
+    },
+    {
+      "path": "apps/web/src/lib/preservationContext.legacy.ts",
+      "sha256": "7524aea46324c8c61e60348fc78f8660346884fd5bf2aed9be88e924b383f767",
+      "manualReviewExtent": "full",
+      "evidence": "coverage.json",
+      "hashMatchesReview": true
+    },
+    {
+      "path": "apps/web/src/lib/preserveV2/arweave.ts",
+      "sha256": "ec71b8d95ceab167849fc312358ce11ca983c7e0109dc28ac3cbdf220512ae3e",
+      "manualReviewExtent": "full",
+      "evidence": "coverage.json",
+      "hashMatchesReview": true
+    },
+    {
+      "path": "apps/web/src/lib/preserveV2/machine.ts",
+      "sha256": "926c9406e34cf9635f7cb3209fd0b389bf9f8cb864ce8a71cf5f12d498b53de1",
+      "manualReviewExtent": "full",
+      "evidence": "coverage.json",
+      "hashMatchesReview": true
+    },
+    {
+      "path": "apps/web/src/lib/preserveV2/policy.ts",
+      "sha256": "92407be96454c98496ebfd29f04fc0ac755575ad68b4e5608e0910e9877fdf4b",
+      "manualReviewExtent": "full",
+      "evidence": "coverage.json",
+      "hashMatchesReview": true
+    },
+    {
+      "path": "apps/web/src/lib/preserveV2/solana.ts",
+      "sha256": "6c5650b34c44301125bebe67efbe88847d6c4fb749b5240c53b5121234ac5579",
+      "manualReviewExtent": "full",
+      "evidence": "coverage.json",
+      "hashMatchesReview": true
+    },
+    {
+      "path": "apps/web/src/lib/preserveV2/store.ts",
+      "sha256": "58e738924761280bb215db66a67412129a2dfbab5c666d506c1368e4acc011a6",
+      "manualReviewExtent": "full",
+      "evidence": "coverage.json",
+      "hashMatchesReview": true
+    },
+    {
+      "path": "apps/web/src/lib/preserveV2/timeout.ts",
+      "sha256": "999b100e5cc90edf33f7238a707d6cb0dd313a35eb543e7c9fa6108b3e309c80",
+      "manualReviewExtent": "full",
+      "evidence": "coverage.json",
+      "hashMatchesReview": true
+    },
+    {
+      "path": "apps/web/src/lib/preserveV2/verify.ts",
+      "sha256": "107a954fc41b80a5bb0920c6e6ee21cb45a07623bd980a1b32e07fb849c6b049",
+      "manualReviewExtent": "full",
+      "evidence": "coverage.json",
+      "hashMatchesReview": true
+    },
+    {
+      "path": "apps/web/src/lib/recovery/diagnostics.ts",
+      "sha256": "2b23a0f224caaad787a7dfd56748f361615b2d0f55dfc281c499dd53406c703e",
+      "manualReviewExtent": "full",
+      "evidence": "coverage.json",
+      "hashMatchesReview": true
+    },
+    {
+      "path": "apps/web/src/lib/recovery/discovery.ts",
+      "sha256": "aed4e18d6374386a0211fddc10b925ae1b6647b9d465e3a567a50079c1247f4b",
+      "manualReviewExtent": "full",
+      "evidence": "coverage.json",
+      "hashMatchesReview": true
+    },
+    {
+      "path": "apps/web/src/lib/recovery/errors.ts",
+      "sha256": "039f9a669e196d24ef5d1a679a793a2012a5b4de8dcd5cf43375c49fad1ef499",
+      "manualReviewExtent": "full",
+      "evidence": "coverage.json",
+      "hashMatchesReview": true
+    },
+    {
+      "path": "apps/web/src/lib/recovery/gateways.ts",
+      "sha256": "9ed074eb84e249142ce353daeb7ecb528109c3bea14a90b6755160df255ae046",
+      "manualReviewExtent": "full",
+      "evidence": "coverage.json",
+      "hashMatchesReview": true
+    },
+    {
+      "path": "apps/web/src/lib/recovery/head.ts",
+      "sha256": "b31fd12b802799c352caeae9aa0f6d6baad3c17391a5982740e5fcc98cd680e3",
+      "manualReviewExtent": "full",
+      "evidence": "coverage.json",
+      "hashMatchesReview": true
+    },
+    {
+      "path": "apps/web/src/lib/recovery/historicalNative.ts",
+      "sha256": "5fb3561573cb135d070a8a5f1cf41a919beb199fc9a5bb8c55f76b1c2e0ba7b2",
+      "manualReviewExtent": "full",
+      "evidence": "coverage.json",
+      "hashMatchesReview": true
+    },
+    {
+      "path": "apps/web/src/lib/recovery/legacy-locators.v1.json",
+      "sha256": "3cbc24bf1cfaef3834c4316272d1452fa37a894c7a81d93c2bfb58604473abde",
+      "manualReviewExtent": "full",
+      "evidence": "coverage.json",
+      "hashMatchesReview": true
+    },
+    {
+      "path": "apps/web/src/lib/recovery/providers/graphqlVaultProvider.ts",
+      "sha256": "9af1af3d569d8a9b9da14e40e84bce65d5e08de9887565c4361eca9667cee83c",
+      "manualReviewExtent": "full",
+      "evidence": "coverage.json",
+      "hashMatchesReview": true
+    },
+    {
+      "path": "apps/web/src/lib/recovery/providers/legacyLocatorProvider.ts",
+      "sha256": "bff951bf1020fc3259d703800783c0e456b6c505fc03036cb627e422a28bb04d",
+      "manualReviewExtent": "full",
+      "evidence": "coverage.json",
+      "hashMatchesReview": true
+    },
+    {
+      "path": "apps/web/src/lib/recovery/providers/localHintProvider.ts",
+      "sha256": "d9c61471865de6f84f5f9d7bebfe70b3fce4037c055bf6ed55cca8591ffa983c",
+      "manualReviewExtent": "full",
+      "evidence": "coverage.json",
+      "hashMatchesReview": true
+    },
+    {
+      "path": "apps/web/src/lib/recovery/recover.ts",
+      "sha256": "d678d164324e4dbc45c1fffcc7023c24ff7e8de7c934eb53925c78383346ac1b",
+      "manualReviewExtent": "full",
+      "evidence": "coverage.json",
+      "hashMatchesReview": true
+    },
+    {
+      "path": "apps/web/src/lib/recovery/retrieve.ts",
+      "sha256": "20c88a7fbc4de7b48f61ab7010d3086d24f6744b16340cd5b2bb5994dc85a239",
+      "manualReviewExtent": "full",
+      "evidence": "coverage.json",
+      "hashMatchesReview": true
+    },
+    {
+      "path": "apps/web/src/lib/recovery/verify.ts",
+      "sha256": "34e9ed23451b8d74b4b05d3192fa852b23d48b1709e7a55f06001b57e1ca9ece",
+      "manualReviewExtent": "full",
+      "evidence": "coverage.json",
+      "hashMatchesReview": true
+    },
+    {
+      "path": "apps/web/src/lib/solana/client.ts",
+      "sha256": "e2346e7ff80f8533f59fd17419f359385add785ea28f48bd05f2d68ad37165e3",
+      "manualReviewExtent": "full",
+      "evidence": "coverage.json",
+      "hashMatchesReview": true
+    },
+    {
+      "path": "apps/web/src/lib/solana/journal.ts",
+      "sha256": "8b51fa8672652e0c205b6c227bbf738c9b67a65f6ea03d99dcadb7fb31eae097",
+      "manualReviewExtent": "full",
+      "evidence": "coverage.json",
+      "hashMatchesReview": true
+    },
+    {
+      "path": "apps/web/src/lib/solana/messages.ts",
+      "sha256": "b1a7d911581fc77ef3b02c8ecb6767bd3099c4edbde95ef1651ca46135d2ca45",
+      "manualReviewExtent": "full",
+      "evidence": "coverage.json",
+      "hashMatchesReview": true
+    },
+    {
+      "path": "apps/web/src/lib/solana/policy.ts",
+      "sha256": "8c568b7031388452b97cebc107cfb4eea87f9150c92bd062bc1d469969b94335",
+      "manualReviewExtent": "full",
+      "evidence": "coverage.json",
+      "hashMatchesReview": true
+    },
+    {
+      "path": "apps/web/src/lib/solana/receipt.ts",
+      "sha256": "8099577685d1e775ae8e1c5bed30b022aaf73d3774dee8f13f1b1cfa7a4458cb",
+      "manualReviewExtent": "full",
+      "evidence": "coverage.json",
+      "hashMatchesReview": true
+    },
+    {
+      "path": "apps/web/src/lib/solana/upload.ts",
+      "sha256": "d7f585bfadbc53afae127435c2ac961f6c4bb4d7cb64c211f9ca36a86176235a",
+      "manualReviewExtent": "full",
+      "evidence": "coverage.json",
+      "hashMatchesReview": true
+    },
+    {
+      "path": "apps/web/src/lib/sponsor/client.ts",
+      "sha256": "836ef44bb148638fed644259031270800c384528b5bf74df869ab52e07d48b26",
+      "manualReviewExtent": "full",
+      "evidence": "coverage.json",
+      "hashMatchesReview": true
+    },
+    {
+      "path": "apps/web/src/lib/sponsor/config.ts",
+      "sha256": "839706e4a5150ed0be883e0dac4ad19233726ded9a524aa7cef86799c5139a9c",
+      "manualReviewExtent": "full",
+      "evidence": "coverage.json",
+      "hashMatchesReview": true
+    },
+    {
+      "path": "apps/web/src/lib/storageQuota.ts",
+      "sha256": "4ef8f93bb48457dc60c5ebd89726f811e92bf19ed3f54aa967b024352208bde2",
+      "manualReviewExtent": "full",
+      "evidence": "coverage.json",
+      "hashMatchesReview": true
+    },
+    {
+      "path": "apps/web/src/lib/treeEngine.ts",
+      "sha256": "9a3fae9c654f3c017b4485f3c2a45237bf87f2d71ff88b22697ed40940a1c75a",
+      "manualReviewExtent": "full",
+      "evidence": "coverage.json",
+      "hashMatchesReview": true
+    },
+    {
+      "path": "apps/web/src/lib/treeJson.ts",
+      "sha256": "c7ceda978df1174f98b6b99d5297ba3f1300d0879c223135b722b268aa7c5a64",
+      "manualReviewExtent": "full",
+      "evidence": "coverage.json",
+      "hashMatchesReview": true
+    },
+    {
+      "path": "apps/web/src/lib/vaultSession/localArchive.ts",
+      "sha256": "71c5616d0c9e1487d0d899dba7acd5447f0079321730c3d6dcfee19767be9e75",
+      "manualReviewExtent": "full",
+      "evidence": "coverage.json",
+      "hashMatchesReview": true
+    },
+    {
+      "path": "apps/web/src/lib/vaultSession/selection.ts",
+      "sha256": "005fb5ff2f7e7ef8a066cb5f5385125df394f670be810d07badd33d824175479",
+      "manualReviewExtent": "full",
+      "evidence": "coverage.json",
+      "hashMatchesReview": true
+    },
+    {
+      "path": "apps/web/src/lib/vaultSession/session.ts",
+      "sha256": "533555ad5a1b1fc45fbc26438446e2f7b627266c754ead0b8334cf7df4d4fbb3",
+      "manualReviewExtent": "full",
+      "evidence": "coverage.json",
+      "hashMatchesReview": true
+    },
+    {
+      "path": "apps/web/src/lib/zhuzRu.ts",
+      "sha256": "3d2773cab72b813a91491fdd41de0200e35aacd6e85ee0df973048fb0e0e76b3",
+      "manualReviewExtent": "full",
+      "evidence": "coverage.json",
+      "hashMatchesReview": true
+    }
+  ]
+}

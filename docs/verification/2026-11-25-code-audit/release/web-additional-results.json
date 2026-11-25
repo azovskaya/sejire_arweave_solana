@@ -1,0 +1,74 @@
+[
+  {
+    "file": "src/lib/directArweave/direct.selftest.ts",
+    "argv": [
+      "node",
+      "--import",
+      "./node_modules/tsx/dist/loader.mjs",
+      "src/lib/directArweave/direct.selftest.ts"
+    ],
+    "exitCode": 0,
+    "seconds": 2.14,
+    "log": "web-additional-0.log"
+  },
+  {
+    "file": "src/lib/directArweave/nodePreference.selftest.ts",
+    "argv": [
+      "node",
+      "--import",
+      "./node_modules/tsx/dist/loader.mjs",
+      "src/lib/directArweave/nodePreference.selftest.ts"
+    ],
+    "exitCode": 0,
+    "seconds": 0.37,
+    "log": "web-additional-1.log"
+  },
+  {
+    "file": "src/lib/directArweave/protocolBoundaries.selftest.ts",
+    "argv": [
+      "node",
+      "--import",
+      "./node_modules/tsx/dist/loader.mjs",
+      "src/lib/directArweave/protocolBoundaries.selftest.ts"
+    ],
+    "exitCode": 0,
+    "seconds": 14.24,
+    "log": "web-additional-2.log"
+  },
+  {
+    "file": "src/lib/independentBackup.selftest.ts",
+    "argv": [
+      "node",
+      "--import",
+      "./node_modules/tsx/dist/loader.mjs",
+      "src/lib/independentBackup.selftest.ts"
+    ],
+    "exitCode": 0,
+    "seconds": 2.02,
+    "log": "web-additional-3.log"
+  },
+  {
+    "file": "src/lib/independentNativeVault.selftest.ts",
+    "argv": [
+      "node",
+      "--import",
+      "./node_modules/tsx/dist/loader.mjs",
+      "src/lib/independentNativeVault.selftest.ts"
+    ],
+    "exitCode": 0,
+    "seconds": 1.47,
+    "log": "web-additional-4.log"
+  },
+  {
+    "file": "src/lib/recovery/historicalNative.selftest.ts",
+    "argv": [
+      "node",
+      "--import",
+      "./node_modules/tsx/dist/loader.mjs",
+      "src/lib/recovery/historicalNative.selftest.ts"
+    ],
+    "exitCode": 0,
+    "seconds": 2.43,
+    "log": "web-additional-5.log"
+  }
+]

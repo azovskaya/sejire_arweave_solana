@@ -1,0 +1,1 @@
+preservation.selftest: PASS (actual ANS-104 library signature with public vector, exact ciphertext, sandbox-only transport, readiness); no live upload/funding

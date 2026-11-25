@@ -1,0 +1,21 @@
+PASS historical eight-tag fund archive retains every tree, commit and parent semantics
+PASS old paid native transaction without Save-Id recovers its authenticated Parent-Tx
+PASS modern native Save-Id is readable without manufacturing a payment receipt
+PASS historical RSA-2048 and untagged hash use native signature and Merkle binding
+Transaction Verification Failed! 
+Details: {
+  "asymmetricKeyType": "rsa",
+  "modulusLength": 4096
+} 
+N.B. ArweaveJS is only guaranteed to verify txs created using ArweaveJS.
+PASS a changed signed header or signature is rejected before raw retrieval
+PASS a valid signature over a false data root cannot authenticate ciphertext
+PASS changed raw bytes cannot bypass signed Merkle binding even without a digest tag
+PASS signed byte-count and hash tags remain mandatory and agree with header size
+PASS historical missing-protocol exception cannot be broadened with arbitrary tags
+PASS missing Vault-Id is accepted only for the exact built-in vault and transaction pair
+PASS wrong phrase and valid signed but unauthentic AES payload cannot recover a vault
+PASS alternate node and native data endpoint are verified before successful recovery
+PASS non-native bundled metadata cannot be treated as native transaction proof
+PASS invalid words or an aborted request never reaches the public network
+historical native recovery: 14 synthetic checks passed; no network writes or real payments

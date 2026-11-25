@@ -1,0 +1,18 @@
+PASS protocol: authenticated creation, no first caller bootstrap
+PASS protocol: payer signature authorizes exact order and ephemeral capability
+PASS protocol: tampering price, From JSON, signature and replay domain rejected
+PASS protocol: unauthorized capability cannot reserve or block foreign order
+PASS protocol: atomic failure before commit leaves no pending operation
+PASS protocol: unknown RPC keeps one pending signature, cannot replace it
+PASS protocol: replacement observer continues pending operation without first observer key
+PASS protocol: parallel verified attestations produce one service and fund credit
+PASS protocol: public JSON From is not observer authority
+PASS protocol: no SQLite: saved signed journal replays identical state without RPC
+PASS protocol: missing middle, missing tail and modified evidence fail pinned checkpoint
+PASS protocol: first uploader stops after signed plan; different executor reuses bytes/id without original key
+PASS protocol: conflicting signed attestation is retained, never last-wins or credited twice
+PASS protocol: management threshold, explicit new-key acceptance, no Eval or Owner path
+PASS protocol: large lamports and summed ledger stay exact above u64 without floating point
+PASS protocol: lost commit response freezes writes until durable history is reconciled, no second credit
+PASS protocol: HTTP adapter cannot expose commit, fault or unsigned payment proof
+protocol.selftest: 17 scenarios PASS; local signed scheduler + synthetic RPC/upload, no Cloudflare/SQLite; NOT live AO/Arweave

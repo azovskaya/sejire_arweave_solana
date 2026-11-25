@@ -1,0 +1,35 @@
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: paid completion must preserve an explicitly selected later full vault
++ actual - expected
+
+  {
++   headTxId: 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
++   source: 'publish',
+-   cacheDigest: '96b4757b98aa4eecf9c5d65f414b9ca6e947f464276073b7908fc5214b0ffa5d',
+-   headTxId: 'PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP',
+-   source: 'file',
+    vaultId: '130abaed5bbfe2de0bea18b097ce2615'
+  }
+
+    at <anonymous> (/workspace/scratch/ec55c66d48ac/sejire-code-audit-20261125/apps/web/src/lib/checkout/paidClient.selftest.ts:401:10) {
+  generatedMessage: false,
+  code: 'ERR_ASSERTION',
+  actual: {
+    vaultId: '130abaed5bbfe2de0bea18b097ce2615',
+    headTxId: 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+    source: 'publish'
+  },
+  expected: {
+    vaultId: '130abaed5bbfe2de0bea18b097ce2615',
+    headTxId: 'PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP',
+    source: 'file',
+    cacheDigest: '96b4757b98aa4eecf9c5d65f414b9ca6e947f464276073b7908fc5214b0ffa5d'
+  },
+  operator: 'deepStrictEqual',
+  diff: 'simple'
+}
+
+Node.js v24.22.3

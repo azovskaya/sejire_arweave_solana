@@ -1,0 +1,18 @@
+PASS direct-preservation: invalid storage policy is rejected before any transport or signing
+PASS direct-preservation: readiness and unsigned exact preparation work while execution is disabled
+PASS direct-preservation: no signer, wrong signer, network, low balance or excess reward cannot offer ready
+PASS direct-preservation: changed archive, missing parent binding and noncanonical serialization fail before network
+PASS direct-preservation: all prepared transaction fields are bound before signing, including Merkle data root
+PASS direct-preservation: real software RSA signature uses stored quote and exact recovery metadata without network
+PASS direct-preservation: lost submit response replays identical signed bytes after fresh provider construction
+PASS direct-preservation: altered signed data or parent never reaches POST, even with a valid signature over old root
+PASS direct-preservation: confirmed small transaction can replay its original data without another header or signature
+PASS direct-preservation: read-only reconciliation survives restart without signer and verifies node-data fallback
+PASS direct-preservation: on-chain spend stays proved when the archive is missing or fails integrity
+PASS direct-preservation: wrong owner, reward, ID, Parent or duplicate signed metadata cannot prove spend/completion
+PASS direct-preservation: valid same-ID metadata wins another host mismatch; object-key order is immaterial
+PASS direct-preservation: pending, absent and partially unavailable indexes never become a false completion
+PASS direct-preservation: redirects cannot escape the pinned transport or produce readiness, acceptance or proof
+PASS direct-preservation: bounded full response bodies and an explicit abort cannot outlive the deadline
+PASS direct-preservation: arbitrary larger ciphertext uses immutable signed header and all deterministic Merkle chunks
+directPreservation.selftest: PASS (17 scenarios); software-only unfunded RSA, mocked mainnet wire, no external connections or funds

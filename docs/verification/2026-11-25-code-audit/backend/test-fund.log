@@ -1,0 +1,48 @@
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+> sejire-sponsor@0.2.0 test:fund
+> node --loader ../../scripts/offline-ts-loader.mjs tests/fund-provider.mjs && node --loader ../../scripts/offline-ts-loader.mjs tests/fund-submit-recovery.mjs && node --experimental-sqlite --loader ../../scripts/offline-ts-loader.mjs tests/fund.local.mjs
+
+(node:18) ExperimentalWarning: `--experimental-loader` may be removed in the future; instead use `register()`:
+--import 'data:text/javascript,import { register } from "node:module"; import { pathToFileURL } from "node:url"; register("../../scripts/offline-ts-loader.mjs", pathToFileURL("./"));'
+(Use `node --trace-warnings ...` to show where the warning was created)
+arweave-web-init: PASS
+fund-provider: PASS; pending/confirmed distinction, bounded raw/canonical/node-data verification, strict base64url, trusted archive redirects, rejected node API redirects and shared check deadline; zero posts
+(node:31) ExperimentalWarning: `--experimental-loader` may be removed in the future; instead use `register()`:
+--import 'data:text/javascript,import { register } from "node:module"; import { pathToFileURL } from "node:url"; register("../../scripts/offline-ts-loader.mjs", pathToFileURL("./"));'
+(Use `node --trace-warnings ...` to show where the warning was created)
+PASS promo submission: failed chunk returns once, without the SDK retry/sleep loop
+PASS promo submission: failed header returns once without beginning any chunk writes
+PASS promo submission: one absolute deadline bounds a hanging header response
+PASS promo submission: the same deadline also bounds missing chunk acknowledgements
+PASS promo submission: native signed header and all exact Merkle chunks are sent once on success
+PASS promo submission: confirmed-data repair sends only existing signed chunks and rejects altered ciphertext
+fund-submit-recovery: PASS (6 groups); ephemeral RSA, synthetic gateway only
+(node:44) ExperimentalWarning: `--experimental-loader` may be removed in the future; instead use `register()`:
+--import 'data:text/javascript,import { register } from "node:module"; import { pathToFileURL } from "node:url"; register("../../scripts/offline-ts-loader.mjs", pathToFileURL("./"));'
+(Use `node --trace-warnings ...` to show where the warning was created)
+PASS fund: initial limit 13 AR; disabled; server admin auth
+PASS fund: public balance needs no admin credential but cannot change settings
+PASS fund: every admin operation rejects missing and invalid credentials server-side
+PASS fund: promo normalization, change, old invalid, disable and enable
+PASS fund: success uses confirmed transaction reward and words-recoverable metadata, with no plaintext promo
+PASS fund: duplicate POST and polling preserve same tx and accounting
+PASS fund: 13 to 26 limit is cumulative and lower than spent rejected
+PASS fund: lost response retains signed ID and reservation; reconcile once
+PASS fund: wallet lower than budget stops reservation
+PASS fund: recovery words and plaintext tree fields cannot enter Fund API
+PASS fund: parallel reservations cannot exceed cap and count active reserves
+PASS fund: rate limit and persistence after restart
+PASS fund: verification failure holds reservation, retry completes once; provider errors fail closed
+PASS fund: reconcile resubmits stored signed transaction after upload was not accepted
+PASS fund: audit records contain revision and limits, never promo plaintext
+PASS fund: prepare failure returns safe code before reservation
+PASS fund: GET never signs, reserves or resubmits a missing signed transaction; explicit POST recovers the same order
+PASS fund: confirmed network with unavailable archive remains reserved, then the same order completes exactly once
+PASS fund: public attention reasons remain safe and cannot release or complete an unverified archive
+PASS fund: existing order completes through direct-provider GET despite stale and split gateway evidence, with exactly-once spend
+PASS fund: new parent is signed, immutable on replay and ledger reserve, and survives GET completion and restart
+PASS fund: invalid parents are rejected before reservation or signing; explicit null and omitted genesis replay identically
+PASS fund: old-client omitted POST remains unbound across new-client GET resume with an existing local parent
+PASS fund: additive schema preserves historical prepared/signed bytes and GET settles the original parent-less order
+fund.local: PASS; real SQLite, mocked gateway/provider responses, zero network calls or AR transactions

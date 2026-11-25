@@ -1,0 +1,18 @@
+{
+  "finalRevisionContainsManifestGuard": true,
+  "checks": [
+    {
+      "command": "npm run test:permaweb-prepare",
+      "exitCode": 0,
+      "nodeCases": 42,
+      "prepareSelftest": "PASS",
+      "log": "release-package-unit.log"
+    },
+    {
+      "command": "node --test scripts/worker-release-gate.test.mjs scripts/admin-hidden-input.test.mjs",
+      "exitCode": 0,
+      "nodeCases": 60,
+      "log": "deployment-gates.log"
+    }
+  ]
+}

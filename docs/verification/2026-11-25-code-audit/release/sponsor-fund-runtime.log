@@ -1,0 +1,23 @@
+PASS fund workerd disabled: Worker health responds through workerd HTTP
+PASS fund workerd disabled: fund routes fail closed by default
+PASS fund workerd disabled: read-only signed treasury readiness and admin dashboard work before fund activation
+fund workerd disabled: 3 acceptance checks PASS
+PASS fund workerd write: Worker health responds through workerd HTTP
+PASS fund workerd write: every management route rejects missing and wrong server credential
+PASS fund workerd write: one promo validates, rotates immediately, and persists only hash/hint
+PASS fund workerd write: mock funded HTTP order completes with confirmed reward, not estimate
+PASS fund workerd write: duplicate HTTP POST keeps one transaction and one charge
+PASS fund workerd write: parent binding rejects changed or dropped links before another submission
+PASS fund workerd write: 13 to 26 AR changes cumulative cap without resetting ledger
+PASS fund workerd write: concurrent HTTP reservations respect exact SQLite limit
+PASS fund workerd write: lost response reconciles same signed txId without second signing
+PASS fund workerd write: unaccepted upload reconciles by resubmitting saved signed bytes
+PASS fund workerd write: pending reservation and private data boundaries survive runtime
+fund workerd write: 11 acceptance checks PASS
+PASS fund workerd restart-read: Worker health responds through workerd HTTP
+PASS fund workerd restart-read: SQLite DO persists promo, limit, completed ledger and active reservation across process restart
+fund workerd restart-read: 2 acceptance checks PASS
+PASS fund workerd direct-read: Worker health responds through workerd HTTP
+PASS fund workerd direct-read: direct provider races gateway evidence and verifies node data inside workerd
+fund workerd direct-read: 2 acceptance checks PASS
+fund.runtime: PASS; real workerd HTTP handlers and persisted SQLite Durable Object, mock only, no AR network calls

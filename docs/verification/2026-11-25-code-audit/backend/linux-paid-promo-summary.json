@@ -1,0 +1,39 @@
+{
+  "result": "PASS",
+  "node": "v24.22.3",
+  "groups": 10,
+  "passed": [
+    "default-off HTTP has no payment offer, session or outbound request",
+    "origin and server admin authentication guard management; readiness uses actual synthetic signer",
+    "512 KiB boundary and tampered archive are rejected before any order or hold",
+    "paid HTTP admission is idempotent and immutable across recipient rotation",
+    "prepared bytes and valid signature are required before durable reserve or relay",
+    "durable Linux alarm continues reserved payment, lost SOL/header replies retain exact obligation",
+    "cold SQLite reopen resumes same owner/key/payment and uploads only missing original chunks",
+    "explicit post-completion repair restores original bytes without changing receipt or spend",
+    "promo admin rotation and lost submission acknowledgement persist real HTTP/SQLite state",
+    "new promo use obeys rotated code and cumulative budget without changing historical receipt"
+  ],
+  "runtime": "real Linux HTTP adapter + real SQLite/WAL; same database reopened across server lifetimes",
+  "paidProvider": "production DirectArweavePreservation; ephemeral Ed25519 and RSA-PSS signing; synthetic finalized RPC/Arweave responses",
+  "promoProvider": "in-process MockFundedArweaveProvider; production HTTP/admin/ledger logic; no claim of production-treasury RSA signing",
+  "externalNetworkRequests": 0,
+  "syntheticPaymentRelays": 1,
+  "syntheticArweaveHeaders": 1,
+  "syntheticArweaveChunks": 4,
+  "syntheticPromoSignings": 2,
+  "syntheticPromoSubmissions": 2,
+  "persistedCounts": {
+    "orders": 1,
+    "paidOrders": 1,
+    "paidHolds": 1,
+    "credits": 1,
+    "fundOrders": 2
+  },
+  "limitations": [
+    "No real wallet extension, chain, funds, production keys or deployment.",
+    "Cold reopen covers ledger persistence; OS SIGKILL exclusion is covered separately by linux-server.mjs tests.",
+    "Promo continuation is exercised by explicit HTTP reconciliation; no autonomous promo alarm is claimed.",
+    "Mock promo signer does not prove a live fixed-treasury signing binding."
+  ]
+}

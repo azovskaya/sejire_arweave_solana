@@ -1,0 +1,54 @@
+PASS arbitrary contributions include one million and above; no commercial cap
+PASS zero contribution does not request a fund transfer
+PASS service and contribution have exact distinct instruction allocations
+PASS SOL represented in lamports with its own program, not USDC units
+PASS decimal arithmetic and format roundtrip for 1000 varied amounts
+PASS technical u64 boundary, total overflow and precision fail closed
+PASS large contribution requests confirmation without rejecting it
+PASS preservation requires digest/size/service; no fixed 512 KiB policy
+PASS donation-only cannot charge service or require an archive; must be positive
+PASS quote/order immutability and distinct recipient roles
+PASS reject wrong network
+PASS reject wrong genesis
+PASS reject failed transaction
+PASS reject processed transaction
+PASS reject confirmed is not finalized
+PASS reject missing block time
+PASS reject late payment
+PASS reject predates order
+PASS reject wrong fee payer
+PASS reject missing payer signature
+PASS reject malformed signature
+PASS reject wrong recipient
+PASS reject wrong sender
+PASS reject counterfeit USDC mint
+PASS reject wrong token program
+PASS reject wrong decimals
+PASS reject wrong amount
+PASS reject wrong reference
+PASS reject duplicate instruction
+PASS reject extra transfer
+PASS forged order asset or total is rejected
+PASS atomic test store: 32 concurrent confirmations credit once
+PASS not found and RPC loss retain pending signature; replacement blocked
+PASS pending finality and wrong response signature never grant fulfillment
+PASS response lost AFTER atomic credit: retry does not credit again
+PASS duplicate order/reference and cross-order instruction replay are refused
+PASS detached reads cannot tamper with test store state
+PASS contribution-only is verified without storage fulfillment or archive
+PASS validated payment and credit allocations are frozen
+PASS SOL MVP preservation: 30000000 service + 0 fund
+PASS SOL MVP preservation: 30000000 service + 5000000 fund
+PASS SOL MVP contribution: 0 service + 5000000 fund
+PASS SOL rejects wrong servicePayment recipient
+PASS SOL rejects wrong servicePayment amount
+PASS SOL rejects wrong fundContribution recipient
+PASS SOL rejects wrong fundContribution amount
+PASS SOL rejects wrong payer
+PASS SOL rejects wrong signer
+PASS SOL rejects wrong network
+PASS SOL rejects failed transaction
+PASS SOL rejects not finalized
+PASS SOL rejects extra unexpected transfer
+PASS SOL large contributions remain exact without product cap
+checkout.selftest: 53 scenarios PASS; synthetic normalized RPC evidence, single-isolate memory store only; zero external requests/signatures/transfers

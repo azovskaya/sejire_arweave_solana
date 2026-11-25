@@ -1,0 +1,26 @@
+PASS paid primitives: v1 output and rollback boundary stay distinct from immutable v2
+PASS paid primitives: policy hash is canonical; roles, genesis and limits are not caller defaults
+PASS paid primitives: standalone policy requires only explicit SOL terms; preservation still requires complete AR policy
+PASS paid primitives: standalone contribution has one independently decoded fund transfer, no storage, and exact u64 amounts
+PASS paid primitives: standalone contribution rejects zero/service/archive/storage and cannot change preservation terms
+PASS paid primitives: v2 rejects omitted parent, invalid archive/storage, test recipients and extra order fields
+PASS paid primitives: independent SDK roundtrip: Phantom-safe compute budget, one signer and exact transfers
+PASS paid primitives: pre-existing transfer-only preparation remains valid and can be renewed with Phantom-safe bytes
+PASS paid primitives: preparation binds policy/order/payer/reference/blockhash/bytes/id and window
+PASS paid primitives: explicit recovery preparation has a bounded new window and exact predecessor without changing immutable order terms
+PASS paid primitives: explicit RPC renewal permits expired original order but rejects the unchanged old blockhash
+PASS paid primitives: reserve can verify the payer signature against exact saved bytes without broadcasting
+PASS paid primitives: Phantom Lighthouse suffix preserves payment and binds its actual signature
+PASS paid primitives: modern validator requires the persisted preparation and exact chain message
+PASS paid primitives: late verification of timely inclusion credits once; current expiry cannot revoke payment
+PASS paid primitives: v2 accepts creation-second inclusion at RPC precision, including reference recovery, and rejects an earlier second
+PASS paid primitives: devnet preparePaid uses pinned genesis/RPC and fee for exact message
+PASS paid primitives: mainnet-beta preparePaid uses pinned genesis/RPC and fee for exact message
+PASS paid primitives: legacy mainnet preparation remains unavailable; modern bad readiness cannot reach wallet
+PASS paid primitives: unknown wallet outcome recovers exact old reference/preparation without sending
+PASS paid primitives: reference mention with different blockhash cannot substitute another preparation
+PASS paid primitives: null, timeout/unavailable, wrong genesis and malformed lookup stay uncertain
+PASS paid primitives: two exact matching signatures are ambiguous; a full lookup page is not an empty proof
+PASS paid primitives: expired overall lookup budget stops before another HTTP request
+PASS paid primitives: v2 receipt separates payment/storage networks and exact parent/payment evidence
+paid.selftest: 25 synthetic scenarios PASS; ephemeral software-signature fixture only; no network, live keys, submission or activation

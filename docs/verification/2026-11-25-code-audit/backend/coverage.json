@@ -1,0 +1,380 @@
+{
+  "date": "2026-11-25",
+  "baseCommit": "363e1fa71eb590fdf4efb723dcce3a3877b6b127",
+  "branch": "fix/release-code-audit-20261125",
+  "scope": "backend source review and synthetic Linux HTTP/SQLite acceptance; no production deployment, real wallet or payment",
+  "node": "v24.22.3",
+  "sourceReviewEntries": [
+    {
+      "path": "apps/sponsor/linux-server.mjs",
+      "sha256": "85ea0764ebab2fd77ffba3d950d67fb6f53d94c8ece2a59c97dbe9e6033d12f5",
+      "review": "active_path_full_review",
+      "focus": "Linux HTTP routing, SQLite storage, writer guard lifecycle, background drain and production/test dependency boundary"
+    },
+    {
+      "path": "apps/sponsor/bin/linux-checkout.mjs",
+      "sha256": "a2b4704662c331e56f52cfd8e0e11a3eab87157f42a9f7c25f28f2be74317833",
+      "review": "active_path_full_review",
+      "focus": "CLI environment-only startup; no provider injection from HTTP/env"
+    },
+    {
+      "path": "apps/sponsor/src/adminAuth.ts",
+      "sha256": "6b7c31c2721a911a95c39d81f19f48f38e171c6dd600a992dc18ebcf6f9ca5d9",
+      "review": "active_path_full_review",
+      "focus": "server admin bearer/password selection, missing auth, fixed safe failures"
+    },
+    {
+      "path": "apps/sponsor/src/opsSecrets.ts",
+      "sha256": "40fc6a30063a6d08f654bce145ea28ae1cb2f1dc5f0d2bf7ad72032582ab4a38",
+      "review": "active_path_full_review",
+      "focus": "legacy KV versus memory fallback; Linux token authentication boundary"
+    },
+    {
+      "path": "apps/sponsor/src/checkout/api.ts",
+      "sha256": "7aa7585f606945ab4a289c0b2a0cbeb0724aa259c27ad7bbb87b17a295af4398",
+      "review": "active_path_full_review",
+      "focus": "HTTP policy, session/owner/origin, input limits, idempotency, reserve/recovery/repair, error classification"
+    },
+    {
+      "path": "apps/sponsor/src/checkout/apiLedger.ts",
+      "sha256": "52a89afcc9b473820179612526849f6b365486c62b9d6d2d0e1410be371b3ebb",
+      "review": "active_path_full_review",
+      "focus": "durable owner/key/session capabilities, cancellation tombstones and rate quotas"
+    },
+    {
+      "path": "apps/sponsor/src/checkout/durableStore.ts",
+      "sha256": "a5db0b4ff63b587d7882ea763bd3ec278b2385d69ab3a0440e52521c77778dca",
+      "review": "active_path_full_review",
+      "focus": "named ledger action boundary, atomic recipient admission, paid alarm, safe error mapping"
+    },
+    {
+      "path": "apps/sponsor/src/checkout/sqliteStore.ts",
+      "sha256": "2ecc78e0b3534fe213cfdd842e08c67e7f5e494caee973ceb99809c86b31b523",
+      "review": "active_path_full_review",
+      "focus": "atomic payment/credit commit, unique reference/signature/instruction, durable linking"
+    },
+    {
+      "path": "apps/sponsor/src/checkout/paidLedger.ts",
+      "sha256": "daca401a11c9d869e735e233b0aaac83786dc3a27bad97b936642c94ded21213",
+      "review": "active_path_full_review",
+      "focus": "immutable policy/archive, AR holds, preparations, reserve fence, leases, restart, proof/receipt and repair"
+    },
+    {
+      "path": "apps/sponsor/src/checkout/paidPolicy.ts",
+      "sha256": "51d2507ab4f904e0d212676cd0a1e54898b7de932d112749b1489ce7c4157510",
+      "review": "active_path_full_review",
+      "focus": "server-only network/roles/limits, canonical envelope/digest binding"
+    },
+    {
+      "path": "apps/sponsor/src/checkout/paidRunner.ts",
+      "sha256": "5c688883a31dd49f7714886e84b54ac6814d7e971ab2d7d9d1acd3d98a21e76c",
+      "review": "active_path_full_review",
+      "focus": "service-owned payment continuation, signed bytes before upload, no replacement charge, data-only repair"
+    },
+    {
+      "path": "apps/sponsor/src/checkout/directPreservation.ts",
+      "sha256": "0b5bbd08054f397050c97dbe36ed575dfcff43c3d437c0c6a49993de1f69aa23",
+      "review": "active_path_full_review",
+      "focus": "signer/metadata binding, signed Merkle root, bounded exact byte upload/readback"
+    },
+    {
+      "path": "apps/sponsor/src/checkout/paymentPreparation.ts",
+      "sha256": "52e3089ec005450d9846f4c30e0311e290341b3c52c778e6266ecdbb4fbfaa3d",
+      "review": "active_path_full_review",
+      "focus": "pinned genesis, account checks, fee/balance, blockhash/height and recovery preparation"
+    },
+    {
+      "path": "apps/sponsor/src/checkout/paymentValidator.ts",
+      "sha256": "e4d6ed099d49dd08caef18f5bc69a955d9523cc35166748fc4bccaa88fdd50fc",
+      "review": "active_path_full_review",
+      "focus": "finalized evidence, exact payer/amount/reference/message/fee and saved policy"
+    },
+    {
+      "path": "apps/sponsor/src/checkout/rpcPool.ts",
+      "sha256": "4f3c450f8ac989961e4f3c46a331c29ecca30c7345f931cf142ca1d6049132d1",
+      "review": "active_path_full_review",
+      "focus": "complete observations, fallback/cooldown, signed relay and recovery fences"
+    },
+    {
+      "path": "apps/sponsor/src/checkout/rpcReader.ts",
+      "sha256": "42bb8aa37735dba74df122a64edd1d39cda43e23a8f33a2eabbef3bf5e8c9f99",
+      "review": "active_path_full_review",
+      "focus": "bounded RPC, finalized evidence, complete reference scan and unknown-vs-absent handling"
+    },
+    {
+      "path": "apps/sponsor/src/checkout/rpcDecoder.ts",
+      "sha256": "9e3c29d1d4885615aae95a515c87ff5b2070df04129756b4f7284f0ae8f04643",
+      "review": "active_path_full_review",
+      "focus": "compiled instructions, signer/address/amount, unsupported invocation rejection, exact message reconstruction"
+    },
+    {
+      "path": "apps/sponsor/src/checkout/rpcErrors.ts",
+      "sha256": "8d830524882e7e1e15e3a1d2e19b7515f78645f560dfacbbfe720331db166ecc",
+      "review": "active_path_full_review",
+      "focus": "fixed non-secret RPC reasons"
+    },
+    {
+      "path": "apps/sponsor/src/checkout/recipientAdmin.ts",
+      "sha256": "06d2fb2050e9116f11c72484156960277417305ad1f82c84b67f28301518f434",
+      "review": "active_path_full_review",
+      "focus": "same admin credential, revision CAS, origin/body bounds and public-address-only changes"
+    },
+    {
+      "path": "apps/sponsor/src/checkout/recipientSettings.ts",
+      "sha256": "0b60b0ebcab9a6a21ad4581faebd6a7ee135b89e217fc81682cfa62e481f0831",
+      "review": "active_path_full_review",
+      "focus": "additive audit/revision, existing-order policy immutability and admission race"
+    },
+    {
+      "path": "apps/sponsor/src/checkout/treasuryGuard.ts",
+      "sha256": "4fb82d818fdc9e36a6b7118590cf680c55b2488156566c733d641a56d7e1975f",
+      "review": "active_path_full_review",
+      "focus": "shared physical AR reservations, separate paid/promo quota, conservative ceiling and stale-balance revisions"
+    },
+    {
+      "path": "apps/sponsor/src/fund/api.ts",
+      "sha256": "aac281bee69f0dd577c283a560693855cdbc5fa86b3514095aa2a591893b70da",
+      "review": "active_path_full_review",
+      "focus": "promo HMAC/rotation/admin, reservation/sign/submit order, lost replies, replay and verification deadlines"
+    },
+    {
+      "path": "apps/sponsor/src/fund/ledger.ts",
+      "sha256": "b269eb2d127aae28c1be60d988386d868d8e3199329f9f7519b4b5284a56c3bb",
+      "review": "active_path_full_review",
+      "focus": "append-only fund events, cumulative limits, signed obligation retention, completion exactly once"
+    },
+    {
+      "path": "apps/sponsor/src/fund/provider.ts",
+      "sha256": "06eb47faebdf238d5802828dd2f4695f8980c61bcb0923c5af87e7daf898d0d1",
+      "review": "active_path_full_review",
+      "focus": "fixed treasury signer, bounded native submit, Merkle data binding, data-only replay, gateway read/redirect bounds"
+    },
+    {
+      "path": "apps/sponsor/src/configuredEntry.ts",
+      "sha256": "d363c14a8272bb241ec2ca3ddb8821d82528632ffe511b9ae8fe6ced55c6bd67",
+      "review": "legacy_boundary_full_source_read",
+      "focus": "Worker recipient-settings adapter; not the Linux entry point"
+    },
+    {
+      "path": "apps/sponsor/src/index.ts",
+      "sha256": "7fc0756f42dbacf29423162246f7806983b442f554c0c9a39fd2fa3bcf5ba65c",
+      "review": "legacy_boundary_full_source_read",
+      "focus": "legacy Worker routing/admin setup/password/key handling; absent from Linux HTTP routes"
+    },
+    {
+      "path": "apps/sponsor/src/preview.ts",
+      "sha256": "92fea20435c6b749697473d88ddd547362685f1937715c5b791f2fddf4cfbff0",
+      "review": "legacy_boundary_full_source_read",
+      "focus": "preview routing boundary"
+    },
+    {
+      "path": "apps/sponsor/src/cashierGuard.ts",
+      "sha256": "db355e7f0d985b4995ba7fd8787d037d07be2bcbb365dcb9679720c4e9bd50ff",
+      "review": "legacy_boundary_full_source_read",
+      "focus": "legacy live/mock separation; not paid-v2 admission"
+    },
+    {
+      "path": "apps/sponsor/src/envelope.ts",
+      "sha256": "96351a3ad7ea600878657224a1c92a843f85561be771d54010182f9f94cc65b7",
+      "review": "legacy_boundary_full_source_read",
+      "focus": "older cashier envelope guard; active paid/fund use stricter canonical envelope parser"
+    },
+    {
+      "path": "apps/sponsor/src/upload.ts",
+      "sha256": "6613505961410a2023e52fe995b350a85559708adaddda215ae2a6f553f2fbdd",
+      "review": "legacy_boundary_full_source_read",
+      "focus": "legacy upload and metadata route; not active Linux paid/promo native upload"
+    },
+    {
+      "path": "apps/sponsor/src/turbo.ts",
+      "sha256": "6e9bad699f95740b973f0f23bb61129ac9ed44312d577faf2a12519e32260809",
+      "review": "legacy_boundary_full_source_read",
+      "focus": "legacy upload fallback and parse helper imported by opsSecrets"
+    },
+    {
+      "path": "apps/sponsor/src/payments.ts",
+      "sha256": "41bd66039c69159598d33f00cc0e3206dc78056a66195a7718aaeae325ff53d2",
+      "review": "legacy_boundary_full_source_read",
+      "focus": "legacy mock/Kaspi session payment model"
+    },
+    {
+      "path": "apps/sponsor/src/sessions.ts",
+      "sha256": "bd3a927800992f5413291851eb3dcc9cbdf201992f873e00c2b0ce525d32208c",
+      "review": "legacy_boundary_full_source_read",
+      "focus": "legacy KV/memory session store and historical fallback"
+    },
+    {
+      "path": "apps/sponsor/src/kaspi.ts",
+      "sha256": "c702a04e94b0c87d7ada99e878782cc61956fcfb3ed6ac7c49a831387b8f10d8",
+      "review": "legacy_boundary_full_source_read",
+      "focus": "legacy merchant HTTP/HMAC interfaces; no live integration verification"
+    },
+    {
+      "path": "apps/sponsor/src/opsLedger.ts",
+      "sha256": "03f960726b603707c6f424aa00429bdc4e0563f949df54fbadb3e93fa775634f",
+      "review": "legacy_boundary_full_source_read",
+      "focus": "legacy KV statistics distinct from authoritative paid/fund SQLite accounting"
+    },
+    {
+      "path": "apps/sponsor/src/checkout/preservation.ts",
+      "sha256": "4a4b11b6d43ce4d429bcfd6c2c8a6fa38197b2bfa66261c620f3266f8b954dd7",
+      "review": "legacy_boundary_full_source_read",
+      "focus": "legacy sandbox ANS-104 service; no constructor side effect in disabled Linux legacy path"
+    },
+    {
+      "path": "apps/sponsor/src/checkout/store.ts",
+      "sha256": "2d673d91c7e853d4ea6100168a8773df0373245821c4a6c213a71cd5878252dc",
+      "review": "legacy_boundary_full_source_read",
+      "focus": "atomic store interface plus explicitly test-only in-memory implementation"
+    },
+    {
+      "path": "apps/sponsor/src/checkout/reconciliation.ts",
+      "sha256": "e96e6c544f349b2330c34ce2df9a48097986605eb7794da61ce8392a93c5c91e",
+      "review": "legacy_boundary_full_source_read",
+      "focus": "legacy evidence reconciliation; paid-v2 separately binds durable preparation"
+    },
+    {
+      "path": "apps/sponsor/src/checkout/verifyRequest.ts",
+      "sha256": "f6baf8f4f9a2094561cc9558b2a3a3739a5a9277c2e34b792e7170d8a71297a4",
+      "review": "legacy_boundary_full_source_read",
+      "focus": "legacy parser/service boundary; not an exposed arbitrary ledger-forwarding endpoint"
+    },
+    {
+      "path": "apps/sponsor/src/protocol/http.ts",
+      "sha256": "56bd522e38144ad0e1e710ebafcaf607f012993d07e95d59bb0c85dae72167ec",
+      "review": "legacy_boundary_full_source_read",
+      "focus": "optional local signed journal adapter; not paid-mainnet Linux route"
+    },
+    {
+      "path": "apps/sponsor/src/protocol/executor.ts",
+      "sha256": "cf7f93d34e8e066135897191b24b1e910dc871062bdfa0ffc6216f9d0d64302b",
+      "review": "legacy_boundary_full_source_read",
+      "focus": "local signed journal replay/queue and publication-unknown fence"
+    },
+    {
+      "path": "apps/sponsor/src/protocol/journal.ts",
+      "sha256": "13cc3219408c22ae35364907798b575ac1e4e7341483cf50d35189bff227ed26",
+      "review": "legacy_boundary_full_source_read",
+      "focus": "legacy local devnet authority epoch, signed checkpoints and immutable upload plans"
+    },
+    {
+      "path": "apps/sponsor/src/adminPage.ts",
+      "sha256": "62b12b064ef573d40eb037e8a2e7c52c8149e3cc389712cc3d2b18a7dafc490c",
+      "review": "selected_or_test_only",
+      "focus": "selected auth/storage/admin endpoint/action scan; legacy Worker HTML not mounted by Linux"
+    },
+    {
+      "path": "apps/sponsor/src/checkout/rpcFixtures.ts",
+      "sha256": "14aa460d73dda915efcf947d8288dab617c86e69ad230cc32f7e31d7f8af4fd7",
+      "review": "selected_or_test_only",
+      "focus": "full fixture source read; synthetic encodings only, not production runtime"
+    }
+  ],
+  "testArtifacts": [
+    {
+      "path": "apps/sponsor/tests/linux-paid-promo.mjs",
+      "sha256": "d83e79cb20965d64675d9995ee0e37e76304cff87ed852445abc4926761c7183",
+      "note": "new focused regression"
+    },
+    {
+      "path": "apps/sponsor/tests/fund-submit-recovery.mjs",
+      "sha256": "946bff9f86765aab20ee2c475cd8a3bc9ae41556214fba8d9ce5ca2cf2caa1ce",
+      "note": "new focused regression"
+    },
+    {
+      "path": "apps/sponsor/tests/linux-server.mjs",
+      "sha256": "adeb91e65f05269e1e856b804f87b059dfdda146a62c23a3617940a4e126f189",
+      "note": "existing test/runtime entry or command wiring; executed where listed below"
+    },
+    {
+      "path": "apps/sponsor/tests/fund-provider.mjs",
+      "sha256": "e066ee9d7fadadc45a63e58da41e350d7c1a790ef6ca232f907fc812ff05ba09",
+      "note": "existing test/runtime entry or command wiring; executed where listed below"
+    },
+    {
+      "path": "apps/sponsor/tests/fund.local.mjs",
+      "sha256": "f846ad31ccde808efaa1491671bcac747e79941f76215c3d1b9165d006207df8",
+      "note": "existing test/runtime entry or command wiring; executed where listed below"
+    },
+    {
+      "path": "apps/sponsor/tests/fund-runtime.mjs",
+      "sha256": "209e4f13523f0b06bf9c62e357da315a2c3a9b3f9ca7a1d8ab6f2d33b5bda436",
+      "note": "existing test/runtime entry or command wiring; executed where listed below"
+    },
+    {
+      "path": "apps/sponsor/tests/fund-worker.ts",
+      "sha256": "77493b0fb5184aa549f9bd0a5aedeb085ffd4b443dd36a92d0a70138b170b413",
+      "note": "existing test/runtime entry or command wiring; executed where listed below"
+    },
+    {
+      "path": "apps/sponsor/package.json",
+      "sha256": "210044d3c09e59c5ed4e0e3682df85adbe3d101973f61d792b36793abdb9e57e",
+      "note": "existing test/runtime entry or command wiring; executed where listed below"
+    }
+  ],
+  "manualReviewCounts": {
+    "activePath": 24,
+    "legacyBoundaryRead": 18,
+    "selectedOrFixture": 2
+  },
+  "automatedVerification": [
+    {
+      "command": "npm run check",
+      "cwd": "apps/sponsor",
+      "exitCode": 0,
+      "log": "typecheck.log"
+    },
+    {
+      "command": "npm run test:linux",
+      "cwd": "apps/sponsor",
+      "exitCode": 0,
+      "existingGroups": 5,
+      "newGroups": 10,
+      "log": "test-linux.log"
+    },
+    {
+      "command": "npm run test:fund",
+      "cwd": "apps/sponsor",
+      "exitCode": 0,
+      "providerSuite": "PASS",
+      "newSubmissionGroups": 6,
+      "sqliteApiGroups": 24,
+      "log": "test-fund.log"
+    },
+    {
+      "command": "npm run test:fund-runtime",
+      "cwd": "apps/sponsor",
+      "exitCode": 0,
+      "acceptanceChecks": 18,
+      "log": "test-fund-runtime.log"
+    }
+  ],
+  "reproducedFindings": [
+    {
+      "id": "B1",
+      "name": "promo confirmed header missing data never replayed",
+      "before": "promo-missing-data-before.log",
+      "status": "fixed; Linux HTTP/SQLite regression PASS"
+    },
+    {
+      "id": "B2",
+      "name": "SDK promo submission lacks common deadline and contains long chunk retries",
+      "before": "promo-submit-before.log",
+      "status": "fixed; actual synthetic RSA-signed native provider regression PASS"
+    },
+    {
+      "id": "B3",
+      "name": "pre-reserve payment byte validation masked as HTTP503",
+      "before": "observed during initial Linux regression; mapped error path inspected in source",
+      "status": "fixed; invalid signature/message/transaction HTTP400 and no reserve/relay regression PASS"
+    }
+  ],
+  "limitations": [
+    "This inventory is manual source review, not instrumented statement or branch coverage.",
+    "The Linux promo lifecycle uses an injected mock provider; native upload/repair is tested separately with ephemeral RSA.",
+    "No live fixed-treasury signer, production RPC, wallet extension, deployment or real encrypted-vault restore is claimed.",
+    "Autonomous continuation exists for paid jobs; promo continuation still requires explicit retry/admin reconciliation.",
+    "AR balance ceiling does not automatically increase on refill; no reviewed admin replenishment procedure exists.",
+    "The legacy Worker cashier/local protocol were read to verify boundaries; they are not approved as alternate production mainnet routes."
+  ]
+}

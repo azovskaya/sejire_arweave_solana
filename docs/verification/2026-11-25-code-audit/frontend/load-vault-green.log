@@ -1,0 +1,2 @@
+loadVault.selftest: OK
+loadVault verified retrieval, local parent and sequential multi-tree selftests: OK

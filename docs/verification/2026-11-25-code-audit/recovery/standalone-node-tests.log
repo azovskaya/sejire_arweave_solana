@@ -1,0 +1,20 @@
+✔ the embedded BIP39 list matches the independent published list and its fixed digest (7.933768ms)
+✔ BIP39 checksum, twelve-word restriction, whitespace, case and NFKD are enforced compatibly (7.705126ms)
+✔ public production-derived vectors match every derivation stage and preserve all plaintext bytes/history (18.125959ms)
+✔ a kit retains exact serialized ciphertext and validates its optional receipt without chain requests (7.278668ms)
+✔ kit corruption and mismatched receipt bindings fail before recovery (5.29ms)
+✔ wrong words and changes to authenticated ciphertext or IV never return plaintext (15.746719ms)
+✔ envelope shape and existing ciphertext size boundary remain strict without narrowing valid inputs (30.489217ms)
+✔ copied single-file CLI recovers without npm/network and creates owner-only output without logging secrets (128.493282ms)
+✔ CLI never overwrites an existing output and never writes output for failed authentication (354.977032ms)
+✔ CLI bounds input files and phrase input before allocating or producing plaintext (282.328417ms)
+✔ UTF-8 normalization is unchanged when stdin splits a word inside a multibyte code point (22.013814ms)
+✔ HTML is a reproducible self-contained decoder with CSP blocking network and exact inline hashes (121.685559ms)
+ℹ tests 12
+ℹ suites 0
+ℹ pass 12
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1127.501629

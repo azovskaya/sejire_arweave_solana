@@ -1,0 +1,37 @@
+Listing tests:
+  preservation-v2-recovery.spec.mjs:167:3 › Funded archive without Protocol-Version opens the full network tree in a clean browser
+  preservation-v2-recovery.spec.mjs:167:3 › Funded archive without Protocol-Version opens the full network tree with a local copy present
+  preservation-v2-recovery.spec.mjs:182:1 › A verified archive is offered with an incomplete-history warning when another discovered version fails verification
+  preservation-v2-recovery.spec.mjs:195:1 › Same-gateway base64url data repairs wrong same-length raw and restores every encrypted tree
+  preservation-v2-recovery.spec.mjs:204:1 › Direct gateway URL opens the complete archive when raw is 404
+  preservation-v2-recovery.spec.mjs:214:1 › Corrupt direct gateway bytes cannot open a tree
+  preservation-v2-recovery.spec.mjs:222:1 › A confirmed header with no served bytes remains unavailable
+  preservation-v2-recovery.spec.mjs:231:3 › Invalid base64url fallback (invalid-character) cannot turn wrong same-length raw into a restored vault
+  preservation-v2-recovery.spec.mjs:231:3 › Invalid base64url fallback (noncanonical-bits) cannot turn wrong same-length raw into a restored vault
+  preservation-v2-recovery.spec.mjs:249:1 › One local fallback is described as a browser copy and opens the complete tree
+  preservation-v2-recovery.spec.mjs:270:1 › Unavailable paid archive shows safe diagnostics beside the local-copy fallback
+  preservation-v2-recovery.spec.mjs:287:1 › Verified network forks remain a real version choice and honor the selected branch
+  preservation-v2-recovery.spec.mjs:315:3 › A primary Vault-Id GraphQL and raw gateway
+  preservation-v2-recovery.spec.mjs:315:3 › B first GraphQL times out second works
+  preservation-v2-recovery.spec.mjs:315:3 › C dynamic AR.IO gateway indexes when static GraphQL unavailable
+  preservation-v2-recovery.spec.mjs:315:3 › D all GraphQL unavailable, legacy locator finds TX
+  preservation-v2-recovery.spec.mjs:315:3 › E empty GraphQL and legacy locator finds TX
+  preservation-v2-recovery.spec.mjs:315:3 › F first metadata gateway down
+  preservation-v2-recovery.spec.mjs:315:3 › G two raw gateways fail and third succeeds
+  preservation-v2-recovery.spec.mjs:315:3 › H rendered URL HTML ignored, raw succeeds
+  preservation-v2-recovery.spec.mjs:315:3 › T clean browser words only
+  preservation-v2-recovery.spec.mjs:328:1 › UI clean browser opens family tree from legacy locator without GraphQL
+  preservation-v2-recovery.spec.mjs:340:1 › Newly indexed archive opens after transient gateway 404 without another payment or wallet call
+  preservation-v2-recovery.spec.mjs:360:3 › I forged Vault-Id tag cannot decrypt
+  preservation-v2-recovery.spec.mjs:360:3 › J changed raw bytes rejected
+  preservation-v2-recovery.spec.mjs:360:3 › K correct hash but different envelope vault ID
+  preservation-v2-recovery.spec.mjs:360:3 › L invalid decrypted vault rejected
+  preservation-v2-recovery.spec.mjs:360:3 › M wrong words never open
+  preservation-v2-recovery.spec.mjs:360:3 › N all discovery providers unavailable
+  preservation-v2-recovery.spec.mjs:360:3 › O responding discovery has no candidates
+  preservation-v2-recovery.spec.mjs:360:3 › P candidate but all raw gateways unavailable
+  preservation-v2-recovery.spec.mjs:389:1 › Q sequential versions resolve v3 HEAD
+  preservation-v2-recovery.spec.mjs:395:1 › R decryptable forks preserved with explicit MULTIPLE_VERIFIED_HEADS
+  preservation-v2-recovery.spec.mjs:402:1 › S same TX from many providers dedupes once
+  preservation-v2-recovery.spec.mjs:409:1 › U recovery makes no wallet or payment or upload calls
+Total: 35 tests in 1 file

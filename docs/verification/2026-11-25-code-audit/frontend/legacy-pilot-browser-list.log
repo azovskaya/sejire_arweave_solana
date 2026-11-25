@@ -1,0 +1,17 @@
+Listing tests:
+  preservation-v2.spec.mjs:22:1 › explicit legacy V2 route shows the three stages and exact pilot limits without wallet access
+  preservation-v2.spec.mjs:40:1 › wrong file is rejected before either wallet
+  preservation-v2.spec.mjs:47:1 › V2 diagnostics are inside password protected admin
+  preservation-v2.spec.mjs:62:1 › full V2 browser journey completes automatically with one Phantom and one Wander signature
+  preservation-v2.spec.mjs:78:1 › reload after Phantom broadcast discovers the same payment without another popup
+  preservation-v2.spec.mjs:88:1 › Phantom timeout keeps pending and auto-recovers without a second payment
+  preservation-v2.spec.mjs:97:1 › reload after SOLANA_PAID re-quotes without reconnecting Phantom or Wander
+  preservation-v2.spec.mjs:104:1 › reload after saved Wander signature resumes same Arweave ID without re-signing
+  preservation-v2.spec.mjs:114:1 › reload mid Arweave upload persists chunk progress and resumes same transaction
+  preservation-v2.spec.mjs:123:1 › reload while awaiting Arweave confirmation completes automatically after inclusion
+  preservation-v2.spec.mjs:134:1 › gateway payload with wrong SHA never shows COMPLETE
+  preservation-v2.spec.mjs:143:1 › retrieval failure has a clear status and retries the same Arweave ID automatically
+  preservation-v2.spec.mjs:153:1 › lost Wander response before persistence allows a safe same-session retry
+  preservation-v2.spec.mjs:164:1 › published fix recovers an already-signed Wander transaction without another signature
+  preservation-v2.spec.mjs:182:1 › Wander timeout resets signing flag and retries before any upload
+Total: 15 tests in 1 file
