@@ -94,8 +94,8 @@ test('static ArNS pack loads and completes mocked promo save against baked Worke
   });
 
   await page.goto('/#/save');
-  await expect(page.getByLabel('Зашифрованный архив для промокода')).toBeVisible();
-  await page.getByLabel('Зашифрованный архив для промокода').setInputFiles({
+  await expect(page.getByLabel('Зашифрованный архив', { exact: true })).toBeVisible();
+  await page.getByLabel('Зашифрованный архив', { exact: true }).setInputFiles({
     name: 'synthetic.json',
     mimeType: 'application/json',
     buffer: Buffer.from(archive),

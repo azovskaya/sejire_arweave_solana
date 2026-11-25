@@ -1,0 +1,10 @@
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+> sejire-sponsor@0.2.0 test:linux
+> node --experimental-sqlite --import tsx tests/linux-server.mjs
+
+PASS Linux storage: async alarm contract, Date input, replacement, durable reopen, cold constructor preserves future/due alarm
+PASS Linux startup: initialization awaited, future alarm preserved, due alarm processed
+PASS Linux backend: shared ledger contracts, one writer, same key/token after restart, one synthetic order
+PASS Linux writer processes: live competitor and symlink aliases rejected; SIGKILL releases guard; same order/key/token recovered without RPC; legacy wx remains excluded
+PASS Linux writer migration/lifecycle: legacy sentinel unchanged; failed listen releases guard; concurrent close awaits shared shutdown

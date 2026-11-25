@@ -284,6 +284,19 @@ test('bounded reads reject overlong streams and dishonest Content-Length', async
   await assert.rejects(() => boundedBytes(new Response('ok', { headers: { 'content-length': '99' } }), 3), /response_too_large/);
 });
 
+test('path manifest rejects an index ID that overrides the verified index.html path', () => {
+  const files = [{ path: 'index.html' }, { path: '404.html' }, { path: 'assets/app.js' }];
+  const paths = Object.fromEntries(files.map((file, index) => [file.path, { id: String.fromCharCode(65 + index).repeat(43) }]));
+  const manifest = { manifest: 'arweave/paths', version: '0.2.0', index: { path: 'index.html' },
+    paths, fallback: { id: paths['404.html'].id } };
+  verifyPathManifest(manifest, files);
+  verifyPathManifest({ ...manifest, index: { ...manifest.index, id: paths['index.html'].id } }, files);
+  for (const override of [paths['404.html'].id, 'Z'.repeat(43), null, '']) {
+    assert.throws(() => verifyPathManifest({ ...manifest, index: { ...manifest.index, id: override } }, files),
+      /permaweb_path_manifest_entrypoint/);
+  }
+});
+
 test('quote includes each file, signed-item overhead and fallback manifest; budget and own balance fail closed', async t => {
   const f = await fixture(t), plan = uploadPlan(await withProvenance(f));
   assert.equal(plan.quotedItemBytes.length, plan.files.length + 1);

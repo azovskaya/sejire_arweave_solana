@@ -5,7 +5,7 @@ import {adminPassword,mockAdminLock} from './admin-password.fixture.mjs';
 
 async function start(page){
   await page.addInitScript(installV2Mock);
-  await page.goto('/#/save');
+  await page.goto('/#/save/legacy-pilot');
   await page.getByLabel('Зашифрованный архив пилота').setInputFiles({name:'synthetic.json',mimeType:'application/json',buffer:Buffer.from(archive)});
   await expect(page.getByRole('button',{name:'Оплатить 0.03 SOL'})).toBeEnabled();
 }
@@ -19,13 +19,13 @@ async function set(page,key,value){await page.evaluate(([k,v])=>localStorage.set
 async function payOnce(page){await page.getByRole('button',{name:'Оплатить 0.03 SOL'}).click();await expect(page.getByText('✓ Оплата подтверждена')).toBeVisible();}
 async function signOnce(page){await expect(page.getByText(/Текущая цена хранения:/)).toBeVisible();await page.getByRole('button',{name:'Сохранить навсегда'}).click();}
 
-test('V2 route shows the three stages and exact pilot limits without wallet access',async({page})=>{
+test('explicit legacy V2 route shows the three stages and exact pilot limits without wallet access',async({page})=>{
   let walletCalls=0;
   await page.addInitScript(()=>{
     Object.defineProperty(window,'phantom',{value:{solana:{isPhantom:true,connect:()=>{window.__walletCalls=(window.__walletCalls??0)+1;throw Error('unexpected wallet call');}}}});
     Object.defineProperty(window,'arweaveWallet',{value:{connect:()=>{window.__walletCalls=(window.__walletCalls??0)+1;throw Error('unexpected wallet call');}}});
   });
-  await page.goto('/#/save');
+  await page.goto('/#/save/legacy-pilot');
   await expect(page.getByRole('heading',{name:'Сохранить семейную историю'})).toBeVisible();
   await expect(page.getByText('Solana Devnet · комиссия сети отдельно')).toBeVisible();
   await expect(page.getByText('Хранение: Arweave Mainnet')).toBeVisible();
@@ -38,7 +38,7 @@ test('V2 route shows the three stages and exact pilot limits without wallet acce
 });
 
 test('wrong file is rejected before either wallet',async({page})=>{
-  await page.goto('/#/save');
+  await page.goto('/#/save/legacy-pilot');
   await page.getByLabel('Зашифрованный архив пилота').setInputFiles({name:'synthetic.json',mimeType:'application/json',buffer:Buffer.from('{"synthetic":true}')});
   await expect(page.getByRole('alert')).toContainText('Файл архива не совпадает');
   await expect(page.getByRole('button',{name:'Оплатить 0.03 SOL'})).toHaveCount(0);

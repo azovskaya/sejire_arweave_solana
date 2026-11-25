@@ -23,6 +23,60 @@ function restoreValue(storage: Storage, key: string, value: string | null) {
   else storage.setItem(key, value);
 }
 
+export type VaultPreparationSnapshot = {
+  vaultId: string;
+  cache: string | null;
+  session: string | null;
+};
+
+/** Capture before asynchronous loading/encryption. A later local selection or
+ * another tab's preparation must not be overwritten by its delayed result. */
+export function captureVaultPreparation(vaultId: string): VaultPreparationSnapshot {
+  try {
+    return { vaultId, cache: localStorage.getItem('sejire.envelope.' + vaultId),
+      session: sessionStorage.getItem(VAULT_SESSION_META_KEY) };
+  } catch { throw Error('storage_unavailable'); }
+}
+
+/** Preserve the complete prepared ciphertext and its tab-local digest together.
+ * This is only a local preparation; it does not claim a new network HEAD or
+ * replace the editor draft. Failure leaves the prior selection retryable. */
+export function acceptPreparedVault(
+  envelope: EnvelopeV1,
+  parentTxId: string | null,
+  mnemonic: string,
+  before: VaultPreparationSnapshot,
+): void {
+  const canonical = serializeEnvelope(envelope);
+  if (envelope.vault_id !== before.vaultId ||
+      (parentTxId !== null && !/^[A-Za-z0-9_-]{43}$/.test(parentTxId))) throw Error('invalid_backup');
+  const current = captureVaultPreparation(before.vaultId);
+  if (current.cache !== before.cache || current.session !== before.session) throw Error('vault_selection_changed');
+  const cacheKey = 'sejire.envelope.' + before.vaultId;
+  const previousSession = getVaultSession(), previousMnemonic = getSessionMnemonic();
+  try {
+    localStorage.setItem(cacheKey, canonical);
+    if (localStorage.getItem(cacheKey) !== canonical) throw Error('storage_unavailable');
+    setVaultSessionChecked({ vaultId: before.vaultId, headTxId: parentTxId,
+      source: 'local', cacheDigest: vaultEnvelopeDigest(envelope) }, mnemonic);
+    if (localStorage.getItem(cacheKey) !== canonical) throw Error('storage_unavailable');
+  } catch {
+    const rollbacks = [
+      () => {
+        if (previousSession) setVaultSession(previousSession, previousMnemonic);
+        else clearVaultSession();
+        restoreValue(sessionStorage, VAULT_SESSION_META_KEY, before.session);
+      },
+      () => {
+        // Do not replace a concurrent tab's new cache while rolling back ours.
+        if (localStorage.getItem(cacheKey) === canonical) restoreValue(localStorage, cacheKey, before.cache);
+      },
+    ];
+    for (const rollback of rollbacks) { try { rollback(); } catch { /* report the failure below */ } }
+    throw Error('storage_unavailable');
+  }
+}
+
 /** Commit all selection state only after the owner accepts replacing the draft.
  * Writes are synchronous; a failed browser write rolls back the previous bytes.
  * A cancelled choice cannot change the next save's vault, phrase, or parent. */

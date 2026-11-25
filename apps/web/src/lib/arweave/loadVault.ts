@@ -11,7 +11,7 @@ import {
 import { parseEnvelope } from "../crypto/envelope";
 import { coerceTreeStore } from "../treeJson";
 import { getLocalVaultVersion } from "../vaultSession/localArchive";
-import { getVaultSession } from "../vaultSession/session";
+import { getVaultSession, vaultEnvelopeDigest } from "../vaultSession/session";
 import { newDiagnostics } from "../recovery/diagnostics";
 import { RecoveryFailure } from "../recovery/errors";
 import { LegacyLocatorProvider } from "../recovery/providers/legacyLocatorProvider";
@@ -121,13 +121,35 @@ export async function loadVaultForPublish(
   keys: SejireKeys,
   opts?: { parentTxId?: string | null; freshKey?: boolean }
 ): Promise<LoadedPublishVault> {
+  const session = getVaultSession();
+  // An explicitly opened file/local snapshot is the selected complete vault.
+  // Fetching its older network parent instead would discard its other trees.
+  if (!opts?.freshKey && session?.vaultId === keys.vaultId &&
+      (session.source === "file" || session.source === "local")) {
+    if (opts?.parentTxId !== undefined && opts.parentTxId !== session.headTxId) {
+      throw Error("vault_selection_changed");
+    }
+    let raw: string | null;
+    try { raw = localStorage.getItem("sejire.envelope." + keys.vaultId); }
+    catch { throw Error("storage_unavailable"); }
+    let envelope;
+    try { envelope = parseEnvelope(JSON.parse(raw ?? "null")); }
+    catch { throw Error("vault_selection_changed"); }
+    // sessionStorage is tab-local, but the encrypted cache is shared. A tab
+    // without an exact digest cannot identify which snapshot the owner opened.
+    if (envelope.vault_id !== keys.vaultId || vaultEnvelopeDigest(envelope) !== session.cacheDigest) {
+      throw Error("vault_selection_changed");
+    }
+    const vault = await openStoredVault(keys, envelope);
+    if (!vault) throw Error(VAULT_POISONED_RU);
+    return { vault, parentTxId: session.headTxId };
+  }
   const cached = await readLocalVault(keys, opts?.freshKey === true);
   const local = cached?.vault ?? null;
   // Only the caller that generated a brand-new random mnemonic may bypass lookup.
   if (opts?.freshKey) return { vault: local ?? emptyVault(keys.vaultId), parentTxId: null };
   const suppliedParent = opts?.parentTxId ?? null;
   if (suppliedParent && !TX_ID.test(suppliedParent)) throw new Error(VAULT_POISONED_RU);
-  const session = getVaultSession();
   // Entering words for another vault must not carry the previous session's HEAD.
   const knownParent = suppliedParent && session?.headTxId === suppliedParent && session.vaultId !== keys.vaultId
     ? null : suppliedParent;

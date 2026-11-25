@@ -55,6 +55,227 @@ async function setup(page) {
   } };
 }
 
+async function prepareFundedRestore(page) {
+  const f = await setup(page);
+  await page.goto('/#/restore');
+  const encrypted = await page.evaluate(async () => {
+    window.restoreAuditFixture = await (await import('/tests/browser-fixture.ts')).fixture();
+    return window.restoreAuditFixture.serialized;
+  });
+  await page.getByRole('button', { name: 'Открыть из файла', exact: true }).click();
+  await page.locator('input[type=file]').setInputFiles({ name: 'synthetic-restore-audit.json', mimeType: 'application/json', buffer: Buffer.from(encrypted) });
+  await page.getByRole('textbox', { name: '12 слов восстановления SEJIRE' }).evaluate(input => {
+    Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value').set.call(input, window.restoreAuditFixture.words);
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+  return f;
+}
+
+async function restorationSelection(page) {
+  return page.evaluate(() => ({
+    draft: localStorage.getItem('sejire.draft.tree.v1'),
+    session: sessionStorage.getItem('sejire.vaultSession.v1'),
+    cache: localStorage.getItem('sejire.envelope.' + window.restoreAuditFixture.vault.vault_id),
+  }));
+}
+
+test('funded restoration rolls back the full selection when session persistence fails', async ({ page }) => {
+  const f = await prepareFundedRestore(page);
+  const before = await restorationSelection(page);
+  await page.evaluate(() => {
+    const write = Storage.prototype.setItem;
+    Storage.prototype.setItem = function (key, value) {
+      if (this === sessionStorage && key === 'sejire.vaultSession.v1') throw new DOMException('Synthetic write failure', 'QuotaExceededError');
+      return write.call(this, key, value);
+    };
+  });
+  page.on('dialog', dialog => dialog.accept());
+  await page.getByRole('button', { name: 'Восстановить архив', exact: true }).click();
+  await expect(page.getByRole('alert')).toBeVisible();
+  await expect(page.getByRole('textbox', { name: '12 слов восстановления SEJIRE' })).toBeVisible();
+  expect(await restorationSelection(page)).toEqual(before);
+  expect(await page.evaluate(async () => (await import('/src/lib/vaultSession/session.ts')).getSessionMnemonic())).toBeNull();
+  f.assertReadOnly();
+});
+
+test('a restored full vault survives two funded preparations and closing without an order', async ({ page }) => {
+  const f = await prepareFundedRestore(page);
+  page.on('dialog', dialog => dialog.accept());
+  await page.getByRole('button', { name: 'Восстановить архив', exact: true }).click();
+  await expect(page.locator('.workspace-main')).toBeVisible();
+  const original = await page.evaluate(() => window.restoreAuditFixture.vault);
+  let previousDigest = '';
+  for (let attempt = 0; attempt < 2; attempt++) {
+    await page.locator('.app-topbar .top-actions > button.btn').click();
+    await page.getByRole('dialog').getByRole('button', { name: 'По промокоду', exact: true }).click();
+    await expect(page.getByRole('region', { name: 'Сохранить по промокоду', exact: true })).toBeVisible();
+    const prepared = await page.evaluate(async () => {
+      const { getVaultSession, vaultEnvelopeDigest } = await import('/src/lib/vaultSession/session.ts');
+      const { deriveKeysFromMnemonic } = await import('/src/lib/crypto/keys.ts');
+      const { openEnvelope } = await import('/src/lib/crypto/vault.ts');
+      const session = getVaultSession();
+      const envelope = JSON.parse(localStorage.getItem('sejire.envelope.' + session.vaultId));
+      return { session, digest: vaultEnvelopeDigest(envelope), vault: await openEnvelope(deriveKeysFromMnemonic(window.restoreAuditFixture.words), envelope) };
+    });
+    expect(prepared.session.source).toBe('local');
+    expect(prepared.session.headTxId).toBeNull();
+    expect(prepared.session.cacheDigest).toBe(prepared.digest);
+    expect(prepared.digest).not.toBe(previousDigest);
+    expect(Object.keys(prepared.vault.trees).sort()).toEqual(Object.keys(original.trees).sort());
+    for (const [treeId, tree] of Object.entries(original.trees)) {
+      for (const [commitId, commit] of Object.entries(tree.commits)) expect(prepared.vault.trees[treeId].commits[commitId]).toEqual(commit);
+      if (treeId !== original.active_tree_id) expect(prepared.vault.trees[treeId]).toEqual(tree);
+    }
+    previousDigest = prepared.digest;
+    await page.keyboard.press('Escape');
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+  }
+  f.assertReadOnly();
+});
+
+test('funded encryption finishing after route departure cannot change the selected archive', async ({ page }) => {
+  const f = await prepareFundedRestore(page);
+  page.on('dialog', dialog => dialog.accept());
+  await page.getByRole('button', { name: 'Восстановить архив', exact: true }).click();
+  await expect(page.locator('.workspace-main')).toBeVisible();
+  await page.locator('.app-topbar .top-actions > button.btn').click();
+  await expect(page.getByRole('dialog').getByRole('button', { name: 'По промокоду', exact: true })).toBeVisible();
+  const before = await restorationSelection(page);
+  await page.evaluate(() => {
+    const encrypt = crypto.subtle.encrypt.bind(crypto.subtle);
+    crypto.subtle.encrypt = async (...args) => {
+      const encrypted = await encrypt(...args);
+      window.preparationAuditWaiting = true;
+      await new Promise(resolve => { window.releasePreparationAudit = resolve; });
+      return encrypted;
+    };
+  });
+  await page.getByRole('dialog').getByRole('button', { name: 'По промокоду', exact: true }).click();
+  await expect.poll(() => page.evaluate(() => window.preparationAuditWaiting)).toBe(true);
+  await page.evaluate(() => { location.hash = '#/restore'; });
+  await expect(page.getByRole('textbox', { name: '12 слов восстановления SEJIRE' })).toBeVisible();
+  await page.evaluate(async () => {
+    window.releasePreparationAudit();
+    await new Promise(resolve => setTimeout(resolve, 100));
+  });
+  expect(await restorationSelection(page)).toEqual(before);
+  f.assertReadOnly();
+});
+
+test('funded restoration cannot replace edits after leaving while decryption is pending', async ({ page }) => {
+  const f = await prepareFundedRestore(page);
+  const before = await restorationSelection(page);
+  let prompts = 0;
+  page.on('dialog', async dialog => { prompts++; await dialog.accept(); });
+  await page.evaluate(() => {
+    const decrypt = crypto.subtle.decrypt.bind(crypto.subtle);
+    crypto.subtle.decrypt = async (...args) => {
+      const decrypted = await decrypt(...args);
+      window.restoreAuditWaiting = true;
+      await new Promise(resolve => { window.releaseRestoreAudit = resolve; });
+      return decrypted;
+    };
+  });
+  await page.getByRole('button', { name: 'Восстановить архив', exact: true }).click();
+  await expect.poll(() => page.evaluate(() => window.restoreAuditWaiting)).toBe(true);
+  await page.getByRole('button', { name: 'Назад', exact: true }).click();
+  await expect(page.getByRole('textbox', { name: '12 слов восстановления SEJIRE' })).toHaveCount(0);
+  await page.evaluate(async () => {
+    window.releaseRestoreAudit();
+    await new Promise(resolve => setTimeout(resolve, 100));
+  });
+  expect(prompts).toBe(0);
+  expect(await restorationSelection(page)).toEqual(before);
+  await expect(page.locator('.workspace-main')).toHaveCount(0);
+  f.assertReadOnly();
+});
+
+test('leaving funded restoration clears its fragment and reload does not reopen it', async ({ page }) => {
+  const f = await setup(page);
+  const before = await draft(page);
+  await page.goto('/#/restore');
+  await expect(page.getByRole('textbox', { name: '12 слов восстановления SEJIRE' })).toBeVisible();
+  await page.getByRole('button', { name: 'Назад', exact: true }).click();
+  await expect(page).toHaveURL(/:\/\/127\.0\.0\.1:5186\/$/);
+  await page.reload();
+  await expect(page.getByRole('textbox', { name: '12 слов восстановления SEJIRE' })).toHaveCount(0);
+  expect(await draft(page)).toEqual(before);
+  f.assertReadOnly();
+});
+
+test('funded restore fragment changed before subscription is reconciled without changing the draft', async ({ page }) => {
+  const f = await setup(page);
+  const before = await draft(page);
+  await page.addInitScript(() => {
+    const add = window.addEventListener;
+    window.addEventListener = function (type, listener, options) {
+      if (type === 'hashchange') {
+        window.addEventListener = add;
+        const oldURL = location.href;
+        history.replaceState(null, '', location.pathname + location.search + '#/restore');
+        window.dispatchEvent(new HashChangeEvent('hashchange', { oldURL, newURL: location.href }));
+      }
+      return add.call(this, type, listener, options);
+    };
+  });
+  await page.goto('/');
+  await expect(page.getByRole('textbox', { name: '12 слов восстановления SEJIRE' })).toBeVisible();
+  expect(await draft(page)).toEqual(before);
+  // Browser Back/fragment clearing also leaves restoration.
+  await page.evaluate(() => { location.hash = ''; });
+  await expect(page.getByRole('textbox', { name: '12 слов восстановления SEJIRE' })).toHaveCount(0);
+  expect(await draft(page)).toEqual(before);
+  f.assertReadOnly();
+});
+
+test('ordinary funded save imports a general ciphertext without entering the fixed Devnet pilot', async ({ page }) => {
+  const f = await setup(page);
+  await page.goto('/#/save');
+  await page.evaluate(() => {
+    window.auditWalletCalls = 0;
+    const unexpected = () => { window.auditWalletCalls++; throw Error('Unexpected synthetic wallet access'); };
+    window.phantom = { solana: { connect: unexpected, signTransaction: unexpected } };
+    window.arweaveWallet = { connect: unexpected, sign: unexpected };
+  });
+  await expect(page.getByLabel('Зашифрованный архив', { exact: true })).toBeVisible();
+  await expect(page.getByLabel('Зашифрованный архив пилота', { exact: true })).toHaveCount(0);
+  await expect(page.getByText(/Solana Devnet|Прежний тестовый пилот|0\.03 SOL/)).toHaveCount(0);
+  const encrypted = await page.evaluate(async () => (await (await import('/tests/browser-fixture.ts')).fixture()).serialized);
+  await page.getByLabel('Зашифрованный архив', { exact: true }).setInputFiles({ name: 'synthetic-general-vault.json', mimeType: 'application/json', buffer: Buffer.from(encrypted) });
+  await expect(page.getByRole('button', { name: 'По промокоду', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Через Solana', exact: true })).toBeVisible();
+  expect(await page.evaluate(() => window.auditWalletCalls)).toBe(0);
+  f.assertReadOnly();
+});
+
+test('ordinary funded file import cannot adopt its late result after returning to the editor', async ({ page }) => {
+  const f = await setup(page);
+  const before = await draft(page);
+  await page.goto('/#/save');
+  const encrypted = await page.evaluate(async () => (await (await import('/tests/browser-fixture.ts')).fixture()).serialized);
+  await page.evaluate(() => {
+    const read = File.prototype.text;
+    File.prototype.text = async function () {
+      const text = await read.call(this);
+      window.importAuditWaiting = true;
+      await new Promise(resolve => { window.releaseImportAudit = resolve; });
+      return text;
+    };
+  });
+  await page.getByLabel('Зашифрованный архив', { exact: true }).setInputFiles({ name: 'synthetic-delayed-vault.json', mimeType: 'application/json', buffer: Buffer.from(encrypted) });
+  await expect.poll(() => page.evaluate(() => window.importAuditWaiting)).toBe(true);
+  await page.getByRole('button', { name: 'Назад', exact: true }).click();
+  await expect(page.locator('.workspace-main')).toBeVisible();
+  await page.evaluate(async () => {
+    window.releaseImportAudit();
+    await new Promise(resolve => setTimeout(resolve, 100));
+  });
+  expect(await draft(page)).toEqual(before);
+  await expect(page.getByLabel('Зашифрованный архив', { exact: true })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'По промокоду', exact: true })).toHaveCount(0);
+  f.assertReadOnly();
+});
+
 test('undo deletion keeps newer edits to another person and immutable history', async ({ page }) => {
   const f = await setup(page);
   await profile(page, MOTHER_NAME);

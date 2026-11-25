@@ -21,6 +21,29 @@ export function vaultEnvelopeDigest(envelope: EnvelopeV1): string {
   return bytesToHex(sha256(utf8ToBytes(serializeEnvelope(envelope))));
 }
 
+/** A verified older completion is history, not permission to replace a later
+ * explicit file/local selection for the same vault and network parent. */
+export function canAdvanceVaultHead(
+  current: VaultSessionMeta | null,
+  envelope: EnvelopeV1,
+  parentTxId: string | null,
+  txId: string,
+): boolean {
+  if (!current) return true;
+  if (current.vaultId !== envelope.vault_id ||
+      (current.headTxId !== null && current.headTxId !== parentTxId && current.headTxId !== txId)) return false;
+  if (current.source === 'file' || current.source === 'local' || current.cacheDigest !== undefined) {
+    const digest = vaultEnvelopeDigest(envelope);
+    if (current.cacheDigest !== digest) return false;
+    let raw: string | null;
+    try { raw = localStorage.getItem('sejire.envelope.' + current.vaultId); }
+    catch { throw Error('storage_unavailable'); }
+    try { return vaultEnvelopeDigest(parseEnvelope(JSON.parse(raw ?? 'null'))) === digest; }
+    catch { return false; }
+  }
+  return true;
+}
+
 export const VAULT_SESSION_META_KEY = "sejire.vaultSession.v1";
 
 let memoryMnemonic: string | null = null;
@@ -36,7 +59,7 @@ export function setVaultSession(meta: VaultSessionMeta, mnemonic?: string | null
   }
 }
 
-/** Independent flows must not claim a restored/prepared vault while retaining
+/** Flows must not claim a restored/prepared vault while retaining
  * an older session after a denied or exhausted sessionStorage write. */
 export function setVaultSessionChecked(meta: VaultSessionMeta, mnemonic?: string | null) {
   let previous: string | null;

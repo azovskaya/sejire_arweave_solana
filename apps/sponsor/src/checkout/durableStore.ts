@@ -128,7 +128,7 @@ export class CheckoutLedger {
         'invalid_solana_recipient','solana_recipient_roles_overlap','solana_test_recipient_forbidden','invalid_solana_recipient_settings','solana_recipient_revision_conflict','payment_settings_changed',
         'payment_conflict', 'payment_not_reserved', 'credit_allocation_mismatch', 'payment_already_used',
         'paid_budget_exhausted','balance_observation_stale','paid_hold_not_releasable','paid_request_cancelled','repair_not_available','invalid_idempotency_key','order_expired','payment_not_prepared','preparation_changed',
-        'invalid_payment_signature','invalid_payment_preparation','payment_not_expired','payment_recovery_busy','payment_recovery_unavailable','invalid_paid_archive','archive_mismatch','archive_not_canonical','invalid_envelope','envelope_too_large',
+        'invalid_payment_signature','invalid_payment_preparation','payment_preparation_mismatch','invalid_signed_payment','payment_not_expired','payment_recovery_busy','payment_recovery_unavailable','invalid_paid_archive','archive_mismatch','archive_not_canonical','invalid_envelope','envelope_too_large',
         'promo_invalid','promo_disabled','promo_missing','fund_exhausted','archive_changed','limit_below_spent','limit_below_reserved','fund_ledger_inconsistent','wallet_low','invalid_ar_amount','invalid_winston','invalid_reward','invalid_signed_tx','tx_conflict','invalid_actual_reward','signed_tx_must_reconcile','order_not_found','unauthorized', 'idempotency_conflict', 'rate_limited', 'preservation_not_paid', 'execution_not_reserved', 'upload_receipt_mismatch'];
       const code = error instanceof Error && known.includes(error.message) ? error.message : 'ledger_operation_failed';
       return Response.json({ error: code }, { status: 409 });

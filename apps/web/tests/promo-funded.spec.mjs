@@ -30,7 +30,7 @@ test.beforeEach(async({context})=>guardNetwork(context));
 
 async function openPromo(page,contents=archive,reload=false){
  if(reload)await page.reload();else await page.goto('/#/save');
- await page.getByLabel('Зашифрованный архив для промокода').setInputFiles({name:'synthetic.json',mimeType:'application/json',buffer:Buffer.from(contents)});
+ await page.getByLabel('Зашифрованный архив',{exact:true}).setInputFiles({name:'synthetic.json',mimeType:'application/json',buffer:Buffer.from(contents)});
  await page.getByRole('button',{name:'По промокоду',exact:true}).click();
  await expect(promo(page)).toBeVisible();
  return promo(page);
@@ -292,7 +292,7 @@ function verification(stage,transactionConfirmed=false){
 }
 
 async function mockPreservation(page,{status='SUBMITTED',losePostResponse=false,expectedArchive=archive}={}){
- const state={order:null,verification:undefined,posts:[],reads:[],validations:0,validationFailure:false,postRejection:null,readError:0,readGate:null,inFlight:0,maxInFlight:0,nextStatus:status,nextTx:tx,beforePost:null};
+ const state={order:null,verification:undefined,posts:[],reads:[],validations:0,validationFailure:false,postRejection:null,responsePatch:null,readError:0,readGate:null,inFlight:0,maxInFlight:0,nextStatus:status,nextTx:tx,beforePost:null};
  state.complete=()=>{
   state.order={...state.order,status:'COMPLETED',actualRewardWinston:'3000000000',verifiedAt:Date.now()};
   state.verification=verification('verified',true);
@@ -321,7 +321,7 @@ async function mockPreservation(page,{status='SUBMITTED',losePostResponse=false,
    state.order=orderFrom(body,state.nextStatus);
    if(state.order.arweaveTxId)state.order.arweaveTxId=state.nextTx;
    if(losePostResponse)return route.abort('failed');
-   return json(route,{order:state.order},state.nextStatus==='COMPLETED'?200:202);
+   return json(route,{order:{...state.order,...state.responsePatch}},state.nextStatus==='COMPLETED'?200:202);
   }
   if(url.pathname.startsWith('/api/fund/orders/')&&request.method()==='GET'){
    const id=url.pathname.split('/').at(-1);
@@ -330,7 +330,7 @@ async function mockPreservation(page,{status='SUBMITTED',losePostResponse=false,
     expect(id).toBe(state.order?.orderId);
     if(state.readGate)await state.readGate;
     if(state.readError)return await json(route,{error:state.readError===404?'order_not_found':'fund_unavailable'},state.readError);
-    return await json(route,{order:state.order,...(state.verification?{verification:state.verification}:{})});
+    return await json(route,{order:{...state.order,...state.responsePatch},...(state.verification?{verification:state.verification}:{})});
    }finally{state.inFlight--;}
   }
   return json(route,{error:'unexpected_fund_request'},404);
@@ -955,6 +955,29 @@ test('A failed status request is visible and a later automatic check recovers',a
  await expect(promo(page).getByRole('status')).toContainText('Семейная история сохранена');
  await expect(promo(page).getByRole('alert')).toHaveCount(0);
  expect(api.posts).toHaveLength(1);expect(new Set(api.reads)).toEqual(new Set([api.order.orderId]));
+});
+
+for(const firstResponse of ['POST','GET'])test(`a mismatched COMPLETED ${firstResponse} response keeps the journal and never shows verified success`,async({page})=>{
+ const api=await mockPreservation(page,{status:firstResponse==='POST'?'COMPLETED':'SUBMITTED'});
+ api.responsePatch={archiveDigest:'0'.repeat(64)};
+ await openPromo(page);await savePromo(page);
+ if(firstResponse==='GET'){
+  await expect(promo(page).getByRole('status')).toContainText('Ждём подтверждения Arweave');
+  api.complete();await checkNow(page);
+ }
+ await expect(promo(page).getByRole('alert')).toBeVisible();
+ await expect(promo(page).getByRole('heading',{name:'Семейная история сохранена',exact:true})).toHaveCount(0);
+ await expect(promo(page).getByRole('button',{name:'Готово',exact:true})).toHaveCount(0);
+ await expect(promo(page).getByRole('button',{name:'Сохранить бесплатно',exact:true})).toHaveCount(0);
+ const pending=await activeFundAttempts(page);
+ expect(pending).toHaveLength(1);expect(pending[0].orderId).toBe(api.posts[0].orderId);
+ expect(JSON.stringify(pending[0].envelope)).toBe(archive);
+ api.responsePatch=null;api.complete();await checkNow(page);
+ await expect(promo(page).getByRole('status')).toContainText('Семейная история сохранена');
+ expect(api.posts).toHaveLength(1);expect(api.validations).toBe(1);
+ expect(new Set(api.reads)).toEqual(new Set([api.posts[0].orderId]));
+ await promo(page).getByRole('button',{name:'Готово',exact:true}).click();
+ await expect.poll(async()=>(await activeFundAttempts(page)).length).toBe(0);
 });
 
 test('A lost POST response and reopening the same archive only read the original order',async({page})=>{

@@ -1,0 +1,36 @@
+{
+  "checkedAt": "2026-11-24T10:36:04.874012+00:00",
+  "baseCommit": "17a254eb13bb999127d9f7b3ecd54905f317e02d",
+  "branch": "fix/linux-writer-recovery-20261124",
+  "runtime": "v24.22.3",
+  "command": "npm run test:linux --prefix apps/sponsor",
+  "result": "PASS",
+  "exitCode": 0,
+  "checks": [
+    "SQLite alarm/storage and startup contract",
+    "synthetic contribution order/idempotency across graceful restart",
+    "two living processes excluded from one canonical ledger",
+    "new-writer DB and directory symlink aliases excluded",
+    "SIGKILL releases kernel guard; same persisted order/key/token restored",
+    "same-order retry performs zero new RPC preparations",
+    "legacy wx excluded while running and after close",
+    "legacy regular sentinel preserved and migration refused",
+    "failed listen releases guard",
+    "concurrent close callers share completed shutdown"
+  ],
+  "scope": {
+    "syntheticOnly": true,
+    "externalNetwork": "fetch mocked; only loopback allowed through",
+    "realWallet": false,
+    "payments": false,
+    "arweaveUploads": false,
+    "fullPaidPromoAcceptance": false
+  },
+  "files": {
+    "apps/sponsor/linux-server.mjs": "eaa47fab76739a85e25b6f8c374e19dcc01b06d44716f552723b880be1305e16",
+    "apps/sponsor/tests/linux-server.mjs": "adeb91e65f05269e1e856b804f87b059dfdda146a62c23a3617940a4e126f189",
+    "docs/LINUX_WRITER_RECOVERY.md": "ea71edf99539be004e715ec1a43681039edba103812f006bb835c99a9fb51b64"
+  },
+  "stdout": "linux-writer-test.log",
+  "stateAtTest": "local uncommitted patch; no push/deploy"
+}

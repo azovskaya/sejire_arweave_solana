@@ -1,0 +1,83 @@
+{
+  "checks": [
+    {
+      "check": "public_site",
+      "url": "https://sejire.ar.io/",
+      "checkedAt": "2026-11-24T10:26:49.338887+00:00",
+      "method": "GET",
+      "status": 200,
+      "finalUrl": "https://sejire.ar.io/",
+      "bytesRead": 1231,
+      "sha256": "c39617148fa157ce4d71608bd80cfb225611c0e673fd29b290d6d863160a36cc",
+      "headers": {
+        "content-type": "text/html; charset=utf-8",
+        "x-arns-resolved-id": "UVtbBWxU9HK5gD21Pq0qc3I4adRREFbOQpU4F0NXik8",
+        "x-arns-ttl-seconds": "900"
+      },
+      "scripts": [
+        "./assets/index-BznSrvRy.js"
+      ]
+    },
+    {
+      "check": "public_provenance",
+      "url": "https://sejire.ar.io/build-provenance.json",
+      "checkedAt": "2026-11-24T10:26:56.604240+00:00",
+      "method": "GET",
+      "status": 404,
+      "headers": {
+        "content-type": "text/html; charset=utf-8"
+      }
+    },
+    {
+      "check": "pages_provenance",
+      "url": "https://azovskaya.github.io/sejire_arweave_solana/build-provenance.json",
+      "checkedAt": "2026-11-24T10:27:01.170033+00:00",
+      "method": "GET",
+      "status": 200,
+      "finalUrl": "https://azovskaya.github.io/sejire_arweave_solana/build-provenance.json",
+      "bytesRead": 302,
+      "sha256": "3504f7d069a465af27de39b027b8db71723ac3eab33978ca8a1d825d83b106a3",
+      "headers": {
+        "content-type": "application/json; charset=utf-8"
+      },
+      "data": {
+        "artifact": "native-admin-build",
+        "run": 43854395821,
+        "artifactId": 14219388035,
+        "sourceCommit": "8b07f9f5a3dae939f7d519f4e3c65ac9d49dfa09",
+        "zipSha256": "7ef7e301c750cdfa1962ab98e02e7789bfed38a051e5b38b462ba8e6c42f46c6",
+        "publishedByCommit": "8b07f9f5a3dae939f7d519f4e3c65ac9d49dfa09"
+      }
+    },
+    {
+      "check": "old_archive_status",
+      "url": "https://arweave.net/tx/AtwLYx509C9jWIFKUNg7dy1GSgiaDbXVK1YEQbBWfHY/status",
+      "checkedAt": "2026-11-24T10:27:04.940014+00:00",
+      "method": "GET",
+      "status": 200,
+      "finalUrl": "https://arweave.net/tx/AtwLYx509C9jWIFKUNg7dy1GSgiaDbXVK1YEQbBWfHY/status",
+      "bytesRead": 142,
+      "sha256": "8cc9e57b4a1b5bc88a1f304e72f2353fe983198e67134d9eedbd2edc387dc6a2",
+      "headers": {
+        "content-type": "application/json; charset=utf-8"
+      },
+      "data": {
+        "block_height": 2035774,
+        "block_indep_hash": "-E5bSBGNPn68qPncdHM333I5QVNOmtkpgPkulreaH7ME34KYy4kNUHpe9n8WBe86",
+        "number_of_confirmations": 13083
+      }
+    },
+    {
+      "check": "old_archive_bytes",
+      "url": "https://arweave.net/raw/AtwLYx509C9jWIFKUNg7dy1GSgiaDbXVK1YEQbBWfHY",
+      "checkedAt": "2026-11-24T10:27:08.452827+00:00",
+      "method": "GET",
+      "status": 404,
+      "headers": {
+        "content-type": "text/html"
+      }
+    }
+  ],
+  "readOnly": true,
+  "productionMutations": false
+}

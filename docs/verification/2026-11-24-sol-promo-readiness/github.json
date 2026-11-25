@@ -1,0 +1,299 @@
+{
+  "schema": "sejire/github-readiness-read-only/v1",
+  "checked_at_utc": "2026-11-24 10:26:38 UTC",
+  "repository": "azovskaya/sejire_arweave_solana",
+  "requested_profile": "Solana Mainnet + promo + admin, without a mandatory Cloudflare runtime",
+  "decision": "NO_GO_FOR_REQUESTED_PROFILE",
+  "reason": "The accepted independent package explicitly excludes Solana, promo and admin. The separately tested funded/native package uses a Worker origin and devnet/native-mainnet-disabled build flags. No matching accepted package or successful exact-profile release was found in the checked current refs and workflows.",
+  "source_changed_since_previous_audit": false,
+  "current_refs": [
+    {
+      "name": "feat/admin-sol-recipients",
+      "sha": "f6fd9a2251152bf9138f1b18b04c10ca05d7b90b",
+      "url": "https://github.com/azovskaya/sejire_arweave_solana/tree/feat/admin-sol-recipients"
+    },
+    {
+      "name": "feat/decentralized-arweave-20261116",
+      "sha": "17a254eb13bb999127d9f7b3ecd54905f317e02d",
+      "url": "https://github.com/azovskaya/sejire_arweave_solana/tree/feat/decentralized-arweave-20261116"
+    },
+    {
+      "name": "feat/promo-funded-preservation",
+      "sha": "8b07f9f5a3dae939f7d519f4e3c65ac9d49dfa09",
+      "url": "https://github.com/azovskaya/sejire_arweave_solana/tree/feat/promo-funded-preservation"
+    },
+    {
+      "name": "feat/solana-preservation",
+      "sha": "7431a0427da8c804b7a1e7fe9b72991f6397e691",
+      "url": "https://github.com/azovskaya/sejire_arweave_solana/tree/feat/solana-preservation"
+    },
+    {
+      "name": "gh-pages",
+      "sha": "ad85ec0dc2a4f03a16927584e59a385dd211b2f8",
+      "url": "https://github.com/azovskaya/sejire_arweave_solana/tree/gh-pages"
+    },
+    {
+      "name": "main",
+      "sha": "897559c197bc90ae9fac66abaefe000df2a2b51c",
+      "url": "https://github.com/azovskaya/sejire_arweave_solana/tree/main"
+    }
+  ],
+  "local_source_equivalence": {
+    "path": "/workspace/scratch/0aa608872e5d/sejire-publication-ready-20261123",
+    "local_commit": "c2f10e408aac9357a082bd8792fcca896311f849",
+    "remote_commit": "17a254eb13bb999127d9f7b3ecd54905f317e02d",
+    "same_git_tree": "38dc06bd1eec7b06bdd21fea450d86e21aa236e4",
+    "working_tree_clean": true
+  },
+  "latest_repository_action": {
+    "id": 45124482606,
+    "name": "Upload independent SEJIRE site to Arweave (manual)",
+    "head_branch": "feat/decentralized-arweave-20261116",
+    "head_sha": "17a254eb13bb999127d9f7b3ecd54905f317e02d",
+    "status": "completed",
+    "conclusion": "success",
+    "created_at": "2026-11-23T06:29:53Z",
+    "updated_at": "2026-11-23T06:30:31Z",
+    "url": "https://github.com/azovskaya/sejire_arweave_solana/actions/runs/45124482606"
+  },
+  "selected_runs": [
+    {
+      "id": 45124482606,
+      "name": "Upload independent SEJIRE site to Arweave (manual)",
+      "head_branch": "feat/decentralized-arweave-20261116",
+      "head_sha": "17a254eb13bb999127d9f7b3ecd54905f317e02d",
+      "status": "completed",
+      "conclusion": "success",
+      "created_at": "2026-11-23T06:29:53Z",
+      "updated_at": "2026-11-23T06:30:31Z",
+      "url": "https://github.com/azovskaya/sejire_arweave_solana/actions/runs/45124482606"
+    },
+    {
+      "id": 45122610001,
+      "name": "SEJIRE checks",
+      "head_branch": "feat/decentralized-arweave-20261116",
+      "head_sha": "17a254eb13bb999127d9f7b3ecd54905f317e02d",
+      "status": "completed",
+      "conclusion": "success",
+      "created_at": "2026-11-23T06:12:54Z",
+      "updated_at": "2026-11-23T06:28:19Z",
+      "url": "https://github.com/azovskaya/sejire_arweave_solana/actions/runs/45122610001"
+    },
+    {
+      "id": 43876665054,
+      "name": "SEJIRE checks",
+      "head_branch": "main",
+      "head_sha": "897559c197bc90ae9fac66abaefe000df2a2b51c",
+      "status": "completed",
+      "conclusion": "cancelled",
+      "created_at": "2026-11-16T13:32:01Z",
+      "updated_at": "2026-11-16T13:35:51Z",
+      "url": "https://github.com/azovskaya/sejire_arweave_solana/actions/runs/43876665054"
+    },
+    {
+      "id": 43859411113,
+      "name": "Deploy promo fund Worker",
+      "head_branch": "feat/promo-funded-preservation",
+      "head_sha": "8b07f9f5a3dae939f7d519f4e3c65ac9d49dfa09",
+      "status": "completed",
+      "conclusion": "success",
+      "created_at": "2026-11-16T11:37:41Z",
+      "updated_at": "2026-11-16T11:38:54Z",
+      "url": "https://github.com/azovskaya/sejire_arweave_solana/actions/runs/43859411113"
+    },
+    {
+      "id": 43858205575,
+      "name": "Publish native SEJIRE preview to GitHub Pages",
+      "head_branch": "feat/promo-funded-preservation",
+      "head_sha": "8b07f9f5a3dae939f7d519f4e3c65ac9d49dfa09",
+      "status": "completed",
+      "conclusion": "success",
+      "created_at": "2026-11-16T11:29:27Z",
+      "updated_at": "2026-11-16T11:30:52Z",
+      "url": "https://github.com/azovskaya/sejire_arweave_solana/actions/runs/43858205575"
+    },
+    {
+      "id": 43854395870,
+      "name": "SOL recipient admin checks",
+      "head_branch": "feat/promo-funded-preservation",
+      "head_sha": "8b07f9f5a3dae939f7d519f4e3c65ac9d49dfa09",
+      "status": "completed",
+      "conclusion": "success",
+      "created_at": "2026-11-16T11:03:55Z",
+      "updated_at": "2026-11-16T11:05:28Z",
+      "url": "https://github.com/azovskaya/sejire_arweave_solana/actions/runs/43854395870"
+    },
+    {
+      "id": 43854395836,
+      "name": "Publish promo fund preview to GitHub Pages",
+      "head_branch": "feat/promo-funded-preservation",
+      "head_sha": "8b07f9f5a3dae939f7d519f4e3c65ac9d49dfa09",
+      "status": "completed",
+      "conclusion": "success",
+      "created_at": "2026-11-16T11:03:55Z",
+      "updated_at": "2026-11-16T11:15:41Z",
+      "url": "https://github.com/azovskaya/sejire_arweave_solana/actions/runs/43854395836"
+    },
+    {
+      "id": 43854395821,
+      "name": "SEJIRE checks",
+      "head_branch": "feat/promo-funded-preservation",
+      "head_sha": "8b07f9f5a3dae939f7d519f4e3c65ac9d49dfa09",
+      "status": "completed",
+      "conclusion": "success",
+      "created_at": "2026-11-16T11:03:55Z",
+      "updated_at": "2026-11-16T11:15:22Z",
+      "url": "https://github.com/azovskaya/sejire_arweave_solana/actions/runs/43854395821"
+    },
+    {
+      "id": 37608482252,
+      "name": "SEJIRE checks",
+      "head_branch": "feat/solana-preservation",
+      "head_sha": "7431a0427da8c804b7a1e7fe9b72991f6397e691",
+      "status": "completed",
+      "conclusion": "success",
+      "created_at": "2026-10-07T10:36:06Z",
+      "updated_at": "2026-10-07T10:42:12Z",
+      "url": "https://github.com/azovskaya/sejire_arweave_solana/actions/runs/37608482252"
+    }
+  ],
+  "independent_ci": {
+    "id": 45122610001,
+    "job_id": 137519610795,
+    "step_count": 78,
+    "steps_success": 77,
+    "steps_skipped": 1,
+    "skipped_reason": "Failure diagnostics are conditional on a failed job; this job succeeded.",
+    "url": "https://github.com/azovskaya/sejire_arweave_solana/actions/runs/45122610001"
+  },
+  "independent_prepare": {
+    "id": 45124482606,
+    "job_id": 137525593321,
+    "conclusion": "success",
+    "actual_upload_step": "skipped",
+    "mode": "prepare",
+    "arns_target_changed": false,
+    "url": "https://github.com/azovskaya/sejire_arweave_solana/actions/runs/45124482606"
+  },
+  "accepted_artifacts": [
+    {
+      "id": 14795146925,
+      "name": "permaweb-accepted-pack",
+      "source_commit": "17a254eb13bb999127d9f7b3ecd54905f317e02d",
+      "size_bytes": 1269962,
+      "sha256": "sha256:f897aa1172986b595e39b76a7a8535da94b4a5be1886d21a7362cd099bcc5b60",
+      "expired": false,
+      "url": "https://api.github.com/repos/azovskaya/sejire_arweave_solana/actions/artifacts/14795146925"
+    }
+  ],
+  "current_ci_artifacts": [
+    {
+      "id": 14795087097,
+      "name": "devnet-preview-build",
+      "source_commit": "17a254eb13bb999127d9f7b3ecd54905f317e02d",
+      "size_bytes": 1989943,
+      "sha256": "sha256:3ef329948c88dda94fb1cb2f8456eeb164dd7490f4631aa6b61e87e474056419",
+      "expired": false,
+      "url": "https://api.github.com/repos/azovskaya/sejire_arweave_solana/actions/artifacts/14795087097"
+    },
+    {
+      "id": 14794163773,
+      "name": "permaweb-static-release",
+      "source_commit": "17a254eb13bb999127d9f7b3ecd54905f317e02d",
+      "size_bytes": 1269525,
+      "sha256": "sha256:6a7e9b3015ab4cfab5701d1cdcfeb1f619cf4d990d85ddcd7ed0a5aa26054e05",
+      "expired": false,
+      "url": "https://api.github.com/repos/azovskaya/sejire_arweave_solana/actions/artifacts/14794163773"
+    },
+    {
+      "id": 14794009429,
+      "name": "native-admin-build",
+      "source_commit": "17a254eb13bb999127d9f7b3ecd54905f317e02d",
+      "size_bytes": 1603315,
+      "sha256": "sha256:51a5b3efb17632174aa8db6b4c4e043fef018a11677be491d1c6eb6e8a2171ca",
+      "expired": false,
+      "url": "https://api.github.com/repos/azovskaya/sejire_arweave_solana/actions/artifacts/14794009429"
+    }
+  ],
+  "legacy_promo_ci_artifacts": [
+    {
+      "id": 14219962870,
+      "name": "permaweb-static-release",
+      "source_commit": "8b07f9f5a3dae939f7d519f4e3c65ac9d49dfa09",
+      "size_bytes": 1597715,
+      "sha256": "sha256:f4b5488ac516030acfbe14cc1fd9fe38caa98ee87fe073a1c7886fb7a4786b8f",
+      "expired": false,
+      "url": "https://api.github.com/repos/azovskaya/sejire_arweave_solana/actions/artifacts/14219962870"
+    },
+    {
+      "id": 14219388035,
+      "name": "native-admin-build",
+      "source_commit": "8b07f9f5a3dae939f7d519f4e3c65ac9d49dfa09",
+      "size_bytes": 1595719,
+      "sha256": "sha256:7ef7e301c750cdfa1962ab98e02e7789bfed38a051e5b38b462ba8e6c42f46c6",
+      "expired": false,
+      "url": "https://api.github.com/repos/azovskaya/sejire_arweave_solana/actions/artifacts/14219388035"
+    }
+  ],
+  "source_contracts": {
+    "independent": {
+      "profile": "decentralized-direct-arweave",
+      "funding": "owner-ar-wallet",
+      "fund_api_url": "",
+      "checkout_api_url": "",
+      "checkout_enabled": "0",
+      "publish_mode": "arweave",
+      "native_sol_mainnet": "0",
+      "excludes_components": [
+        "PaidSolanaFlow",
+        "PaidSaveHistory",
+        "FundedSaveFlow",
+        "FundAdminDesk",
+        "NativeAdminDesk",
+        "NativeSaveFlow",
+        "PreservationV2Flow",
+        "SolanaSaveFlow",
+        "SolanaSavePanel",
+        "SolanaCheckoutPanel"
+      ],
+      "admin_lock_file_forbidden": true,
+      "sources": [
+        "https://github.com/azovskaya/sejire_arweave_solana/blob/17a254eb13bb999127d9f7b3ecd54905f317e02d/scripts/build-arns-independent.mjs",
+        "https://github.com/azovskaya/sejire_arweave_solana/blob/17a254eb13bb999127d9f7b3ecd54905f317e02d/scripts/static-release-profile.mjs"
+      ]
+    },
+    "legacy_funded": {
+      "profile": "legacy-funded-worker",
+      "default_fund_api": "https://sejire-sponsor.azovskaya-alissa.workers.dev",
+      "build_sol_network": "devnet",
+      "native_sol_mainnet": "0",
+      "native_ar_broadcast": "0",
+      "note": "These are compile-time native-client flags. They are not a statement about server-admin runtime configuration for legacy paid checkout.",
+      "sources": [
+        "https://github.com/azovskaya/sejire_arweave_solana/blob/17a254eb13bb999127d9f7b3ecd54905f317e02d/scripts/build-arns-promo.sh",
+        "https://github.com/azovskaya/sejire_arweave_solana/blob/17a254eb13bb999127d9f7b3ecd54905f317e02d/.github/workflows/checks.yml",
+        "https://github.com/azovskaya/sejire_arweave_solana/blob/17a254eb13bb999127d9f7b3ecd54905f317e02d/package.json"
+      ]
+    }
+  },
+  "limits": {
+    "latest_repository_runs_inspected": 50,
+    "total_repository_runs_reported": 836,
+    "solana_branch_runs_inspected": 10,
+    "promo_branch_runs_inspected": 10,
+    "branches_returned": 29,
+    "new_tests_executed": 0,
+    "live_wallet_acceptance_performed": false,
+    "upload_or_deploy_performed": false,
+    "repository_writes_performed": false
+  },
+  "evidence_endpoints": [
+    "https://api.github.com/repos/azovskaya/sejire_arweave_solana/branches?per_page=100",
+    "https://api.github.com/repos/azovskaya/sejire_arweave_solana/actions/runs?per_page=50",
+    "https://api.github.com/repos/azovskaya/sejire_arweave_solana/actions/runs/45122610001/jobs?per_page=100",
+    "https://api.github.com/repos/azovskaya/sejire_arweave_solana/actions/runs/45124482606/jobs?per_page=100",
+    "https://api.github.com/repos/azovskaya/sejire_arweave_solana/actions/runs/45122610001/artifacts?per_page=100",
+    "https://api.github.com/repos/azovskaya/sejire_arweave_solana/actions/runs/45124482606/artifacts?per_page=100",
+    "https://api.github.com/repos/azovskaya/sejire_arweave_solana/actions/runs/43854395821/artifacts?per_page=100"
+  ]
+}

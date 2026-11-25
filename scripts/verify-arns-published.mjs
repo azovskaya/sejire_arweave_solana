@@ -21,6 +21,10 @@ export function verifyPathManifest(manifest, files) {
   requireValue(JSON.stringify(Object.keys(manifest.paths).sort()) === JSON.stringify(files.map(file => file.path).sort()), 'permaweb_path_manifest_incomplete');
   requireValue(Object.values(manifest.paths).every(value => value && TX.test(value.id)) &&
     manifest.fallback?.id === manifest.paths['404.html']?.id, 'permaweb_path_manifest_fallback');
+  // Arweave path manifests give index.id priority over index.path. A valid
+  // index.html mapping must not conceal a different root document.
+  requireValue(manifest.index.id === undefined || manifest.index.id === manifest.paths['index.html']?.id,
+    'permaweb_path_manifest_entrypoint');
 }
 
 export function publicBase(value) {
