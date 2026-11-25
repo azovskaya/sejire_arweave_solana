@@ -1,0 +1,21 @@
+{
+  "schema":"sejire/legacy-export-source-evidence/v1",
+  "accountId":"REPLACE_WITH_VERIFIED_EXISTING_ACCOUNT_ID",
+  "scriptName":"REPLACE_WITH_EXACT_EXISTING_WORKER_NAME",
+  "sourceCommit":"REPLACE_WITH_COMMIT_OF_THE_DEPLOYED_OLD_EXECUTOR",
+  "sourceVersionId":"REPLACE_WITH_EXISTING_CLOUDFLARE_VERSION_UUID",
+  "observedAt":0,
+  "lifecycle":"legacy-migrations",
+  "migrationTag":"REPLACE_WITH_EXISTING_MIGRATION_TAG",
+  "compatibilityDate":"REPLACE_WITH_EXISTING_COMPATIBILITY_DATE",
+  "compatibilityFlags":[],
+  "namespace":{"id":"REPLACE_WITH_EXISTING_NAMESPACE_ID","class":"CheckoutLedger","script":"REPLACE_WITH_EXACT_EXISTING_WORKER_NAME","use_sqlite":true},
+  "bindings":[
+    {"type":"durable_object_namespace","name":"CHECKOUT_LEDGER","class_name":"CheckoutLedger","namespace_id":"REPLACE_WITH_EXISTING_NAMESPACE_ID"},
+    {"type":"secret_text","name":"REPLACE_WITH_EACH_EXISTING_SECRET_BINDING_NAME_ONLY"}
+  ],
+  "object":{"id":"REPLACE_WITH_VERIFIED_NAME_DERIVED_OBJECT_ID","name":"sejire-checkout-ledger-v1","hasStoredData":true},
+  "deployment":{"versions":[{"id":"REPLACE_WITH_EXISTING_CLOUDFLARE_VERSION_UUID","percentage":100}]},
+  "maintenance":{"requestedAt":0,"attestation":"MAINTENANCE_EXPORT_ONLY"},
+  "legacyKvDisposition":"SEPARATE_PRIVATE_EXPORT_OR_RECONCILIATION_REQUIRED"
+}

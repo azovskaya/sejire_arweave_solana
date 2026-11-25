@@ -1,0 +1,10 @@
+{
+  "name":"sejire-private-legacy-export-tooling",
+  "private":true,
+  "type":"module",
+  "scripts":{
+    "test":"node --import tsx test/run.mjs",
+    "prepare:offline":"node --import tsx bin/prepare.mjs"
+  },
+  "devDependencies":{"@cloudflare/workers-types":"4.20260702.1","esbuild":"0.28.2","miniflare":"4.20260730.0","tsx":"4.23.10","typescript":"5.9.3"}
+}

@@ -1,0 +1,6 @@
+{
+  "target":{"namespaceId":"REPLACE_EXACT_ID","objectId":"REPLACE_EXACT_ID","sourceCommit":"REPLACE_OLD_COMMIT","attestation":"MAINTENANCE_EXPORT_ONLY"},
+  "quiescedAt":0,
+  "evidenceSha256":"REPLACE_WITH_PRIVATE_QUIESCENCE_REVIEW_HASH",
+  "attestation":"SOURCE_EXECUTION_STOPPED"
+}

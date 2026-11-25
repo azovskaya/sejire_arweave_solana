@@ -1,0 +1,189 @@
+{
+  "schema": "sejire/legacy-export-tooling-evidence/v1",
+  "recordedAt": "2026-11-25T11:08:37.178Z",
+  "scope": "separate operator-only tooling; accepted application repository was not edited by this task",
+  "sourceProvenance": {
+    "localCommit": "0151154adfeecbd05b267ba791ad7841e93d607c",
+    "remoteCommitPrefix": "23037bd",
+    "tree": "ce00da8cfe9c13e04d68c1a3f465a52b704f9d17",
+    "mapping": "root-confirmed identical tree; different commit identities",
+    "note": "Codec/tool provenance only. Actual old production Worker commit remains owner-supplied and independently verified."
+  },
+  "tests": {
+    "command": "node --import tsx test/run.mjs",
+    "exitCode": 0,
+    "schema": "sejire/legacy-export-test-results/v1",
+    "passed": 15,
+    "groups": [
+      "closed bundle contains only export entry, config and two pinned snapshot codec sources",
+      "offline preparation pins identity, retains secret binding types and cannot request a class lifecycle change",
+      "workerd rejects unauthenticated, browser, legacy execution and oversized requests",
+      "snapshot is blocked until a separate once-only quiescence seal after exporter adoption",
+      "real SQLite export preserves capabilities, exact signed bytes, reservations, revision, promo hash and original alarm",
+      "operator collector saves an authenticated, hash-linked private snapshot and freeze sidecar without retries",
+      "independent process restart returns the same snapshot rather than a fresh blank namespace",
+      "compatibility bundle is prepared only for the same private snapshot and frozen namespace",
+      "workerd compatibility proxy preserves exact body, auth, idempotency and Origin while stripping old Host and spoofed IP headers",
+      "compatibility refuses unsealed/mismatched source, redirects and uncertain POST without a second attempt",
+      "wrong namespace-derived object ID fails before obtaining a Durable Object stub",
+      "null alarm is unconfirmed until explicit immutable reconciliation; read and replay cannot acknowledge it",
+      "documented first-running-alarm null case records fired/unknown and refuses a snapshot",
+      "active paid, promo and legacy upload leases are rejected with SQL history retained",
+      "unknown tables and unsupported old schema are rejected rather than initialized or silently omitted"
+    ],
+    "node": "v24.22.3",
+    "externalNetworkRequests": 0,
+    "productionOperations": 0,
+    "realWorkerd": true,
+    "realPersistentSQLite": true,
+    "firstRunningAlarmNull": "documented API semantics simulated in focused unit test",
+    "cloudflareUploadApi": "not called; metadata validated offline only"
+  },
+  "typecheck": {
+    "command": "node node_modules/typescript/bin/tsc --noEmit -p tsconfig.json",
+    "exitCode": 0
+  },
+  "versions": {
+    "@cloudflare/workers-types": "4.20260702.1",
+    "esbuild": "0.28.2",
+    "miniflare": "4.20260730.0",
+    "tsx": "4.23.10",
+    "typescript": "5.9.3",
+    "workerd": "1.20260730.1"
+  },
+  "independentReview": {
+    "core": "PASS by /root/sol_promo_architecture/legacy_export_review; two-phase ordering and collector reviewed",
+    "proxy": {
+      "status": "PASS",
+      "reviewer": "/root",
+      "mode": "read-only",
+      "reviewedRuntimeSha256": "bc1bf64d6e3e8d51615618778f5fb0f00529e185170fea45b9af6569a44ff4d9",
+      "scope": [
+        "Compatibility proxy runtime, configuration and offline preparation",
+        "Fixed HTTPS origin, source freeze and identity pins",
+        "Authentication, idempotency and exact request body preservation",
+        "Old Host and hop-by-hop/forwarding-IP header stripping",
+        "Manual redirect mode plus explicit 3xx rejection, bounded bodies and no automatic retries"
+      ],
+      "limits": [
+        "No new blocking runtime issue found by code review",
+        "Cloudflare control-plane acceptance, actual deployment and secret-binding preservation were not exercised",
+        "Production source quiescence, Linux import, old-browser CORS/capabilities and ingress/rate limits remain owner acceptance conditions"
+      ]
+    }
+  },
+  "fixedDuringFocusedReview": [
+    "Oversized request clone/tee cancellation hang: parse bounded original once and forward a new bounded request.",
+    "Pre-deployment quiescence claim replaced with maintenance intent plus immutable post-adoption owner seal.",
+    "First-running-alarm null retained as unconfirmed; one-time owner reconciliation remains explicit and auditable.",
+    "workerd rejects redirect:error before fetch: proxy uses manual plus mandatory 3xx rejection."
+  ],
+  "limitations": [
+    "No production source, namespace, credentials, wallet, payment, upload, deploy or control-plane operation was accessed.",
+    "Cloudflare upload metadata is validated offline; real API acceptance, namespace and secret-binding preservation require owner review/readback.",
+    "Source quiescence and Linux import/origin acceptance are explicit owner attestations, not automatically established by this tool.",
+    "First-running-alarm null semantics are tested by a focused storage model; real workerd exercises persistent freeze, no-alarm refusal and process restart.",
+    "Legacy KV, protocol journals, other stored objects/classes and unsupported schemas remain separate inventory/reconciliation gates.",
+    "Snapshot table-data cap is64MiB; actual production memory/CPU quotas and data volume are not established.",
+    "Proxy strips caller forwarding-IP headers. Actual ingress trust/rate limits and each old browser Origin require deployment acceptance.",
+    "Timeouts are bounded in code; tests exercise request/response size caps, transport failure, no retry and redirect refusal, not a55-second production timeout."
+  ],
+  "files": [
+    {
+      "path": "alarm-reconciliation.template.json",
+      "sha256": "af94fae36a1bf464f11d147c28851e30be3e817a89a00569b384d61f26d3aa56"
+    },
+    {
+      "path": "bin/collect.mjs",
+      "sha256": "4fbbc63740e57657d9c0a1a70019865bd6a4fc44386ccd0642da66798d8c2f03"
+    },
+    {
+      "path": "bin/prepare-proxy.mjs",
+      "sha256": "cc168e84eb3eed3628f2b66887c5e39d4e444aae2b3093b5e748dca423abe735"
+    },
+    {
+      "path": "bin/prepare.mjs",
+      "sha256": "31d4ee2eae6469ae805721e7b5c875ce40749f1a839f45634c67030bbddf5104"
+    },
+    {
+      "path": "collect.mjs",
+      "sha256": "eb6f74f1e8c3404ab16f4c508cca445b543f8a84b5b8f4bf8b6af95a60371866"
+    },
+    {
+      "path": "cutover-evidence.template.json",
+      "sha256": "7b0fe631263cf3b87bd7e6dba19d9aaba4993698425a11e2406c116a692fc157"
+    },
+    {
+      "path": "evidence/tests.stdout.txt",
+      "sha256": "b1ce6880faf807cbf0a032bb8aa67a6cd5e95743261f2079b5d72c57a1d886bb"
+    },
+    {
+      "path": "evidence/typecheck.stdout.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "package.json",
+      "sha256": "0698dad915d90d189cad75d3075e3ff11858ebabbef32a1fe6f44efda2278948"
+    },
+    {
+      "path": "prepare-proxy.mjs",
+      "sha256": "21f6b68fc508e26ad1feeb0618af89b17083599b5d729935a2d19766fd72d2a1"
+    },
+    {
+      "path": "prepare.mjs",
+      "sha256": "98c52729de7126808a57b0bd3f4d5a047190d35b3f5c42b291133322d5cc05f8"
+    },
+    {
+      "path": "quiescence-seal.template.json",
+      "sha256": "45fdcb13e6d35de3bb4f590a77e4915a07c7c66c62fe27019cc1ea12890844fe"
+    },
+    {
+      "path": "README.md",
+      "sha256": "08c6dea7390a3eb792fc845b4d99928edc53b8ade91f462f2e2aa2a394050958"
+    },
+    {
+      "path": "source-evidence.template.json",
+      "sha256": "5ce4e14b837ac7c462beb00d55ca842c0816196c1361b9157f03ed59bbf59b01"
+    },
+    {
+      "path": "src/compatibility-proxy.ts",
+      "sha256": "bc1bf64d6e3e8d51615618778f5fb0f00529e185170fea45b9af6569a44ff4d9"
+    },
+    {
+      "path": "src/config.ts",
+      "sha256": "6bec374ae093905f971624d927e065bcfc964d2132b8b5ff00be63a9a5d3bb7c"
+    },
+    {
+      "path": "src/export-only.ts",
+      "sha256": "257171ba898f627218138d89aa13d8b65f1928c218ec1113e4e3905798c5b280"
+    },
+    {
+      "path": "test/make-schema-fixture.mjs",
+      "sha256": "828ab460d7d55ef43c957413e9e3a10b37943b7c553e51125772b305158122b4"
+    },
+    {
+      "path": "test/run.mjs",
+      "sha256": "8e21e2b7aff2141df9b6444e59b4529250f1a0286dfd683a0dea0d916b620986"
+    },
+    {
+      "path": "test/schema-fixture.json",
+      "sha256": "59740e3619102103e038f39faeb1e1e5a573eb3d28d9164bdbbdb5400cf6728a"
+    },
+    {
+      "path": "test/seed-worker.ts",
+      "sha256": "babe4e5242491e4c8eb7162f673beb5459196d8510f33e889fb6b9891e478160"
+    },
+    {
+      "path": "tsconfig.json",
+      "sha256": "d1580d0adbe9577d5b18df3a45c3bbe8b3cd09cbdd480ec456dc1c839344706b"
+    },
+    {
+      "path": "vendor/apps/sponsor/src/checkout/migrationSnapshot.ts",
+      "sha256": "0edf86b74bd33c97a9e7de29d04944a41414da020460f94d1e20a849ea917491"
+    },
+    {
+      "path": "vendor/packages/protocol/wire.ts",
+      "sha256": "07f36cf19d2b6e9a4b400f3a9d223b632b050e412c90a2e876550f4efcb674d5"
+    }
+  ]
+}

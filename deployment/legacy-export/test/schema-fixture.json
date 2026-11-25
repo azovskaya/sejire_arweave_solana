@@ -1,0 +1,39 @@
+{
+  "schema": [
+    "CREATE TABLE schema_version(version INTEGER PRIMARY KEY)",
+    "CREATE TABLE orders(\n          id TEXT PRIMARY KEY, network TEXT NOT NULL, reference TEXT NOT NULL,\n          order_json TEXT NOT NULL, states_json TEXT NOT NULL,\n          pending_signature TEXT, payment_json TEXT,\n          UNIQUE(network, reference))",
+    "CREATE TABLE used_transactions(\n          network TEXT NOT NULL, signature TEXT NOT NULL, order_id TEXT NOT NULL UNIQUE REFERENCES orders(id),\n          PRIMARY KEY(network, signature))",
+    "CREATE TABLE credits(\n          network TEXT NOT NULL, signature TEXT NOT NULL, instruction TEXT NOT NULL,\n          order_id TEXT NOT NULL REFERENCES orders(id), purpose TEXT NOT NULL,\n          symbol TEXT NOT NULL, mint TEXT NOT NULL, recipient TEXT NOT NULL,\n          amount TEXT NOT NULL CHECK(typeof(amount)='text'),\n          PRIMARY KEY(network, signature, instruction), UNIQUE(order_id, purpose))",
+    "CREATE TABLE api_sessions(hash TEXT PRIMARY KEY, expires_at INTEGER NOT NULL)",
+    "CREATE TABLE api_orders(order_id TEXT PRIMARY KEY REFERENCES orders(id), owner TEXT NOT NULL REFERENCES api_sessions(hash),\n        idem_key TEXT NOT NULL, intent TEXT NOT NULL, verification_json TEXT, UNIQUE(owner,idem_key))",
+    "CREATE TABLE paid_cancelled_keys(owner TEXT NOT NULL REFERENCES api_sessions(hash),key TEXT NOT NULL,\n        PRIMARY KEY(owner,key))",
+    "CREATE TABLE api_rates(bucket TEXT PRIMARY KEY, start INTEGER NOT NULL, count INTEGER NOT NULL)",
+    "CREATE TABLE api_execution(order_id TEXT PRIMARY KEY REFERENCES orders(id), plan_json TEXT NOT NULL,\n        lease_until INTEGER NOT NULL, accepted_json TEXT, retrieved INTEGER NOT NULL DEFAULT 0)",
+    "CREATE TABLE fund_settings(id INTEGER PRIMARY KEY CHECK(id=1),enabled INTEGER NOT NULL,code_hash TEXT NOT NULL,display_hint TEXT NOT NULL,revision INTEGER NOT NULL,created_at INTEGER NOT NULL,updated_at INTEGER NOT NULL,limit_winston TEXT NOT NULL)",
+    "CREATE TABLE fund_orders(order_id TEXT PRIMARY KEY,preservation_id TEXT NOT NULL UNIQUE,revision INTEGER NOT NULL,archive_bytes INTEGER NOT NULL,digest TEXT NOT NULL,vault_id TEXT NOT NULL,estimate TEXT NOT NULL,reserved TEXT NOT NULL,created_at INTEGER NOT NULL,prepared_json TEXT NOT NULL)",
+    "CREATE TABLE fund_order_links(order_id TEXT PRIMARY KEY REFERENCES fund_orders(order_id),parent_tx_id TEXT)",
+    "CREATE TABLE fund_events(seq INTEGER PRIMARY KEY AUTOINCREMENT,order_id TEXT NOT NULL,status TEXT NOT NULL,tx_id TEXT,actual TEXT,signed_json TEXT,at INTEGER NOT NULL)",
+    "CREATE TABLE fund_audit(seq INTEGER PRIMARY KEY AUTOINCREMENT,action TEXT NOT NULL,details TEXT NOT NULL,at INTEGER NOT NULL)",
+    "CREATE TABLE fund_rates(bucket TEXT PRIMARY KEY,start INTEGER NOT NULL,count INTEGER NOT NULL)",
+    "CREATE TABLE fund_jobs(order_id TEXT PRIMARY KEY REFERENCES fund_orders(order_id),next_at INTEGER,\n        lease TEXT,lease_until INTEGER NOT NULL DEFAULT 0,attempts INTEGER NOT NULL DEFAULT 0,last_error TEXT,updated_at INTEGER NOT NULL)",
+    "CREATE TABLE fund_meta(id INTEGER PRIMARY KEY CHECK(id=1),reconciled_at INTEGER)",
+    "CREATE TABLE treasury_revision(address TEXT PRIMARY KEY,revision INTEGER NOT NULL)",
+    "CREATE TABLE treasury_balance_ceiling(address TEXT PRIMARY KEY,balance TEXT,unobserved_debit TEXT NOT NULL DEFAULT '0')",
+    "CREATE TABLE paid_holds(order_id TEXT PRIMARY KEY,budget_id TEXT NOT NULL,treasury TEXT NOT NULL,\n        reward TEXT NOT NULL,actual TEXT,released INTEGER NOT NULL DEFAULT 0)",
+    "CREATE TABLE paid_orders(order_id TEXT PRIMARY KEY REFERENCES orders(id),policy_json TEXT NOT NULL,\n        preparation_json TEXT,status TEXT NOT NULL,lease TEXT,lease_until INTEGER NOT NULL DEFAULT 0,\n        next_at INTEGER NOT NULL,attempts INTEGER NOT NULL DEFAULT 0,proof_json TEXT,receipt_json TEXT,\n        paid INTEGER NOT NULL DEFAULT 0,released INTEGER NOT NULL DEFAULT 0,last_error TEXT,submission_ack INTEGER NOT NULL DEFAULT 0)",
+    "CREATE TABLE paid_payloads(order_id TEXT NOT NULL REFERENCES paid_orders(order_id),kind TEXT NOT NULL,\n        payload TEXT NOT NULL,PRIMARY KEY(order_id,kind))",
+    "CREATE TABLE paid_archive_repairs(order_id TEXT PRIMARY KEY REFERENCES paid_orders(order_id),\n        status TEXT NOT NULL,requested_at INTEGER NOT NULL,checked_at INTEGER,reason TEXT)",
+    "CREATE TABLE paid_payment_recoveries(order_id TEXT NOT NULL REFERENCES paid_orders(order_id),\n        previous_preparation_id TEXT NOT NULL,previous_preparation_json TEXT NOT NULL,preparation_json TEXT NOT NULL,\n        finalized_block_height INTEGER NOT NULL,recovered_at INTEGER NOT NULL,previous_signature TEXT,PRIMARY KEY(order_id,previous_preparation_id))",
+    "CREATE TABLE solana_recipient_settings (\n        id INTEGER PRIMARY KEY CHECK(id=1), revision INTEGER NOT NULL,\n        service_recipient TEXT NOT NULL, fund_recipient TEXT NOT NULL, updated_at INTEGER NOT NULL)",
+    "CREATE TABLE solana_recipient_audit (\n        revision INTEGER PRIMARY KEY, previous_json TEXT, current_json TEXT NOT NULL, changed_at INTEGER NOT NULL)",
+    "CREATE TABLE treasury_topups(\n      id TEXT PRIMARY KEY,address TEXT NOT NULL,amount TEXT NOT NULL,baseline_height INTEGER NOT NULL,prior_ceiling TEXT NOT NULL,\n      prepared_revision INTEGER NOT NULL,created_at INTEGER NOT NULL,tx_id TEXT UNIQUE,proof_json TEXT,credited_revision INTEGER,confirmed_at INTEGER,intent_nonce TEXT)",
+    "CREATE TABLE treasury_topup_audit(seq INTEGER PRIMARY KEY AUTOINCREMENT,intent_id TEXT NOT NULL,action TEXT NOT NULL,details TEXT NOT NULL,at INTEGER NOT NULL)",
+    "CREATE TABLE treasury_topup_transfers(intent_id TEXT PRIMARY KEY REFERENCES treasury_topups(id),claim_id TEXT NOT NULL,\n        unsigned_tx TEXT NOT NULL,signed_tx TEXT,tx_id TEXT UNIQUE,created_at INTEGER NOT NULL,signed_at INTEGER)"
+  ],
+  "source": {
+    "localCommit": "0151154adfeecbd05b267ba791ad7841e93d607c",
+    "remoteCommit": "23037bd",
+    "tree": "ce00da8cfe9c13e04d68c1a3f465a52b704f9d17"
+  },
+  "schemaSha256": "e0471f8360456722870896d53d4b6abd8ee425c31bf6d003c29c1bed10218086"
+}
