@@ -148,7 +148,10 @@ test('ArNS origin explains how to continue previous-origin orders without transf
   await installRouteMock(context, async route => {
     const url=new URL(route.request().url());
     if(url.origin==='https://sejire.ar.io'){
-      const response=await route.fetch({url:ORIGIN+url.pathname+url.search});
+      // Read the preview with its own Host header. route.fetch preserves the
+      // virtual gateway request's Host in Firefox, which Vite correctly rejects.
+      const response=await context.request.get(ORIGIN+url.pathname+url.search,{maxRedirects:0});
+      expect(response.ok(),'The local preview must return the requested static asset').toBe(true);
       return route.fulfill({response});
     }
     requests.push(url.origin+url.pathname);
@@ -182,7 +185,8 @@ for(const [label,host,prefix] of [
     if(url.origin!==host){denied.push(url.origin+url.pathname);return route.abort('blockedbyclient');}
     const localPath=url.pathname===path?'/404.html':url.pathname.slice(prefix.length);
     if(localPath.startsWith('/assets/'))assets.push(localPath);
-    const response=await route.fetch({url:ORIGIN+localPath});
+    const response=await context.request.get(ORIGIN+localPath+url.search,{maxRedirects:0});
+    expect(response.ok(),'The local preview must return the manifest fallback or asset').toBe(true);
     return route.fulfill({response});
   });
   await page.goto(host+path+'#/restore');

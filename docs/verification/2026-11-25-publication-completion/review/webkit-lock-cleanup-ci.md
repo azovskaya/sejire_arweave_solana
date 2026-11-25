@@ -24,3 +24,5 @@ The same page-close assumption occurred in two editor scenarios and received the
 ## Verification
 
 `git diff --check` passed. Both affected Playwright suites were collected successfully: 78 independent browser entries and 24 editor tests, exit code 0. Runtime/unit/build checks were not repeated for this test-only correction. Local browsers remain unavailable; the corrected scenarios have not been executed locally. A fresh CI run is required to establish browser PASS for the corrected source.
+
+Follow-up: root reported independent acceptance **78/78 PASS** in CI `45597559533` at source `413b06b`, including the corrected WebKit scenario. The later portable Firefox fixture failures in that run are documented separately in `firefox-static-proxy-ci.md`.
