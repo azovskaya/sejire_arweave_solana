@@ -129,8 +129,16 @@ test('two real tabs share one writer, explicitly hand off and reload the newest 
     expect((await draft(page)).draft.persons[CHILD].notes).toBe('The second tab owns these newer changes');
 
     await other.close();
+    // Browser document-close completion and the Web Locks cleanup task are
+    // separate events. Confirm release before one explicit ifAvailable retry.
+    await expect.poll(() => page.evaluate(async () =>
+      (await navigator.locks.query()).held.filter(lock => lock.name === 'sejire.draft-writer.v1').length
+    ), { message: 'The closed tab must release its actual draft writer lock' }).toBe(0);
     await page.getByRole('button', { name: 'Продолжить здесь', exact: true }).click();
     await expect(page.locator('.workspace-main')).toBeVisible();
+    expect(await page.evaluate(async () =>
+      (await navigator.locks.query()).held.filter(lock => lock.name === 'sejire.draft-writer.v1').map(lock => lock.mode)
+    )).toEqual(['exclusive']);
     await profile(page, CHILD_NAME);
     await expect(page.locator('.person-panel textarea')).toHaveValue('The second tab owns these newer changes');
     expect((await draft(page)).commits).toEqual(f.baseline.commits);
@@ -154,8 +162,14 @@ test('pagehide releases the writer and persisted pageshow cannot overwrite a tab
     await expect(page.locator('.workspace-main')).toHaveCount(0);
     expect((await draft(page)).draft.persons[CHILD].notes).toBe('Changed while the first document was suspended');
     await other.close();
+    await expect.poll(() => page.evaluate(async () =>
+      (await navigator.locks.query()).held.filter(lock => lock.name === 'sejire.draft-writer.v1').length
+    ), { message: 'The closed tab must release its actual draft writer lock' }).toBe(0);
     await page.getByRole('button', { name: 'Продолжить здесь', exact: true }).click();
     await expect(page.locator('.workspace-main')).toBeVisible();
+    expect(await page.evaluate(async () =>
+      (await navigator.locks.query()).held.filter(lock => lock.name === 'sejire.draft-writer.v1').map(lock => lock.mode)
+    )).toEqual(['exclusive']);
     expect((await draft(page)).draft.persons[CHILD].notes).toBe('Changed while the first document was suspended');
     f.assertReadOnly();
   } finally { if (!other.isClosed()) await other.close(); }

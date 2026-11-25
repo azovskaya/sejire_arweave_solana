@@ -892,8 +892,17 @@ test('independent editor ownership transfers between two real tabs without repla
     await expect(page.locator('.draft-access-notice')).toContainText('открыт в другой вкладке');
     expect(JSON.parse((await selectionState(page)).draft).draft.persons[person.id].notes).toBe(note);
     await other.close();
+    // Closing a document enqueues Web Locks cleanup on the lock task queue.
+    // Observe that cleanup before the app's explicit, non-waiting ifAvailable
+    // request; page.close() alone is not the lock manager's acknowledgement.
+    await expect.poll(() => page.evaluate(async () =>
+      (await navigator.locks.query()).held.filter(lock => lock.name === 'sejire.draft-writer.v1').length
+    ), { message: 'The closed tab must release its actual draft writer lock' }).toBe(0);
     await page.getByRole('button', { name: 'Продолжить здесь', exact: true }).click();
     await expect(page.getByRole('button', { name: 'Сохранить', exact: true })).toBeEnabled();
+    expect(await page.evaluate(async () =>
+      (await navigator.locks.query()).held.filter(lock => lock.name === 'sejire.draft-writer.v1').map(lock => lock.mode)
+    )).toEqual(['exclusive']);
     const latest = JSON.parse((await selectionState(page)).draft);
     expect(latest.draft.persons[person.id].notes).toBe(note);
     expect(latest.commits).toEqual(before.commits); expect(latest.versions).toEqual(before.versions);
