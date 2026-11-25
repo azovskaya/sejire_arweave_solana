@@ -48,12 +48,25 @@ async function settle(ledger:DurableOrderStore,provider:FundedArweaveProvider,or
     // GET status checks never send bytes, create a reservation, or sign. Only an
     // explicit existing-order POST/reconciliation may replay this persisted TX.
     if(options.allowResubmit&&order.signedTransaction&&transaction.state==='not_found'){
-      await provider.submit(order.signedTransaction);
+      await provider.submit(order.signedTransaction,deadline);
       order=await ledger.call({action:'fundEvent',input:{orderId:order.orderId,status:'SUBMITTED'}});
       transaction=await provider.getTransaction(txId,deadline);
     }
     if(transaction.confirmed&&transaction.reward!==order.reservedRewardWinston)throw Error('network_reward_mismatch');
-    const result=await provider.verify(txId,{digest:order.archiveDigest,bytes:order.archiveSizeBytes,vaultId:order.vaultId},transaction,deadline);
+    const expected={digest:order.archiveDigest,bytes:order.archiveSizeBytes,vaultId:order.vaultId};
+    // An explicit repair needs time after a slow/missing gateway read. Split
+    // the remaining common budget between discovery, replay and final proof.
+    const repairing=Boolean(options.allowResubmit&&order.signedTransaction&&transaction.confirmed);
+    const verificationDeadline=repairing?Math.min(deadline,Date.now()+Math.max(1,Math.floor((deadline-Date.now())/3))):deadline;
+    let result=await provider.verify(txId,expected,transaction,verificationDeadline);
+    if(options.allowResubmit&&order.signedTransaction&&transaction.confirmed&&
+      result.verification.transactionConfirmed&&result.verification.reason==='archive_unavailable'){
+      // A confirmed header is not proof that its data arrived. Explicit retry
+      // repairs only the original signed chunks; GET remains strictly read-only.
+      const replayDeadline=Math.min(deadline,Date.now()+Math.max(1,Math.floor((deadline-Date.now())*2/3)));
+      await provider.replayData(order.signedTransaction,expected,replayDeadline);
+      result=await provider.verify(txId,expected,transaction,deadline);
+    }
     if(!result.confirmed||!result.reward||result.verification.stage!=='verified'||!result.verification.transactionConfirmed){
       const status=result.verification.stage==='attention'?'NEEDS_RECONCILIATION':'VERIFYING';
       return checkedOrder(await ledger.call({action:'fundEvent',input:{orderId:order.orderId,status}}),result.verification);
@@ -223,7 +236,7 @@ export async function fundApi(request:Request,env:FundEnv,provided?:FundedArweav
         saved=await ledger.call({action:'fundEvent',input:{orderId:saved.orderId,status:'SIGNED',txId:signed.id,signed:signed.raw}});
       }catch{const current=await ledger.call<FundOrder>({action:'fundOrder',orderId:input.orderId});if(!current.arweaveTxId)await ledger.call({action:'fundEvent',input:{orderId:input.orderId,status:'RELEASED'}});throw Error('fund_sign_failed');}
       if(!saved.signedTransaction)throw Error('signed_tx_not_persisted');
-      try{await provider.submit(saved.signedTransaction);saved=await ledger.call({action:'fundEvent',input:{orderId:saved.orderId,status:'SUBMITTED'}});}
+      try{await provider.submit(saved.signedTransaction,checkDeadline);saved=await ledger.call({action:'fundEvent',input:{orderId:saved.orderId,status:'SUBMITTED'}});}
       catch{saved=await ledger.call({action:'fundEvent',input:{orderId:saved.orderId,status:'NEEDS_RECONCILIATION'}});return reply(202,publicCheck(unavailableCheck(saved)));}
       const checked=await settle(ledger,provider,saved,{deadline:checkDeadline});return reply(checked.order.status==='COMPLETED'?200:202,publicCheck(checked));
     }

@@ -22,7 +22,8 @@ export interface FundedArweaveProvider {
   getPrice(bytes:number):Promise<string>;
   prepareTransaction(bytes:Uint8Array,tags:{name:string;value:string}[]):Promise<PreparedFundTx>;
   sign(prepared:PreparedFundTx):Promise<{id:string;raw:string;reward:string}>;
-  submit(raw:string):Promise<void>;
+  submit(raw:string,deadline?:number):Promise<void>;
+  replayData(raw:string,expected:FundArchiveExpected,deadline?:number):Promise<void>;
   getTransaction(id:string,deadline?:number):Promise<FundNetworkTx>;
   getRawData(id:string,expected?:FundArchiveExpected,deadline?:number):Promise<Uint8Array|null>;
   verify(id:string,expected:FundArchiveExpected,transaction?:FundNetworkTx,deadline?:number):Promise<FundCheckResult>;
@@ -328,6 +329,48 @@ export async function readArweaveTransaction(id:string,options:ArweaveTransactio
     throw Error('transaction_unavailable');
   }finally{options.signal?.removeEventListener('abort',abort);pass.abort();}
 }
+/** Validate the exact persisted signature AND the ciphertext Merkle root before
+ * either initial upload or data-only replay. No private key is used here. */
+async function signedFundTransaction(raw:string,expected?:FundArchiveExpected){
+  try{
+    const value=JSON.parse(raw),keys=['format','id','last_tx','owner','tags','target','quantity','data','data_size','data_root','reward','signature'];
+    if(!value||typeof value!=='object'||Array.isArray(value)||value.format!==2||Object.keys(value).some(key=>!keys.includes(key)))throw Error();
+    const ar=client(),tx=ar.transactions.fromRaw(value),bytes=tx.data as Uint8Array;
+    if(value.quantity!=='0'||value.target!==''||
+      !txId.test(tx.id)||typeof value.data!=='string'||bytes.length<1||bytes.length>524288||
+      value.data_size!==String(bytes.length)||b64Url(bytes)!==value.data)throw Error();
+    amount(tx.reward);
+    // Arweave signatures bind data_root, not the raw data property. SDK verify
+    // alone therefore cannot prove that the replayed bytes are those signed.
+    const root=value.data_root;tx.chunks=undefined;await tx.prepareChunks(bytes);
+    if(root!==tx.data_root||!await ar.transactions.verify(tx)||
+      expected&&!await archiveMatches(bytes,expected))throw Error();
+    return {value,tx,bytes};
+  }catch{throw Error('signed_tx_invalid');}
+}
+async function writeFundTransaction(raw:string,dataOnly:boolean,expected:FundArchiveExpected|undefined,requestedDeadline:number){
+  const deadline=Math.min(requestedDeadline,Date.now()+FUND_CHECK_TIMEOUT_MS),pass=new AbortController();
+  if(!Number.isFinite(deadline)||deadline<=Date.now())throw Error('submit_uncertain');
+  const checked=await signedFundTransaction(raw,expected);
+  const post=async(path:'/tx'|'/chunk',body:string)=>checkedRead(deadline,pass.signal,async signal=>{
+    const url=gateways[0]+path;
+    const init={method:'POST',headers:{'Content-Type':'application/json'},body,
+      redirect:'manual' as const,credentials:'omit' as const,referrerPolicy:'no-referrer' as const,signal};
+    const response=await networkFetch(url,init);
+    const accepted=(!response.url||response.url===url)&&[200,202,208].includes(response.status);
+    await discard(response);
+    if(!accepted)throw Error('submit_uncertain');
+  });
+  try{
+    // The SDK transactions.post() retries chunk errors with long sleeps. One
+    // bounded pass belongs here; later explicit reconciliation reuses this ID.
+    if(!dataOnly)await post('/tx',JSON.stringify({...checked.value,data:''}));
+    const chunks=checked.tx.chunks.chunks.length;
+    if(chunks<1)throw Error('submit_uncertain');
+    for(let index=0;index<chunks;index++)await post('/chunk',JSON.stringify(checked.tx.getChunk(index,checked.bytes)));
+  }catch{throw Error('submit_uncertain');}
+  finally{pass.abort();}
+}
 export class DirectArweaveFundProvider implements FundedArweaveProvider {
   private jwk:Record<string,string>;
   constructor(secret:string|undefined){if(!secret)throw Error('fund_provider_unavailable');try{this.jwk=JSON.parse(secret) as Record<string,string>;}catch{throw Error('fund_provider_unavailable');}
@@ -358,8 +401,10 @@ export class DirectArweaveFundProvider implements FundedArweaveProvider {
     if(tx.reward!==prepared.reward||tx.quantity!=='0'||tx.target!==''||await ar.wallets.ownerToAddress(tx.owner)!==TREASURY_ADDRESS)throw Error('prepared_tx_mismatch');
     await ar.transactions.sign(tx,this.jwk as never);if(!tx.id||!txId.test(tx.id)||!await ar.transactions.verify(tx))throw Error('signed_tx_invalid');
     return {id:tx.id,raw:JSON.stringify(tx.toJSON()),reward:tx.reward};}
-  async submit(raw:string){const ar=client(),tx=ar.transactions.fromRaw(JSON.parse(raw));if(!tx.id||!await ar.transactions.verify(tx))throw Error('signed_tx_invalid');
-    const r=await ar.transactions.post(tx);if(r.status!==200&&r.status!==202&&r.status!==208)throw Error('submit_uncertain');}
+  submit(raw:string,deadline=Date.now()+FUND_CHECK_TIMEOUT_MS){return writeFundTransaction(raw,false,undefined,deadline);}
+  replayData(raw:string,expected:FundArchiveExpected,deadline=Date.now()+FUND_CHECK_TIMEOUT_MS){
+    return writeFundTransaction(raw,true,expected,deadline);
+  }
   getTransaction(id:string,deadline=Date.now()+FUND_CHECK_TIMEOUT_MS):Promise<FundNetworkTx>{
     return readArweaveTransaction(id,{deadline});
   }
@@ -372,7 +417,7 @@ export class DirectArweaveFundProvider implements FundedArweaveProvider {
   }
 }
 export class MockFundedArweaveProvider implements FundedArweaveProvider {
-  balance='68000000000000';price='3000000000';estimate='3000000000';actual='3000000000';failure='';delay=false;submissions=0;signings=0;signerAddress=TREASURY_ADDRESS;
+  balance='68000000000000';price='3000000000';estimate='3000000000';actual='3000000000';failure='';delay=false;submissions=0;signings=0;replays=0;signerAddress=TREASURY_ADDRESS;
   private transactions=new Map<string,{raw:string;data:Uint8Array;accepted:boolean}>();
   async getSignerAddress(){return this.signerAddress;}
   async getBalance(){if(this.failure==='balance')throw Error('balance_unavailable');return this.balance;}
@@ -383,6 +428,12 @@ export class MockFundedArweaveProvider implements FundedArweaveProvider {
   async submit(raw:string){this.submissions++;if(this.failure==='upload')throw Error('submit_uncertain');
     const transaction=[...this.transactions.values()].find(x=>x.raw===raw);if(!transaction)throw Error('signed_tx_missing');transaction.accepted=true;
     if(this.failure==='lost_response')throw Error('submit_uncertain');}
+  async replayData(raw:string,expected:FundArchiveExpected){
+    this.replays++;if(this.failure==='upload'||this.failure==='replay')throw Error('submit_uncertain');
+    const transaction=[...this.transactions.values()].find(x=>x.raw===raw);
+    if(!transaction?.accepted||!await archiveMatches(transaction.data,expected))throw Error('signed_tx_invalid');
+    if(this.failure==='archive_unavailable')this.failure='';
+  }
   async getTransaction(id:string):Promise<FundNetworkTx>{
     if(this.failure==='network')throw Error('synthetic gateway failure');
     const transaction=this.transactions.get(id);

@@ -382,7 +382,7 @@ export async function checkoutApi(request: Request, env: CheckoutApiEnv,
     if(['rpc-timeout','rpc-rate-limited','rpc-server-error','rpc-unavailable','rpc-malformed','rpc-response-too-large','rpc-conflicting-evidence','invalid_server_rpc_configuration',
       'direct_network_unavailable','direct_reward_limit','direct_signer_unavailable','direct_plan_mismatch',
       'direct_archive_mismatch','direct_archive_size_invalid','network_fee_not_ready','invalid_block_height'].includes(code))return reply(503,{error:code});
-    if (['invalid_base58', 'invalid_amount', 'excess_precision', 'technical_amount_overflow', 'invalid_contribution_order', 'recipient_roles_overlap', 'invalid_order_id_or_policy', 'archive_mismatch', 'invalid_envelope', 'envelope_too_large','invalid_paid_archive','archive_not_canonical','invalid_payment_signature','invalid_payment_preparation','invalid_signed_payment','invalid_idempotency_key'].includes(code)) return reply(400, { error: code });
+    if (['invalid_base58', 'invalid_amount', 'excess_precision', 'technical_amount_overflow', 'invalid_contribution_order', 'recipient_roles_overlap', 'invalid_order_id_or_policy', 'archive_mismatch', 'invalid_envelope', 'envelope_too_large','invalid_paid_archive','archive_not_canonical','invalid_payment_signature','invalid_payment_preparation','payment_preparation_mismatch','invalid_signed_payment','invalid_idempotency_key'].includes(code)) return reply(400, { error: code });
     // Transport/commit failure can mean commit succeeded. No unpaid claim, no fresh-payment instruction.
     return reply(503, { error: 'checkout_requires_reconciliation' });
   }

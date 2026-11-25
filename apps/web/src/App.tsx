@@ -7,7 +7,7 @@ import { PreservationV2 } from "./components/PreservationV2";
 import { NativeAdminDesk } from "./components/NativeAdminDesk";
 import { AdminDesk } from "./components/AdminDesk";
 import { FundAdmin } from "./components/FundAdmin";
-import { closeOpsHash, isOpsHash, openOpsHash } from "./lib/opsDesk/route";
+import { isOpsHash, openOpsHash } from "./lib/opsDesk/route";
 import type { TreeStore } from "./lib/types";
 import { clearDraftTree, loadDraftTree, saveDraftTree } from "./lib/draftStorage";
 import { coerceTreeStore } from "./lib/treeJson";
@@ -48,7 +48,7 @@ function bootApp(): { screen: Screen; store: TreeStore | null; guide: GuideState
 }
 
 export default function App() {
-  const [boot] = useState(bootApp);
+  const [boot] = useState(() => ({ ...bootApp(), hash: location.hash }));
   const [savingRoute, setSavingRoute] = useState(() => location.hash);
   const [savingNavigation, setSavingNavigation] = useState(0);
   const [screen, setScreen] = useState<Screen>(boot.screen);
@@ -61,9 +61,8 @@ export default function App() {
       setScreen("admin");
       return;
     }
-    if (screen === "admin") closeOpsHash();
-    if (screen === "fund-admin") history.replaceState(null, "", location.pathname + location.search);
-    if(screen==="saving")history.replaceState(null,"",location.pathname+location.search);
+    const hash = next === "restore" ? "#/restore" : next === "saving" ? "#/save" : next === "fund-admin" ? "#/fund-admin" : "";
+    history.replaceState(null, "", location.pathname + location.search + hash);
     rememberScreen(next === "work" || next === "welcome" || next === "restore" ? next : "welcome");
     setScreen(next);
   }
@@ -74,11 +73,14 @@ export default function App() {
       else if (isOpsHash(location.hash)) setScreen("admin");
       else if(location.hash.startsWith("#/save")){setSavingRoute(location.hash);setSavingNavigation(n=>n+1);setScreen("saving");}
       else if(location.hash.startsWith("#/restore"))setScreen("restore");
-      else if (screen === "admin"||screen === "fund-admin"||screen === "saving") setScreen("welcome");
+      else setScreen("welcome");
     }
     window.addEventListener("hashchange", onHash);
+    // A fragment may change between the initial render and effect subscription.
+    // Preserve unchanged empty-URL draft resume, but reconcile real navigation.
+    if (location.hash !== boot.hash) onHash();
     return () => window.removeEventListener("hashchange", onHash);
-  }, [screen]);
+  }, [boot.hash]);
 
   function startNew(title: string) {
     clearDraftTree();
@@ -114,7 +116,7 @@ export default function App() {
       )}
 
       {screen === "saving" && <main className="landing">{import.meta.env.VITE_PRESERVATION_V2_ENABLED === "1"
-        ? <PreservationV2 key={savingRoute+':'+savingNavigation} treeName={store?.meta.title} onBack={() => go(store?"work":"welcome")} />
+        ? <PreservationV2 key={savingRoute+':'+savingNavigation} legacyPilot={savingRoute.split('?')[0] === '#/save/legacy-pilot'} treeName={store?.meta.title} onBack={() => go(store?"work":"welcome")} />
         : <NativeCheckoutPanel key={savingRoute+':'+savingNavigation} resume treeName={store?.meta.title} onBack={() => go(store?"work":"welcome")} />}</main>}
       {screen === "admin" && (import.meta.env.VITE_PRESERVATION_V2_ENABLED === "1"
         ? <AdminDesk onHome={() => go("welcome")} v2Diagnostics />

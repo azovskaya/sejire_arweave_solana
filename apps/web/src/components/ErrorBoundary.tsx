@@ -55,7 +55,12 @@ export class AppErrorBoundary extends Component<Props, State> {
           type="button"
           className="btn"
           onClick={() => {
-            if (loadDraftTree()) rememberScreen("work");
+            if (loadDraftTree()) {
+              rememberScreen("work");
+              // Deep links take precedence over the remembered editor screen.
+              // Leave the failed route before reloading the saved draft.
+              history.replaceState(null, "", location.pathname + location.search);
+            }
             window.location.reload();
           }}
         >

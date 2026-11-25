@@ -147,6 +147,8 @@ export function PromoFundedFlow({ envelope, parentTxId, treeId, autoSaveCode, au
         const binding = savedParent.current;
         if (binding?.orderId !== orderId) throw Error('invalid_order_response');
         assertFundOrderParent(next.order, binding.parentTxId);
+        if (next.order.status === 'COMPLETED') await assertCompletedArchive(next.order, JSON.parse(archive) as EnvelopeV1, binding.parentTxId);
+        if (!live) return;
         setResult(previous => previous?.order.status === 'COMPLETED' ? previous : next);
         // A completed request can report an unavailable provider. This marks
         // the attempt, not proof that Arweave confirmed the transaction.
@@ -202,6 +204,7 @@ export function PromoFundedFlow({ envelope, parentTxId, treeId, autoSaveCode, au
       // Closing the dialog after journaling must not abandon the accepted click.
       const next = await preserveFunded(attempt.envelope, selectedCode, id, attempt.parentTxId);
       if (!next.order || next.order.orderId !== id) throw Error('invalid_order_response');
+      if (next.order.status === 'COMPLETED') await assertCompletedArchive(next.order, attempt.envelope, attempt.parentTxId);
       if (current.active) {
         setResult(next); setCheckedAt(Date.now());
         setStartedAt(next.order.createdAt); setCode('');

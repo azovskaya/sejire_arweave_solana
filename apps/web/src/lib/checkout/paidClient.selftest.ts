@@ -23,7 +23,7 @@ import { cancelPaidCreation, retryPaidCreation, contributionReceipt, completeCon
 import { retrievePaidReceipt } from './paidReceipt';
 import { finalizeStandalonePaid } from './paidFinalize';
 import { getLocalVaultVersion } from '../vaultSession/localArchive';
-import { getVaultSession } from '../vaultSession/session';
+import { getVaultSession, setVaultSession, vaultEnvelopeDigest } from '../vaultSession/session';
 import type { PaidOperation, PaidPolicyResponse, PaidSnapshot } from './paidTypes';
 
 class MemoryStorage {
@@ -386,6 +386,21 @@ assert.equal(serializeEnvelope(getLocalVaultVersion(keys.vaultId, completed.txId
 assert.equal(getLocalVaultVersion(keys.vaultId, completed.txId)?.parentId, binding.parentTxId);
 assert.equal(getVaultSession()?.headTxId, completed.txId);
 assert.equal(await findPaidAttempt({ vaultId: keys.vaultId }), null);
+
+// A completed old request may be reopened after the owner explicitly selects a
+// different complete file for the same vault and parent. Keep that selection.
+const laterVault = putTree(vault, createTree('Synthetic later local tree'));
+const laterEnvelope = await encryptJson(keys.encKey, keys.vaultId, laterVault);
+const laterSerialized = serializeEnvelope(laterEnvelope);
+for (const source of ['file', 'local'] as const) {
+  localStorage.setItem('sejire.envelope.' + keys.vaultId, laterSerialized);
+  const selected = { vaultId: keys.vaultId, headTxId: binding.parentTxId, source,
+    cacheDigest: vaultEnvelopeDigest(laterEnvelope) };
+  setVaultSession(selected);
+  await finalizeStandalonePaid(completed, () => true);
+  assert.deepEqual(getVaultSession(), selected, 'paid completion must preserve an explicitly selected later full vault');
+  assert.equal(localStorage.getItem('sejire.envelope.' + keys.vaultId), laterSerialized);
+}
 
 // Repair is an explicit action on the same completed record. Lost responses,
 // reload-style reads and duplicate clicks must not reopen payment or completion.

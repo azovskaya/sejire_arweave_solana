@@ -2,8 +2,9 @@
 # Build the verified promo-funded SPA for static ArNS hosting (sejire.ar.io).
 # Does NOT upload, change ArNS, spend AR/SOL, or read wallet secrets.
 #
-# Product: Preservation V2 + Fund/promo against the existing Cloudflare Worker.
-# Solana mainnet client spend stays OFF (same as accepted native:build).
+# Product: Preservation V2 + Fund/promo against the configured HTTPS API.
+# Defaults to the historical Worker. These native flags disable only the legacy
+# native path; V2 paid SOL follows the server's policy, including its network.
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
@@ -25,7 +26,7 @@ if [[ ! -d "$ROOT/apps/web/node_modules/vite" ]]; then
 fi
 
 echo "Building ArNS promo SPA with Fund API: $FUND_API_URL"
-# Match CI native:build + baked Worker origin used by accepted Pages artifacts.
+# Match CI native:build with the selected API origins baked into this artifact.
 export VITE_FUND_API_URL="$FUND_API_URL"
 export VITE_CHECKOUT_API_URL="$CHECKOUT_API_URL"
 export VITE_DECENTRALIZED_MODE=false

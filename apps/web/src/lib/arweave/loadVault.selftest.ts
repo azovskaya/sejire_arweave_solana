@@ -8,7 +8,7 @@ import { encryptJson, type EnvelopeV1 } from "../crypto/encrypt";
 import { serializeEnvelope } from "../crypto/envelope";
 import { envelopeDigest } from "../solana/policy";
 import { archiveLocalVaultVersion, getLocalVaultVersion } from "../vaultSession/localArchive";
-import { setVaultSession } from "../vaultSession/session";
+import { setVaultSession, vaultEnvelopeDigest } from "../vaultSession/session";
 import { DATA_GATEWAYS, GRAPHQL_ENDPOINTS } from "./gateways";
 
 function assert(cond: unknown, msg: string): asserts cond {
@@ -270,6 +270,32 @@ try {
   await sealVault(keys, vaultAB);
   network({ records: [second], rawStatus: 404, nativeStatus: 404 });
   await strict.rejects(() => loadVaultForPublish(keys, { parentTxId: second.id }), isGatewayUnavailable, "a restored and resealed cache is not falsely treated as exact network bytes");
+
+  // A file/local selection is the complete vault chosen by the owner, even
+  // when discovery or the selected network parent still exposes fewer trees.
+  for (const source of ['file', 'local'] as const) {
+    clearCaches();
+    storage.set('sejire.envelope.' + keys.vaultId, second.raw);
+    setVaultSession({ vaultId: keys.vaultId, headTxId: first.id, source,
+      cacheDigest: vaultEnvelopeDigest(second.envelope) });
+    network({ records: [first], listed: [first.id] });
+    const selected = await loadVaultForPublish(keys, { parentTxId: first.id });
+    strict.deepEqual(selected.vault, vaultAB, 'funded save must keep the other tree in an explicitly selected complete archive');
+    strict.equal(selected.parentTxId, first.id);
+    strict.equal(requests.length, 0, 'an explicit local selection does not need discovery');
+
+    // Another tab can replace the shared ciphertext while this tab still has
+    // the former selection in its own sessionStorage. Never adopt that change.
+    storage.set('sejire.envelope.' + keys.vaultId, first.raw);
+    await strict.rejects(() => loadVaultForPublish(keys, { parentTxId: first.id }), /vault_selection_changed/);
+    strict.equal(requests.length, 0);
+    storage.set('sejire.envelope.' + keys.vaultId, second.raw);
+    await strict.rejects(() => loadVaultForPublish(keys, { parentTxId: second.id }), /vault_selection_changed/,
+      'a stale render cannot change the selected parent');
+    setVaultSession({ vaultId: keys.vaultId, headTxId: first.id, source });
+    await strict.rejects(() => loadVaultForPublish(keys, { parentTxId: first.id }), /vault_selection_changed/,
+      'old unbound local selections require explicit reopening');
+  }
 
   // Switching words must not attach a different vault's remembered parent.
   storage.set("sejire.envelope." + keys.vaultId, JSON.stringify(second.envelope));

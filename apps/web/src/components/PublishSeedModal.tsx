@@ -12,9 +12,8 @@ import type { TreeStore } from "../lib/types";
 import {
   downloadEnvelope,
   putTree,
-  sealVault,
 } from "../lib/crypto/vault";
-import type { EnvelopeV1 } from "../lib/crypto/encrypt";
+import { encryptJson, type EnvelopeV1 } from "../lib/crypto/encrypt";
 import { parseEnvelope, serializeEnvelope } from "../lib/crypto/envelope";
 import { loadVaultForPublish } from "../lib/arweave/loadVault";
 import { addressFromJwk, jwkFromSeed } from "../lib/arweave/wallet";
@@ -37,10 +36,10 @@ import {
 import {
   getSessionMnemonic,
   getVaultSession,
-  setVaultSession,
-  updateVaultHead,
-  type VaultSessionMeta,
+  canAdvanceVaultHead,
+  setVaultSessionChecked,
 } from "../lib/vaultSession/session";
+import { acceptPreparedVault, captureVaultPreparation } from "../lib/vaultSession/selection";
 import {
   archiveLocalVaultVersion,
   getLocalVaultVersion,
@@ -108,8 +107,11 @@ function phraseForVault(phrase: string | null | undefined, vaultId: string): str
   return deriveKeysFromMnemonic(normalized).vaultId === vaultId ? normalized : null;
 }
 
-function sameVaultSession(left: VaultSessionMeta | null, right: VaultSessionMeta | null) {
-  return left?.vaultId === right?.vaultId && left?.headTxId === right?.headTxId;
+function publishPreparationError(error: unknown) {
+  const code = error instanceof Error ? error.message : String(error);
+  if (code === 'vault_selection_changed') return 'Выбранный архив изменился в этой или другой вкладке. Откройте нужную версию заново и повторите сохранение.';
+  if (code === 'storage_unavailable') return 'Браузер не смог сохранить локальную копию архива. Разрешите хранение данных сайта, освободите место и повторите попытку.';
+  return code;
 }
 
 function resumeCheckError(error: unknown) {
@@ -170,9 +172,6 @@ export function PublishSeedModal({
   const lifetime = useRef(0);
   const solanaStarting = useRef<symbol | null>(null);
   const quickStarted = useRef(false);
-  const resumedAttempt = useRef<FundAttempt | null>(null);
-  const resumedPaid = useRef<PaidOperation | null>(null);
-  const fundedStartSession = useRef<VaultSessionMeta | null>(session);
   const fundedCompletion = useRef<Promise<void> | null>(null);
   const fundedCompleted = useRef<string | null>(null);
   const paidFinishing = useRef<Promise<void> | null>(null);
@@ -334,17 +333,24 @@ export function PublishSeedModal({
     envelope: EnvelopeV1;
     parentTx: string | null;
   }> {
+    const generation = lifetime.current;
+    const active = () => live.current && generation === lifetime.current && isActive();
     const keys = deriveKeysFromMnemonic(phrase);
+    const before = captureVaultPreparation(keys.vaultId);
     setStatus(t.publish.vaultFp(fingerprintVaultId(keys.vaultId)));
     const loaded = await loadVaultForPublish(keys, {
       parentTxId: publishParentTx && /^[A-Za-z0-9_-]{43}$/.test(publishParentTx) ? publishParentTx : null,
       freshKey: freshKey.current,
     });
-    if (!isActive()) throw Error("publish_cancelled");
+    if (!active()) throw Error("publish_cancelled");
     setPublishParentTx(loaded.parentTxId);
     const vault = putTree(loaded.vault, store);
     setStatus(t.publish.encrypting);
-    const envelope = await sealVault(keys, vault);
+    // Encrypt without touching shared storage. A late completion or failed
+    // session write must not replace the owner's previously selected archive.
+    const envelope = await encryptJson(keys.encKey, keys.vaultId, vault);
+    if (!active()) throw Error("publish_cancelled");
+    acceptPreparedVault(envelope, loaded.parentTxId, phrase, before);
     return { keys, envelope, parentTx: loaded.parentTxId };
   }
 
@@ -354,15 +360,15 @@ export function PublishSeedModal({
     txId?: string
   ) {
     freshKey.current = false;
-    setVaultSession(
-      {
-        vaultId: keys.vaultId,
-        headTxId: txId ?? publishParentTx,
-        source: txId ? "publish" : session?.source ?? "publish",
-      },
-      phrase
-    );
-    if (txId) updateVaultHead(txId);
+    // Local/demo version labels are not network parents. Keep the exact local
+    // preparation's digest when exporting, cancelling, or awaiting checkout.
+    if (txId && /^[A-Za-z0-9_-]{43}$/.test(txId)) {
+      setVaultSessionChecked({ vaultId: keys.vaultId, headTxId: txId, source: "publish" }, phrase);
+    } else {
+      const current = getVaultSession();
+      if (current?.vaultId !== keys.vaultId) throw Error('vault_selection_changed');
+      setVaultSessionChecked(current, phrase);
+    }
   }
 
   function archiveVersion(
@@ -382,10 +388,7 @@ export function PublishSeedModal({
   }
 
   function restoreFundedAttempt(attempt: FundAttempt, phrase: string) {
-    resumedAttempt.current = attempt;
-    resumedPaid.current = null;
     setResumeCheckoutId(null);
-    fundedStartSession.current = getVaultSession();
     freshKey.current = false;
     solanaReturnMode.current = initialMode;
     setSealedEnvelope(attempt.envelope);
@@ -403,9 +406,6 @@ export function PublishSeedModal({
     if (found.method === 'promo') { restoreFundedAttempt(found.attempt, phrase); return; }
     const attempt = found.attempt;
     if(attempt.intent.kind!=='preservation'||!attempt.serialized||!attempt.archive)throw Error('invalid_paid_attempt');
-    resumedAttempt.current = null;
-    resumedPaid.current = attempt;
-    fundedStartSession.current = getVaultSession();
     freshKey.current = false;
     solanaReturnMode.current = initialMode;
     setSealedEnvelope(parseEnvelope(JSON.parse(attempt.serialized)));
@@ -453,9 +453,6 @@ export function PublishSeedModal({
       resumeChecked = true;
       if (!isActive()) return;
       if (!isValidMnemonic(normalized)) throw Error(t.publish.badMnemonic);
-      resumedAttempt.current = null;
-      resumedPaid.current = null;
-      fundedStartSession.current = getVaultSession();
       const { envelope, parentTx } = await sealForPhrase(normalized, isActive);
       if (!isActive()) return;
       setSealedEnvelope(envelope); setPublishParentTx(parentTx); setMnemonic(normalized);
@@ -466,7 +463,7 @@ export function PublishSeedModal({
       setMode("solana"); setStatus("");
     } catch (e) {
       if (!isActive()) return;
-      setError(resumeChecked ? e instanceof Error ? e.message : String(e) : resumeCheckError(e));
+      setError(resumeChecked ? publishPreparationError(e) : resumeCheckError(e));
       setMode(solanaReturnMode.current);
     } finally {
       if (solanaStarting.current === operation) solanaStarting.current = null;
@@ -492,8 +489,8 @@ export function PublishSeedModal({
   async function finishFunded(order: FundOrderView): Promise<void> {
     if (fundedCompleted.current === order.orderId) return;
     if (fundedCompletion.current) return fundedCompletion.current;
-    const generation = lifetime.current;
-    const isActive = () => live.current && generation === lifetime.current;
+    const generation = lifetime.current, selectedContext = publishContext.current;
+    const isActive = () => live.current && generation === lifetime.current && selectedContext === publishContext.current;
     const completion = (async () => {
       const envelope = sealedEnvelope;
       const txId = order.arweaveTxId;
@@ -518,20 +515,12 @@ export function PublishSeedModal({
           serializeEnvelope(archived.envelope) !== archive) throw Error("funded_history_unavailable");
 
       const current = getVaultSession();
-      const canAdvanceHead = !current ||
-        (!resumedAttempt.current && sameVaultSession(current, fundedStartSession.current)) ||
-        (current.vaultId === envelope.vault_id &&
-          (!current.headTxId || current.headTxId === publishParentTx || current.headTxId === txId));
-      const expectedSession: VaultSessionMeta = canAdvanceHead
-        ? { vaultId: envelope.vault_id, headTxId: txId, source: "publish" }
-        : current;
-      const rememberedPhrase = phraseForVault(mnemonic, expectedSession.vaultId) ??
-        phraseForVault(getSessionMnemonic(), expectedSession.vaultId);
-      // Ciphertext finalization also works after reload. Never retain another vault's key.
-      setVaultSession(expectedSession, rememberedPhrase);
-      const remembered = getVaultSession();
-      if (!remembered || !sameVaultSession(remembered, expectedSession) || remembered.source !== expectedSession.source) {
-        throw Error("funded_history_unavailable");
+      if (canAdvanceVaultHead(current, envelope, publishParentTx, txId)) {
+        const rememberedPhrase = phraseForVault(mnemonic, envelope.vault_id) ??
+          phraseForVault(getSessionMnemonic(), envelope.vault_id);
+        // Ciphertext finalization also works after reload. A later local choice
+        // remains selected, even when it has the same vault and network parent.
+        setVaultSessionChecked({ vaultId: envelope.vault_id, headTxId: txId, source: "publish" }, rememberedPhrase);
       }
       freshKey.current = false;
       await clearFundAttempt(order.orderId, envelope.vault_id);
@@ -566,13 +555,10 @@ export function PublishSeedModal({
       if (!archived || archived.source !== 'network' || archived.parentId !== parentTx ||
           serializeEnvelope(archived.envelope) !== checked.serialized) throw Error('paid_history_unavailable');
       const current = getVaultSession();
-      const canAdvanceHead = !current || (!resumedPaid.current && sameVaultSession(current, fundedStartSession.current)) ||
-        (current.vaultId === envelope.vault_id && (!current.headTxId || current.headTxId === parentTx || current.headTxId === txId));
-      const expected: VaultSessionMeta = canAdvanceHead ? { vaultId: envelope.vault_id, headTxId: txId, source: 'publish' } : current;
-      const phrase = phraseForVault(mnemonic, expected.vaultId) ?? phraseForVault(getSessionMnemonic(), expected.vaultId);
-      setVaultSession(expected, phrase);
-      const remembered = getVaultSession();
-      if (!remembered || !sameVaultSession(remembered, expected) || remembered.source !== expected.source) throw Error('paid_history_unavailable');
+      if (canAdvanceVaultHead(current, envelope, parentTx, txId)) {
+        const phrase = phraseForVault(mnemonic, envelope.vault_id) ?? phraseForVault(getSessionMnemonic(), envelope.vault_id);
+        setVaultSessionChecked({ vaultId: envelope.vault_id, headTxId: txId, source: 'publish' }, phrase);
+      }
       if (!isActive()) throw Error('publish_cancelled');
       await completePaidLocally(checked.operationId);
       if (!isActive()) return;

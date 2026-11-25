@@ -12,6 +12,8 @@ import { findPreservationAttempt, type PreservationAttempt } from '../lib/checko
 import type { PaidCompletion } from '../lib/checkout/paidTypes';
 
 type Props = {
+  /** Explicit compatibility entrypoint for the original fixed Devnet pilot. */
+  legacyPilot?: boolean;
   envelope?: EnvelopeV1 | null;
   treeName?: string;
   treeId?: string;
@@ -40,7 +42,7 @@ const message = (error: unknown) => {
   return known[code] ?? 'Операция пока не завершена. Прогресс сохранён; проверьте его позже.';
 };
 
-export function PreservationV2({envelope,treeName,treeId,parentTxId,resumeFunded,quickFundedCode,initialMethod='choose',onBack,onBusy,onFundedDone,resumeCheckoutOperationId,onPaidDone,onResumeAttempt}: Props) {
+export function PreservationV2({legacyPilot=false,envelope,treeName,treeId,parentTxId,resumeFunded,quickFundedCode,initialMethod='choose',onBack,onBusy,onFundedDone,resumeCheckoutOperationId,onPaidDone,onResumeAttempt}: Props) {
   const { t } = useI18n();
   const [session,setSession] = useState<SaveSession>();
   const [busy,setBusy] = useState(false);
@@ -52,12 +54,18 @@ export function PreservationV2({envelope,treeName,treeId,parentTxId,resumeFunded
   const [pendingAttempt, setPendingAttempt] = useState<PreservationAttempt | null>(null);
   const [checkingMethod, setCheckingMethod] = useState(false);
   const [donationOnly,setDonationOnly]=useState(false);
+  const [importing,setImporting]=useState(false);
+  const alive=useRef(false),importRevision=useRef(0);
+  useEffect(()=>{
+    alive.current=true;
+    return()=>{alive.current=false;importRevision.current++;};
+  },[]);
   const activeEnvelope = pendingAttempt?.method === 'promo' ? pendingAttempt.attempt.envelope : envelope || promoEnvelope;
   const paidId = pendingAttempt?.method === 'paid' ? pendingAttempt.attempt.id : resumeCheckoutOperationId;
   const actualMethod = paidId ? 'solana' : pendingAttempt?.method === 'promo' ? 'promo' : saveMethod;
   // The fixed pilot is retained only for its explicit standalone entrypoint.
   // An editor archive always uses the general policy-bound checkout below.
-  const paidFlowActive = !activeEnvelope && !paidId && !donationOnly;
+  const paidFlowActive = legacyPilot && !activeEnvelope && !paidId && !donationOnly;
   const running = useRef(false);
   useEffect(() => {
     if (!paidFlowActive) return;
@@ -114,10 +122,19 @@ export function PreservationV2({envelope,treeName,treeId,parentTxId,resumeFunded
     await run(async()=>beginSave(await importPilotFile(file)));
   }
   async function choosePromo(file?:File){
-    if(!file)return;setError('');
-    try{if(file.size>524288)throw Error('envelope_too_large');setPromoEnvelope(parseEnvelope(JSON.parse(await file.text())));}
-    catch{setError('Не удалось прочитать зашифрованный архив.');}
+    if(!file||!alive.current)return;
+    const revision=++importRevision.current;
+    const active=()=>alive.current&&revision===importRevision.current;
+    setError('');setImporting(true);
+    try{
+      if(file.size>524288)throw Error('envelope_too_large');
+      const text=await file.text();
+      if(!active())return;
+      setPromoEnvelope(parseEnvelope(JSON.parse(text)));
+    }catch{if(active())setError('Не удалось прочитать зашифрованный архив.');}
+    finally{if(active())setImporting(false);}
   }
+  function leaveImport(){importRevision.current++;setImporting(false);onBack?.();}
   async function payNow() {
     await run(async()=>{
       const result=await pay();
@@ -183,12 +200,24 @@ export function PreservationV2({envelope,treeName,treeId,parentTxId,resumeFunded
     onBack={hasAttempt=>{if(hasAttempt&&onBack)onBack();else void chooseMethod('choose');}} onBusy={onBusy} onComplete={onPaidDone}
     onAdoptAttempt={attempt=>{const pending:PreservationAttempt={method:'paid',attempt};setPendingAttempt(pending);onResumeAttempt?.(pending);}}/>;
 
+  if(!legacyPilot)return <section className="native-checkout" aria-label="Сохранить семейную историю">
+    <h1>Сохранить семейную историю</h1>
+    <p>Изменения дерева можно сохранить из редактора. Если у вас уже есть зашифрованная копия архива, выберите её файл.</p>
+    <label>Зашифрованный архив<input type="file" accept="application/json,.json" disabled={importing}
+      onChange={e=>{const file=e.target.files?.[0];e.target.value='';void choosePromo(file);}}/></label>
+    {importing&&<p role="status">Читаем зашифрованный архив…</p>}
+    {error&&<p role="alert">{error}</p>}
+    <button className="btn ghost" type="button" disabled={importing} onClick={()=>setDonationOnly(true)}>Помочь другим сохранить их истории</button>
+    {onBack&&<button className="btn ghost" type="button" onClick={leaveImport}>Назад</button>}
+  </section>;
+
   const state=session?.state;
   const blockedAfterPayment=state==='BLOCKED' && Boolean(session?.arSignedTransaction||session?.arTransactionId||session?.arSigningStarted);
   const paid=Boolean(state && (!['READY','SOLANA_PREPARED','SOLANA_PENDING','BLOCKED'].includes(state) || blockedAfterPayment));
   const stored=state==='COMPLETE';
   return <section className="native-checkout" aria-label="Сохранить семейную историю">
     <h1>Сохранить семейную историю</h1>
+    <h2>Прежний тестовый пилот</h2>
     <h2>{treeName || 'Мой род'}</h2>
     <button className="btn ghost" type="button" disabled={busy} onClick={()=>setDonationOnly(true)}>Помочь другим сохранить их истории</button>
     <p>Данные сохраняются в зашифрованном архиве. Ваши 12 слов SEJIRE остаются у вас.</p>

@@ -2,7 +2,7 @@ import { completePaidLocally, paidCompletion } from './paidClient';
 import { readPaidOperation } from './paidJournal';
 import type { PaidCompletion } from './paidTypes';
 import { archiveLocalVaultVersion, getLocalVaultVersion } from '../vaultSession/localArchive';
-import { getSessionMnemonic, getVaultSession, setVaultSession } from '../vaultSession/session';
+import { canAdvanceVaultHead, getSessionMnemonic, getVaultSession, setVaultSessionChecked } from '../vaultSession/session';
 import { deriveKeysFromMnemonic } from '../crypto/keys';
 import { serializeEnvelope } from '../crypto/envelope';
 
@@ -17,12 +17,11 @@ export async function finalizeStandalonePaid(result: PaidCompletion, isActive: (
   const saved = getLocalVaultVersion(envelope.vault_id, txId);
   if (!saved || saved.source !== 'network' || saved.parentId !== parentId || serializeEnvelope(saved.envelope) !== checked.serialized) throw Error('paid_history_unavailable');
   const current = getVaultSession();
-  const advance = !current || current.vaultId === envelope.vault_id && (!current.headTxId || current.headTxId === parentId || current.headTxId === txId);
-  const expected = advance ? { vaultId: envelope.vault_id, headTxId: txId, source: 'publish' as const } : current;
-  const phrase = getSessionMnemonic();
-  setVaultSession(expected, phrase && deriveKeysFromMnemonic(phrase).vaultId === expected.vaultId ? phrase : null);
-  const session = getVaultSession();
-  if (!session || session.vaultId !== expected.vaultId || session.headTxId !== expected.headTxId || session.source !== expected.source) throw Error('paid_history_unavailable');
+  if (canAdvanceVaultHead(current, envelope, parentId, txId)) {
+    const phrase = getSessionMnemonic();
+    setVaultSessionChecked({ vaultId: envelope.vault_id, headTxId: txId, source: 'publish' },
+      phrase && deriveKeysFromMnemonic(phrase).vaultId === envelope.vault_id ? phrase : null);
+  }
   if (!isActive()) throw Error('checkout_context_changed');
   await completePaidLocally(checked.operationId);
 }

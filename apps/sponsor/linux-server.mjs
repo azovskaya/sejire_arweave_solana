@@ -4,8 +4,8 @@
  */
 import {createServer} from 'node:http';
 import {DatabaseSync} from 'node:sqlite';
-import {open,unlink} from 'node:fs/promises';
-import {resolve} from 'node:path';
+import {lstat,mkdir,realpath} from 'node:fs/promises';
+import {basename,dirname,join,resolve} from 'node:path';
 import {CheckoutLedger,LEDGER_OBJECT_NAME} from './src/checkout/durableStore.ts';
 import {checkoutApi} from './src/checkout/api.ts';
 import {fundApi} from './src/fund/api.ts';
@@ -32,16 +32,64 @@ export function sqliteStorage(db){
   };
 }
 
-export async function startLinuxCheckout({dbPath,host='127.0.0.1',port=0,bindings={}}){
+async function canonicalDatabasePath(input){
+  const requested=resolve(input),parent=await realpath(dirname(requested));
+  const named=join(parent,basename(requested));
+  let info;
+  try{info=await lstat(named);}catch(error){if(error.code==='ENOENT')return named;throw error;}
+  const path=info.isSymbolicLink()?await realpath(named):named;
+  info=await lstat(path);
+  // A hard-linked ledger could have two different sibling guard paths.
+  if(!info.isFile()||info.nlink!==1)throw Error('invalid_backend_database_path');
+  return path;
+}
+
+async function acquireWriter(path){
+  const directory=path+'.writer.lock';
+  // A permanent directory also blocks the previous adapter's open('wx'). A
+  // legacy regular sentinel is never removed or guessed to be stale here.
+  try{await mkdir(directory,{mode:0o700});}catch(error){if(error.code!=='EEXIST')throw error;}
+  const info=await lstat(directory);
+  if(!info.isDirectory()||info.isSymbolicLink())throw Error('backend_writer_already_active');
+  const guardPath=join(directory,'guard.sqlite');
+  try{
+    const existing=await lstat(guardPath);
+    if(!existing.isFile()||existing.isSymbolicLink()||existing.nlink!==1)throw Error('invalid_backend_writer_guard');
+  }catch(error){if(error.code!=='ENOENT')throw error;}
+  let guard;
+  try{
+    guard=new DatabaseSync(guardPath);
+    guard.exec('PRAGMA busy_timeout=0; PRAGMA journal_mode=DELETE; BEGIN IMMEDIATE');
+    return guard;
+  }catch(error){
+    guard?.close();
+    if(error.errcode===5||error.errcode===6)throw Error('backend_writer_already_active');
+    throw error;
+  }
+}
+
+// The optional provider is an in-process test port already supported by fundApi.
+// The CLI and HTTP requests cannot select it; production uses the normal provider.
+export async function startLinuxCheckout({dbPath,host='127.0.0.1',port=0,bindings={},fundProvider}){
   if(typeof dbPath!=='string'||!dbPath||!Number.isSafeInteger(port)||port<0||port>65535)throw Error('invalid_backend_config');
-  const path=resolve(dbPath),lockPath=path+'.writer.lock';
-  let lock;
-  try{lock=await open(lockPath,'wx',0o600);}catch{throw Error('backend_writer_already_active');}
-  let db,server,interval;const background=new Set();
+  const path=await canonicalDatabasePath(dbPath),guard=await acquireWriter(path);
+  let db,server,interval,tail=Promise.resolve(),closePromise;const background=new Set();
+  const close=()=>closePromise??=(async()=>{
+    if(interval)clearInterval(interval);
+    if(server?.listening)await new Promise((resolve,reject)=>server.close(error=>error?reject(error):resolve()));
+    // Keep the kernel guard until requests, queued alarms and background work
+    // have stopped using the ledger. This also handles a failed listen().
+    do{await tail;await Promise.allSettled([...background]);}while(background.size);
+    await tail;
+    db?.close();
+    guard.close();
+    // Never unlink the directory or guard DB: another process may already
+    // have opened that inode. SQLite releases its lock, including on SIGKILL.
+  })();
   try{
     db=new DatabaseSync(path);const storage=sqliteStorage(db);
     const objectId={name:LEDGER_OBJECT_NAME,equals(other){return other?.name===LEDGER_OBJECT_NAME;}};
-    let ledger,initial=Promise.resolve(),tail=Promise.resolve();
+    let ledger,initial=Promise.resolve();
     const serial=work=>{const result=tail.then(work);tail=result.catch(()=>{});return result;};
     const namespace={idFromName(name){if(name!==LEDGER_OBJECT_NAME)throw Error('wrong_ledger_object');return objectId;},
       get(id){if(!objectId.equals(id))throw Error('wrong_ledger_object');return {fetch:(input,init)=>serial(async()=>{
@@ -77,16 +125,12 @@ export async function startLinuxCheckout({dbPath,host='127.0.0.1',port=0,binding
         const create=req.method==='POST'&&path==='/api/checkout/orders';
         const selected=offer||create?withRecipientSettings(env,new RecipientSettings(storage).get()):env;
         const response=path===RECIPIENT_ADMIN_PATH?await recipientAdminApi(request,env):
-          (await checkoutApi(request,selected)??await fundApi(request,selected)??
+          (await checkoutApi(request,selected)??await fundApi(request,selected,fundProvider)??
           new Response('{"error":"not_found"}',{status:404,headers:{'Content-Type':'application/json'}}));
         res.writeHead(response.status,Object.fromEntries(response.headers));res.end(Buffer.from(await response.arrayBuffer()));
       }catch{if(!res.headersSent)res.writeHead(503,{'Content-Type':'application/json'});res.end('{"error":"backend_unavailable"}');}
     });
     await new Promise((resolve,reject)=>{server.once('error',reject);server.listen(port,host,resolve);});
-    let closed=false;
-    return {address:server.address(),async close(){if(closed)return;closed=true;clearInterval(interval);
-      await new Promise((resolve,reject)=>server.close(error=>error?reject(error):resolve()));
-      await tail;await Promise.allSettled([...background]);db.close();await lock.close();await unlink(lockPath);}};
-  }catch(error){if(interval)clearInterval(interval);if(server?.listening)await new Promise(resolve=>server.close(resolve));
-    db?.close();await lock.close();await unlink(lockPath);throw error;}
+    return {address:server.address(),close};
+  }catch(error){await close();throw error;}
 }

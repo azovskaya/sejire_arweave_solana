@@ -1,15 +1,18 @@
 import assert from 'node:assert/strict';
-import {mkdtemp,rm} from 'node:fs/promises';
+import {lstat,mkdtemp,open,readFile,rm,symlink,writeFile} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
+import {fileURLToPath} from 'node:url';
+import {fork} from 'node:child_process';
 import {DatabaseSync} from 'node:sqlite';
 import {startLinuxCheckout,sqliteStorage} from '../linux-server.mjs';
 import {CheckoutLedger,LEDGER_OBJECT_NAME} from '../src/checkout/durableStore.ts';
 import {SOLANA_GENESIS} from '../../../packages/checkout/paid.ts';
 import {addr} from '../src/checkout/rpcFixtures.ts';
 
-const temp=await mkdtemp(join(tmpdir(),'sejire-linux-backend-'));
-const dbPath=join(temp,'checkout.sqlite'),origin='https://synthetic.example';
+const writerDb=process.argv[2]==='--writer-child'?process.argv[3]:null;
+const temp=writerDb?null:await mkdtemp(join(tmpdir(),'sejire-linux-backend-'));
+const dbPath=writerDb??join(temp,'checkout.sqlite'),origin='https://synthetic.example';
 const originalFetch=globalThis.fetch;
 let rpcCalls=0,backend;
 globalThis.fetch=async(input,init)=>{
@@ -28,6 +31,69 @@ globalThis.fetch=async(input,init)=>{
 const bindings={CHECKOUT_ALLOWED_ORIGINS:origin,CHECKOUT_PAID_NETWORK:'mainnet-beta',
   CHECKOUT_PAID_POLICY_VERSION:'synthetic-linux-v1',CHECKOUT_SERVICE_RECIPIENT:addr(2),CHECKOUT_FUND_RECIPIENT:addr(3),
   CHECKOUT_CONTRIBUTION_ENABLED:'true',MAX_ENVELOPE_BYTES:'524288'};
+const children=new Set();
+function writerProcess(path){
+  const child=fork(fileURLToPath(import.meta.url),['--writer-child',path],{silent:true});
+  children.add(child);
+  const exited=new Promise(resolve=>child.once('exit',(code,signal)=>{children.delete(child);resolve({code,signal});}));
+  child.exited=exited;
+  let stderr='';child.stderr.on('data',chunk=>{stderr=(stderr+chunk).slice(-4096);});
+  const first=new Promise((resolve,reject)=>{
+    const timer=setTimeout(()=>{child.kill('SIGKILL');reject(Error('writer_child_timeout: '+stderr));},10_000);
+    child.once('message',message=>{clearTimeout(timer);resolve(message);});
+    child.once('error',error=>{clearTimeout(timer);reject(error);});
+    void exited.then(result=>{clearTimeout(timer);reject(Error('writer_child_exited_before_message: '+JSON.stringify(result)+' '+stderr));});
+  });
+  return {child,first,exited};
+}
+async function writerRecovery({token,key,payload,orderId}){
+  const holder=writerProcess(dbPath),started=await holder.first;
+  assert.equal(started.event,'ready');
+  const alias=join(temp,'ledger-alias.sqlite'),parentAlias=join(temp,'directory-alias');
+  await symlink(dbPath,alias);await symlink(temp,parentAlias,'dir');
+  for(const path of [dbPath,alias,join(parentAlias,'checkout.sqlite')]){
+    const competitor=writerProcess(path),result=await competitor.first;
+    assert.deepEqual(result,{event:'rejected',error:'backend_writer_already_active'});
+    assert.equal((await competitor.exited).code,0);
+  }
+  // The previous runtime uses this exact acquisition primitive. A permanent
+  // directory must exclude it even when no new writer currently holds SQLite.
+  await assert.rejects(()=>open(dbPath+'.writer.lock','wx'),{code:'EEXIST'});
+  holder.child.kill('SIGKILL');
+  assert.equal((await holder.exited).signal,'SIGKILL');
+  assert((await lstat(dbPath+'.writer.lock')).isDirectory());
+  const resumed=writerProcess(dbPath),ready=await resumed.first;
+  assert.equal(ready.event,'ready','kernel releases the writer guard after SIGKILL');
+  const base=`http://127.0.0.1:${ready.port}/api/checkout`;
+  const headers={Origin:origin,Authorization:`Bearer ${token}`};
+  const restored=await originalFetch(`${base}/orders/by-key/${key}`,{headers});
+  assert.equal(restored.status,200);assert.equal((await restored.json()).record.order.id,orderId);
+  const retry=await originalFetch(`${base}/orders`,{method:'POST',headers:{...headers,
+    'Content-Type':'application/json','Idempotency-Key':key},body:JSON.stringify(payload)});
+  assert.equal(retry.status,200);assert.equal((await retry.json()).record.order.id,orderId);
+  const closed=new Promise(resolve=>resumed.child.once('message',resolve));
+  resumed.child.send('close');
+  assert.deepEqual(await closed,{event:'closed',rpcCalls:0},'resume keeps its original preparation without new RPC');
+  assert.equal((await resumed.exited).code,0);
+  await assert.rejects(()=>open(dbPath+'.writer.lock','wx'),{code:'EEXIST'});
+  console.log('PASS Linux writer processes: live competitor and symlink aliases rejected; SIGKILL releases guard; same order/key/token recovered without RPC; legacy wx remains excluded');
+}
+async function legacyWriterAndFailedStart(){
+  const legacy=join(temp,'legacy.sqlite'),sentinel=legacy+'.writer.lock';
+  await writeFile(sentinel,'synthetic old writer sentinel');
+  await assert.rejects(()=>startLinuxCheckout({dbPath:legacy,bindings}),/backend_writer_already_active/);
+  assert.equal(await readFile(sentinel,'utf8'),'synthetic old writer sentinel','legacy sentinel is never removed or rewritten');
+  const occupant=await startLinuxCheckout({dbPath:join(temp,'port-holder.sqlite'),bindings});
+  try{
+    const failed=join(temp,'failed-listen.sqlite');
+    await assert.rejects(()=>startLinuxCheckout({dbPath:failed,bindings,port:occupant.address.port}),{code:'EADDRINUSE'});
+    const recovered=await startLinuxCheckout({dbPath:failed,bindings});
+    const first=recovered.close(),second=recovered.close();
+    assert.equal(first,second,'concurrent close callers await the same completed shutdown');
+    await first;
+  }finally{await occupant.close();}
+  console.log('PASS Linux writer migration/lifecycle: legacy sentinel unchanged; failed listen releases guard; concurrent close awaits shared shutdown');
+}
 async function storageContract(){
   const file=join(temp,'alarm-contract.sqlite');
   let db=new DatabaseSync(file),storage=sqliteStorage(db);
@@ -70,7 +136,15 @@ async function startupAlarms(){
   }
   console.log('PASS Linux startup: initialization awaited, future alarm preserved, due alarm processed');
 }
-try{
+if(writerDb){
+  try{
+    backend=await startLinuxCheckout({dbPath,bindings});
+    process.on('message',message=>{if(message==='close')void backend.close().then(()=>{
+      process.send({event:'closed',rpcCalls},()=>process.disconnect());
+    });});
+    process.send({event:'ready',port:backend.address.port});
+  }catch(error){process.send({event:'rejected',error:error.message},()=>process.disconnect());}
+}else try{
   await storageContract();
   await startupAlarms();
   backend=await startLinuxCheckout({dbPath,bindings});
@@ -110,4 +184,12 @@ try{
   assert.equal(retry.status,200);assert.equal((await retry.json()).record.order.id,first.body.record.order.id);
   assert.equal(rpcCalls,before,'same admitted order returns without a new RPC preparation');
   console.log('PASS Linux backend: shared ledger contracts, one writer, same key/token after restart, one synthetic order');
-}finally{await backend?.close();globalThis.fetch=originalFetch;await rm(temp,{recursive:true,force:true});}
+  await backend.close();backend=null;
+  await writerRecovery({token,key,payload,orderId:first.body.record.order.id});
+  await legacyWriterAndFailedStart();
+}finally{
+  await backend?.close();
+  const pending=[...children];for(const child of pending)child.kill('SIGKILL');
+  await Promise.all(pending.map(child=>child.exited));
+  globalThis.fetch=originalFetch;await rm(temp,{recursive:true,force:true});
+}

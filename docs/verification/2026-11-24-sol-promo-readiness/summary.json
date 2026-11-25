@@ -1,0 +1,80 @@
+{
+  "schema": "sejire/sol-promo-publication-readiness/v1",
+  "checkedAt": "2026-11-24T10:37:42.090500+00:00",
+  "checkedAtLocal": "2026-11-24T15:37:42.090500+05:00",
+  "desiredProfile": {
+    "solanaNetwork": "mainnet-beta",
+    "solanaPayment": true,
+    "promoSave": true,
+    "adminPromoRotation": true,
+    "mandatoryCloudflare": false
+  },
+  "decision": "NOT_READY_FOR_REQUESTED_PUBLIC_LAUNCH",
+  "githubSource": "17a254eb13bb999127d9f7b3ecd54905f317e02d",
+  "acceptedPackageProfile": "decentralized-direct-arweave",
+  "acceptedPackageIntegrity": "PASS",
+  "acceptedPackageMatchesDesiredProfile": false,
+  "localRemediation": {
+    "branch": "fix/linux-writer-recovery-20261124",
+    "scope": "Linux writer guard, crash restart, orderly shutdown",
+    "test": "npm run test:linux --prefix apps/sponsor",
+    "testResult": "PASS",
+    "runtime": "v24.22.3",
+    "independentReview": "completed; no blocking findings",
+    "fullGithubCiAfterRemediation": false
+  },
+  "launchBlockers": [
+    "No accepted frontend release combining current editor fixes with SOL/promo/admin and a non-Cloudflare runtime",
+    "Non-Cloudflare production API, admin authorization, funding and complete paid/promo acceptance are not demonstrated",
+    "Previous paid archive actual bytes/readback/recovery remain unverified",
+    "Actual upload verification, owner ArNS change and real-wallet/clean-browser acceptance remain outstanding"
+  ],
+  "constraints": {
+    "paidPromoArchiveLimitBytes": 524288,
+    "limitIsHardCodedInBothApis": true,
+    "solToArAutomaticConversion": false,
+    "linuxGuardScope": "one canonical database on one machine; not distributed treasury leadership",
+    "oldSentinelMigration": "stop and verify old runtime before separately archiving its sentinel; no automatic lock deletion"
+  },
+  "actions": {
+    "realPayments": false,
+    "userArchiveWrites": false,
+    "arweaveUploads": false,
+    "walletAccess": false,
+    "secretReads": false,
+    "deployment": false,
+    "arnsTargetChanged": false,
+    "gitPush": false,
+    "sourceChange": "local Linux runtime correction on an isolated branch"
+  },
+  "evidence": {
+    "accepted-artifact.json": {
+      "bytes": 7899,
+      "sha256": "6e8139afabf614dfbc8bdbe967905d558c012c50cdfcacc223ee1f1d71831b9e"
+    },
+    "github.json": {
+      "bytes": 12704,
+      "sha256": "240319e602612ccdd817a568e6f0f2455ad0e471f9b212af39d9dcc9ae0c9a37"
+    },
+    "linux-writer-result.json": {
+      "bytes": 1558,
+      "sha256": "d74f883024e07779d29d2814cab6f158abba131a2495c6f8567c132fe2bd753e"
+    },
+    "linux-writer-test.log": {
+      "bytes": 879,
+      "sha256": "f6301f6ead55d7f06757ee2bb69f114df6f68cb0c0d97c6675eae4c7030df7b1"
+    },
+    "production-audit-sponsor.json": {
+      "bytes": 9323,
+      "sha256": "5302b6d4a977bc5f8b4fb3f3b64a310311f3dbd7eb0b6c0f992871fd2fd9e609"
+    },
+    "production-audit-web.json": {
+      "bytes": 17824,
+      "sha256": "6959998133f47c33baaedaa295276f9029102466610243389331bdb37bcde2f5"
+    },
+    "public-site.json": {
+      "bytes": 2844,
+      "sha256": "badb97534a209b33beeb249da6d3386dc02a6b1f16cd2002ede900682de3f9b3"
+    }
+  }
+}
