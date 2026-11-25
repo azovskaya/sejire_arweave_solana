@@ -230,13 +230,13 @@ test('funded restore fragment changed before subscription is reconciled without 
 
 test('ordinary funded save imports a general ciphertext without entering the fixed Devnet pilot', async ({ page }) => {
   const f = await setup(page);
-  await page.goto('/#/save');
-  await page.evaluate(() => {
+  await page.addInitScript(() => {
     window.auditWalletCalls = 0;
     const unexpected = () => { window.auditWalletCalls++; throw Error('Unexpected synthetic wallet access'); };
     window.phantom = { solana: { connect: unexpected, signTransaction: unexpected } };
     window.arweaveWallet = { connect: unexpected, sign: unexpected };
   });
+  await page.goto('/#/save');
   await expect(page.getByLabel('Зашифрованный архив', { exact: true })).toBeVisible();
   await expect(page.getByLabel('Зашифрованный архив пилота', { exact: true })).toHaveCount(0);
   await expect(page.getByText(/Solana Devnet|Прежний тестовый пилот|0\.03 SOL/)).toHaveCount(0);
