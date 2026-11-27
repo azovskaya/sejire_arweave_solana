@@ -1,0 +1,106 @@
+{
+  "sourceCommit": "ef0252025c32687dce018368ea94d74af2728c66",
+  "runId": 45984285862,
+  "attempt": 1,
+  "jobId": 140455799472,
+  "playwrightSuites": 15,
+  "playwrightExecutions": 373,
+  "countsAreExecutionsNotUniqueScenarios": true,
+  "allSuitesPassed": true,
+  "network": "Synthetic except separately named read-only live network diagnostics",
+  "walletExtensionsTested": false,
+  "realPaymentsMade": false,
+  "suites": [
+    {
+      "command": "npm run test:independent-browser",
+      "passed": 78,
+      "duration": "1.3m"
+    },
+    {
+      "command": "npm run test:portable-browser",
+      "passed": 33,
+      "duration": "25.8s"
+    },
+    {
+      "command": "npx --no-install playwright test --config playwright.editor.config.ts",
+      "passed": 24,
+      "duration": "41.3s"
+    },
+    {
+      "command": "npm run test:checkout-browser",
+      "passed": 5,
+      "duration": "18.3s"
+    },
+    {
+      "command": "npm run test:protocol-browser",
+      "passed": 5,
+      "duration": "19.0s"
+    },
+    {
+      "command": "npm run arns:verify:funded && npm run test:arns-browser",
+      "passed": 9,
+      "duration": "15.7s"
+    },
+    {
+      "command": "npm run test:native-browser --prefix apps/web -- --grep 'public balances never wait for history'",
+      "passed": 1,
+      "duration": "14.5s"
+    },
+    {
+      "command": "npm run test:native-browser",
+      "passed": 21,
+      "duration": "1.2m"
+    },
+    {
+      "command": "npm run test:native-pilot-browser --prefix apps/web",
+      "passed": 3,
+      "duration": "4.7s"
+    },
+    {
+      "command": "npm run test:v2-browser --prefix apps/web",
+      "passed": 15,
+      "duration": "21.5s"
+    },
+    {
+      "command": "npm run test:admin-browser --prefix apps/web",
+      "passed": 21,
+      "duration": "21.2s"
+    },
+    {
+      "command": "npm run test:v2-recovery-browser --prefix apps/web",
+      "passed": 35,
+      "duration": "51.3s"
+    },
+    {
+      "command": "npm run test:fund-browser --prefix apps/web",
+      "passed": 27,
+      "duration": "55.7s"
+    },
+    {
+      "command": "npm run test:paid-browser",
+      "passed": 48,
+      "duration": "2.5m"
+    },
+    {
+      "command": "npm run test:native-journey --prefix apps/web",
+      "passed": 48,
+      "duration": "1.6m"
+    }
+  ],
+  "osIsolatedRecovery": {
+    "browsers": [
+      "chromium",
+      "firefox",
+      "webkit"
+    ],
+    "nodeTests": 4,
+    "passed": 4,
+    "osNetworkIsolationVerified": true
+  },
+  "pdf": {
+    "files": 89,
+    "pages": 779,
+    "passing": 89,
+    "findings": {}
+  }
+}

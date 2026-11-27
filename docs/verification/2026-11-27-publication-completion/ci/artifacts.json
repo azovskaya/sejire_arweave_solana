@@ -1,0 +1,245 @@
+{
+  "total_count": 12,
+  "artifacts": [
+    {
+      "id": 15192215049,
+      "node_id": "MDg6QXJ0aWZhY3QxNTE5MjIxNTA0OQ==",
+      "name": "public-sol-read-diagnostics",
+      "size_in_bytes": 1445,
+      "url": "https://api.github.com/repos/azovskaya/sejire_arweave_solana/actions/artifacts/15192215049",
+      "archive_download_url": "https://api.github.com/repos/azovskaya/sejire_arweave_solana/actions/artifacts/15192215049/zip",
+      "expired": false,
+      "digest": "sha256:fa13ebcad27b05e4f9f7b509d19b9746d06a891bac2a2cf9cf83280c512750fe",
+      "created_at": "2026-11-27T10:59:19Z",
+      "updated_at": "2026-11-27T10:59:19Z",
+      "expires_at": "2027-02-25T10:41:59Z",
+      "workflow_run": {
+        "id": 45984285862,
+        "repository_id": 1393130716,
+        "head_repository_id": 1393130716,
+        "head_branch": "feat/funded-portable-release-20261125",
+        "head_sha": "ef0252025c32687dce018368ea94d74af2728c66"
+      }
+    },
+    {
+      "id": 15191892650,
+      "node_id": "MDg6QXJ0aWZhY3QxNTE5MTg5MjY1MA==",
+      "name": "devnet-preview-build",
+      "size_in_bytes": 2020295,
+      "url": "https://api.github.com/repos/azovskaya/sejire_arweave_solana/actions/artifacts/15191892650",
+      "archive_download_url": "https://api.github.com/repos/azovskaya/sejire_arweave_solana/actions/artifacts/15191892650/zip",
+      "expired": false,
+      "digest": "sha256:0e8d9ccbbbed69c33ad7859e020ac58d722093e87398e260dab470e63eedabee",
+      "created_at": "2026-11-27T10:59:25Z",
+      "updated_at": "2026-11-27T10:59:25Z",
+      "expires_at": "2026-12-04T10:59:23Z",
+      "workflow_run": {
+        "id": 45984285862,
+        "repository_id": 1393130716,
+        "head_repository_id": 1393130716,
+        "head_branch": "feat/funded-portable-release-20261125",
+        "head_sha": "ef0252025c32687dce018368ea94d74af2728c66"
+      }
+    },
+    {
+      "id": 15191867541,
+      "node_id": "MDg6QXJ0aWZhY3QxNTE5MTg2NzU0MQ==",
+      "name": "sejire-continuation-local-pilot",
+      "size_in_bytes": 2517674,
+      "url": "https://api.github.com/repos/azovskaya/sejire_arweave_solana/actions/artifacts/15191867541",
+      "archive_download_url": "https://api.github.com/repos/azovskaya/sejire_arweave_solana/actions/artifacts/15191867541/zip",
+      "expired": false,
+      "digest": "sha256:f02eb3690f4812940d74d862639dd458266bda50ec8f81e2255d8b17628ca43b",
+      "created_at": "2026-11-27T10:59:22Z",
+      "updated_at": "2026-11-27T10:59:22Z",
+      "expires_at": "2026-12-11T10:59:20Z",
+      "workflow_run": {
+        "id": 45984285862,
+        "repository_id": 1393130716,
+        "head_repository_id": 1393130716,
+        "head_branch": "feat/funded-portable-release-20261125",
+        "head_sha": "ef0252025c32687dce018368ea94d74af2728c66"
+      }
+    },
+    {
+      "id": 15191648462,
+      "node_id": "MDg6QXJ0aWZhY3QxNTE5MTY0ODQ2Mg==",
+      "name": "a2-1-security-evidence",
+      "size_in_bytes": 5364,
+      "url": "https://api.github.com/repos/azovskaya/sejire_arweave_solana/actions/artifacts/15191648462",
+      "archive_download_url": "https://api.github.com/repos/azovskaya/sejire_arweave_solana/actions/artifacts/15191648462/zip",
+      "expired": false,
+      "digest": "sha256:f6a2349a6df64a4defadfef9d58620f5d098fb2ca52321317f3fbac6cf1fa63a",
+      "created_at": "2026-11-27T10:59:27Z",
+      "updated_at": "2026-11-27T10:59:27Z",
+      "expires_at": "2026-12-11T10:59:26Z",
+      "workflow_run": {
+        "id": 45984285862,
+        "repository_id": 1393130716,
+        "head_repository_id": 1393130716,
+        "head_branch": "feat/funded-portable-release-20261125",
+        "head_sha": "ef0252025c32687dce018368ea94d74af2728c66"
+      }
+    },
+    {
+      "id": 15191601407,
+      "node_id": "MDg6QXJ0aWZhY3QxNTE5MTYwMTQwNw==",
+      "name": "native-security-boundary",
+      "size_in_bytes": 4887,
+      "url": "https://api.github.com/repos/azovskaya/sejire_arweave_solana/actions/artifacts/15191601407",
+      "archive_download_url": "https://api.github.com/repos/azovskaya/sejire_arweave_solana/actions/artifacts/15191601407/zip",
+      "expired": false,
+      "digest": "sha256:840c14cdda62e22b2d994c594cd79387f75c3739507948614ba2a0bbb99f09b5",
+      "created_at": "2026-11-27T10:50:55Z",
+      "updated_at": "2026-11-27T10:50:55Z",
+      "expires_at": "2027-02-25T10:41:59Z",
+      "workflow_run": {
+        "id": 45984285862,
+        "repository_id": 1393130716,
+        "head_repository_id": 1393130716,
+        "head_branch": "feat/funded-portable-release-20261125",
+        "head_sha": "ef0252025c32687dce018368ea94d74af2728c66"
+      }
+    },
+    {
+      "id": 15191216745,
+      "node_id": "MDg6QXJ0aWZhY3QxNTE5MTIxNjc0NQ==",
+      "name": "direct-arweave-api-readiness",
+      "size_in_bytes": 875,
+      "url": "https://api.github.com/repos/azovskaya/sejire_arweave_solana/actions/artifacts/15191216745",
+      "archive_download_url": "https://api.github.com/repos/azovskaya/sejire_arweave_solana/actions/artifacts/15191216745/zip",
+      "expired": false,
+      "digest": "sha256:9bf1bbd6c0478fae49fb4da7296342758caf3683b9739a5e94327028efd52613",
+      "created_at": "2026-11-27T10:46:35Z",
+      "updated_at": "2026-11-27T10:46:35Z",
+      "expires_at": "2026-12-11T10:46:33Z",
+      "workflow_run": {
+        "id": 45984285862,
+        "repository_id": 1393130716,
+        "head_repository_id": 1393130716,
+        "head_branch": "feat/funded-portable-release-20261125",
+        "head_sha": "ef0252025c32687dce018368ea94d74af2728c66"
+      }
+    },
+    {
+      "id": 15191107095,
+      "node_id": "MDg6QXJ0aWZhY3QxNTE5MTEwNzA5NQ==",
+      "name": "independent-static-screens",
+      "size_in_bytes": 311572,
+      "url": "https://api.github.com/repos/azovskaya/sejire_arweave_solana/actions/artifacts/15191107095",
+      "archive_download_url": "https://api.github.com/repos/azovskaya/sejire_arweave_solana/actions/artifacts/15191107095/zip",
+      "expired": false,
+      "digest": "sha256:e9d0a53bd814438ca992e8fbd007ed55f3188d90483d9fc269bce8e5eb172862",
+      "created_at": "2026-11-27T10:48:23Z",
+      "updated_at": "2026-11-27T10:48:23Z",
+      "expires_at": "2026-12-11T10:48:21Z",
+      "workflow_run": {
+        "id": 45984285862,
+        "repository_id": 1393130716,
+        "head_repository_id": 1393130716,
+        "head_branch": "feat/funded-portable-release-20261125",
+        "head_sha": "ef0252025c32687dce018368ea94d74af2728c66"
+      }
+    },
+    {
+      "id": 15190899487,
+      "node_id": "MDg6QXJ0aWZhY3QxNTE5MDg5OTQ4Nw==",
+      "name": "native-mvp-screens",
+      "size_in_bytes": 841829,
+      "url": "https://api.github.com/repos/azovskaya/sejire_arweave_solana/actions/artifacts/15190899487",
+      "archive_download_url": "https://api.github.com/repos/azovskaya/sejire_arweave_solana/actions/artifacts/15190899487/zip",
+      "expired": false,
+      "digest": "sha256:effab0ef2696abbff649e02cd5185088f0982a2afec062b56fe84a6e025cb865",
+      "created_at": "2026-11-27T10:59:15Z",
+      "updated_at": "2026-11-27T10:59:15Z",
+      "expires_at": "2027-02-25T10:41:59Z",
+      "workflow_run": {
+        "id": 45984285862,
+        "repository_id": 1393130716,
+        "head_repository_id": 1393130716,
+        "head_branch": "feat/funded-portable-release-20261125",
+        "head_sha": "ef0252025c32687dce018368ea94d74af2728c66"
+      }
+    },
+    {
+      "id": 15190874906,
+      "node_id": "MDg6QXJ0aWZhY3QxNTE5MDg3NDkwNg==",
+      "name": "dependency-audit-evidence",
+      "size_in_bytes": 8345,
+      "url": "https://api.github.com/repos/azovskaya/sejire_arweave_solana/actions/artifacts/15190874906",
+      "archive_download_url": "https://api.github.com/repos/azovskaya/sejire_arweave_solana/actions/artifacts/15190874906/zip",
+      "expired": false,
+      "digest": "sha256:1fe946d34891406dd02a9a10848593d52e82fa3728bb2656d4f9b0a8249cdc40",
+      "created_at": "2026-11-27T10:59:31Z",
+      "updated_at": "2026-11-27T10:59:31Z",
+      "expires_at": "2026-12-11T10:59:30Z",
+      "workflow_run": {
+        "id": 45984285862,
+        "repository_id": 1393130716,
+        "head_repository_id": 1393130716,
+        "head_branch": "feat/funded-portable-release-20261125",
+        "head_sha": "ef0252025c32687dce018368ea94d74af2728c66"
+      }
+    },
+    {
+      "id": 15190563248,
+      "node_id": "MDg6QXJ0aWZhY3QxNTE5MDU2MzI0OA==",
+      "name": "native-admin-build",
+      "size_in_bytes": 1624440,
+      "url": "https://api.github.com/repos/azovskaya/sejire_arweave_solana/actions/artifacts/15190563248",
+      "archive_download_url": "https://api.github.com/repos/azovskaya/sejire_arweave_solana/actions/artifacts/15190563248/zip",
+      "expired": false,
+      "digest": "sha256:3a5500ead308dc888aaa83e9fc83535335f3a4e6323cfd0d2787041779f8b51b",
+      "created_at": "2026-11-27T10:50:57Z",
+      "updated_at": "2026-11-27T10:50:57Z",
+      "expires_at": "2026-12-11T10:50:56Z",
+      "workflow_run": {
+        "id": 45984285862,
+        "repository_id": 1393130716,
+        "head_repository_id": 1393130716,
+        "head_branch": "feat/funded-portable-release-20261125",
+        "head_sha": "ef0252025c32687dce018368ea94d74af2728c66"
+      }
+    },
+    {
+      "id": 15190448748,
+      "node_id": "MDg6QXJ0aWZhY3QxNTE5MDQ0ODc0OA==",
+      "name": "permaweb-portable-funded-release",
+      "size_in_bytes": 1684182,
+      "url": "https://api.github.com/repos/azovskaya/sejire_arweave_solana/actions/artifacts/15190448748",
+      "archive_download_url": "https://api.github.com/repos/azovskaya/sejire_arweave_solana/actions/artifacts/15190448748/zip",
+      "expired": false,
+      "digest": "sha256:c7e351591f5df3677b81ed5aba1aa7baa44c76706c00f56bf14af4e4d800efcf",
+      "created_at": "2026-11-27T10:49:07Z",
+      "updated_at": "2026-11-27T10:49:07Z",
+      "expires_at": "2026-12-11T10:49:06Z",
+      "workflow_run": {
+        "id": 45984285862,
+        "repository_id": 1393130716,
+        "head_repository_id": 1393130716,
+        "head_branch": "feat/funded-portable-release-20261125",
+        "head_sha": "ef0252025c32687dce018368ea94d74af2728c66"
+      }
+    },
+    {
+      "id": 15190329483,
+      "node_id": "MDg6QXJ0aWZhY3QxNTE5MDMyOTQ4Mw==",
+      "name": "permaweb-static-release",
+      "size_in_bytes": 1273564,
+      "url": "https://api.github.com/repos/azovskaya/sejire_arweave_solana/actions/artifacts/15190329483",
+      "archive_download_url": "https://api.github.com/repos/azovskaya/sejire_arweave_solana/actions/artifacts/15190329483/zip",
+      "expired": false,
+      "digest": "sha256:c562a40792f6ee01eb702136513373a187d9350451320a6d625ce6b5eda0080d",
+      "created_at": "2026-11-27T10:48:27Z",
+      "updated_at": "2026-11-27T10:48:27Z",
+      "expires_at": "2026-12-11T10:48:25Z",
+      "workflow_run": {
+        "id": 45984285862,
+        "repository_id": 1393130716,
+        "head_repository_id": 1393130716,
+        "head_branch": "feat/funded-portable-release-20261125",
+        "head_sha": "ef0252025c32687dce018368ea94d74af2728c66"
+      }
+    }
+  ]
+}

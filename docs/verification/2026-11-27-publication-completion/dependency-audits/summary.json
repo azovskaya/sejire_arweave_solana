@@ -1,0 +1,34 @@
+{
+  "web-production.json": {
+    "info": 0,
+    "low": 13,
+    "moderate": 10,
+    "high": 0,
+    "critical": 0,
+    "total": 23
+  },
+  "web-full.json": {
+    "info": 0,
+    "low": 18,
+    "moderate": 11,
+    "high": 0,
+    "critical": 0,
+    "total": 29
+  },
+  "sponsor-production.json": {
+    "info": 0,
+    "low": 13,
+    "moderate": 1,
+    "high": 0,
+    "critical": 0,
+    "total": 14
+  },
+  "sponsor-full.json": {
+    "info": 0,
+    "low": 13,
+    "moderate": 1,
+    "high": 3,
+    "critical": 0,
+    "total": 17
+  }
+}

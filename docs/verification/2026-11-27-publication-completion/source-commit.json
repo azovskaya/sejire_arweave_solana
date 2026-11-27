@@ -1,0 +1,35 @@
+{
+  "sha": "ef0252025c32687dce018368ea94d74af2728c66",
+  "node_id": "C_kwDOUwl83NoAKGVmMDI1MjAyNWMzMjY4N2RjZTAxODM2OGVhOTRkNzRhZjI3MjhjNjY",
+  "url": "https://api.github.com/repos/azovskaya/sejire_arweave_solana/git/commits/ef0252025c32687dce018368ea94d74af2728c66",
+  "html_url": "https://github.com/azovskaya/sejire_arweave_solana/commit/ef0252025c32687dce018368ea94d74af2728c66",
+  "author": {
+    "name": "azovskaya",
+    "email": "azovskaya.alissa@gmail.com",
+    "date": "2026-11-27T10:41:43Z"
+  },
+  "committer": {
+    "name": "azovskaya",
+    "email": "azovskaya.alissa@gmail.com",
+    "date": "2026-11-27T10:41:43Z"
+  },
+  "tree": {
+    "sha": "1bf283fa8fd157348cf7bb4cf67e49c0f93e5cbb",
+    "url": "https://api.github.com/repos/azovskaya/sejire_arweave_solana/git/trees/1bf283fa8fd157348cf7bb4cf67e49c0f93e5cbb"
+  },
+  "message": "Align legacy V2 diagnostics acceptance with server admin authentication",
+  "parents": [
+    {
+      "sha": "081995ce29f8cfca825861102ed3abb63f944d19",
+      "url": "https://api.github.com/repos/azovskaya/sejire_arweave_solana/git/commits/081995ce29f8cfca825861102ed3abb63f944d19",
+      "html_url": "https://github.com/azovskaya/sejire_arweave_solana/commit/081995ce29f8cfca825861102ed3abb63f944d19"
+    }
+  ],
+  "verification": {
+    "verified": false,
+    "reason": "unsigned",
+    "signature": null,
+    "payload": null,
+    "verified_at": null
+  }
+}

@@ -1,0 +1,309 @@
+{
+  "schema": "sejire/publication-completion/v2",
+  "date": "2026-11-27",
+  "userTimezone": "Asia/Almaty",
+  "softwareVerdict": "CI_PACKAGE_VERIFIED_NOT_PRODUCTION_AUTHORIZED",
+  "productionVerdict": "NO_GO",
+  "repository": "azovskaya/sejire_arweave_solana",
+  "sourceBranch": "feat/funded-portable-release-20261125",
+  "sourceCommit": "ef0252025c32687dce018368ea94d74af2728c66",
+  "sourceTree": "1bf283fa8fd157348cf7bb4cf67e49c0f93e5cbb",
+  "localSourceEquivalent": "92ebed7bd7f0455a2c72296b8271fccaa1f0f4b3",
+  "ci": {
+    "runId": 45984285862,
+    "attempt": 1,
+    "status": "completed",
+    "conclusion": "success",
+    "verifyJobId": 140455799472,
+    "successfulSteps": 83,
+    "failedSteps": 0,
+    "permittedSkippedSteps": [
+      "Preserve checkout failure diagnostics"
+    ],
+    "completedAt": "2026-11-27T10:59:40Z"
+  },
+  "package": {
+    "artifact": {
+      "id": 15190448748,
+      "node_id": "MDg6QXJ0aWZhY3QxNTE5MDQ0ODc0OA==",
+      "name": "permaweb-portable-funded-release",
+      "size_in_bytes": 1684182,
+      "url": "https://api.github.com/repos/azovskaya/sejire_arweave_solana/actions/artifacts/15190448748",
+      "archive_download_url": "https://api.github.com/repos/azovskaya/sejire_arweave_solana/actions/artifacts/15190448748/zip",
+      "expired": false,
+      "digest": "sha256:c7e351591f5df3677b81ed5aba1aa7baa44c76706c00f56bf14af4e4d800efcf",
+      "created_at": "2026-11-27T10:49:07Z",
+      "updated_at": "2026-11-27T10:49:07Z",
+      "expires_at": "2026-12-11T10:49:06Z",
+      "workflow_run": {
+        "id": 45984285862,
+        "repository_id": 1393130716,
+        "head_repository_id": 1393130716,
+        "head_branch": "feat/funded-portable-release-20261125",
+        "head_sha": "ef0252025c32687dce018368ea94d74af2728c66"
+      }
+    },
+    "provenance": {
+      "schema": "sejire/permaweb-provenance/v1",
+      "artifact": "permaweb-portable-funded-release",
+      "run": 45984285862,
+      "attempt": 1,
+      "artifactId": 15190448748,
+      "sourceCommit": "ef0252025c32687dce018368ea94d74af2728c66",
+      "publishedByCommit": "ef0252025c32687dce018368ea94d74af2728c66",
+      "profile": "portable-funded-mainnet",
+      "zipSha256": "c7e351591f5df3677b81ed5aba1aa7baa44c76706c00f56bf14af4e4d800efcf",
+      "releaseManifestSha256": "68e2e8ea064b61bcaf7ac902cfdd6247e1b19c5370b8cb25d9fc9f69274c47b0"
+    },
+    "boundary": {
+      "profile": "portable-funded-mainnet",
+      "apiOrigin": "https://sejire-api.azovskaya.prod.page",
+      "jsAssets": 13,
+      "renderedModules": 736,
+      "recoveryFiles": 8,
+      "mandatorySejireService": true,
+      "mandatoryCloudflare": false
+    },
+    "totalFiles": 43,
+    "totalBytes": 4395526,
+    "payloadFiles": 42,
+    "payloadBytes": 4390757,
+    "releaseManifestSha256": "68e2e8ea064b61bcaf7ac902cfdd6247e1b19c5370b8cb25d9fc9f69274c47b0"
+  },
+  "tests": {
+    "sourceCommit": "ef0252025c32687dce018368ea94d74af2728c66",
+    "runId": 45984285862,
+    "attempt": 1,
+    "jobId": 140455799472,
+    "playwrightSuites": 15,
+    "playwrightExecutions": 373,
+    "countsAreExecutionsNotUniqueScenarios": true,
+    "allSuitesPassed": true,
+    "network": "Synthetic except separately named read-only live network diagnostics",
+    "walletExtensionsTested": false,
+    "realPaymentsMade": false,
+    "suites": [
+      {
+        "command": "npm run test:independent-browser",
+        "passed": 78,
+        "duration": "1.3m"
+      },
+      {
+        "command": "npm run test:portable-browser",
+        "passed": 33,
+        "duration": "25.8s"
+      },
+      {
+        "command": "npx --no-install playwright test --config playwright.editor.config.ts",
+        "passed": 24,
+        "duration": "41.3s"
+      },
+      {
+        "command": "npm run test:checkout-browser",
+        "passed": 5,
+        "duration": "18.3s"
+      },
+      {
+        "command": "npm run test:protocol-browser",
+        "passed": 5,
+        "duration": "19.0s"
+      },
+      {
+        "command": "npm run arns:verify:funded && npm run test:arns-browser",
+        "passed": 9,
+        "duration": "15.7s"
+      },
+      {
+        "command": "npm run test:native-browser --prefix apps/web -- --grep 'public balances never wait for history'",
+        "passed": 1,
+        "duration": "14.5s"
+      },
+      {
+        "command": "npm run test:native-browser",
+        "passed": 21,
+        "duration": "1.2m"
+      },
+      {
+        "command": "npm run test:native-pilot-browser --prefix apps/web",
+        "passed": 3,
+        "duration": "4.7s"
+      },
+      {
+        "command": "npm run test:v2-browser --prefix apps/web",
+        "passed": 15,
+        "duration": "21.5s"
+      },
+      {
+        "command": "npm run test:admin-browser --prefix apps/web",
+        "passed": 21,
+        "duration": "21.2s"
+      },
+      {
+        "command": "npm run test:v2-recovery-browser --prefix apps/web",
+        "passed": 35,
+        "duration": "51.3s"
+      },
+      {
+        "command": "npm run test:fund-browser --prefix apps/web",
+        "passed": 27,
+        "duration": "55.7s"
+      },
+      {
+        "command": "npm run test:paid-browser",
+        "passed": 48,
+        "duration": "2.5m"
+      },
+      {
+        "command": "npm run test:native-journey --prefix apps/web",
+        "passed": 48,
+        "duration": "1.6m"
+      }
+    ],
+    "osIsolatedRecovery": {
+      "browsers": [
+        "chromium",
+        "firefox",
+        "webkit"
+      ],
+      "nodeTests": 4,
+      "passed": 4,
+      "osNetworkIsolationVerified": true
+    },
+    "pdf": {
+      "files": 89,
+      "pages": 779,
+      "passing": 89,
+      "findings": {}
+    }
+  },
+  "dependencyAudits": {
+    "web-production.json": {
+      "info": 0,
+      "low": 13,
+      "moderate": 10,
+      "high": 0,
+      "critical": 0,
+      "total": 23
+    },
+    "web-full.json": {
+      "info": 0,
+      "low": 18,
+      "moderate": 11,
+      "high": 0,
+      "critical": 0,
+      "total": 29
+    },
+    "sponsor-production.json": {
+      "info": 0,
+      "low": 13,
+      "moderate": 1,
+      "high": 0,
+      "critical": 0,
+      "total": 14
+    },
+    "sponsor-full.json": {
+      "info": 0,
+      "low": 13,
+      "moderate": 1,
+      "high": 3,
+      "critical": 0,
+      "total": 17
+    }
+  },
+  "currentPassChanges": [
+    {
+      "commit": "081995ce29f8cfca825861102ed3abb63f944d19",
+      "files": 4,
+      "purpose": "Block web and sponsor production audit failures in full CI, manual publishing and Docker; require a fresh Docker audit layer"
+    },
+    {
+      "commit": "ef0252025c32687dce018368ea94d74af2728c66",
+      "files": 1,
+      "purpose": "Align legacy V2 diagnostics fixture with existing server authorization and add explicit denial/logout assertions"
+    }
+  ],
+  "priorBaselineAttempt3": {
+    "source": "ba6777ac9c780627a6cdceafe947fed08ddaca63",
+    "runId": 45603078598,
+    "attempt": 3,
+    "conclusion": "failure",
+    "reason": "Legacy V2 diagnostics test used old public-admin-lock fixture and button role; real server authorization correctly remained closed. Final test fixed without changing authorization runtime.",
+    "accepted": false
+  },
+  "legacyExportOperatorPack": {
+    "sourceCommit": "7eb522e6cae947132f792a010312a7a6c41ddb19",
+    "syntheticGroupsPassed": 15,
+    "typeScript": "PASS",
+    "productionExportPerformed": false,
+    "productionImportPerformed": false
+  },
+  "historicalArchive": {
+    "transactionId": "AtwLYx509C9jWIFKUNg7dy1GSgiaDbXVK1YEQbBWfHY",
+    "expected": {
+      "bytes": 25269,
+      "sha256": "96bb194c3fbcf1dfea7e738cf91d758b8cfdaabb5be934df8dacd96a65c7be85"
+    },
+    "checkedAt": "2026-11-27T10:49:20.007Z",
+    "verdict": "UNRESOLVED",
+    "verifiedRawEndpoints": 0,
+    "rawHTTP": [
+      404,
+      404
+    ],
+    "newPaymentOrReplacementCreated": false
+  },
+  "registrationPR": {
+    "number": 12,
+    "state": "open",
+    "draft": true,
+    "merged": false,
+    "head": "f996e3b8d30a3f91a2d8704d94f3eb62cdfaf73c",
+    "runId": 45984027932,
+    "conclusion": "success"
+  },
+  "remainingProductionGates": [
+    {
+      "gate": "Always-on Linux host, exact HTTPS API, ingress and persistent storage",
+      "verified": false,
+      "observed": "Connected account Free; SEJIRE app absent; API origin is planned and not reserved/deployed"
+    },
+    {
+      "gate": "Actual old state inventory/export/import, private ciphertext/signed bytes, holds and one executor",
+      "verified": false
+    },
+    {
+      "gate": "Protected owner configuration and actual recipients/treasury; full-size quote and budget",
+      "verified": false
+    },
+    {
+      "gate": "Off-host backup and restoration rehearsal on the real host",
+      "verified": false
+    },
+    {
+      "gate": "Real Mainnet SOL and promo saves with raw byte/hash verification and clean/offline recovery",
+      "verified": false
+    },
+    {
+      "gate": "Actual ArNS Owner/Controller, old Target/TTL, upload quote and final manifest readback",
+      "verified": false
+    }
+  ],
+  "sideEffects": {
+    "sourcePushed": true,
+    "mainChanged": false,
+    "productionDeployed": false,
+    "permanentUploadPerformed": false,
+    "arnsTargetChanged": false,
+    "ownerWalletUsed": false,
+    "realPaymentSent": false,
+    "privateKeysOrWalletRecoveryWordsRead": false
+  },
+  "evidenceDirectory": "docs/verification/2026-11-27-publication-completion",
+  "limits": [
+    "Synthetic wallet/browser tests are not real Phantom/Solflare extension approvals",
+    "npm audit includes remaining low/moderate findings and three high sponsor dev/test package entries",
+    "No full third-party source or OS-image vulnerability certification",
+    "No performance/capacity claim for an undeployed production host",
+    "Two historical raw 404 responses do not prove absence from the entire Arweave network"
+  ]
+}

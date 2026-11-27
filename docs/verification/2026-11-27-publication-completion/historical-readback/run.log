@@ -1,0 +1,108 @@
+{
+  "schema": "sejire/historical-readback-diagnostic/v1",
+  "scope": "DIAGNOSTIC_ONLY_NOT_RELEASE_ACCEPTANCE",
+  "releaseAccepted": false,
+  "sourceBase": "ef0252025c32687dce018368ea94d74af2728c66",
+  "sourceTree": "1bf283fa8fd157348cf7bb4cf67e49c0f93e5cbb",
+  "diagnosticCommit": "21dc9fa0b21e3f05f80309844bc2faf7a72220da",
+  "branch": "audit/historical-readback-20261127",
+  "runId": "45985281069",
+  "runAttempt": "1",
+  "node": "v24.22.3",
+  "startedAt": "2026-11-27T10:49:18.340Z",
+  "completedAt": "2026-11-27T10:49:20.007Z",
+  "diagnosticCompleted": true,
+  "transactionId": "AtwLYx509C9jWIFKUNg7dy1GSgiaDbXVK1YEQbBWfHY",
+  "expected": {
+    "bytes": 25269,
+    "sha256": "96bb194c3fbcf1dfea7e738cf91d758b8cfdaabb5be934df8dacd96a65c7be85"
+  },
+  "limits": {
+    "timeoutMs": 20000,
+    "maxBodyBytes": 1048576,
+    "retries": 0,
+    "followRedirects": false
+  },
+  "verdict": "UNRESOLVED",
+  "verifiedRawEndpoints": 0,
+  "plaintextRecoveryPerformed": false,
+  "archiveBodySaved": false,
+  "results": [
+    {
+      "kind": "status",
+      "url": "https://arweave.net/tx/AtwLYx509C9jWIFKUNg7dy1GSgiaDbXVK1YEQbBWfHY/status",
+      "method": "GET",
+      "startedAt": "2026-11-27T10:49:18.340Z",
+      "requests": 1,
+      "status": 200,
+      "complete": true,
+      "bytes": 142,
+      "sha256": "ca3f6de11e570878e6b11c091a5f292f08ba995d4d59a11a29537992fbf5a657",
+      "rawVerified": false,
+      "contentType": null,
+      "contentLength": "142",
+      "metadata": {
+        "blockHeight": 2035774,
+        "confirmations": 15125,
+        "blockIndependentHash": "-E5bSBGNPn68qPncdHM333I5QVNOmtkpgPkulreaH7ME34KYy4kNUHpe9n8WBe86"
+      },
+      "durationMs": 1665
+    },
+    {
+      "kind": "header",
+      "url": "https://arweave.net/tx/AtwLYx509C9jWIFKUNg7dy1GSgiaDbXVK1YEQbBWfHY",
+      "method": "GET",
+      "startedAt": "2026-11-27T10:49:18.396Z",
+      "requests": 1,
+      "status": 200,
+      "complete": true,
+      "bytes": 2237,
+      "sha256": "4ee9f563449d911a139b5f8674eb8b390401daf97ab389c21766a7ee8ba979b4",
+      "rawVerified": false,
+      "contentType": null,
+      "contentLength": "2237",
+      "metadata": {
+        "id": "AtwLYx509C9jWIFKUNg7dy1GSgiaDbXVK1YEQbBWfHY",
+        "format": 2,
+        "dataSize": "25269",
+        "dataRoot": "oIW8IQbrmRcT4gT2M13TuMySiQCnu61vZKSqNiDPYHg",
+        "idMatchesExpected": true,
+        "dataSizeMatchesExpected": true
+      },
+      "durationMs": 615
+    },
+    {
+      "kind": "raw",
+      "url": "https://arweave.net/raw/AtwLYx509C9jWIFKUNg7dy1GSgiaDbXVK1YEQbBWfHY",
+      "method": "GET",
+      "startedAt": "2026-11-27T10:49:18.397Z",
+      "requests": 1,
+      "status": 404,
+      "complete": true,
+      "bytes": 2014,
+      "sha256": "68b9d7defadb975ded256854b1d21cad12fc843301f5f504afc68b89062fc949",
+      "rawVerified": false,
+      "contentType": "text/html",
+      "contentLength": "2014",
+      "verdict": "UNRESOLVED",
+      "durationMs": 350
+    },
+    {
+      "kind": "raw",
+      "url": "https://turbo-gateway.com/raw/AtwLYx509C9jWIFKUNg7dy1GSgiaDbXVK1YEQbBWfHY",
+      "method": "GET",
+      "startedAt": "2026-11-27T10:49:18.398Z",
+      "requests": 1,
+      "status": 404,
+      "complete": true,
+      "bytes": 9,
+      "sha256": "e3ebaa16dd9d9b9fc107c42183fb6cf9d22927e1af03dbbdfa0ccc38e4e4ac31",
+      "rawVerified": false,
+      "contentType": "text/html; charset=utf-8",
+      "contentLength": "9",
+      "verdict": "UNRESOLVED",
+      "durationMs": 1599
+    }
+  ]
+}
+

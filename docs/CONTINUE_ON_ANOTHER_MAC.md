@@ -1,3 +1,27 @@
+# Последнее продолжение — 27 ноября 2026: код и CI-пакет проверены, production-переход ожидает владельца
+
+Принятый source **`ef0252025c32687dce018368ea94d74af2728c66`**, ветка **`feat/funded-portable-release-20261125`**; local equivalent `92ebed7bd7f0455a2c72296b8271fccaa1f0f4b3`; одинаковое дерево `1bf283fa8fd157348cf7bb4cf67e49c0f93e5cbb`. Feature head сохранять стабильным; evidence хранится отдельно в `docs/funded-release-evidence-20261125`.
+
+**Код и CI-пакет PASS; production NO_GO.** [Полный CI 45984285862](https://github.com/azovskaya/sejire_arweave_solana/actions/runs/45984285862), attempt 1, job 140455799472: SUCCESS, 83 successful steps, один штатный failure-diagnostic skip. **373 Playwright исполнения в 15 наборах**, плюс OS-isolated recovery в Chromium/Firefox/WebKit; **89 PDF / 779 страниц**, findings нет. Оба native API/CORS и остальные read-only network gates прошли. Проверки не ослаблялись.
+
+Принят оригинальный `permaweb-portable-funded-release`, artifact **15190448748**, ZIP **1684182 байта**, SHA-256 **`c7e351591f5df3677b81ed5aba1aa7baa44c76706c00f56bf14af4e4d800efcf`**. Штатные release validators и независимая сверка подтвердили source/run/attempt/head, digest ZIP, 43 файла / 4395526 байт, 13 JS / 736 modules / 8 recovery files и точный планируемый API `https://sejire-api.azovskaya.prod.page`. Provenance хранится отдельно от raw CI ZIP. Artifact retention — до 11 декабря 2026; перед upload workflow заново проверяет актуальные evidence и production audit.
+
+В последнем проходе добавлены blocking web/sponsor production audits в CI/manual upload/Docker и свежая Docker-сборка `--pull --no-cache`. Исправлен только устаревший V2 diagnostics test setup: server mock вместо public admin-lock, role=tab, 401/Bearer/logout assertions. Авторизация runtime не ослаблялась. V2 15/15, admin 21/21, paid 48/48, promo 27/27, recovery 35/35, editor 24/24 PASS. Свежие production audits: web 13 low/10 moderate, sponsor 13 low/1 moderate, high/critical=0; sponsor dev/test имеет 3 high, исключённые из production Docker, и не называется чистым.
+
+[Полный план владельца](verification/2026-11-27-publication-plan-and-readiness.md), [итоговые доказательства](verification/2026-11-27-publication-completion/README.md), [machine summary](verification/2026-11-27-publication-completion/summary.json), [точная проверка ZIP](verification/2026-11-27-publication-completion/ci/package-check.json). Исторические результаты 25 ноября сохраняются ниже, но не подменяют новый source/CI.
+
+Production остаётся неподтверждённым: always-on host/HTTPS/persistent disk/ingress/CORS; реальные private state export/import и один executor; owner configuration/recipients/AR-фонд; off-host restore; реальные Mainnet SOL+promo save/raw/digest/clean-browser+offline recovery; actual Console Owner/Controller, старый Target/TTL и final upload quote/manifest. На 27 ноября подключённый host Free, SEJIRE app отсутствует, точный API origin ещё не зарезервирован/не развёрнут. Изменение API origin потребует нового source, полного CI и принятия нового пакета. Не выставлять owner attestations заранее.
+
+**Старое обязательство сохраняется:** `AtwLYx509C9jWIFKUNg7dy1GSgiaDbXVK1YEQbBWfHY`, ожидаемые 25269 байт и SHA-256 `96bb194c3fbcf1dfea7e738cf91d758b8cfdaabb5be934df8dacd96a65c7be85`. Свежая read-only проверка 27 ноября 15:49 Asia/Almaty: status/header 200, raw на arweave.net и turbo-gateway.com 404; **UNRESOLVED**, не отсутствие данных во всей сети. [Evidence](verification/2026-11-27-publication-completion/historical-readback/result.json). Не заменять исходную операцию новым платежом/архивом; сохранять ciphertext, signed bytes, receipt и journals.
+
+Operator export/proxy pack остаётся отдельно, pinned `7eb522e6cae947132f792a010312a7a6c41ddb19`: 15 synthetic groups + TypeScript PASS; actual production installation/export/import не выполнялись. [Инструкция](../deployment/legacy-export/README.md). Не запускать импортированную базу с активными прежними обязательствами до проверенного handoff; флаги нового приёма сами по себе не останавливают durable continuation.
+
+[Draft PR 12](https://github.com/azovskaya/sejire_arweave_solana/pull/12) регистрации manual workflow открыт/не слит, head `f996e3b8d30a3f91a2d8704d94f3eb62cdfaf73c`; CI 45984027932 SUCCESS. Main не менялся: `897559c197bc90ae9fac66abaefe000df2a2b51c`. Реальные кошельки, траты, permanent upload, production deploy и ArNS change в этом проходе не выполнялись. Wallet seeds/private keys не читались. Console 4.11 использует фактические Solana Owner/Controller права; Wander login сам по себе не доказывает владение именем.
+
+---
+
+## Исторические записи до 27 ноября
+
 # Последнее продолжение — 25 ноября 2026: код подготовлен, публикация ещё закрыта
 
 Source **`feat/funded-portable-release-20261125`**, GitHub **`ba6777ac9c780627a6cdceafe947fed08ddaca63`**, local equivalent `b0f294fc6ecd4d0bc68526bea2cf9e4d6a8ca196`, одинаковое дерево `79e4286c3217bc5b59abcfd2a76905b221b932be`. Source head стабилен и отправлен; не заменять его docs-веткой при сборке/развёртывании.

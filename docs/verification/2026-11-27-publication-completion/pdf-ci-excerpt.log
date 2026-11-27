@@ -1,0 +1,284 @@
+##[group]Run if ! command -v pdftotext >/dev/null; then
+if ! command -v pdftotext >/dev/null; then
+  sudo apt-get update
+  sudo apt-get install -y poppler-utils
+fi
+python3 -m venv "$RUNNER_TEMP/sejire-pdf-env"
+"$RUNNER_TEMP/sejire-pdf-env/bin/pip" install PyMuPDF==1.26.6
+node scripts/export-layout-stress.mjs "$RUNNER_TEMP/sejire-layout" --boundaries
+"$RUNNER_TEMP/sejire-pdf-env/bin/python" scripts/check-layout-pdfs.py "$RUNNER_TEMP/sejire-layout"
+shell: /usr/bin/bash -e {0}
+##[endgroup]
+Get:1 file:/etc/apt/apt-mirrors.txt Mirrorlist [152 B]
+Hit:2 http://us-west-2.ec2.archive.ubuntu.com/ubuntu noble InRelease
+Get:3 http://us-west-2.ec2.archive.ubuntu.com/ubuntu noble-updates InRelease [126 kB]
+Get:4 http://us-west-2.ec2.archive.ubuntu.com/ubuntu noble-backports InRelease [126 kB]
+Get:5 http://us-west-2.ec2.archive.ubuntu.com/ubuntu noble-security InRelease [126 kB]
+Get:6 https://packages.microsoft.com/ubuntu/24.04/prod noble InRelease [3600 B]
+Get:7 http://us-west-2.ec2.archive.ubuntu.com/ubuntu noble-updates/main amd64 Packages [1492 kB]
+Get:8 http://us-west-2.ec2.archive.ubuntu.com/ubuntu noble-updates/main Translation-en [321 kB]
+Get:9 http://us-west-2.ec2.archive.ubuntu.com/ubuntu noble-updates/universe amd64 Packages [1716 kB]
+Get:10 http://us-west-2.ec2.archive.ubuntu.com/ubuntu noble-updates/restricted amd64 Packages [1949 kB]
+Get:11 http://us-west-2.ec2.archive.ubuntu.com/ubuntu noble-updates/restricted Translation-en [448 kB]
+Get:12 http://us-west-2.ec2.archive.ubuntu.com/ubuntu noble-security/main amd64 Packages [1231 kB]
+Get:13 http://us-west-2.ec2.archive.ubuntu.com/ubuntu noble-security/main Translation-en [243 kB]
+Get:14 http://us-west-2.ec2.archive.ubuntu.com/ubuntu noble-security/universe amd64 Packages [1233 kB]
+Get:15 http://us-west-2.ec2.archive.ubuntu.com/ubuntu noble-security/universe Translation-en [249 kB]
+Get:16 http://us-west-2.ec2.archive.ubuntu.com/ubuntu noble-security/restricted amd64 Packages [1842 kB]
+Get:17 http://us-west-2.ec2.archive.ubuntu.com/ubuntu noble-security/restricted Translation-en [429 kB]
+Get:18 https://packages.microsoft.com/ubuntu/24.04/prod noble/main arm64 Packages [804 kB]
+Get:19 https://packages.microsoft.com/ubuntu/24.04/prod noble/main amd64 Packages [880 kB]
+Fetched 13.2 MB in 1s (11.2 MB/s)
+Reading package lists...
+Reading package lists...
+Building dependency tree...
+Reading state information...
+The following additional packages will be installed:
+  libpoppler134 poppler-data
+Suggested packages:
+  ghostscript fonts-japanese-mincho | fonts-ipafont-mincho
+  fonts-japanese-gothic | fonts-ipafont-gothic fonts-arphic-ukai
+  fonts-arphic-uming fonts-nanum
+The following NEW packages will be installed:
+  libpoppler134 poppler-data poppler-utils
+0 upgraded, 3 newly installed, 0 to remove and 42 not upgraded.
+Need to get 3390 kB of archives.
+After this operation, 17.8 MB of additional disk space will be used.
+Get:1 file:/etc/apt/apt-mirrors.txt Mirrorlist [152 B]
+Get:2 http://us-west-2.ec2.archive.ubuntu.com/ubuntu noble/main amd64 poppler-data all 0.4.12-1 [2060 kB]
+Get:3 http://us-west-2.ec2.archive.ubuntu.com/ubuntu noble-updates/main amd64 libpoppler134 amd64 24.02.0-1ubuntu9.11 [1118 kB]
+Get:4 http://us-west-2.ec2.archive.ubuntu.com/ubuntu noble-updates/main amd64 poppler-utils amd64 24.02.0-1ubuntu9.11 [212 kB]
+Fetched 3390 kB in 1s (3976 kB/s)
+Selecting previously unselected package poppler-data.
+(Reading database ... 
+(Reading database ... 5%
+(Reading database ... 10%
+(Reading database ... 15%
+(Reading database ... 20%
+(Reading database ... 25%
+(Reading database ... 30%
+(Reading database ... 35%
+(Reading database ... 40%
+(Reading database ... 45%
+(Reading database ... 50%
+(Reading database ... 55%
+(Reading database ... 60%
+(Reading database ... 65%
+(Reading database ... 70%
+(Reading database ... 75%
+(Reading database ... 80%
+(Reading database ... 85%
+(Reading database ... 90%
+(Reading database ... 95%
+(Reading database ... 100%
+(Reading database ... 216824 files and directories currently installed.)
+Preparing to unpack .../poppler-data_0.4.12-1_all.deb ...
+Unpacking poppler-data (0.4.12-1) ...
+Selecting previously unselected package libpoppler134:amd64.
+Preparing to unpack .../libpoppler134_24.02.0-1ubuntu9.11_amd64.deb ...
+Unpacking libpoppler134:amd64 (24.02.0-1ubuntu9.11) ...
+Selecting previously unselected package poppler-utils.
+Preparing to unpack .../poppler-utils_24.02.0-1ubuntu9.11_amd64.deb ...
+Unpacking poppler-utils (24.02.0-1ubuntu9.11) ...
+Setting up libpoppler134:amd64 (24.02.0-1ubuntu9.11) ...
+Setting up poppler-data (0.4.12-1) ...
+Setting up poppler-utils (24.02.0-1ubuntu9.11) ...
+Processing triggers for libc-bin (2.39-0ubuntu8.12) ...
+Processing triggers for man-db (2.12.0-4build2) ...
+Not building database; man-db/auto-update is not 'true'.
+Processing triggers for fontconfig (2.15.0-1.1ubuntu2) ...
+
+Running kernel seems to be up-to-date.
+
+No services need to be restarted.
+
+No containers need to be restarted.
+
+No user sessions are running outdated binaries.
+
+No VM guests are running outdated hypervisor (qemu) binaries on this host.
+Collecting PyMuPDF==1.26.6
+  Downloading pymupdf-1.26.6-cp310-abi3-manylinux_2_28_x86_64.whl.metadata (3.4 kB)
+Downloading pymupdf-1.26.6-cp310-abi3-manylinux_2_28_x86_64.whl (24.1 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 24.1/24.1 MB 126.3 MB/s eta 0:00:00
+Installing collected packages: PyMuPDF
+Successfully installed PyMuPDF-1.26.6
+family-seven-classic.pdf pages: 1 people: 13
+family-seven-manuscript.pdf pages: 1 people: 7
+family-seven-registry.pdf pages: 1 people: 7
+family-seven-cascade.pdf pages: 1 people: 7
+line-forty-classic.pdf pages: 8 people: 40
+line-forty-manuscript.pdf pages: 8 people: 40
+line-forty-manuscript-limit-1.pdf pages: 2 people: 1
+line-forty-manuscript-limit-7.pdf pages: 2 people: 7
+line-forty-manuscript-limit-13.pdf pages: 3 people: 13
+line-forty-registry.pdf pages: 8 people: 40
+line-forty-registry-limit-1.pdf pages: 2 people: 1
+line-forty-registry-limit-7.pdf pages: 2 people: 7
+line-forty-registry-limit-13.pdf pages: 3 people: 13
+line-forty-cascade.pdf pages: 5 people: 40
+line-forty-cascade-limit-1.pdf pages: 2 people: 1
+line-forty-cascade-limit-7.pdf pages: 2 people: 7
+line-forty-cascade-limit-13.pdf pages: 2 people: 13
+full-thirteen-classic.pdf pages: 483 people: 8191
+full-thirteen-manuscript.pdf pages: 1 people: 13
+full-thirteen-registry.pdf pages: 1 people: 13
+full-thirteen-cascade.pdf pages: 1 people: 13
+middle-peak-classic.pdf pages: 10 people: 139
+middle-peak-manuscript.pdf pages: 2 people: 19
+middle-peak-registry.pdf pages: 2 people: 19
+middle-peak-cascade.pdf pages: 2 people: 19
+sparse-cluster-classic.pdf pages: 3 people: 24
+sparse-cluster-manuscript.pdf pages: 1 people: 13
+sparse-cluster-registry.pdf pages: 1 people: 13
+sparse-cluster-cascade.pdf pages: 1 people: 13
+shared-ancestor-classic.pdf pages: 1 people: 5
+shared-ancestor-manuscript.pdf pages: 1 people: 3
+shared-ancestor-registry.pdf pages: 1 people: 3
+shared-ancestor-cascade.pdf pages: 1 people: 3
+edge-1-classic.pdf pages: 2 people: 1
+edge-1-manuscript.pdf pages: 1 people: 1
+edge-1-registry.pdf pages: 1 people: 1
+edge-1-cascade.pdf pages: 1 people: 1
+edge-2-classic.pdf pages: 2 people: 3
+edge-2-manuscript.pdf pages: 2 people: 2
+edge-2-registry.pdf pages: 2 people: 2
+edge-2-cascade.pdf pages: 2 people: 2
+edge-5-classic.pdf pages: 2 people: 5
+edge-5-manuscript.pdf pages: 1 people: 5
+edge-5-registry.pdf pages: 1 people: 5
+edge-5-cascade.pdf pages: 1 people: 5
+edge-8-classic.pdf pages: 2 people: 17
+edge-8-manuscript.pdf pages: 2 people: 8
+edge-8-registry.pdf pages: 2 people: 8
+edge-8-cascade.pdf pages: 2 people: 8
+edge-12-classic.pdf pages: 2 people: 12
+edge-12-manuscript.pdf pages: 2 people: 12
+edge-12-registry.pdf pages: 2 people: 12
+edge-12-cascade.pdf pages: 1 people: 12
+edge-13-classic.pdf pages: 2 people: 29
+edge-13-manuscript.pdf pages: 2 people: 13
+edge-13-registry.pdf pages: 2 people: 13
+edge-13-cascade.pdf pages: 2 people: 13
+edge-14-classic.pdf pages: 3 people: 14
+edge-14-manuscript.pdf pages: 2 people: 14
+edge-14-registry.pdf pages: 2 people: 14
+edge-14-cascade.pdf pages: 2 people: 14
+edge-24-classic.pdf pages: 6 people: 53
+edge-24-manuscript.pdf pages: 3 people: 24
+edge-24-registry.pdf pages: 3 people: 24
+edge-24-cascade.pdf pages: 3 people: 24
+edge-26-classic.pdf pages: 4 people: 26
+edge-26-manuscript.pdf pages: 3 people: 26
+edge-26-registry.pdf pages: 3 people: 26
+edge-26-cascade.pdf pages: 2 people: 26
+edge-27-classic.pdf pages: 6 people: 61
+edge-27-manuscript.pdf pages: 4 people: 27
+edge-27-registry.pdf pages: 4 people: 27
+edge-27-cascade.pdf pages: 4 people: 27
+edge-39-classic.pdf pages: 5 people: 39
+edge-39-manuscript.pdf pages: 4 people: 39
+edge-39-registry.pdf pages: 4 people: 39
+edge-39-cascade.pdf pages: 3 people: 39
+edge-41-classic.pdf pages: 12 people: 93
+edge-41-manuscript.pdf pages: 8 people: 41
+edge-41-registry.pdf pages: 8 people: 41
+edge-41-cascade.pdf pages: 8 people: 41
+edge-52-classic.pdf pages: 5 people: 52
+edge-52-manuscript.pdf pages: 5 people: 52
+edge-52-registry.pdf pages: 5 people: 52
+edge-52-cascade.pdf pages: 4 people: 52
+edge-103-classic.pdf pages: 19 people: 235
+edge-103-manuscript.pdf pages: 10 people: 103
+edge-103-registry.pdf pages: 10 people: 103
+edge-103-cascade.pdf pages: 9 people: 103
+family-seven-classic.pdf {}
+family-seven-manuscript.pdf {}
+family-seven-registry.pdf {}
+family-seven-cascade.pdf {}
+line-forty-classic.pdf {}
+line-forty-manuscript.pdf {}
+line-forty-manuscript-limit-1.pdf {}
+line-forty-manuscript-limit-7.pdf {}
+line-forty-manuscript-limit-13.pdf {}
+line-forty-registry.pdf {}
+line-forty-registry-limit-1.pdf {}
+line-forty-registry-limit-7.pdf {}
+line-forty-registry-limit-13.pdf {}
+line-forty-cascade.pdf {}
+line-forty-cascade-limit-1.pdf {}
+line-forty-cascade-limit-7.pdf {}
+line-forty-cascade-limit-13.pdf {}
+full-thirteen-classic.pdf {}
+full-thirteen-manuscript.pdf {}
+full-thirteen-registry.pdf {}
+full-thirteen-cascade.pdf {}
+middle-peak-classic.pdf {}
+middle-peak-manuscript.pdf {}
+middle-peak-registry.pdf {}
+middle-peak-cascade.pdf {}
+sparse-cluster-classic.pdf {}
+sparse-cluster-manuscript.pdf {}
+sparse-cluster-registry.pdf {}
+sparse-cluster-cascade.pdf {}
+shared-ancestor-classic.pdf {}
+shared-ancestor-manuscript.pdf {}
+shared-ancestor-registry.pdf {}
+shared-ancestor-cascade.pdf {}
+edge-1-classic.pdf {}
+edge-1-manuscript.pdf {}
+edge-1-registry.pdf {}
+edge-1-cascade.pdf {}
+edge-2-classic.pdf {}
+edge-2-manuscript.pdf {}
+edge-2-registry.pdf {}
+edge-2-cascade.pdf {}
+edge-5-classic.pdf {}
+edge-5-manuscript.pdf {}
+edge-5-registry.pdf {}
+edge-5-cascade.pdf {}
+edge-8-classic.pdf {}
+edge-8-manuscript.pdf {}
+edge-8-registry.pdf {}
+edge-8-cascade.pdf {}
+edge-12-classic.pdf {}
+edge-12-manuscript.pdf {}
+edge-12-registry.pdf {}
+edge-12-cascade.pdf {}
+edge-13-classic.pdf {}
+edge-13-manuscript.pdf {}
+edge-13-registry.pdf {}
+edge-13-cascade.pdf {}
+edge-14-classic.pdf {}
+edge-14-manuscript.pdf {}
+edge-14-registry.pdf {}
+edge-14-cascade.pdf {}
+edge-24-classic.pdf {}
+edge-24-manuscript.pdf {}
+edge-24-registry.pdf {}
+edge-24-cascade.pdf {}
+edge-26-classic.pdf {}
+edge-26-manuscript.pdf {}
+edge-26-registry.pdf {}
+edge-26-cascade.pdf {}
+edge-27-classic.pdf {}
+edge-27-manuscript.pdf {}
+edge-27-registry.pdf {}
+edge-27-cascade.pdf {}
+edge-39-classic.pdf {}
+edge-39-manuscript.pdf {}
+edge-39-registry.pdf {}
+edge-39-cascade.pdf {}
+edge-41-classic.pdf {}
+edge-41-manuscript.pdf {}
+edge-41-registry.pdf {}
+edge-41-cascade.pdf {}
+edge-52-classic.pdf {}
+edge-52-manuscript.pdf {}
+edge-52-registry.pdf {}
+edge-52-cascade.pdf {}
+edge-103-classic.pdf {}
+edge-103-manuscript.pdf {}
+edge-103-registry.pdf {}
+edge-103-cascade.pdf {}
+files: 89 pages: 779 passing: 89 findings: {}

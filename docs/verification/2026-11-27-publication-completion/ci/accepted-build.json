@@ -1,0 +1,12 @@
+{
+  "schema": "sejire/permaweb-provenance/v1",
+  "artifact": "permaweb-portable-funded-release",
+  "run": 45984285862,
+  "attempt": 1,
+  "artifactId": 15190448748,
+  "sourceCommit": "ef0252025c32687dce018368ea94d74af2728c66",
+  "publishedByCommit": "ef0252025c32687dce018368ea94d74af2728c66",
+  "profile": "portable-funded-mainnet",
+  "zipSha256": "c7e351591f5df3677b81ed5aba1aa7baa44c76706c00f56bf14af4e4d800efcf",
+  "releaseManifestSha256": "68e2e8ea064b61bcaf7ac902cfdd6247e1b19c5370b8cb25d9fc9f69274c47b0"
+}

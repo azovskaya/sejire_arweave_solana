@@ -1,0 +1,27 @@
+##[group]Run SEJIRE_TEST_NODE="$(command -v node)"
+SEJIRE_TEST_NODE="$(command -v node)"
+sudo -H env PLAYWRIGHT_BROWSERS_PATH="$HOME/.cache/ms-playwright" \
+  SEJIRE_TEST_OS_OFFLINE=1 \
+  unshare --net "$SEJIRE_TEST_NODE" --test tools/recovery/browser.test.mjs
+shell: /usr/bin/bash -e {0}
+##[endgroup]
+✔ IPv4 isolation parser: empty procfs needs valid netlink proof; bad rows and default routes fail closed (2.667981ms)
+✔ chromium: standalone HTML recovers current production vaults and rejects changed inputs without stale plaintext, storage or network (3716.889366ms)
+ℹ chromium: kernel network isolation verified (different namespace, loopback only, no usable default routes)
+ℹ chromium: actual file://; OS-isolated network throughout; HTTP denied; main recovery offlineEmulation=true
+✔ firefox: standalone HTML recovers current production vaults and rejects changed inputs without stale plaintext, storage or network (3388.006295ms)
+ℹ firefox: kernel network isolation verified (different namespace, loopback only, no usable default routes)
+ℹ firefox: actual file://; OS-isolated network throughout; HTTP denied; main recovery offlineEmulation=true
+✔ webkit: standalone HTML recovers current production vaults and rejects changed inputs without stale plaintext, storage or network (8643.752542ms)
+ℹ webkit: kernel network isolation verified (different namespace, loopback only, no usable default routes)
+ℹ webkit synthetic A/B probe (verified OS isolation): {"offlineEmulation":true,"online":false,"fileText":{"ok":false,"error":"NotReadableError"},"webcrypto":{"ok":true,"error":null}}
+ℹ webkit synthetic A/B probe (verified OS isolation): {"offlineEmulation":false,"online":false,"fileText":{"ok":true,"error":null},"webcrypto":{"ok":true,"error":null}}
+ℹ webkit: actual file://; OS-isolated network throughout; HTTP denied; main recovery offlineEmulation=false
+ℹ tests 4
+ℹ suites 0
+ℹ pass 4
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 16178.117292

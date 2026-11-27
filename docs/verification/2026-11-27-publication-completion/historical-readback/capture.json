@@ -1,0 +1,11 @@
+{
+  "runId": 45985281069,
+  "attempt": 1,
+  "jobId": 140459192938,
+  "commit": "21dc9fa0b21e3f05f80309844bc2faf7a72220da",
+  "artifactId": 15191127068,
+  "zipBytes": 3391,
+  "zipSha256": "811bb763860f9a726f79a49fea4282c2211e16df0b637bde5432a96d74942b31",
+  "diagnosticCompleted": true,
+  "archiveVerified": false
+}

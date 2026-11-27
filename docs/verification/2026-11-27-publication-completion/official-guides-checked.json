@@ -1,0 +1,27 @@
+{
+  "checkedAt": "2026-11-27",
+  "timezone": "Asia/Almaty",
+  "sources": [
+    {
+      "url": "https://docs.ar.io/build/guides/hosting-decentralised-apps/deploy-permanent-dapp/",
+      "purpose": "Existing ArNS name: upload a new immutable static version and manifest; verify transaction URL before changing @. Existing name purchase is skipped."
+    },
+    {
+      "url": "https://docs.ar.io/build/guides/working-with-arns/buy-manage-arns-console/",
+      "purpose": "Console 4.11.0: actual Owner/Controller rights, Solana owner wallet and linked-wallet distinction, @ Target and TTL editing."
+    },
+    {
+      "url": "https://docs.ar.io/sdks/ario-deploy/single-page-apps/",
+      "purpose": "A manifest fallback is necessary for unlisted SPA paths; merely including an entry file does not prove correct manifest fallback."
+    },
+    {
+      "url": "https://docs.npmjs.com/cli/v11/commands/npm-audit/",
+      "purpose": "audit-level high governs failure threshold; lower-severity findings remain part of the report."
+    },
+    {
+      "url": "https://docs.docker.com/build/cache/invalidation/",
+      "purpose": "Cached RUN commands may reuse a previous result; production instructions request --pull --no-cache for a fresh dependency audit."
+    }
+  ],
+  "scope": "Primary documentation review, not a wallet session, authorization grant, upload, production deployment, or ArNS write."
+}
