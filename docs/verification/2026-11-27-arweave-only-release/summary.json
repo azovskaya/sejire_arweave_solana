@@ -1,0 +1,116 @@
+{
+  "schema": "sejire/arweave-only-release-readiness/v1",
+  "decision": "READY_FOR_OWNER_NATIVE_PUBLICATION_AND_LIVE_ACCEPTANCE",
+  "sourceCommit": "ab06f2d1d78451533abfa48cfa18dc489df709d4",
+  "sourceTree": "2f8bcbc117143ead876030cd75c5dff6ed40264d",
+  "sourceBranch": "feat/arweave-only-protocol-20261127",
+  "evidenceBranch": "audit/native-publication-review-20261127",
+  "ci": {
+    "runId": 46003304575,
+    "attempt": 1,
+    "conclusion": "success",
+    "successSteps": 83,
+    "expectedSkips": 3,
+    "browserExecutions": 382,
+    "independentBrowserExecutions": 87,
+    "pdfFiles": 89,
+    "pdfPages": 779
+  },
+  "review": {
+    "runId": 46006251326,
+    "attempt": 1,
+    "conclusion": "success",
+    "successSteps": 14
+  },
+  "package": {
+    "schema": "sejire/prepared-zip-verification/v1",
+    "status": "PASS",
+    "artifactId": 15200458092,
+    "prepareRunId": 46006251326,
+    "sourceCommit": "ab06f2d1d78451533abfa48cfa18dc489df709d4",
+    "file": "sejire-arweave-only-ab06f2d-ready.zip",
+    "bytes": 1271783,
+    "sha256": "3c38e238d30ab1a4bee718a6bd7bf2969944f17ed9a0d75380d16b86d0d46df6",
+    "files": 41,
+    "exactOriginalCiFilesAndProvenance": true
+  },
+  "nativeQuote": {
+    "node": "https://arweave.net",
+    "quotedAt": "2026-11-27T13:21:14.500Z",
+    "totalRewardWinston": "157608282042",
+    "totalRewardAr": "0.157608282042",
+    "transactions": 42,
+    "maximumRewardWinston": "0",
+    "withinBudget": false
+  },
+  "runtime": {
+    "profile": "decentralized-direct-arweave",
+    "mandatorySejireService": false,
+    "mandatoryBundler": false,
+    "mandatoryHostedAo": false,
+    "archivePayment": "user-native-AR-wallet",
+    "centralPromoSupported": false,
+    "passwordAdminSupported": false,
+    "offlineRecoveryIncluded": true,
+    "maxEnvelopeBytes": 10485760,
+    "arnsNamingUsesSolana": true
+  },
+  "notPerformed": {
+    "ownerWalletApproval": true,
+    "newOnChainUpload": true,
+    "newRealArchiveRecovery": true,
+    "arnsTargetChange": true,
+    "mainBranchMerge": true
+  },
+  "legacyArchiveObligation": {
+    "id": "AtwLYx509C9jWIFKUNg7dy1GSgiaDbXVK1YEQbBWfHY",
+    "resolved": false,
+    "freshPaymentCreated": false
+  },
+  "audit": {
+    "web-production.json": {
+      "info": 0,
+      "low": 13,
+      "moderate": 10,
+      "high": 0,
+      "critical": 0,
+      "total": 23
+    },
+    "web-full.json": {
+      "info": 0,
+      "low": 18,
+      "moderate": 11,
+      "high": 0,
+      "critical": 0,
+      "total": 29
+    },
+    "sponsor-production.json": {
+      "info": 0,
+      "low": 13,
+      "moderate": 1,
+      "high": 0,
+      "critical": 0,
+      "total": 14
+    },
+    "sponsor-full.json": {
+      "info": 0,
+      "low": 13,
+      "moderate": 1,
+      "high": 3,
+      "critical": 0,
+      "total": 17
+    }
+  },
+  "lint": {
+    "errors": 0,
+    "warnings": 28
+  },
+  "limitations": [
+    "Real owner wallet and device remain acceptance steps",
+    "Selected-node confirmations are not a local consensus proof",
+    "ArNS naming uses a separate Solana registry",
+    "Index search is bounded and cannot certify complete history",
+    "CLI execution on owner macOS has not been tested",
+    "No uptime or centuries-long availability guarantee"
+  ]
+}

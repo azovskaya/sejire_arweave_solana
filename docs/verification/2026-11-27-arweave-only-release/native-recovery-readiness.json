@@ -1,0 +1,36 @@
+{
+  "schema": "sejire/native-recovery-readiness/v1",
+  "checkedAt": "2026-11-27T13:15:36.538Z",
+  "status": "PASS",
+  "readyNodes": 2,
+  "configuredNodes": 2,
+  "requiredReadyNodes": 2,
+  "readOnly": true,
+  "origin": "https://sejire.ar.io",
+  "registryRequired": false,
+  "externalIndexerRequired": false,
+  "uploadAttempted": false,
+  "scope": "Current configured native nodes return the pinned encrypted historical fixture and metadata with CORS. This snapshot is not a new upload, owner decryption, settlement or distinct-operator certification.",
+  "nodes": [
+    {
+      "node": "https://arweave.net",
+      "ready": true,
+      "path": "/raw/T2huxIMLyfYclZH2h89Rf0IecHfFYKKaa0_3HaDP4fo",
+      "network": "arweave.N.1",
+      "metadataId": "T2huxIMLyfYclZH2h89Rf0IecHfFYKKaa0_3HaDP4fo",
+      "bytes": 28365,
+      "sha256": "19133b897f69e1f0d43a55217a00adee6b6dfefb73f0f6228008f5c8a702e6c8",
+      "cors": true
+    },
+    {
+      "node": "https://turbo-gateway.com",
+      "ready": true,
+      "path": "/raw/T2huxIMLyfYclZH2h89Rf0IecHfFYKKaa0_3HaDP4fo",
+      "network": "arweave.N.1",
+      "metadataId": "T2huxIMLyfYclZH2h89Rf0IecHfFYKKaa0_3HaDP4fo",
+      "bytes": 28365,
+      "sha256": "19133b897f69e1f0d43a55217a00adee6b6dfefb73f0f6228008f5c8a702e6c8",
+      "cors": true
+    }
+  ]
+}

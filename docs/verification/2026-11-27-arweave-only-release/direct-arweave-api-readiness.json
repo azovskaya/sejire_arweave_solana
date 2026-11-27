@@ -1,0 +1,143 @@
+{
+  "schema": "sejire/direct-network-readiness/v1",
+  "checkedAt": "2026-11-27T13:04:15.213Z",
+  "origin": "https://sejire.ar.io",
+  "archiveBytes": 25269,
+  "status": "PASS",
+  "readyNodes": 2,
+  "configuredNodes": 2,
+  "requiredReadyNodes": 2,
+  "redundancy": "atLeastTwoConfiguredEndpointsReady",
+  "readOnly": true,
+  "walletChecked": false,
+  "uploadAttempted": false,
+  "scope": "Native API and CORS preflight snapshot; actual upload, archive readback, settlement and distinct operator ownership are not tested.",
+  "nodes": [
+    {
+      "node": "https://arweave.net",
+      "readiness": "ready",
+      "checks": [
+        {
+          "name": "info",
+          "method": "GET",
+          "path": "/info",
+          "status": 200,
+          "ready": true,
+          "cors": true,
+          "reason": null,
+          "allowOrigin": "*",
+          "network": "arweave.N.1"
+        },
+        {
+          "name": "anchor",
+          "method": "GET",
+          "path": "/tx_anchor",
+          "status": 200,
+          "ready": true,
+          "cors": true,
+          "reason": null,
+          "allowOrigin": "*",
+          "anchor": "UGTueo6rc-rSN1VMDm5_B3_-VecRDCXXXgEHhgzuJawNTJaLxBVgOuEpSCu-dZJF"
+        },
+        {
+          "name": "price",
+          "method": "GET",
+          "path": "/price/25269",
+          "status": 200,
+          "ready": true,
+          "cors": true,
+          "reason": null,
+          "allowOrigin": "*",
+          "rewardWinston": "3288478486"
+        },
+        {
+          "name": "transactionPreflight",
+          "method": "OPTIONS",
+          "path": "/tx",
+          "status": 204,
+          "ready": true,
+          "cors": true,
+          "reason": null,
+          "allowOrigin": "*",
+          "allowMethods": "GET, POST, PUT, DELETE, OPTIONS, PATCH",
+          "allowHeaders": "*"
+        },
+        {
+          "name": "chunkPreflight",
+          "method": "OPTIONS",
+          "path": "/chunk",
+          "status": 204,
+          "ready": true,
+          "cors": true,
+          "reason": null,
+          "allowOrigin": "*",
+          "allowMethods": "GET, POST, PUT, DELETE, OPTIONS, PATCH",
+          "allowHeaders": "*"
+        }
+      ]
+    },
+    {
+      "node": "https://turbo-gateway.com",
+      "readiness": "ready",
+      "checks": [
+        {
+          "name": "info",
+          "method": "GET",
+          "path": "/info",
+          "status": 200,
+          "ready": true,
+          "cors": true,
+          "reason": null,
+          "allowOrigin": "*",
+          "network": "arweave.N.1"
+        },
+        {
+          "name": "anchor",
+          "method": "GET",
+          "path": "/tx_anchor",
+          "status": 200,
+          "ready": true,
+          "cors": true,
+          "reason": null,
+          "allowOrigin": "*",
+          "anchor": "UGTueo6rc-rSN1VMDm5_B3_-VecRDCXXXgEHhgzuJawNTJaLxBVgOuEpSCu-dZJF"
+        },
+        {
+          "name": "price",
+          "method": "GET",
+          "path": "/price/25269",
+          "status": 200,
+          "ready": true,
+          "cors": true,
+          "reason": null,
+          "allowOrigin": "*",
+          "rewardWinston": "3288478486"
+        },
+        {
+          "name": "transactionPreflight",
+          "method": "OPTIONS",
+          "path": "/tx",
+          "status": 204,
+          "ready": true,
+          "cors": true,
+          "reason": null,
+          "allowOrigin": "*",
+          "allowMethods": "GET,HEAD,PUT,PATCH,POST,DELETE",
+          "allowHeaders": "content-type"
+        },
+        {
+          "name": "chunkPreflight",
+          "method": "OPTIONS",
+          "path": "/chunk",
+          "status": 204,
+          "ready": true,
+          "cors": true,
+          "reason": null,
+          "allowOrigin": "*",
+          "allowMethods": "GET,HEAD,PUT,PATCH,POST,DELETE",
+          "allowHeaders": "content-type"
+        }
+      ]
+    }
+  ]
+}

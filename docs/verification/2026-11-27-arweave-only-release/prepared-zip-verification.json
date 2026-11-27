@@ -1,0 +1,12 @@
+{
+  "schema": "sejire/prepared-zip-verification/v1",
+  "status": "PASS",
+  "artifactId": 15200458092,
+  "prepareRunId": 46006251326,
+  "sourceCommit": "ab06f2d1d78451533abfa48cfa18dc489df709d4",
+  "file": "sejire-arweave-only-ab06f2d-ready.zip",
+  "bytes": 1271783,
+  "sha256": "3c38e238d30ab1a4bee718a6bd7bf2969944f17ed9a0d75380d16b86d0d46df6",
+  "files": 41,
+  "exactOriginalCiFilesAndProvenance": true
+}

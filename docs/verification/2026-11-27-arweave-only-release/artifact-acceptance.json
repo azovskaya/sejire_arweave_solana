@@ -1,0 +1,26 @@
+{
+  "schema": "sejire/arweave-only-artifact-acceptance/v1",
+  "status": "PASS",
+  "checkedAt": "2026-11-27T13:19:01.421Z",
+  "sourceCommit": "ab06f2d1d78451533abfa48cfa18dc489df709d4",
+  "sourceTree": "2f8bcbc117143ead876030cd75c5dff6ed40264d",
+  "ciRun": 46003304575,
+  "ciAttempt": 1,
+  "profile": "decentralized-direct-arweave",
+  "artifactId": 15198969318,
+  "zipBytes": 1271348,
+  "zipSha256": "a1bdce3b4e01f763e83290d29fe993321a0b4bbb859f9a064c63f152bd80e3be",
+  "releaseManifestSha256": "0c454b7cc82b2af61aea4c0e71f36dbfd3f32cce195fbfb272949b70ae9d3bea",
+  "releaseFiles": 41,
+  "releaseBytes": 2917633,
+  "nativeTransactionsPlanned": 42,
+  "ciSteps": {
+    "success": 83,
+    "expectedSkipped": 3
+  },
+  "rebuilt": false,
+  "signingPerformed": false,
+  "chainWritesPerformed": false,
+  "arnsChanged": false,
+  "note": "Fetched actual GitHub run/ref/jobs/artifacts through the authorized connector and verified exact downloaded ZIP using unchanged source validators. Real wallet and public publication remain separate."
+}

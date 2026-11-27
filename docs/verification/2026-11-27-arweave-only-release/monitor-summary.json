@@ -1,0 +1,300 @@
+{
+  "schema": "sejire/ci-monitor-summary/v1",
+  "sourceCommit": "ab06f2d1d78451533abfa48cfa18dc489df709d4",
+  "sourceTree": "2f8bcbc117143ead876030cd75c5dff6ed40264d",
+  "runId": 46003304575,
+  "attempt": 1,
+  "jobId": 140520158445,
+  "conclusion": "success",
+  "startedAt": "2026-11-27T13:00:07Z",
+  "completedAt": "2026-11-27T13:17:27Z",
+  "stepRecords": 86,
+  "successfulSteps": 83,
+  "skippedSteps": [
+    "Read-only live Solana requests from public Pages browser",
+    "Preserve legacy public Solana read diagnostics",
+    "Preserve checkout failure diagnostics"
+  ],
+  "browserExecutions": 382,
+  "browserInvocations": {
+    "independent three browsers": 87,
+    "portable three browsers": 33,
+    "editor safety": 24,
+    "checkout browser": 5,
+    "protocol adapter browser": 5,
+    "legacy ArNS static browser": 9,
+    "wallet history focused rerun": 1,
+    "legacy native browser": 21,
+    "legacy native pilot": 3,
+    "legacy V2 browser": 15,
+    "legacy admin browser": 21,
+    "legacy V2 recovery browser": 35,
+    "legacy funded browser": 27,
+    "legacy paid browser": 48,
+    "legacy native journey": 48
+  },
+  "browserCountsAreExecutionsNotUniqueTests": true,
+  "pdfStress": {
+    "files": 89,
+    "pages": 779,
+    "passingFiles": 89,
+    "findings": {}
+  },
+  "publicBuild": {
+    "profile": "decentralized-direct-arweave",
+    "jsChunks": 10,
+    "renderedModules": 340,
+    "recoveryFiles": 8
+  },
+  "selectedTestCounts": {
+    "workerReleaseGate": 53,
+    "offlineRecoveryFormat": 12,
+    "directArweave": 21,
+    "nodePreference": 9,
+    "directProtocolBoundaryGroups": 10,
+    "directProtocolBoundaryFixedCases": 36,
+    "historicalNativeRecovery": 14,
+    "independentBackupFinalization": 18,
+    "independentNativeVault": 16,
+    "independentNativeRecovery": 8,
+    "standaloneOfflineBrowserGroups": 4,
+    "releasePdfHostRegressions": 48,
+    "nativePublisher": 16,
+    "nativeApiProbeRegressions": 4,
+    "nativeRecoveryProbeRegressions": 3
+  },
+  "lint": {
+    "errors": 0,
+    "warnings": 28
+  },
+  "audit": {
+    "web-production.json": {
+      "info": 0,
+      "low": 13,
+      "moderate": 10,
+      "high": 0,
+      "critical": 0,
+      "total": 23
+    },
+    "web-full.json": {
+      "info": 0,
+      "low": 18,
+      "moderate": 11,
+      "high": 0,
+      "critical": 0,
+      "total": 29
+    },
+    "sponsor-production.json": {
+      "info": 0,
+      "low": 13,
+      "moderate": 1,
+      "high": 0,
+      "critical": 0,
+      "total": 14
+    },
+    "sponsor-full.json": {
+      "info": 0,
+      "low": 13,
+      "moderate": 1,
+      "high": 3,
+      "critical": 0,
+      "total": 17
+    }
+  },
+  "nativeApiReadiness": {
+    "schema": "sejire/direct-network-readiness/v1",
+    "checkedAt": "2026-11-27T13:04:15.213Z",
+    "origin": "https://sejire.ar.io",
+    "archiveBytes": 25269,
+    "status": "PASS",
+    "readyNodes": 2,
+    "configuredNodes": 2,
+    "requiredReadyNodes": 2,
+    "redundancy": "atLeastTwoConfiguredEndpointsReady",
+    "readOnly": true,
+    "walletChecked": false,
+    "uploadAttempted": false,
+    "scope": "Native API and CORS preflight snapshot; actual upload, archive readback, settlement and distinct operator ownership are not tested.",
+    "nodes": [
+      {
+        "node": "https://arweave.net",
+        "readiness": "ready",
+        "checks": [
+          {
+            "name": "info",
+            "method": "GET",
+            "path": "/info",
+            "status": 200,
+            "ready": true,
+            "cors": true,
+            "reason": null,
+            "allowOrigin": "*",
+            "network": "arweave.N.1"
+          },
+          {
+            "name": "anchor",
+            "method": "GET",
+            "path": "/tx_anchor",
+            "status": 200,
+            "ready": true,
+            "cors": true,
+            "reason": null,
+            "allowOrigin": "*",
+            "anchor": "UGTueo6rc-rSN1VMDm5_B3_-VecRDCXXXgEHhgzuJawNTJaLxBVgOuEpSCu-dZJF"
+          },
+          {
+            "name": "price",
+            "method": "GET",
+            "path": "/price/25269",
+            "status": 200,
+            "ready": true,
+            "cors": true,
+            "reason": null,
+            "allowOrigin": "*",
+            "rewardWinston": "3288478486"
+          },
+          {
+            "name": "transactionPreflight",
+            "method": "OPTIONS",
+            "path": "/tx",
+            "status": 204,
+            "ready": true,
+            "cors": true,
+            "reason": null,
+            "allowOrigin": "*",
+            "allowMethods": "GET, POST, PUT, DELETE, OPTIONS, PATCH",
+            "allowHeaders": "*"
+          },
+          {
+            "name": "chunkPreflight",
+            "method": "OPTIONS",
+            "path": "/chunk",
+            "status": 204,
+            "ready": true,
+            "cors": true,
+            "reason": null,
+            "allowOrigin": "*",
+            "allowMethods": "GET, POST, PUT, DELETE, OPTIONS, PATCH",
+            "allowHeaders": "*"
+          }
+        ]
+      },
+      {
+        "node": "https://turbo-gateway.com",
+        "readiness": "ready",
+        "checks": [
+          {
+            "name": "info",
+            "method": "GET",
+            "path": "/info",
+            "status": 200,
+            "ready": true,
+            "cors": true,
+            "reason": null,
+            "allowOrigin": "*",
+            "network": "arweave.N.1"
+          },
+          {
+            "name": "anchor",
+            "method": "GET",
+            "path": "/tx_anchor",
+            "status": 200,
+            "ready": true,
+            "cors": true,
+            "reason": null,
+            "allowOrigin": "*",
+            "anchor": "UGTueo6rc-rSN1VMDm5_B3_-VecRDCXXXgEHhgzuJawNTJaLxBVgOuEpSCu-dZJF"
+          },
+          {
+            "name": "price",
+            "method": "GET",
+            "path": "/price/25269",
+            "status": 200,
+            "ready": true,
+            "cors": true,
+            "reason": null,
+            "allowOrigin": "*",
+            "rewardWinston": "3288478486"
+          },
+          {
+            "name": "transactionPreflight",
+            "method": "OPTIONS",
+            "path": "/tx",
+            "status": 204,
+            "ready": true,
+            "cors": true,
+            "reason": null,
+            "allowOrigin": "*",
+            "allowMethods": "GET,HEAD,PUT,PATCH,POST,DELETE",
+            "allowHeaders": "content-type"
+          },
+          {
+            "name": "chunkPreflight",
+            "method": "OPTIONS",
+            "path": "/chunk",
+            "status": 204,
+            "ready": true,
+            "cors": true,
+            "reason": null,
+            "allowOrigin": "*",
+            "allowMethods": "GET,HEAD,PUT,PATCH,POST,DELETE",
+            "allowHeaders": "content-type"
+          }
+        ]
+      }
+    ]
+  },
+  "nativeRecoveryReadiness": {
+    "schema": "sejire/native-recovery-readiness/v1",
+    "checkedAt": "2026-11-27T13:15:36.538Z",
+    "status": "PASS",
+    "readyNodes": 2,
+    "configuredNodes": 2,
+    "requiredReadyNodes": 2,
+    "readOnly": true,
+    "origin": "https://sejire.ar.io",
+    "registryRequired": false,
+    "externalIndexerRequired": false,
+    "uploadAttempted": false,
+    "scope": "Current configured native nodes return the pinned encrypted historical fixture and metadata with CORS. This snapshot is not a new upload, owner decryption, settlement or distinct-operator certification.",
+    "nodes": [
+      {
+        "node": "https://arweave.net",
+        "ready": true,
+        "path": "/raw/T2huxIMLyfYclZH2h89Rf0IecHfFYKKaa0_3HaDP4fo",
+        "network": "arweave.N.1",
+        "metadataId": "T2huxIMLyfYclZH2h89Rf0IecHfFYKKaa0_3HaDP4fo",
+        "bytes": 28365,
+        "sha256": "19133b897f69e1f0d43a55217a00adee6b6dfefb73f0f6228008f5c8a702e6c8",
+        "cors": true
+      },
+      {
+        "node": "https://turbo-gateway.com",
+        "ready": true,
+        "path": "/raw/T2huxIMLyfYclZH2h89Rf0IecHfFYKKaa0_3HaDP4fo",
+        "network": "arweave.N.1",
+        "metadataId": "T2huxIMLyfYclZH2h89Rf0IecHfFYKKaa0_3HaDP4fo",
+        "bytes": 28365,
+        "sha256": "19133b897f69e1f0d43a55217a00adee6b6dfefb73f0f6228008f5c8a702e6c8",
+        "cors": true
+      }
+    ]
+  },
+  "filesSha256": {
+    "audit-summary.json": "be066c11fe28a8d6410aa0ff154d53f132053c6a1af43b9b9070631c84a12f92",
+    "dependency-audit-evidence.zip": "41b06c571b17d57394265d7418b3c595e41d33772efd7f1f0c4d04159502daf4",
+    "direct-arweave-api-readiness.json": "e603dc93e9c3e54e3bff545e4da407d04188e83963a561d652c6c1af9ed54f2e",
+    "direct-arweave-api-readiness.zip": "0801740bccc6de9e10d4b92ca9f67be58fcb78c3f84fd51a88d4f399c5f1a083",
+    "jobs.json": "ddfdd79377e210ade1d7ad79d4d1ab79907aa0f4e9f761877b6e2f109a39496d",
+    "native-recovery-readiness.json": "138ff159be3c08d5e0350cb8fe61ec965e9d118186f467fb64358058bfbebec2",
+    "native-recovery-readiness.zip": "b0241db2472589dececf29884b6d834a973762bb846c42170e60be7e4509f2fa",
+    "run.json": "9b282968a88ab3a658a2500a7f4190f6a9afe71dc154c4503b48d30644363c21",
+    "sponsor-full.json": "4e6018d3e0dcae9a90883cb72dd5215e43a342f622d5abeff7f05e2a5b184d6b",
+    "sponsor-production.json": "1648df0996cf7226218e2f50bd5ea152cc817521e04e2077f49a4de9e17af628",
+    "verify-job.log": "2a4d9f356e4c61c07da1739ca1ee7624bbdcb19754328225da22c95b3ec49b68",
+    "web-full.json": "2084580ba4e475e87e83cb746ce56517dcb66d0c573babbfc5be4bd4c5afa867",
+    "web-production.json": "83635e1795167afa8ec9c910a23d0b96918eed9e6c3baf0d69ffaf892d4b33d7"
+  },
+  "scope": "No real wallet, signature, payment, publication, ArNS update or owner recovery. Network snapshots only read public native APIs; test wallets and writes use synthetic transports.",
+  "fileHashesNote": "Local JSON snapshots have trailing blank lines normalized without changing parsed values. Present files are hashed in their committed form; ZIP/log hashes refer to original downloaded evidence."
+}

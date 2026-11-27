@@ -1,0 +1,225 @@
+{
+  "schema": "sejire/native-publication-quote/v1",
+  "sourceCommit": "ab06f2d1d78451533abfa48cfa18dc489df709d4",
+  "releaseManifestSha256": "0c454b7cc82b2af61aea4c0e71f36dbfd3f32cce195fbfb272949b70ae9d3bea",
+  "quotedAt": "2026-11-27T13:21:14.500Z",
+  "node": "https://arweave.net",
+  "items": [
+    {
+      "path": "404.html",
+      "bytes": 2132,
+      "rewardWinston": "3288478486"
+    },
+    {
+      "path": "assets/NotoSans-Bold-axMicgqH.ttf",
+      "bytes": 575740,
+      "rewardWinston": "9785873696"
+    },
+    {
+      "path": "assets/NotoSans-Regular-Dpf_lrdO.ttf",
+      "bytes": 569208,
+      "rewardWinston": "9785873696"
+    },
+    {
+      "path": "assets/classicTreePdf-B2Q1IW7F.js",
+      "bytes": 4215,
+      "rewardWinston": "3288478486"
+    },
+    {
+      "path": "assets/html2canvas-B0nUEnH5.js",
+      "bytes": 199565,
+      "rewardWinston": "3288478486"
+    },
+    {
+      "path": "assets/index-XZvCMLln.js",
+      "bytes": 508751,
+      "rewardWinston": "6537176091"
+    },
+    {
+      "path": "assets/index-t8uKO692.css",
+      "bytes": 41927,
+      "rewardWinston": "3288478486"
+    },
+    {
+      "path": "assets/index.es-eezSc9Xv.js",
+      "bytes": 151395,
+      "rewardWinston": "3288478486"
+    },
+    {
+      "path": "assets/pdf-vendor-DicpBYii.js",
+      "bytes": 400365,
+      "rewardWinston": "6537176091"
+    },
+    {
+      "path": "assets/purify.es-Cu8FNuDu.js",
+      "bytes": 28568,
+      "rewardWinston": "3288478486"
+    },
+    {
+      "path": "assets/rolldown-runtime-BgaNhQyE.js",
+      "bytes": 785,
+      "rewardWinston": "3288478486"
+    },
+    {
+      "path": "assets/shezhirePdf-CaZ7B2ks.js",
+      "bytes": 13672,
+      "rewardWinston": "3288478486"
+    },
+    {
+      "path": "assets/textLayout-BngNqlLQ.js",
+      "bytes": 8626,
+      "rewardWinston": "3288478486"
+    },
+    {
+      "path": "assets/wallet-DZ-AkEcU.js",
+      "bytes": 78937,
+      "rewardWinston": "3288478486"
+    },
+    {
+      "path": "assets/work-sans-latin-400-normal-DE1_0GuN.woff",
+      "bytes": 25240,
+      "rewardWinston": "3288478486"
+    },
+    {
+      "path": "assets/work-sans-latin-400-normal-jUejSri3.woff2",
+      "bytes": 19900,
+      "rewardWinston": "3288478486"
+    },
+    {
+      "path": "assets/work-sans-latin-700-normal-CEeo_t6l.woff2",
+      "bytes": 20840,
+      "rewardWinston": "3288478486"
+    },
+    {
+      "path": "assets/work-sans-latin-700-normal-mDs79oer.woff",
+      "bytes": 26176,
+      "rewardWinston": "3288478486"
+    },
+    {
+      "path": "assets/work-sans-latin-ext-400-normal-j7TZlk-s.woff",
+      "bytes": 21116,
+      "rewardWinston": "3288478486"
+    },
+    {
+      "path": "assets/work-sans-latin-ext-400-normal-zfQnhXzv.woff2",
+      "bytes": 15296,
+      "rewardWinston": "3288478486"
+    },
+    {
+      "path": "assets/work-sans-latin-ext-700-normal-BP8nCPzd.woff",
+      "bytes": 22100,
+      "rewardWinston": "3288478486"
+    },
+    {
+      "path": "assets/work-sans-latin-ext-700-normal-Bc0iTajH.woff2",
+      "bytes": 16168,
+      "rewardWinston": "3288478486"
+    },
+    {
+      "path": "assets/work-sans-vietnamese-400-normal-BxGuknnG.woff2",
+      "bytes": 5020,
+      "rewardWinston": "3288478486"
+    },
+    {
+      "path": "assets/work-sans-vietnamese-400-normal-DFZk_KN_.woff",
+      "bytes": 7088,
+      "rewardWinston": "3288478486"
+    },
+    {
+      "path": "assets/work-sans-vietnamese-700-normal-BYAoORCv.woff",
+      "bytes": 7544,
+      "rewardWinston": "3288478486"
+    },
+    {
+      "path": "assets/work-sans-vietnamese-700-normal-CqjC4WOy.woff2",
+      "bytes": 5392,
+      "rewardWinston": "3288478486"
+    },
+    {
+      "path": "build-provenance.json",
+      "bytes": 508,
+      "rewardWinston": "3288478486"
+    },
+    {
+      "path": "bundle-boundary.json",
+      "bytes": 24796,
+      "rewardWinston": "3288478486"
+    },
+    {
+      "path": "favicon.ico",
+      "bytes": 148,
+      "rewardWinston": "3288478486"
+    },
+    {
+      "path": "favicon.svg",
+      "bytes": 148,
+      "rewardWinston": "3288478486"
+    },
+    {
+      "path": "index.html",
+      "bytes": 2132,
+      "rewardWinston": "3288478486"
+    },
+    {
+      "path": "recovery/FORMAT.md",
+      "bytes": 9372,
+      "rewardWinston": "3288478486"
+    },
+    {
+      "path": "recovery/LICENSES.txt",
+      "bytes": 2413,
+      "rewardWinston": "3288478486"
+    },
+    {
+      "path": "recovery/README.md",
+      "bytes": 9879,
+      "rewardWinston": "3288478486"
+    },
+    {
+      "path": "recovery/english.txt",
+      "bytes": 13116,
+      "rewardWinston": "3288478486"
+    },
+    {
+      "path": "recovery/envelope-v1.schema.json",
+      "bytes": 960,
+      "rewardWinston": "3288478486"
+    },
+    {
+      "path": "recovery/public-vectors.json",
+      "bytes": 18534,
+      "rewardWinston": "3288478486"
+    },
+    {
+      "path": "recovery/recover.mjs",
+      "bytes": 25285,
+      "rewardWinston": "3288478486"
+    },
+    {
+      "path": "recovery/recovery.html",
+      "bytes": 29644,
+      "rewardWinston": "3288478486"
+    },
+    {
+      "path": "release-manifest.json",
+      "bytes": 4475,
+      "rewardWinston": "3288478486"
+    },
+    {
+      "path": "release-profile.json",
+      "bytes": 457,
+      "rewardWinston": "3288478486"
+    },
+    {
+      "path": "@manifest",
+      "bytes": 3737,
+      "rewardWinston": "3288478486"
+    }
+  ],
+  "totalRewardWinston": "157608282042",
+  "maximumRewardWinston": "0",
+  "withinBudget": false,
+  "signedRewardCapEnforced": true,
+  "autoTopUp": false,
+  "writesPerformed": false
+}

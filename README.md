@@ -21,6 +21,7 @@ The former paid archive remains an unresolved historical obligation until its or
 - [Independent release and owner acceptance](docs/INDEPENDENT_RELEASE.md)
 - [Active protocol contract](docs/PROTOCOL.md)
 - [November 27 architecture change and local audit](docs/verification/2026-11-27-arweave-only-transition.md)
+- [Accepted Arweave-only package, complete CI and native price quote](docs/verification/2026-11-27-arweave-only-release.md) (evidence branch; accepted application source stays `ab06f2d1d78451533abfa48cfa18dc489df709d4`)
 - [Open recovery format and offline decoder](tools/recovery/README.md)
 - [Independent architecture and limits](docs/verification/2026-11-16-independent-arweave-architecture.md)
 - [Current automated checks](https://github.com/azovskaya/sejire_arweave_solana/actions/workflows/checks.yml)

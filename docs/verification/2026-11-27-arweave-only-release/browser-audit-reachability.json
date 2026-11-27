@@ -1,0 +1,337 @@
+{
+  "schema": "sejire/accepted-browser-audit-reachability/v1",
+  "sourceCommit": "ab06f2d1d78451533abfa48cfa18dc489df709d4",
+  "profile": "decentralized-direct-arweave",
+  "renderedModules": 340,
+  "audits": {
+    "web-production.json": {
+      "auditedPackages": 23,
+      "findingPackagesPresent": 0,
+      "findings": [
+        {
+          "package": "@ardrive/turbo-sdk",
+          "severity": "moderate",
+          "renderedModules": [],
+          "presentInRenderedModuleGraph": false
+        },
+        {
+          "package": "@dha-team/arbundles",
+          "severity": "low",
+          "renderedModules": [],
+          "presentInRenderedModuleGraph": false
+        },
+        {
+          "package": "@ethersproject/abstract-provider",
+          "severity": "low",
+          "renderedModules": [],
+          "presentInRenderedModuleGraph": false
+        },
+        {
+          "package": "@ethersproject/abstract-signer",
+          "severity": "low",
+          "renderedModules": [],
+          "presentInRenderedModuleGraph": false
+        },
+        {
+          "package": "@ethersproject/hash",
+          "severity": "low",
+          "renderedModules": [],
+          "presentInRenderedModuleGraph": false
+        },
+        {
+          "package": "@ethersproject/hdnode",
+          "severity": "low",
+          "renderedModules": [],
+          "presentInRenderedModuleGraph": false
+        },
+        {
+          "package": "@ethersproject/json-wallets",
+          "severity": "low",
+          "renderedModules": [],
+          "presentInRenderedModuleGraph": false
+        },
+        {
+          "package": "@ethersproject/providers",
+          "severity": "low",
+          "renderedModules": [],
+          "presentInRenderedModuleGraph": false
+        },
+        {
+          "package": "@ethersproject/signing-key",
+          "severity": "low",
+          "renderedModules": [],
+          "presentInRenderedModuleGraph": false
+        },
+        {
+          "package": "@ethersproject/transactions",
+          "severity": "low",
+          "renderedModules": [],
+          "presentInRenderedModuleGraph": false
+        },
+        {
+          "package": "@ethersproject/wallet",
+          "severity": "low",
+          "renderedModules": [],
+          "presentInRenderedModuleGraph": false
+        },
+        {
+          "package": "@ethersproject/wordlists",
+          "severity": "low",
+          "renderedModules": [],
+          "presentInRenderedModuleGraph": false
+        },
+        {
+          "package": "@solana/buffer-layout-utils",
+          "severity": "moderate",
+          "renderedModules": [],
+          "presentInRenderedModuleGraph": false
+        },
+        {
+          "package": "@solana/spl-token",
+          "severity": "moderate",
+          "renderedModules": [],
+          "presentInRenderedModuleGraph": false
+        },
+        {
+          "package": "@solana/spl-token-group",
+          "severity": "moderate",
+          "renderedModules": [],
+          "presentInRenderedModuleGraph": false
+        },
+        {
+          "package": "@solana/spl-token-metadata",
+          "severity": "moderate",
+          "renderedModules": [],
+          "presentInRenderedModuleGraph": false
+        },
+        {
+          "package": "@solana/web3.js",
+          "severity": "moderate",
+          "renderedModules": [],
+          "presentInRenderedModuleGraph": false
+        },
+        {
+          "package": "elliptic",
+          "severity": "low",
+          "renderedModules": [],
+          "presentInRenderedModuleGraph": false
+        },
+        {
+          "package": "jayson",
+          "severity": "moderate",
+          "renderedModules": [],
+          "presentInRenderedModuleGraph": false
+        },
+        {
+          "package": "qs",
+          "severity": "moderate",
+          "renderedModules": [],
+          "presentInRenderedModuleGraph": false
+        },
+        {
+          "package": "secp256k1",
+          "severity": "low",
+          "renderedModules": [],
+          "presentInRenderedModuleGraph": false
+        },
+        {
+          "package": "stream-json",
+          "severity": "moderate",
+          "renderedModules": [],
+          "presentInRenderedModuleGraph": false
+        },
+        {
+          "package": "uuid",
+          "severity": "moderate",
+          "renderedModules": [],
+          "presentInRenderedModuleGraph": false
+        }
+      ]
+    },
+    "web-full.json": {
+      "auditedPackages": 29,
+      "findingPackagesPresent": 1,
+      "findings": [
+        {
+          "package": "@ardrive/turbo-sdk",
+          "severity": "moderate",
+          "renderedModules": [],
+          "presentInRenderedModuleGraph": false
+        },
+        {
+          "package": "@dha-team/arbundles",
+          "severity": "low",
+          "renderedModules": [],
+          "presentInRenderedModuleGraph": false
+        },
+        {
+          "package": "@ethersproject/abstract-provider",
+          "severity": "low",
+          "renderedModules": [],
+          "presentInRenderedModuleGraph": false
+        },
+        {
+          "package": "@ethersproject/abstract-signer",
+          "severity": "low",
+          "renderedModules": [],
+          "presentInRenderedModuleGraph": false
+        },
+        {
+          "package": "@ethersproject/hash",
+          "severity": "low",
+          "renderedModules": [],
+          "presentInRenderedModuleGraph": false
+        },
+        {
+          "package": "@ethersproject/hdnode",
+          "severity": "low",
+          "renderedModules": [],
+          "presentInRenderedModuleGraph": false
+        },
+        {
+          "package": "@ethersproject/json-wallets",
+          "severity": "low",
+          "renderedModules": [],
+          "presentInRenderedModuleGraph": false
+        },
+        {
+          "package": "@ethersproject/providers",
+          "severity": "low",
+          "renderedModules": [],
+          "presentInRenderedModuleGraph": false
+        },
+        {
+          "package": "@ethersproject/signing-key",
+          "severity": "low",
+          "renderedModules": [],
+          "presentInRenderedModuleGraph": false
+        },
+        {
+          "package": "@ethersproject/transactions",
+          "severity": "low",
+          "renderedModules": [],
+          "presentInRenderedModuleGraph": false
+        },
+        {
+          "package": "@ethersproject/wallet",
+          "severity": "low",
+          "renderedModules": [],
+          "presentInRenderedModuleGraph": false
+        },
+        {
+          "package": "@ethersproject/wordlists",
+          "severity": "low",
+          "renderedModules": [],
+          "presentInRenderedModuleGraph": false
+        },
+        {
+          "package": "@solana/buffer-layout-utils",
+          "severity": "moderate",
+          "renderedModules": [],
+          "presentInRenderedModuleGraph": false
+        },
+        {
+          "package": "@solana/spl-token",
+          "severity": "moderate",
+          "renderedModules": [],
+          "presentInRenderedModuleGraph": false
+        },
+        {
+          "package": "@solana/spl-token-group",
+          "severity": "moderate",
+          "renderedModules": [],
+          "presentInRenderedModuleGraph": false
+        },
+        {
+          "package": "@solana/spl-token-metadata",
+          "severity": "moderate",
+          "renderedModules": [],
+          "presentInRenderedModuleGraph": false
+        },
+        {
+          "package": "@solana/web3.js",
+          "severity": "moderate",
+          "renderedModules": [],
+          "presentInRenderedModuleGraph": false
+        },
+        {
+          "package": "browserify-sign",
+          "severity": "low",
+          "renderedModules": [],
+          "presentInRenderedModuleGraph": false
+        },
+        {
+          "package": "create-ecdh",
+          "severity": "low",
+          "renderedModules": [],
+          "presentInRenderedModuleGraph": false
+        },
+        {
+          "package": "crypto-browserify",
+          "severity": "low",
+          "renderedModules": [],
+          "presentInRenderedModuleGraph": false
+        },
+        {
+          "package": "elliptic",
+          "severity": "low",
+          "renderedModules": [],
+          "presentInRenderedModuleGraph": false
+        },
+        {
+          "package": "jayson",
+          "severity": "moderate",
+          "renderedModules": [],
+          "presentInRenderedModuleGraph": false
+        },
+        {
+          "package": "node-stdlib-browser",
+          "severity": "low",
+          "renderedModules": [],
+          "presentInRenderedModuleGraph": false
+        },
+        {
+          "package": "pbkdf2",
+          "severity": "moderate",
+          "renderedModules": [],
+          "presentInRenderedModuleGraph": false
+        },
+        {
+          "package": "qs",
+          "severity": "moderate",
+          "renderedModules": [],
+          "presentInRenderedModuleGraph": false
+        },
+        {
+          "package": "secp256k1",
+          "severity": "low",
+          "renderedModules": [],
+          "presentInRenderedModuleGraph": false
+        },
+        {
+          "package": "stream-json",
+          "severity": "moderate",
+          "renderedModules": [],
+          "presentInRenderedModuleGraph": false
+        },
+        {
+          "package": "uuid",
+          "severity": "moderate",
+          "renderedModules": [],
+          "presentInRenderedModuleGraph": false
+        },
+        {
+          "package": "vite-plugin-node-polyfills",
+          "severity": "low",
+          "renderedModules": [
+            "apps/web/node_modules/vite-plugin-node-polyfills/shims/buffer/dist/index.js",
+            "apps/web/node_modules/vite-plugin-node-polyfills/shims/global/dist/index.js",
+            "apps/web/node_modules/vite-plugin-node-polyfills/shims/process/dist/index.js"
+          ],
+          "presentInRenderedModuleGraph": true
+        }
+      ]
+    }
+  },
+  "scope": "Intersection of both production and full npm advisory package paths with the actual verified CI module graph. Package presence does not establish vulnerable-call reachability; absence is not a whole-program security proof."
+}

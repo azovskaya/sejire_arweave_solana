@@ -1,0 +1,28 @@
+{
+  "schema": "sejire/readonly-publication-review/v1",
+  "status": "PASS",
+  "checkedAt": "2026-11-27T13:21:16.997Z",
+  "request": {
+    "sha": "ab06f2d1d78451533abfa48cfa18dc489df709d4",
+    "runId": 46003304575,
+    "attempt": 1
+  },
+  "sourceTree": "2f8bcbc117143ead876030cd75c5dff6ed40264d",
+  "artifactId": 15198969318,
+  "zipSha256": "a1bdce3b4e01f763e83290d29fe993321a0b4bbb859f9a064c63f152bd80e3be",
+  "zipBytes": 1271348,
+  "releaseManifestSha256": "0c454b7cc82b2af61aea4c0e71f36dbfd3f32cce195fbfb272949b70ae9d3bea",
+  "productionAudit": {
+    "high": 0,
+    "critical": 0
+  },
+  "node": "https://arweave.net",
+  "quotedAt": "2026-11-27T13:21:14.500Z",
+  "totalRewardWinston": "157608282042",
+  "maximumRewardWinston": "0",
+  "withinBudget": false,
+  "signingPerformed": false,
+  "chainWritesPerformed": false,
+  "arnsChanged": false,
+  "note": "Preparation and public fee review only. A zero-cap quote authorizes no payment. Real wallet acceptance, upload, public bytes/MIME and ArNS remain separate."
+}

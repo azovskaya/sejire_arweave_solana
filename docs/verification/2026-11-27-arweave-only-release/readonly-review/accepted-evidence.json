@@ -1,0 +1,55 @@
+{
+  "schema": "sejire/readonly-accepted-package/v1",
+  "status": "PASS",
+  "checkedAt": "2026-11-27T13:20:47.299Z",
+  "sourceTree": "2f8bcbc117143ead876030cd75c5dff6ed40264d",
+  "evidence": {
+    "request": {
+      "sha": "ab06f2d1d78451533abfa48cfa18dc489df709d4",
+      "runId": 46003304575,
+      "attempt": 1
+    },
+    "artifact": {
+      "id": 15198969318,
+      "node_id": "MDg6QXJ0aWZhY3QxNTE5ODk2OTMxOA==",
+      "name": "permaweb-static-release",
+      "size_in_bytes": 1271348,
+      "url": "https://api.github.com/repos/azovskaya/sejire_arweave_solana/actions/artifacts/15198969318",
+      "archive_download_url": "https://api.github.com/repos/azovskaya/sejire_arweave_solana/actions/artifacts/15198969318/zip",
+      "expired": false,
+      "digest": "sha256:a1bdce3b4e01f763e83290d29fe993321a0b4bbb859f9a064c63f152bd80e3be",
+      "created_at": "2026-11-27T13:06:14Z",
+      "updated_at": "2026-11-27T13:06:14Z",
+      "expires_at": "2026-12-11T13:06:13Z",
+      "workflow_run": {
+        "id": 46003304575,
+        "repository_id": 1393130716,
+        "head_repository_id": 1393130716,
+        "head_branch": "feat/arweave-only-protocol-20261127",
+        "head_sha": "ab06f2d1d78451533abfa48cfa18dc489df709d4"
+      }
+    }
+  },
+  "provenance": {
+    "schema": "sejire/permaweb-provenance/v1",
+    "artifact": "permaweb-static-release",
+    "run": 46003304575,
+    "attempt": 1,
+    "artifactId": 15198969318,
+    "sourceCommit": "ab06f2d1d78451533abfa48cfa18dc489df709d4",
+    "publishedByCommit": "ab06f2d1d78451533abfa48cfa18dc489df709d4",
+    "profile": "decentralized-direct-arweave",
+    "zipSha256": "a1bdce3b4e01f763e83290d29fe993321a0b4bbb859f9a064c63f152bd80e3be",
+    "releaseManifestSha256": "0c454b7cc82b2af61aea4c0e71f36dbfd3f32cce195fbfb272949b70ae9d3bea"
+  },
+  "downloadedZipSha256": "a1bdce3b4e01f763e83290d29fe993321a0b4bbb859f9a064c63f152bd80e3be",
+  "downloadedZipBytes": 1271348,
+  "releaseFiles": 41,
+  "releaseBytes": 2917633,
+  "networkMethodsForEvidence": [
+    "GET"
+  ],
+  "signingPerformed": false,
+  "chainWritesPerformed": false,
+  "arnsChanged": false
+}

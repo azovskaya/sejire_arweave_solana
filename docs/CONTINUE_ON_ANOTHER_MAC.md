@@ -1,5 +1,28 @@
 # Последнее продолжение — 27 ноября 2026: Arweave-only
 
+**Итоговая приёмка выполнена.** Публикуемый source заморожен на GitHub
+`ab06f2d1d78451533abfa48cfa18dc489df709d4` в
+`feat/arweave-only-protocol-20261127`, tree `2f8bcbc117143ead876030cd75c5dff6ed40264d`.
+Полный CI [46003304575/1](https://github.com/azovskaya/sejire_arweave_solana/actions/runs/46003304575)
+SUCCESS: 83 successful steps, 382 browser executions, 89 PDF / 779 страниц,
+offline decoder при OS network isolation и native API/CORS/recovery gates.
+Read-only prepare [46006251326/1](https://github.com/azovskaya/sejire_arweave_solana/actions/runs/46006251326)
+SUCCESS, 14/14 steps. Принятый ready ZIP имеет SHA-256
+`3c38e238d30ab1a4bee718a6bd7bf2969944f17ed9a0d75380d16b86d0d46df6`.
+
+Оценка native публикации 41 файла + manifest на 18:21 по Алматы:
+`157608282042` winston = `0.157608282042 AR`; это read-only quote при cap=0,
+а не разрешённый или выполненный расход. Реальные wallet/upload/recovery,
+права на имя и ArNS cutover остаются живой приёмкой владельца.
+
+Полный итог, файлы доказательств и следующий порядок:
+[Arweave-only release evidence](verification/2026-11-27-arweave-only-release.md).
+Документы сохранены в отдельной ветке `audit/native-publication-review-20261127`;
+её HEAD не подменяет принятый source SHA. Для публикации использовать exact
+accepted pack; не пересобирать сайт из evidence HEAD. Main, ArNS и реальный
+кошелёк не изменялись. Production audit high/critical=0; остальные findings
+и 28 lint warnings подробно указаны в отчёте.
+
 **Владелец изменил цель:** SEJIRE должен работать децентрализованно через Arweave
 без обязательного сервиса проекта. Ветка текущего кандидата —
 `feat/arweave-only-protocol-20261127`. Это решение заменяет план Linux/Blitz,
