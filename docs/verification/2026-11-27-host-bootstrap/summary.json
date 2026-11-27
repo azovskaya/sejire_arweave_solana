@@ -115,5 +115,11 @@
       "README now supplies required full expected-commit argument",
       "release plan scope matches probe JSON"
     ]
+  },
+  "dashboardAuthentication": {
+    "secureRequestResult": "declined",
+    "authenticatedSessionVerified": false,
+    "credentialsVisibleToAgent": false,
+    "automaticRetryPerformed": false
   }
 }
