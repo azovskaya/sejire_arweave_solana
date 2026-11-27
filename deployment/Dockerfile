@@ -17,7 +17,9 @@ RUN node deployment/build-server.mjs
 FROM node:24.22.3-bookworm-slim AS dependencies
 WORKDIR /app
 COPY apps/sponsor/package.json apps/sponsor/package-lock.json apps/sponsor/
-RUN npm ci --prefix apps/sponsor --omit=dev --ignore-scripts && npm cache clean --force
+RUN npm ci --prefix apps/sponsor --omit=dev --ignore-scripts \
+    && npm audit --prefix apps/sponsor --omit=dev --audit-level=high \
+    && npm cache clean --force
 
 FROM node:24.22.3-bookworm-slim
 ENV NODE_ENV=production \

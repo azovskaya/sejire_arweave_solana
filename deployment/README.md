@@ -38,10 +38,13 @@
 
 ```bash
 npm ci --prefix apps/sponsor
+npm audit --prefix apps/sponsor --omit=dev --audit-level=high
 npm run linux:build
 npm run test:linux-package
-docker build -f deployment/Dockerfile -t sejire-api:review .
+docker build --pull --no-cache -f deployment/Dockerfile -t sejire-api:review .
 ```
+
+Перед production deployment нужен свежий успешный audit production-зависимостей сервера: high/critical findings и ошибка получения audit должны остановить выпуск. Docker повторяет этот audit при установке production-зависимостей. `--no-cache` не позволяет использовать прежний успешный audit из кэшированного слоя, а `--pull` проверяет актуальный базовый образ указанной версии. Полный отчёт с dev/test dependencies сохраняется отдельно и не подменяет production audit. Manual portable workflow также заново проверяет production-зависимости web и sponsor перед публикацией.
 
 Образ содержит Node.js 24.22.3, скомпилированный сервис и production-зависимости из lockfile. Он работает от непривилегированного пользователя `node`; встроенные admission/execution флаги выключены. Пример Compose открывает API только на `127.0.0.1:8787`; HTTPS завершает выбранный владельцем reverse proxy. Файл `sejire.env` создаётся **на хосте владельца** по `sejire.env.example` и не коммитится. Для секретов предпочтительна защищённая панель хостинга.
 
