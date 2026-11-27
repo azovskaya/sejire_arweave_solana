@@ -1,0 +1,14 @@
+✔ closed bootstrap uses only the fixed GET/OPTIONS boundary with no credentials (13.723584ms)
+✔ requires a full expected source commit before any request (1.03057ms)
+✔ detects wrong build, enabled offers, reachable checkout and open admin (10.20592ms)
+✔ rejects redirects, platform HTML errors, invalid JSON and bounded response violations (1.94807ms)
+✔ rejects wildcard CORS and exposes no allowed origin for a denied request (4.678055ms)
+✔ matches the real compiled service with a synthetic empty ledger and all outbound fetch blocked (277.208251ms)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 6
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 498.44689

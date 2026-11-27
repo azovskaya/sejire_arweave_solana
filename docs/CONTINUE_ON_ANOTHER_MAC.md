@@ -1,4 +1,18 @@
-# Последнее продолжение — 27 ноября 2026: код и CI-пакет проверены, production-переход ожидает владельца
+# Последнее продолжение — 27 ноября 2026: подготовлен закрытый запуск API, нужен вход в панель хостинга
+
+Принятый source **`ef0252025c32687dce018368ea94d74af2728c66`**, его CI **45984285862** и static ZIP не менялись. На GitHub создана и повторно проверена отдельная ветка API **`release/sejire-api-ef025202`** с тем же SHA; это не доказанная branch protection. Для static upload workflow остаётся feature branch `feat/funded-portable-release-20261125`.
+
+Подготовлен [операторский комплект Blitz](../deployment/blitz/README.md): точные create arguments, публичное закрытое окружение и probe без credentials. **6/6 synthetic tests PASS**, включая 8 проверок fresh compiled accepted runtime на пустой SQLite с blocked outbound fetch. [Отчёт и hashes](verification/2026-11-27-host-bootstrap/README.md). Это отдельный локальный operator scope, не новый production CI и не доказательство работающего хоста.
+
+Хостинг повторно прочитан: Free, sleep 30 минут, SEJIRE app отсутствует, адрес `https://sejire-api.azovskaya.prod.page` не зарезервирован. Текущая панель потребовала вход владельца. Подписка/deploy/перенос данных/реальные платежи/upload/ArNS change **не выполнялись**. Через connector отсутствуют нужные настройки **Only use my Dockerfile**, **Deploy every push**, **Build on your own GitHub Actions**; их нужно проверить в панели. Не разрешать автоматический workflow commit в accepted source. `autoUpdate:false` не заменяет все эти настройки.
+
+Перед production нужны host-level stop-before-start/single writer/persistent-volume/ingress/backup проверки: стандартный rolling deployment может конфликтовать с SQLite guard, а copied volumes не дают общей блокировки. Первое создание — исключительно пустой bootstrap без keys и старого ledger. Выключенные admission-флаги не останавливают прежние promo alarms и saved signed SOL continuation. Импортировать в новый путь и сохранять review marker до source quiescence/reconciliation; старое обязательство `AtwLYx…` не заменять.
+
+Следующее действие владельца — вход в существующий Blitz account для проверки build settings и выбора always-on; wallet/ArNS позже. По pricing от 26 ноября Pro app 512 MB €3/месяц, 1 GB €5, account Pro €9; достаточность памяти и off-host backups отдельного Pro app ещё не приняты. Не оформлять новую регулярную подписку без решения владельца. Остальные production gates и полный accepted evidence сохранены ниже.
+
+---
+
+## Принятие кода и CI-пакета — 27 ноября 2026
 
 Принятый source **`ef0252025c32687dce018368ea94d74af2728c66`**, ветка **`feat/funded-portable-release-20261125`**; local equivalent `92ebed7bd7f0455a2c72296b8271fccaa1f0f4b3`; одинаковое дерево `1bf283fa8fd157348cf7bb4cf67e49c0f93e5cbb`. Feature head сохранять стабильным; evidence хранится отдельно в `docs/funded-release-evidence-20261125`.
 

@@ -1,0 +1,119 @@
+{
+  "schema": "sejire/host-bootstrap-evidence/v1",
+  "recordedAt": "2026-11-27T11:57:18.785154+00:00",
+  "scope": "operator-preparation-and-local-synthetic-http-verification",
+  "productionStatus": "NO_GO",
+  "acceptedSource": {
+    "commit": "ef0252025c32687dce018368ea94d74af2728c66",
+    "tree": "1bf283fa8fd157348cf7bb4cf67e49c0f93e5cbb",
+    "ciRunId": "45984285862",
+    "ciAttempt": 1,
+    "artifactId": "15190448748",
+    "artifactSha256": "c7e351591f5df3677b81ed5aba1aa7baa44c76706c00f56bf14af4e4d800efcf",
+    "featureBranch": "feat/funded-portable-release-20261125",
+    "deploymentBranch": "release/sejire-api-ef025202",
+    "deploymentBranchCreatedAndVerified": true,
+    "branchProtectionVerified": false
+  },
+  "sourceRuntimeChanged": false,
+  "hostDeploymentPerformed": false,
+  "hostProbePerformed": false,
+  "mainChanged": false,
+  "secretsRead": false,
+  "fundsSpent": false,
+  "arweaveUploadPerformed": false,
+  "arnsChanged": false,
+  "tests": {
+    "status": "PASS",
+    "count": 6,
+    "failed": 0,
+    "skipped": 0,
+    "runtime": "Node.js v24.22.3",
+    "includesActualCompiledService": true,
+    "database": "synthetic temporary empty SQLite",
+    "serverOutboundFetch": "replaced with fail-closed stub; no outbound call observed",
+    "command": "SEJIRE_BOOTSTRAP_TEST_BUNDLE=/workspace/scratch/ec55c66d48ac/sejire-code-audit-20261125/apps/sponsor/build/server.mjs node --test deployment/blitz/verify-closed-bootstrap.test.mjs",
+    "log": "probe-tests.log"
+  },
+  "hostObservation": {
+    "accountAddress": "azovskaya.prod.page",
+    "plan": "free",
+    "apps": 2,
+    "appsLimit": 5,
+    "reservedMemoryBytes": 369098752,
+    "memoryLimitBytes": 536870912,
+    "sleepAfterMinutes": 30,
+    "sejireAppExists": false,
+    "apiOriginReserved": false,
+    "dashboardSession": "LOGIN_REQUIRED",
+    "source": "read-only Blitz connector and dashboard sign-in observation"
+  },
+  "missingActualConditions": [
+    "strict Docker/build settings observed in the actual dashboard",
+    "fresh production dependency audit and actual build provenance",
+    "single executor across restart, rollout and shutdown on the host filesystem",
+    "persistent volume ownership, lock semantics and capacity",
+    "documented trusted proxy identity and bounded request handling",
+    "always-on plan and settings",
+    "private legacy snapshot, source quiescence, reconciliation and guarded import",
+    "owner secret handoff and existing recipient/budget settings",
+    "off-host verified snapshot and guarded restore rehearsal",
+    "authenticated read-only production preflight",
+    "real Mainnet SOL and promo save, exact raw bytes and clean/offline recovery",
+    "accepted upload quote, manifest verification and existing ArNS target cutover"
+  ],
+  "operatorFiles": {
+    "deployment/blitz/README.md": {
+      "bytes": 19343,
+      "sha256": "eeeb240051bee4d40f5026fc0cd0a3a179387d542ee36f7da912dc2d08f57705"
+    },
+    "deployment/blitz/bootstrap.env.example": {
+      "bytes": 1011,
+      "sha256": "ab8009417aa0bf8123e90e6334bfccb244239667e5f9cb4e0b5069c6f82f9a72"
+    },
+    "deployment/blitz/release-plan.json": {
+      "bytes": 3816,
+      "sha256": "6d58004234911d1618ae816101db154af19b9f48fec31dc01f3b5df64f34c499"
+    },
+    "deployment/blitz/verify-closed-bootstrap.mjs": {
+      "bytes": 7758,
+      "sha256": "db6d4bc5b97af502585bde8cbf84a93b9e8f1ba2d550020cacf531e0cbfee716"
+    },
+    "deployment/blitz/verify-closed-bootstrap.test.mjs": {
+      "bytes": 9118,
+      "sha256": "3bcbf98829bba9c38acfd710aa98632680b2aca87344e0d8718f1ca37d864bb6"
+    }
+  },
+  "testLogSha256": "48d49935ce0a4e7df118eb17b6c5d2bfa60fdf3f69938d6fc6336e2f0620f21c",
+  "officialSources": [
+    {
+      "url": "https://blitz.cloud/pricing/",
+      "updated": "2026-11-26"
+    },
+    {
+      "url": "https://blitz.cloud/docs/deploy-from-github/",
+      "updated": "2026-11-26"
+    },
+    {
+      "url": "https://blitz.cloud/docs/settings-and-files/",
+      "updated": "2026-10-03"
+    },
+    {
+      "url": "https://blitz.cloud/docs/backups/",
+      "updated": "2026-10-03"
+    },
+    {
+      "url": "https://blitz.cloud/docs/limits/"
+    },
+    {
+      "url": "https://blitz.cloud/docs/addresses-and-https/"
+    }
+  ],
+  "independentOperatorReview": {
+    "status": "PASS_WITH_TWO_DOC_FIXES_APPLIED",
+    "findings": [
+      "README now supplies required full expected-commit argument",
+      "release plan scope matches probe JSON"
+    ]
+  }
+}
