@@ -1,0 +1,163 @@
+name: Review exact Arweave-only publication package (read-only)
+
+# Separate diagnostic branch only. This workflow checks out the frozen source,
+# applies its real CI/artifact gates, and reads native AR prices. It never signs,
+# broadcasts a transaction, runs a publisher upload, or changes an ArNS record.
+on:
+  push:
+    branches: [audit/native-publication-review-20261127]
+    paths: [.github/workflows/arweave-only-readonly-prepare.yml]
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: sejire-native-readonly-review-20261127
+  cancel-in-progress: false
+
+jobs:
+  review:
+    if: github.repository == 'azovskaya/sejire_arweave_solana' && github.ref == 'refs/heads/audit/native-publication-review-20261127'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      REVIEW_SOURCE_SHA: ab06f2d1d78451533abfa48cfa18dc489df709d4
+      REVIEW_SOURCE_TREE: 2f8bcbc117143ead876030cd75c5dff6ed40264d
+      REVIEW_CI_RUN_ID: '46003304575'
+      REVIEW_CI_ATTEMPT: '1'
+      NATIVE_ARWEAVE_NODE: https://arweave.net
+      NATIVE_MAX_REWARD_WINSTON: '0'
+    steps:
+      - name: Check out the exact frozen application source
+        uses: actions/checkout@v4
+        with:
+          ref: ab06f2d1d78451533abfa48cfa18dc489df709d4
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.22.3'
+          cache: npm
+          cache-dependency-path: apps/web/package-lock.json
+      - name: Verify actual exact-source CI and recover its digest-bound package
+        id: accept
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          node --input-type=module <<'JS'
+          import assert from 'node:assert/strict';
+          import { execFileSync } from 'node:child_process';
+          import { mkdir, writeFile } from 'node:fs/promises';
+          import { join } from 'node:path';
+          import { ACCEPTED_DIR, buildProvenance, checkPermawebEvidence, digest,
+            downloadAcceptedArtifact, extractAcceptedZip, verifyAcceptedRelease,
+            verifyRelease } from './scripts/permaweb-release.mjs';
+          import { INDEPENDENT_PROFILE } from './scripts/static-release-profile.mjs';
+          const review = '.cache/native-publication-review';
+          const request = { sha: process.env.REVIEW_SOURCE_SHA,
+            runId: Number(process.env.REVIEW_CI_RUN_ID), attempt: Number(process.env.REVIEW_CI_ATTEMPT) };
+          const checkedOut = execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim();
+          const sourceTree = execFileSync('git', ['rev-parse', 'HEAD^{tree}'], { encoding: 'utf8' }).trim();
+          assert.equal(checkedOut, request.sha); assert.equal(sourceTree, process.env.REVIEW_SOURCE_TREE);
+          await mkdir(review, { recursive: true });
+          await writeFile(join(review, 'requested-review.json'), JSON.stringify({ request, sourceTree,
+            diagnosticRunId: process.env.GITHUB_RUN_ID, diagnosticAttempt: process.env.GITHUB_RUN_ATTEMPT,
+            requestedAt: new Date().toISOString(), chainWritesRequested: false }, null, 2) + '\n');
+          const getOnly = (url, options = {}) => {
+            assert.equal((options.method ?? 'GET').toUpperCase(), 'GET');
+            return fetch(url, options);
+          };
+          const transport = { token: process.env.GH_TOKEN, fetcher: getOnly };
+          const evidence = await checkPermawebEvidence(request, transport);
+          const bytes = await downloadAcceptedArtifact(evidence, transport);
+          extractAcceptedZip(bytes, ACCEPTED_DIR);
+          const release = await verifyRelease(ACCEPTED_DIR, request.sha, { expectedProfile: INDEPENDENT_PROFILE });
+          const provenance = buildProvenance(evidence, release);
+          await writeFile(join(release.root, 'build-provenance.json'), JSON.stringify(provenance, null, 2) + '\n', { flag: 'wx' });
+          const accepted = await verifyAcceptedRelease(evidence, ACCEPTED_DIR);
+          const report = { schema: 'sejire/readonly-accepted-package/v1', status: 'PASS',
+            checkedAt: new Date().toISOString(), sourceTree, evidence, provenance,
+            downloadedZipSha256: digest(bytes), downloadedZipBytes: bytes.length,
+            releaseFiles: accepted.files.length, releaseBytes: accepted.files.reduce((sum, file) => sum + file.bytes, 0),
+            networkMethodsForEvidence: ['GET'], signingPerformed: false, chainWritesPerformed: false, arnsChanged: false };
+          await writeFile(join(review, 'accepted-evidence.json'), JSON.stringify(report, null, 2) + '\n');
+          console.log(JSON.stringify(report, null, 2));
+          JS
+      - name: Install dependencies from the frozen source lockfile
+        run: npm ci --prefix apps/web
+      - name: Blocking production dependency audit for the exact source
+        shell: bash
+        run: |
+          set -o pipefail
+          npm audit --prefix apps/web --omit=dev --audit-level=high --json | tee .cache/native-publication-review/production-audit.json
+          git diff --exit-code
+      - name: Build the native publication plan without a key
+        shell: bash
+        run: |
+          set -o pipefail
+          node scripts/native-permaweb.mjs --plan | tee .cache/native-publication-review/plan.json
+      - name: Read current native AR prices with a zero review cap
+        timeout-minutes: 10
+        shell: bash
+        run: |
+          set -o pipefail
+          node scripts/native-permaweb.mjs --quote | tee .cache/native-publication-review/quote.json
+      - name: Recheck CI freshness and bind the final review to the accepted bytes
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          node --input-type=module <<'JS'
+          import assert from 'node:assert/strict';
+          import { readFile, writeFile } from 'node:fs/promises';
+          import { join } from 'node:path';
+          import { ACCEPTED_DIR, checkPermawebEvidence, verifyAcceptedRelease } from './scripts/permaweb-release.mjs';
+          const review = '.cache/native-publication-review';
+          const read = async name => JSON.parse(await readFile(join(review, name), 'utf8'));
+          const initial = await read('accepted-evidence.json');
+          const request = { sha: process.env.REVIEW_SOURCE_SHA,
+            runId: Number(process.env.REVIEW_CI_RUN_ID), attempt: Number(process.env.REVIEW_CI_ATTEMPT) };
+          const evidence = await checkPermawebEvidence(request, { token: process.env.GH_TOKEN });
+          assert.deepEqual(evidence.request, initial.evidence.request);
+          for (const field of ['id', 'digest', 'size_in_bytes', 'created_at'])
+            assert.equal(evidence.artifact[field], initial.evidence.artifact[field]);
+          const release = await verifyAcceptedRelease(evidence, ACCEPTED_DIR);
+          assert.equal(release.manifestSha256, initial.provenance.releaseManifestSha256);
+          const plan = await read('plan.json'), quote = await read('quote.json'), audit = await read('production-audit.json');
+          for (const item of [plan, quote]) {
+            assert.equal(item.sourceCommit, request.sha);
+            assert.equal(item.releaseManifestSha256, release.manifestSha256);
+          }
+          assert.equal(plan.mandatorySejireService, false); assert.equal(plan.mandatoryBundler, false);
+          assert.equal(plan.arnsTargetChange, false); assert.equal(quote.node, process.env.NATIVE_ARWEAVE_NODE);
+          assert.equal(quote.maximumRewardWinston, '0'); assert.equal(quote.writesPerformed, false);
+          assert.equal(quote.autoTopUp, false);
+          assert.equal(audit.metadata.vulnerabilities.high, 0); assert.equal(audit.metadata.vulnerabilities.critical, 0);
+          const summary = { schema: 'sejire/readonly-publication-review/v1', status: 'PASS',
+            checkedAt: new Date().toISOString(), request, sourceTree: process.env.REVIEW_SOURCE_TREE,
+            artifactId: evidence.artifact.id, zipSha256: initial.downloadedZipSha256,
+            zipBytes: initial.downloadedZipBytes, releaseManifestSha256: release.manifestSha256,
+            productionAudit: { high: 0, critical: 0 }, node: quote.node, quotedAt: quote.quotedAt,
+            totalRewardWinston: quote.totalRewardWinston, maximumRewardWinston: quote.maximumRewardWinston,
+            withinBudget: quote.withinBudget, signingPerformed: false, chainWritesPerformed: false, arnsChanged: false,
+            note: 'Preparation and public fee review only. A zero-cap quote authorizes no payment. Real wallet acceptance, upload, public bytes/MIME and ArNS remain separate.' };
+          await writeFile(join(review, 'review-summary.json'), JSON.stringify(summary, null, 2) + '\n');
+          console.log(JSON.stringify(summary, null, 2));
+          JS
+      - name: Preserve the accepted package after all review gates pass
+        uses: actions/upload-artifact@v4
+        with:
+          name: arweave-only-accepted-pack-ab06f2d
+          path: .cache/permaweb-accepted/
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 30
+      - name: Preserve public plan, quote, audit and exact-source evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: arweave-only-readonly-review-ab06f2d
+          path: .cache/native-publication-review/
+          if-no-files-found: ignore
+          retention-days: 30
