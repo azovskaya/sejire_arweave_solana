@@ -1,0 +1,137 @@
+name: DIAGNOSTIC historical archive public readback
+on:
+  push:
+    branches: [audit/historical-readback-20261127]
+permissions:
+  contents: read
+jobs:
+  diagnostic:
+    if: github.ref == 'refs/heads/audit/historical-readback-20261127'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.22.3'
+      - name: One bounded public GET per endpoint (no archive output)
+        shell: bash
+        env:
+          OUT_DIR: ${{ runner.temp }}/historical-readback
+        run: |
+          set -euo pipefail
+          mkdir -p "$OUT_DIR"
+          node --input-type=module <<'NODE' | tee "$OUT_DIR/run.log"
+          import { createHash } from 'node:crypto';
+          import { writeFile, appendFile } from 'node:fs/promises';
+          import { join } from 'node:path';
+          const id = 'AtwLYx509C9jWIFKUNg7dy1GSgiaDbXVK1YEQbBWfHY';
+          const expected = { bytes: 25269, sha256: '96bb194c3fbcf1dfea7e738cf91d758b8cfdaabb5be934df8dacd96a65c7be85' };
+          const timeoutMs = 20000, maxBodyBytes = 1048576;
+          const endpoints = [
+            { kind: 'status', url: `https://arweave.net/tx/${id}/status` },
+            { kind: 'header', url: `https://arweave.net/tx/${id}` },
+            { kind: 'raw', url: `https://arweave.net/raw/${id}` },
+            { kind: 'raw', url: `https://turbo-gateway.com/raw/${id}` },
+          ];
+          const safeToken = value => typeof value === 'string' ? value.replace(/[^A-Za-z0-9_.-]/g, '_').slice(0, 80) : null;
+          const smallString = value => typeof value === 'string' && value.length <= 128 ? value : null;
+          const safeInteger = value => Number.isSafeInteger(value) && value >= 0 ? value : null;
+          async function probe(endpoint) {
+            const startedAt = new Date().toISOString(), start = performance.now();
+            const controller = new AbortController();
+            const timer = setTimeout(() => controller.abort(), timeoutMs);
+            const row = { ...endpoint, method: 'GET', startedAt, requests: 1, status: null,
+              complete: false, bytes: 0, sha256: null, rawVerified: false };
+            try {
+              const response = await fetch(endpoint.url, { method: 'GET', redirect: 'manual',
+                credentials: 'omit', referrerPolicy: 'no-referrer', signal: controller.signal,
+                headers: { Accept: endpoint.kind === 'raw' ? 'application/octet-stream' : 'application/json',
+                  'Accept-Encoding': 'identity' } });
+              row.status = response.status;
+              row.contentType = response.headers.get('content-type');
+              row.contentLength = response.headers.get('content-length');
+              if (response.status >= 300 && response.status <= 399) {
+                row.error = { code: 'UNEXPECTED_REDIRECT_NOT_FOLLOWED' };
+                const location = response.headers.get('location');
+                if (location) {
+                  try { const target = new URL(location, endpoint.url); row.redirectTarget = `${target.origin}${target.pathname}`.slice(0, 300); }
+                  catch { row.redirectTarget = 'INVALID_LOCATION'; }
+                }
+                await response.body?.cancel();
+                return row;
+              }
+              const declared = response.headers.get('content-length');
+              if (declared && /^\d+$/.test(declared) && BigInt(declared) > BigInt(maxBodyBytes)) {
+                await response.body?.cancel();
+                throw Object.assign(new Error('bounded body'), { code: 'BODY_LIMIT_EXCEEDED' });
+              }
+              const hash = createHash('sha256'), chunks = [];
+              if (response.body) {
+                const reader = response.body.getReader();
+                while (true) {
+                  const { done, value } = await reader.read();
+                  if (done) break;
+                  if (row.bytes + value.byteLength > maxBodyBytes) {
+                    await reader.cancel();
+                    throw Object.assign(new Error('bounded body'), { code: 'BODY_LIMIT_EXCEEDED' });
+                  }
+                  row.bytes += value.byteLength; hash.update(value);
+                  if (endpoint.kind !== 'raw') chunks.push(value);
+                }
+              }
+              row.complete = true; row.sha256 = hash.digest('hex');
+              if (endpoint.kind === 'raw') {
+                row.rawVerified = response.status === 200 && row.bytes === expected.bytes && row.sha256 === expected.sha256;
+                row.verdict = row.rawVerified ? 'RAW_VERIFIED' : 'UNRESOLVED';
+              } else if (response.status === 200) {
+                const value = JSON.parse(Buffer.concat(chunks).toString('utf8'));
+                row.metadata = endpoint.kind === 'status' ? {
+                  blockHeight: safeInteger(value.block_height), confirmations: safeInteger(value.number_of_confirmations),
+                  blockIndependentHash: smallString(value.block_indep_hash),
+                } : {
+                  id: smallString(value.id), format: safeInteger(value.format), dataSize: smallString(value.data_size),
+                  dataRoot: smallString(value.data_root), idMatchesExpected: value.id === id,
+                  dataSizeMatchesExpected: value.data_size === String(expected.bytes),
+                };
+              }
+            } catch (error) {
+              row.error = { name: safeToken(error?.name), code: safeToken(error?.code),
+                causeCode: safeToken(error?.cause?.code), timeout: controller.signal.aborted };
+              if (endpoint.kind === 'raw') row.verdict = 'UNRESOLVED';
+            } finally {
+              clearTimeout(timer); row.durationMs = Math.round(performance.now() - start);
+            }
+            return row;
+          }
+          const startedAt = new Date().toISOString();
+          const results = await Promise.all(endpoints.map(probe));
+          const verified = results.filter(row => row.kind === 'raw' && row.rawVerified);
+          const report = { schema: 'sejire/historical-readback-diagnostic/v1',
+            scope: 'DIAGNOSTIC_ONLY_NOT_RELEASE_ACCEPTANCE', releaseAccepted: false,
+            sourceBase: 'ef0252025c32687dce018368ea94d74af2728c66', sourceTree: '1bf283fa8fd157348cf7bb4cf67e49c0f93e5cbb',
+            diagnosticCommit: process.env.GITHUB_SHA, branch: process.env.GITHUB_REF_NAME,
+            runId: process.env.GITHUB_RUN_ID, runAttempt: process.env.GITHUB_RUN_ATTEMPT, node: process.version,
+            startedAt, completedAt: new Date().toISOString(), diagnosticCompleted: true,
+            transactionId: id, expected, limits: { timeoutMs, maxBodyBytes, retries: 0, followRedirects: false },
+            verdict: verified.length ? 'RAW_VERIFIED' : 'UNRESOLVED', verifiedRawEndpoints: verified.length,
+            plaintextRecoveryPerformed: false, archiveBodySaved: false, results };
+          const json = JSON.stringify(report, null, 2) + '\n';
+          await writeFile(join(process.env.OUT_DIR, 'result.json'), json);
+          console.log(json);
+          const lines = [ '# DIAGNOSTIC ONLY — historical archive public readback', '',
+            `Result: **${report.verdict}** (${verified.length}/2 raw endpoints verified).`, '',
+            'This does not accept a release or prove plaintext recovery. Status/header are context only.', '',
+            '| Endpoint | HTTP | Complete bytes | SHA-256 | Result |', '| --- | --- | ---: | --- | --- |',
+            ...results.map(row => `| ${row.url} | ${row.status ?? 'unavailable'} | ${row.bytes} | ${row.sha256 ?? 'not complete'} | ${row.kind === 'raw' ? (row.rawVerified ? 'RAW_VERIFIED' : 'UNRESOLVED') : 'CONTEXT ONLY'} |`), '', ];
+          const summary = lines.join('\n');
+          await writeFile(join(process.env.OUT_DIR, 'summary.md'), summary);
+          await appendFile(process.env.GITHUB_STEP_SUMMARY, summary);
+          NODE
+      - name: Preserve diagnostic metadata and run log (no archive bytes)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: DIAGNOSTIC-historical-readback-${{ github.run_id }}-attempt-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/historical-readback/
+          if-no-files-found: error
+          retention-days: 30
