@@ -1,7 +1,7 @@
 import {test,expect} from '@playwright/test';
 import {archive} from './preservation-v2.fixture.mjs';
 import {installV2Mock} from './preservation-v2.mock.mjs';
-import {adminPassword,mockAdminLock} from './admin-password.fixture.mjs';
+import {adminPassword,mockServerAdmin,loginServerAdmin} from './server-admin.fixture.mjs';
 
 async function start(page){
   await page.addInitScript(installV2Mock);
@@ -44,19 +44,34 @@ test('wrong file is rejected before either wallet',async({page})=>{
   await expect(page.getByRole('button',{name:'Оплатить 0.03 SOL'})).toHaveCount(0);
 });
 
-test('V2 diagnostics are inside password protected admin',async({page})=>{
-  await mockAdminLock(page);
+test('V2 diagnostics are inside password protected admin',async({page,baseURL})=>{
+  const api=await mockServerAdmin(page,{origin:new URL(baseURL).origin});
+  const diagnostics=page.getByRole('tab',{name:'Диагностика',exact:true});
   await page.goto('/#/admin');
   await page.getByRole('radio',{name:'РУС'}).click();
   await expect(page.getByRole('heading',{name:'Админ-панель'})).toBeVisible();
   await expect(page.getByRole('heading',{name:'Диагностика сохранения V2'})).toHaveCount(0);
-  await page.getByLabel('Пароль',{exact:true}).fill(adminPassword);
-  await page.getByRole('button',{name:'Войти'}).click();
-  await page.getByRole('button',{name:'Диагностика',exact:true}).click();
+  await expect(diagnostics).toHaveCount(0);
+  const wrongPassword=`${adminPassword} wrong`;
+  await loginServerAdmin(page,wrongPassword);
+  await expect(page.getByRole('alert')).toContainText('Неверный пароль');
+  await expect(diagnostics).toHaveCount(0);
+  await expect(page.getByRole('heading',{name:'Диагностика сохранения V2'})).toHaveCount(0);
+  await loginServerAdmin(page);
+  await expect(diagnostics).toBeVisible();
+  await diagnostics.click();
+  await expect(diagnostics).toHaveAttribute('aria-selected','true');
+  expect(api.requests.filter(row=>new URL(row.url).pathname==='/api/fund/admin/dashboard')
+    .map(row=>row.headers.authorization)).toEqual([`Bearer ${wrongPassword}`,`Bearer ${adminPassword}`]);
   await expect(page.getByRole('heading',{name:'Диагностика сохранения V2'})).toBeVisible();
   await expect(page.getByText('Сохранение V2 на этом устройстве не найдено.')).toBeVisible();
   await expect(page.getByRole('heading',{name:'Центр управления'})).toHaveCount(0);
   await expect(page.getByRole('button',{name:'Подготовить это сохранение'})).toHaveCount(0);
+  await page.getByRole('button',{name:'Выйти',exact:true}).click();
+  await expect(diagnostics).toHaveCount(0);
+  await expect(page.getByRole('heading',{name:'Диагностика сохранения V2'})).toHaveCount(0);
+  expect(api.requests.filter(row=>row.method==='POST')).toEqual([]);
+  expect(api.blocked).toEqual([]);
 });
 
 test('full V2 browser journey completes automatically with one Phantom and one Wander signature',async({page})=>{
