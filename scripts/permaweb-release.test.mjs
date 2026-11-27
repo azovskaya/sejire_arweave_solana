@@ -9,12 +9,14 @@ import { Readable } from 'node:stream';
 import { preparePermaweb } from './prepare-permaweb.mjs';
 import { REPOSITORY } from './worker-release-gate.mjs';
 import { ARTIFACT_NAME, BRANCH, FUND_ORIGIN, acceptedArtifact, boundedBytes, buildProvenance, checkPermawebRelease,
-  digest, extractAcceptedZip, permawebRequest, recoverPermawebRelease, verifyAcceptedRelease, verifyRelease } from './permaweb-release.mjs';
+  digest, extractAcceptedZip, permawebRequest, recoverPermawebRelease, verifyAcceptedRelease, verifyRelease, checkPermawebEvidence,
+  verifyAcceptedReleaseFromArtifact } from './permaweb-release.mjs';
 import { BOUNDARY_FILE, FUNDED_PROFILE, INDEPENDENT_PROFILE, INDEPENDENT_PROFILE_DOCUMENT,
   PROFILE_FILE, RECOVERY_FILES, finalizeIndependentBoundary, verifyIndependentBuild } from './static-release-profile.mjs';
 import { checkFunding, loadTurboSdk, quoteUpload, turboServiceConfig, uploadAcceptedRelease, uploadPlan, winc } from './upload-permaweb.mjs';
 import { publicBase, readPublicManifest, verifyPathManifest, verifyPublishedRelease } from './verify-arns-published.mjs';
 import { assessArnsLiveChecks } from './arns-live-policy.mjs';
+import { nativeMain } from './native-permaweb.mjs';
 
 const sha = 'a'.repeat(40), id = 'A'.repeat(43);
 const env = { GITHUB_REPOSITORY: REPOSITORY, GITHUB_EVENT_NAME: 'workflow_dispatch', GITHUB_REF: `refs/heads/${BRANCH}`,
@@ -86,7 +88,7 @@ sys.stdout.buffer.write(buf.getvalue())`;
 
 test('manual feature-branch request is mandatory; malformed release inputs fail closed', () => {
   assert.deepEqual(request, { sha, runId: 42, attempt: 1 });
-  for (const changes of [{ GITHUB_EVENT_NAME: 'push' }, { GITHUB_REF: 'refs/heads/main' }, { GITHUB_REF: 'refs/heads/feat/promo-funded-preservation' }, { PERMAWEB_CONFIRM: 'DEPLOY' },
+  for (const changes of [{ GITHUB_EVENT_NAME: 'push' }, { GITHUB_REF: 'refs/heads/main' }, { GITHUB_REF: 'refs/heads/feat/promo-funded-preservation' }, { GITHUB_REF: 'refs/heads/feat/decentralized-arweave-20261116' }, { PERMAWEB_CONFIRM: 'DEPLOY' },
     { PERMAWEB_MODE: 'automatic' }, { GITHUB_SHA: 'short' }, { PERMAWEB_CI_RUN_ID: '42x' }, { PERMAWEB_CI_ATTEMPT: '0' }, { GITHUB_REPOSITORY: 'attacker/repo' }]) {
     assert.throws(() => permawebRequest({ ...env, ...changes }), /permaweb_/);
   }
@@ -113,6 +115,73 @@ test('exact CI, attempt, all steps and current feature head are checked before a
   ]) await assert.rejects(() => checkPermawebRelease(env, apiFetch(overrides)), /release_|permaweb_/);
   assert.throws(() => acceptedArtifact(request, [{ ...artifact, digest: null }], jobs), /artifact_mismatch/);
   assert.throws(() => acceptedArtifact(request, [{ ...artifact, expired: true }], jobs), /ambiguous_artifact/);
+});
+
+test('only the two named live legacy Solana diagnostics may be skipped for the Arweave-only contract', async () => {
+  const allowed = clone(jobs);
+  for (const name of ['Read-only live Solana requests from public Pages browser', 'Preserve legacy public Solana read diagnostics'])
+    allowed[0].steps.push({ name, status: 'completed', conclusion: 'skipped' });
+  assert.equal((await checkPermawebRelease(env, apiFetch({ jobs: allowed }))).artifact.id, artifact.id);
+  for (const name of ['Native static publication, durable exact replay and signed AR cap (synthetic network)', 'Web production dependency audit (blocking high and critical)', 'Independent static app in Chromium, Firefox and WebKit (synthetic network)']) {
+    const denied = clone(allowed); denied[0].steps.push({ name, status: 'completed', conclusion: 'skipped' });
+    await assert.rejects(checkPermawebRelease(env, apiFetch({ jobs: denied })), /step_not_successful/);
+  }
+});
+
+test('new signing binds local release to the downloaded exact CI ZIP, rejecting a self-consistent local repack', async t => {
+  const f = await fixture(t), entries = await Promise.all(f.release.files.map(async file => [file.path, await readFile(join(f.output, file.path))]));
+  const zip = zipFrom(entries), checked = { ...artifact, digest: 'sha256:' + digest(zip), size_in_bytes: zip.length };
+  const evidence = { request, artifact: checked }, token = 'synthetic-artifact-read-token';
+  await writeFile(join(f.output, 'build-provenance.json'), JSON.stringify(buildProvenance(evidence, f.release), null, 2) + '\n');
+  const fetcher = async (url, options) => {
+    if (url.endsWith('/artifacts/123/zip')) {
+      assert.equal(options.headers.Authorization, `Bearer ${token}`);
+      return new Response(null, { status: 302, headers: { location: 'https://storage.example/accepted.zip' } });
+    }
+    assert.equal(url, 'https://storage.example/accepted.zip'); assert.equal(options.headers?.Authorization, undefined);
+    return new Response(zip);
+  };
+  assert.equal((await verifyAcceptedReleaseFromArtifact(evidence, f.output, { fetcher, token })).manifestSha256, f.release.manifestSha256);
+  const code = 'export const storage="arweave.N.1";export const unauthorizedRepack=true;';
+  await writeFile(join(f.source, 'assets/app.js'), code);
+  const boundary = JSON.parse(await readFile(join(f.source, BOUNDARY_FILE), 'utf8'));
+  boundary.chunks[0].sha256 = digest(code);
+  await writeFile(join(f.source, BOUNDARY_FILE), JSON.stringify(boundary));
+  const changed = join(f.root, 'repacked'); await preparePermaweb(f.source, changed, sha);
+  const changedRelease = await verifyRelease(changed, sha);
+  await writeFile(join(changed, 'build-provenance.json'), JSON.stringify(buildProvenance(evidence, changedRelease), null, 2) + '\n');
+  await verifyAcceptedRelease(evidence, changed); // Editable assertions alone are insufficient.
+  await assert.rejects(verifyAcceptedReleaseFromArtifact(evidence, changed, { fetcher, token }), /local_pack_not_accepted_artifact/);
+});
+
+test('current native plan cannot read a wallet key or GitHub credential', async t => {
+  const f = await fixture(t); await withProvenance(f);
+  const forbidden = () => { throw Error('plan must not inspect any credential'); };
+  const plan = await nativeMain(['--plan', '--release', f.output], Object.defineProperties({}, {
+    NATIVE_ARWEAVE_JWK_FILE: { get: forbidden }, GH_TOKEN: { get: forbidden },
+  }));
+  assert.equal(plan.profile, INDEPENDENT_PROFILE); assert.equal(plan.transport, 'native-arweave-http');
+  assert.equal(plan.arnsTargetChange, false); assert(plan.files.some(file => file.path === 'build-provenance.json'));
+});
+
+test('current manual workflow only prepares and quotes; historical Turbo cannot run on the new source branch', async () => {
+  const current = await readFile('.github/workflows/permaweb.yml', 'utf8');
+  assert(current.includes(`github.ref == 'refs/heads/${BRANCH}'`));
+  assert(current.includes('native-permaweb.mjs --plan')); assert(current.includes('native-permaweb.mjs --quote'));
+  assert(!current.includes('secrets.') && !current.includes('NATIVE_ARWEAVE_JWK_FILE') && !current.includes('PERMAWEB_JWK'));
+  assert(!/run:.*(?:--upload|--resume|--replay|deploy:permaweb)/.test(current));
+  const historical = await readFile('.github/workflows/permaweb-turbo-legacy.yml', 'utf8');
+  assert(historical.includes("github.ref == 'refs/heads/feat/decentralized-arweave-20261116'"));
+  assert(!historical.includes(`refs/heads/${BRANCH}`));
+});
+
+test('owner local publication reads exact public CI without impersonating an Actions invocation', async () => {
+  const calls = [];
+  const evidence = await checkPermawebEvidence(request, { fetcher: apiFetch({}, calls) });
+  assert.equal(evidence.artifact.id, artifact.id);
+  assert(calls.every(call => !Object.hasOwn(call.options.headers, 'Authorization')));
+  await assert.rejects(() => checkPermawebEvidence({ ...request, attempt: 0 }, { fetcher: apiFetch() }), /invalid_run/);
+  await assert.rejects(() => checkPermawebEvidence(request, { fetcher: apiFetch({ run: { ...run, head_branch: 'feat/funded-portable-release-20261125' } }) }), /release_/);
 });
 
 test('artifact ZIP is hashed, extracted without overwrite, and gets CI-bound public provenance', async t => {
@@ -249,6 +318,33 @@ test('Cloudflare resources cannot hide in entry HTML, a stylesheet or the standa
     }
     await assert.rejects(() => verifyIndependentBuild(f.output), /independent_(?:cloudflare_endpoint_in_bundle|nonportable_entry)/, surface);
   }
+});
+
+test('Arweave-only graph rejects hosted API, external indexes and live AO transports in every emitted surface', async t => {
+  for (const [code, expected] of [
+    ['fetch("https://sejire-api.azovskaya.prod.page/healthz")', /hosted_api/],
+    ['fetch("https://sejire-api.another-host.org/healthz")', /hosted_api/],
+    ['fetch("https://arweave-search.goldsky.com/graphql")', /indexer_service/],
+    ['fetch("https://push.forward.computer/id~process@1.0/compute/sejire")', /ao_transport/],
+    ['fetch("https://mu.ao-testnet.xyz")', /ao_transport/],
+    ['const secret="-----BEGIN PRIVATE KEY-----"', /private_key/],
+  ]) {
+    const f = await fixture(t);
+    await writeFile(join(f.output, 'recovery/recovery.html'), code);
+    await assert.rejects(() => verifyIndependentBuild(f.output), expected);
+  }
+  for (const module of ['apps/web/src/lib/ao/client.ts', 'apps/web/src/lib/opsDesk/adminLock.ts',
+    'node_modules/@permaweb/aoconnect/dist/index.js', 'apps/web/src/components/ServerAdminDesk.tsx']) {
+    const f = await fixture(t), path = join(f.output, BOUNDARY_FILE);
+    const boundary = JSON.parse(await readFile(path, 'utf8')); boundary.chunks[0].modules.push(module);
+    await writeFile(path, JSON.stringify(boundary));
+    await assert.rejects(() => verifyIndependentBuild(f.output), /backend_module_in_bundle/);
+  }
+  const f = await fixture(t), path = join(f.output, BOUNDARY_FILE);
+  const boundary = JSON.parse(await readFile(path, 'utf8'));
+  boundary.chunks[0].modules.push('apps/web/src/lib/ao/treeProcess.ts', 'apps/web/src/lib/ao/protocolKinship.ts');
+  await writeFile(path, JSON.stringify(boundary));
+  assert.equal((await verifyIndependentBuild(f.output)).mandatorySejireService, false, 'local tree computations remain allowed');
 });
 
 test('independent package requires offline recovery and exact evidence for every dynamic chunk', async t => {

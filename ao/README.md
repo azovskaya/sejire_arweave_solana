@@ -1,3 +1,5 @@
+> **Historical, optional AO experiment.** The current Arweave-only application neither deploys nor calls these processes. Local editor computations are ordinary browser logic, not live AO settlement. See [the active protocol contract](../docs/PROTOCOL.md). The examples below are retained as historical documentation and are not current deployment instructions.
+
 # AO processes — SEJIRE
 
 | Process | File | Spec |

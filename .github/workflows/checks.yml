@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
   pull_request:
   push:
-    branches: [main, feat/solana-preservation, feat/preservation-v2-simple, feat/promo-funded-preservation, fix/restore-direct-data, feat/decentralized-arweave-20261116, feat/funded-portable-release-20261125]
+    branches: [main, feat/solana-preservation, feat/preservation-v2-simple, feat/promo-funded-preservation, fix/restore-direct-data, feat/decentralized-arweave-20261116, feat/funded-portable-release-20261125, feat/arweave-only-protocol-20261127]
 permissions:
   contents: read
 jobs:
@@ -86,9 +86,9 @@ jobs:
         run: npm run test:historical-native --prefix apps/web
       - name: Independent recovery kit, complete local vault and legacy journal boundary
         run: npm run test:independent-unit --prefix apps/web
-      - name: Build independent direct-Arweave application and every emitted chunk boundary
+      - name: Build public Arweave-only application and every emitted chunk boundary
         id: independent_build
-        run: npm run arns:build && npm run arns:verify
+        run: npm run web:build && npm run arns:verify
       - name: Standalone recovery HTML with OS network isolation in Chromium, Firefox and WebKit (synthetic data)
         timeout-minutes: 5
         run: |
@@ -157,6 +157,8 @@ jobs:
           path: apps/web/dist/
           retention-days: 14
       - run: npm run test:permaweb-prepare
+      - name: Native static publication, durable exact replay and signed AR cap (synthetic network)
+        run: npm run test:native-publication
       - name: Wallet history timeout regression (read-only, balance preserved)
         run: npm run test:native-browser --prefix apps/web -- --grep 'public balances never wait for history'
       - run: npm run test:native-browser
@@ -169,7 +171,21 @@ jobs:
       - name: Paid SOL save, cross-method recovery and editor completion (mocked network)
         run: npm run test:paid-browser
       - name: Read-only Arweave recovery gateway and CORS acceptance
-        run: node scripts/verify-recovery-network.mjs
+        run: |
+          if [ "$GITHUB_REF" = 'refs/heads/feat/arweave-only-protocol-20261127' ]; then
+            node --import ./apps/web/node_modules/tsx/dist/loader.mjs --test scripts/verify-native-recovery-network.test.mts
+            node --import ./apps/web/node_modules/tsx/dist/loader.mjs scripts/verify-native-recovery-network.mts
+          else
+            node scripts/verify-recovery-network.mjs
+          fi
+      - name: Preserve native recovery readiness evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-recovery-readiness
+          path: .cache/native-recovery-network/readiness.json
+          if-no-files-found: ignore
+          retention-days: 14
       - run: npm run test:native-journey --prefix apps/web
       - name: Preserve synthetic MVP screens (no recovery words or wallet secrets)
         uses: actions/upload-artifact@v4
@@ -178,8 +194,11 @@ jobs:
           path: apps/web/test-results/mvp-screens
           if-no-files-found: error
       - name: Read-only live Solana requests from public Pages browser
+        if: github.ref != 'refs/heads/feat/arweave-only-protocol-20261127'
         run: node scripts/verify-public-sol-balances.mjs
-      - uses: actions/upload-artifact@v4
+      - name: Preserve legacy public Solana read diagnostics
+        if: github.ref != 'refs/heads/feat/arweave-only-protocol-20261127'
+        uses: actions/upload-artifact@v4
         with:
           name: public-sol-read-diagnostics
           path: .cache/public-sol-read/

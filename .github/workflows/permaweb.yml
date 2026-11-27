@@ -1,26 +1,18 @@
-name: Upload independent SEJIRE site to Arweave (manual)
+name: Prepare Arweave-only SEJIRE publication (manual)
 
-# An independent direct-Arweave runtime only. Turbo is an optional release-time
-# transport for this static pack, not an application or archive dependency.
-# ArNS Target remains a separate owner action after public byte verification.
-
+# Actions only recovers the exact accepted CI pack and reads native AR prices.
+# A private owner key never enters this workflow. Native upload/resume runs on
+# persistent owner-controlled storage so a runner loss cannot erase signed bytes.
+# The local publisher revalidates the exact CI ZIP before any new signature.
 on:
   workflow_dispatch:
     inputs:
-      mode:
-        description: "prepare creates a reviewable pack and public quote without a key; upload spends existing credits"
-        required: true
-        default: prepare
-        type: choice
-        options:
-          - prepare
-          - upload
       confirm:
-        description: "Type pack-ready; only explicit upload mode signs and spends existing Turbo credits"
+        description: "Type pack-ready; prepare and quote only, no signing or upload"
         required: true
         type: string
       ci_run_id:
-        description: "Successful SEJIRE checks run for the current decentralized branch SHA"
+        description: "Successful SEJIRE checks run for this exact Arweave-only branch SHA"
         required: true
         type: string
       ci_attempt:
@@ -28,68 +20,77 @@ on:
         required: true
         default: "1"
         type: string
-      max_quote_winc:
-        description: "Maximum preflight quote in Winston Credits (not a provider hard cap); no automatic top-up"
+      max_reward_winston:
+        description: "Review ceiling in native winston (1 AR = 1000000000000 winston); no payment here"
         required: true
         default: "0"
+        type: string
+      native_node:
+        description: "Replaceable native Arweave HTTPS node origin"
+        required: true
+        default: "https://arweave.net"
         type: string
 
 permissions:
   contents: read
   actions: read
 concurrency:
-  group: sejire-permaweb-upload
+  group: sejire-native-publication-prepare
   cancel-in-progress: false
 
 jobs:
   permaweb:
-    if: github.event.inputs.confirm == 'pack-ready' && github.ref == 'refs/heads/feat/decentralized-arweave-20261116'
+    if: github.event.inputs.confirm == 'pack-ready' && github.ref == 'refs/heads/feat/arweave-only-protocol-20261127'
     runs-on: ubuntu-24.04
-    timeout-minutes: 25
+    timeout-minutes: 20
     env:
-      PERMAWEB_MODE: ${{ inputs.mode }}
+      PERMAWEB_MODE: prepare
+      PERMAWEB_PROFILE: decentralized-direct-arweave
       PERMAWEB_CONFIRM: ${{ inputs.confirm }}
       PERMAWEB_CI_RUN_ID: ${{ inputs.ci_run_id }}
       PERMAWEB_CI_ATTEMPT: ${{ inputs.ci_attempt }}
-      PERMAWEB_MAX_QUOTE_WINC: ${{ inputs.max_quote_winc }}
+      NATIVE_ARWEAVE_NODE: ${{ inputs.native_node }}
+      NATIVE_MAX_REWARD_WINSTON: ${{ inputs.max_reward_winston }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: "22"
+          node-version: '24.22.3'
           cache: npm
           cache-dependency-path: apps/web/package-lock.json
-      - name: Verify exact CI and recover accepted static release
+      - name: Verify exact CI ZIP and recover accepted static release
         env:
           GH_TOKEN: ${{ github.token }}
         run: node scripts/permaweb-release.mjs
-      - name: Install the accepted lockfile's Turbo SDK
+      - name: Install the accepted build dependencies
         run: npm ci --prefix apps/web
       - name: Blocking production dependency audit
         run: npm audit --prefix apps/web --omit=dev --audit-level=high
-      - name: Validate static release and print upload plan (no key)
-        run: node scripts/upload-permaweb.mjs --plan
-      - name: Price every file and manifest (read-only, no key)
-        run: node scripts/upload-permaweb.mjs --quote
-      - name: Recheck exact CI, upload with existing credits, verify public bytes
-        if: inputs.mode == 'upload'
-        env:
-          GH_TOKEN: ${{ github.token }}
-          PERMAWEB_JWK: ${{ secrets.PERMAWEB_JWK }}
-        run: npm run deploy:permaweb
-      - name: Preserve accepted pack for verification and owner cutover
+      - name: Native publication plan without keys
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p .cache/native-publication-review
+          node scripts/native-permaweb.mjs --plan | tee .cache/native-publication-review/plan.json
+      - name: Native AR price quote without signing or upload
+        shell: bash
+        run: |
+          set -o pipefail
+          node scripts/native-permaweb.mjs --quote | tee .cache/native-publication-review/quote.json
+      - name: Preserve exact accepted pack for owner-local publication
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: permaweb-accepted-pack
           path: .cache/permaweb-accepted/
           include-hidden-files: true
+          if-no-files-found: ignore
           retention-days: 30
-      - name: Preserve upload receipts and partial progress
+      - name: Preserve public native plan and quote
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: permaweb-upload-evidence
-          path: .cache/permaweb-upload-evidence/
-          include-hidden-files: true
+          name: native-publication-review
+          path: .cache/native-publication-review/
+          if-no-files-found: ignore
           retention-days: 30

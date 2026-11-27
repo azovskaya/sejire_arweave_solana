@@ -1,10 +1,12 @@
 #!/usr/bin/env bash
+# Historical Pages mirror for the legacy profile, not the current Arweave-only release.
 # Deploy apps/web/dist to origin/gh-pages (GitHub Pages for this repo).
 # Preserves /presentation from the previous gh-pages tip (pptx, pdf, screenshots).
 # Does NOT upload to Arweave — use npm run deploy:permaweb for that.
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT/apps/web"
+export VITE_DECENTRALIZED_MODE=false
 # GitHub test mirror: same 12-words → derived AR path as the future ArNS build.
 # Override with VITE_PUBLISH_MODE=demo to save only in the browser.
 export VITE_PUBLISH_MODE="${VITE_PUBLISH_MODE:-self}"

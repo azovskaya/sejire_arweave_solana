@@ -1,10 +1,11 @@
-import { SejireAoClient, isErrorReply, parseReplyJson } from "./client";
+import { LocalTreeProcess } from "./treeProcess";
+import { isErrorReply } from "./types";
 import type { TreeStore } from "../types";
 
 const AUTHOR = "local:draft-author";
 
 type Mirror = {
-  client: SejireAoClient;
+  process: LocalTreeProcess;
   processId: string;
   mirroredVersions: Set<number>;
 };
@@ -20,21 +21,20 @@ export function getMirroredProcessId(treeId: string): string | undefined {
 }
 
 /**
- * Зеркало версий редактора в локальный Tree Process.
+ * Локальное вычисление истории редактора, без сетевого клиента или endpoint.
+ * Долговременный архив записывается отдельно прямой транзакцией Arweave.
  * Id коммитов процесса ≠ id коммитов редактора — parent_commit_id не передаём.
  */
 export async function mirrorStoreToProtocol(
   store: TreeStore
-): Promise<{ client: SejireAoClient; processId: string }> {
+): Promise<{ process: LocalTreeProcess; processId: string }> {
   let m = mirrors.get(store.meta.id);
   if (!m) {
-    const client = new SejireAoClient({ mode: "local" });
-    const spawned = parseReplyJson<{ process_id: string }>(client.spawnTree(AUTHOR, store.meta.title));
-    const processId = spawned.process_id;
-    if (!processId) throw new Error("SpawnTree did not return process_id");
-    const init = await client.init(processId, AUTHOR, store.meta.title);
+    const processId = `tree_mirror_${store.meta.id}`;
+    const process = new LocalTreeProcess(processId);
+    const init = process.handle({ From: AUTHOR, Tags: { Action: "Init", Title: store.meta.title } });
     if (isErrorReply(init)) throw new Error(init.Data || "Init failed");
-    m = { client, processId, mirroredVersions: new Set() };
+    m = { process, processId, mirroredVersions: new Set() };
     mirrors.set(store.meta.id, m);
   }
 
@@ -48,13 +48,14 @@ export async function mirrorStoreToProtocol(
     const editorCommitId = store.versions[version];
     const commit = store.commits[editorCommitId];
     if (!commit) continue;
-    const res = await m.client.commit(m.processId, AUTHOR, {
-      message: commit.message,
-      snapshot: commit.snapshot,
+    const res = m.process.handle({
+      From: AUTHOR,
+      Tags: { Action: "Commit" },
+      Data: JSON.stringify({ message: commit.message, snapshot: commit.snapshot }),
     });
     if (isErrorReply(res)) throw new Error(res.Data || "Commit failed");
     m.mirroredVersions.add(version);
   }
 
-  return { client: m.client, processId: m.processId };
+  return { process: m.process, processId: m.processId };
 }

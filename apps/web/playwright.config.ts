@@ -5,5 +5,5 @@ export default defineConfig({
     serviceWorkers: 'block', launchOptions: { executablePath: process.env.SEJIRE_BROWSER_EXECUTABLE } },
   webServer: { command: 'npm run dev -- --config vite.checkout-test.config.ts --host 127.0.0.1 --port 5173 --strictPort', url: 'http://127.0.0.1:5173', reuseExistingServer: false,
     stdout: 'pipe',
-    env: { VITE_CHECKOUT_ENABLED: '1', VITE_PUBLISH_MODE: 'solana', VITE_SOLANA_NETWORK: 'devnet', VITE_QA_TOOLS: '0' } },
+    env: { VITE_DECENTRALIZED_MODE: 'false', VITE_CHECKOUT_ENABLED: '1', VITE_PUBLISH_MODE: 'solana', VITE_SOLANA_NETWORK: 'devnet', VITE_QA_TOOLS: '0' } },
 });

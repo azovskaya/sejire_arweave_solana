@@ -1,7 +1,8 @@
 /** Recover an accepted static CI artifact. No wallet, upload, payment or ArNS write. */
 import { createHash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
-import { lstat, mkdir, readFile, readdir, writeFile } from 'node:fs/promises';
+import { lstat, mkdir, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { REPOSITORY, validateReleaseEvidence } from './worker-release-gate.mjs';
@@ -10,7 +11,7 @@ import { BOUNDARY_FILE, FUNDED_PROFILE, INDEPENDENT_PROFILE, INDEPENDENT_ROOT_FI
 import { PORTABLE_FUNDED_PROFILE, PORTABLE_FUNDED_BRANCH, PORTABLE_FUNDED_ARTIFACT,
   PORTABLE_ROOT_FILES, verifyPortableFundedBuild } from './portable-funded-profile.mjs';
 
-export const BRANCH = 'feat/decentralized-arweave-20261116';
+export const BRANCH = 'feat/arweave-only-protocol-20261127';
 export const ARTIFACT_NAME = 'permaweb-static-release';
 export const ACCEPTED_DIR = '.cache/permaweb-accepted';
 export const EVIDENCE_DIR = '.cache/permaweb-upload-evidence';
@@ -56,7 +57,7 @@ async function githubJson(path, token, fetcher) {
   let response;
   try {
     response = await fetcher(`https://api.github.com/repos/${REPOSITORY}/${path}`, {
-      headers: { Accept: 'application/vnd.github+json', Authorization: `Bearer ${token}`, 'X-GitHub-Api-Version': '2022-11-28' },
+      headers: { Accept: 'application/vnd.github+json', ...(token ? { Authorization: `Bearer ${token}` } : {}), 'X-GitHub-Api-Version': '2022-11-28' },
       redirect: 'error', signal: AbortSignal.timeout(15000),
     });
     requireValue(response.ok, 'permaweb_evidence_unavailable');
@@ -82,9 +83,20 @@ export function acceptedArtifact(request, artifacts, jobs) {
 
 export async function checkPermawebRelease(env, fetcher = fetch) {
   const request = permawebRequest(env);
-  const contract = releaseContract(request.profile);
   requireValue(typeof env.GH_TOKEN === 'string' && env.GH_TOKEN.length > 0, 'permaweb_token_missing');
-  const read = path => githubJson(path, env.GH_TOKEN, fetcher);
+  return checkPermawebEvidence(request, { fetcher, token: env.GH_TOKEN });
+}
+
+/** Read the same exact CI evidence from a local owner-operated publisher.
+ * This does not pretend a local command is a workflow_dispatch event. Public
+ * repository metadata can be read without supplying a GitHub credential.
+ */
+export async function checkPermawebEvidence(request, { fetcher = fetch, token } = {}) {
+  requireValue(SHA.test(request?.sha ?? '') && Number.isSafeInteger(request?.runId) && request.runId > 0 &&
+    Number.isSafeInteger(request?.attempt) && request.attempt > 0, 'permaweb_invalid_run');
+  requireValue(token === undefined || typeof token === 'string' && token.length > 0, 'permaweb_token_missing');
+  const contract = releaseContract(request.profile);
+  const read = path => githubJson(path, token, fetcher);
   const [run, ref] = await Promise.all([read(`actions/runs/${request.runId}`), read(`git/ref/heads/${contract.branch}`)]);
   const jobs = [], artifacts = [];
   for (const [target, path, key] of [
@@ -103,7 +115,9 @@ export async function checkPermawebRelease(env, fetcher = fetch) {
     }
     requireValue(target.length === total && new Set(target.map(item => item.id)).size === total, 'permaweb_evidence_incomplete');
   }
-  validateReleaseEvidence(request, run, ref, jobs, { branch: contract.branch });
+  validateReleaseEvidence(request, run, ref, jobs, { branch: contract.branch,
+    allowedSkippedSteps: contract.profile === INDEPENDENT_PROFILE
+      ? ['Read-only live Solana requests from public Pages browser', 'Preserve legacy public Solana read diagnostics'] : [] });
   return { request, artifact: acceptedArtifact(request, artifacts, jobs) };
 }
 
@@ -226,10 +240,9 @@ export async function verifyAcceptedRelease(evidence, directory = ACCEPTED_DIR) 
   return release;
 }
 
-export async function recoverPermawebRelease(env, { fetcher = fetch, directory = ACCEPTED_DIR, evidenceDirectory = EVIDENCE_DIR } = {}) {
-  const evidence = await checkPermawebRelease(env, fetcher);
+export async function downloadAcceptedArtifact(evidence, { fetcher = fetch, token } = {}) {
   const response = await fetcher(`https://api.github.com/repos/${REPOSITORY}/actions/artifacts/${evidence.artifact.id}/zip`, {
-    headers: { Accept: 'application/vnd.github+json', Authorization: `Bearer ${env.GH_TOKEN}` },
+    headers: { Accept: 'application/vnd.github+json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
     redirect: 'manual', signal: AbortSignal.timeout(15000),
   });
   const location = response.headers.get('location');
@@ -240,6 +253,30 @@ export async function recoverPermawebRelease(env, { fetcher = fetch, directory =
   const bytes = await boundedBytes(downloaded, MAX_RELEASE_BYTES);
   requireValue(digest(bytes) === evidence.artifact.digest.slice(7), 'permaweb_zip_digest_mismatch');
   requireValue(bytes.length === evidence.artifact.size_in_bytes, 'permaweb_artifact_size_mismatch');
+  return bytes;
+}
+
+/** New signatures require the actual CI ZIP, not an editable provenance claim.
+ * Re-extract the digest-verified archive in a fresh private temporary directory
+ * and bind its validated manifest to every local byte before any owner signing.
+ */
+export async function verifyAcceptedReleaseFromArtifact(evidence, directory = ACCEPTED_DIR, options = {}) {
+  const release = await verifyAcceptedRelease(evidence, directory);
+  const bytes = await downloadAcceptedArtifact(evidence, options);
+  const temporary = await mkdtemp(join(tmpdir(), 'sejire-accepted-artifact-'));
+  try {
+    const unpacked = join(temporary, 'release'); extractAcceptedZip(bytes, unpacked);
+    const accepted = await verifyRelease(unpacked, evidence.request.sha,
+      { expectedProfile: releaseContract(evidence.request.profile).profile });
+    requireValue(release.manifestSha256 === accepted.manifestSha256 &&
+      JSON.stringify(release.files.filter(file => file.path !== 'build-provenance.json')) === JSON.stringify(accepted.files), 'permaweb_local_pack_not_accepted_artifact');
+    return release;
+  } finally { await rm(temporary, { recursive: true, force: true }); }
+}
+
+export async function recoverPermawebRelease(env, { fetcher = fetch, directory = ACCEPTED_DIR, evidenceDirectory = EVIDENCE_DIR } = {}) {
+  const evidence = await checkPermawebRelease(env, fetcher);
+  const bytes = await downloadAcceptedArtifact(evidence, { fetcher, token: env.GH_TOKEN });
   extractAcceptedZip(bytes, directory);
   const release = await verifyRelease(directory, evidence.request.sha,
     { expectedProfile: releaseContract(evidence.request.profile).profile });

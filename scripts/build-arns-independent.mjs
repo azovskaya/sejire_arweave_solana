@@ -17,7 +17,7 @@ Object.assign(process.env, {
   VITE_PRESERVATION_V2_TEST: '0', VITE_RECOVERY_TEST: '0', VITE_CHECKOUT_ENABLED: '0',
   VITE_NATIVE_AR_ENABLED: '0', VITE_NATIVE_AR_PILOT: '0', VITE_NATIVE_AR_BROADCAST: '0',
   VITE_NATIVE_SOL_MAINNET: '0', VITE_PUBLISH_MODE: 'arweave', VITE_SOLANA_NETWORK: 'devnet',
-  VITE_AO_MODE: 'local', VITE_SEJIRE_FACTORY_ID: '', VITE_QA_TOOLS: '0',
+  VITE_AO_MODE: 'local', VITE_AO_HB_NODE: '', VITE_SEJIRE_FACTORY_ID: '', VITE_QA_TOOLS: '0',
 });
 
 const requireWeb = createRequire(resolve(web, 'package.json'));

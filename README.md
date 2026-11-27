@@ -4,15 +4,23 @@ SEJIRE is a browser application for creating family trees, encrypting complete f
 
 ## Current direction: independent Arweave release
 
-The owner changed the release direction on **16 November 2026**: the current application branch is `feat/decentralized-arweave-20261116`. The `arns:build` command builds a static, independent profile for publication through Arweave and ArNS. New archive writes use the family's own compatible Arweave wallet and a separately confirmed AR storage price. The application runtime does not require a SEJIRE server, Cloudflare Worker, SOL checkout, a project treasury, or a bundler account.
+The owner explicitly chose **Arweave-only operation on 27 November 2026**. The active branch is `feat/arweave-only-protocol-20261127`. Default `npm run web`, `npm run web:build`, and `npm run arns:build` select the independent `decentralized-direct-arweave` application. No production SEJIRE API, always-on host, server admin credential, centralized sponsor, Solana payment, or AO executor is required. Historical profiles require an explicit opt-in and remain for compatibility with earlier obligations.
+
+New archives are signed by the family's compatible Arweave wallet and uploaded as native Arweave transactions. The user reviews the current **AR storage fee**; the former 0.03 SOL service fee and shared server promo code are not part of this release. Local editing and recovery remain free. Neither a public static password nor a browser-held treasury key is substituted for a secure sponsored protocol.
+
+The archive and immutable site manifest can be accessed by their transaction IDs through replaceable gateways or a compatible user-selected node. `sejire.ar.io` is an optional friendly address: current ArNS ownership/resolution uses Solana, so the name is not described as an Arweave-only dependency. See the [official ArNS description](https://docs.ar.io/learn/arns).
 
 Creating and editing a family tree, exporting a PDF, and downloading an encrypted recovery kit do not require a wallet. An on-chain save uses a durable local journal; a retry continues the same signed transaction. Completion requires both a confirmed header and the actual downloaded archive bytes. A transaction ID alone is insufficient.
 
 The recovery kit contains the encrypted full vault, including all trees and history, and can be opened by the standalone tools in [`tools/recovery/`](tools/recovery/README.md). Recovery needs the encrypted file and its **SEJIRE archive words**; a wallet's recovery phrase is never requested. Recovery by a known native Arweave transaction ID additionally needs the network to serve its bytes. External media links do not embed those media in the archive.
 
-**The application source, a prepared static package, and a live deployment are separate states.** The public GitHub Pages site and `sejire.ar.io` must not be assumed to run this branch. The 17 November re-audit found and addressed additional version-selection, native-reader, wallet-decline, PDF-dependency, and gateway-path cases; the revised source requires its own complete CI and exact-artifact acceptance. A real wallet round trip, publication manifest, ArNS record update, and recovery of the earlier paid archive remain owner acceptance steps. No 200-year availability guarantee is made.
+**Source, an accepted static package, and a live deployment are separate states.** The November 27 architecture change requires its own exact-source CI and artifact verification. Earlier funded CI does not certify this new source. No new site publication or ArNS change has occurred. Native site-publication tooling uses a local persistent operation journal; its CI workflow prepares and quotes without wallet keys. A real compatible wallet round trip, public bytes/manifest checks and owner-approved name update remain live acceptance steps.
+
+The former paid archive remains an unresolved historical obligation until its original bytes are recovered and verified. It is not replaced by a fresh payment. No always-on hosting signup or private legacy-ledger migration is required for the new independent application's runtime.
 
 - [Independent release and owner acceptance](docs/INDEPENDENT_RELEASE.md)
+- [Active protocol contract](docs/PROTOCOL.md)
+- [November 27 architecture change and local audit](docs/verification/2026-11-27-arweave-only-transition.md)
 - [Open recovery format and offline decoder](tools/recovery/README.md)
 - [Independent architecture and limits](docs/verification/2026-11-16-independent-arweave-architecture.md)
 - [Current automated checks](https://github.com/azovskaya/sejire_arweave_solana/actions/workflows/checks.yml)

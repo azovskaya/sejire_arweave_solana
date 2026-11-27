@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "node ../../scripts/build-web.mjs",
     "lint": "oxlint",
     "preview": "vite preview",
     "test:engine": "tsx src/lib/treeEngine.selftest.ts",
@@ -49,9 +49,11 @@
     "test:arns-browser": "playwright test --config playwright.arns.config.ts",
     "test:direct": "tsx src/lib/directArweave/direct.selftest.ts && node --import tsx src/lib/directArweave/nodePreference.selftest.ts && node --import tsx src/lib/directArweave/protocolBoundaries.selftest.ts",
     "test:independent-browser": "playwright test --config playwright.independent.config.ts",
-    "test:independent-unit": "tsx src/lib/independentBackup.selftest.ts && node --import tsx src/lib/independentNativeVault.selftest.ts",
+    "test:independent-unit": "tsx src/lib/independentBackup.selftest.ts && node --import tsx src/lib/independentNativeVault.selftest.ts && node --import tsx src/lib/recovery/recoverIndependent.selftest.ts",
     "test:historical-native": "node --import tsx src/lib/recovery/historicalNative.selftest.ts",
-    "test:portable-browser": "playwright test --config playwright.portable.config.ts"
+    "test:portable-browser": "playwright test --config playwright.portable.config.ts",
+    "build:legacy": "VITE_DECENTRALIZED_MODE=false node ../../scripts/build-web.mjs",
+    "dev:legacy": "VITE_DECENTRALIZED_MODE=false vite"
   },
   "dependencies": {
     "@ardrive/turbo-sdk": "2.1.0",

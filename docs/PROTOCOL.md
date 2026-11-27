@@ -1,181 +1,97 @@
-# SEJIRE Protocol Specification
+# SEJIRE: протокол сохранения только в Arweave
 
-**Status:** Draft v0.3  
-**Schema namespace:** `sejire/*`  
-**App tag:** `Protocol=sejire/v0.3`  
-**Normative language:** MUST / SHOULD / MAY (RFC 2119)
+**Действующий контракт выпуска от 27 ноября 2026.** Владелец потребовал работу без обязательного централизованного сервиса. Ветка: `feat/arweave-only-protocol-20261127`; профиль: `decentralized-direct-arweave`. Исторический AO draft сохранён в [PROTOCOL_AO_V0_3.md](PROTOCOL_AO_V0_3.md).
 
-v0.3 adds Tree Process kinship queries (`GetAncestors`, `GetJetiAta`, `Relate`).  
-Commit schema remains `sejire/commit/v1`. Encrypted vault envelopes on Arweave are unchanged.
+Этот контракт описывает фактический путь зашифрованного архива. Существующие wire identifiers `sejire/v0.3`, `sejire/envelope/v1`, `sejire/direct-arweave-operation/v1` и `sejire/direct-arweave-receipt/v1` сохраняются: изменение архитектуры не делает старые семейные файлы несовместимыми. Наличие версии исходника не означает, что он уже опубликован.
 
----
+## 1. Участники и полномочия
 
-## 1. Purpose
+| Участник | Полномочия и границы |
+|---|---|
+| Пользователь | Редактирует деревья, выбирает архив/версию, хранит слова SEJIRE и разрешает сетевую запись |
+| Браузер | Шифрует, проверяет подписи/байты, хранит черновик и журнал продолжения; работает без аккаунта SEJIRE |
+| Arweave-кошелёк | Подписывает конкретную нативную транзакцию после просмотра; его seed/private key не передаются SEJIRE |
+| Узел / gateway | Принимает исходные подписанные байты и отдаёт публичные данные; адрес заменяем пользователем |
+| Владелец публикации | Может выпустить новую статическую версию и изменить принадлежащую ему запись имени; не расшифровывает семейные архивы и не меняет прежние транзакции |
 
-SEJIRE is a decentralized application protocol for **versioned genealogical trees**.
+Слова SEJIRE открывают зашифрованный архив. Они не являются seed кошелька оплаты. Адрес подписанта подтверждает, кто подписал транзакцию хранения, но не является универсальным доказательством авторства каждого семейного сведения.
 
-Core guarantee:
+Нет обязательных SEJIRE API, Linux-сервера, Cloudflare Worker, серверной SQLite, общей казны, admin token, Solana checkout или оплачиваемого bundler API. Локальный IndexedDB-журнал и браузерные вычисления не являются централизованным сервисом.
 
-> Every mutation of a family tree MUST produce a new immutable commit.  
-> Prior commits MUST remain readable forever. History MUST NOT be erased.
+## 2. Данные, история и приватность
 
-SEJIRE is **not** a hosted SaaS database. It is a data + compute layer on Arweave + AO.
+До записи архив шифруется в браузере: AES-GCM-256, HKDF-SHA256, совместимый envelope v1. Он включает полный vault: все деревья, коммиты, версии и связи, а не только видимое дерево. Сетевая запись создаёт новую неизменяемую транзакцию; существующие версии не перезаписываются. Изменение или удаление человека в редакторе не удаляет его из уже опубликованной истории.
 
----
+Локальные неподтверждённые правки остаются черновиком. Выбранная локальная/файловая версия не заменяется поздним сетевым ответом. Активный редактор защищён владением черновиком; данные чужой вкладки не принимаются молча.
 
-## 2. Actors
+Публичны ciphertext, технические tags, подпись/адрес плательщика, размер, reward и связь `Parent-Tx`. Имена, даты и слова восстановления не размещаются в открытом виде этим путём. Ссылки на внешние фото не превращаются автоматически во встроенные долговременные файлы. Предел сериализованного envelope в текущем direct path — **10 MiB**; это лимит приложения, не сети Arweave.
 
-| Actor | Role |
-|-------|------|
-| **Owner** | Arweave address authorized to `Commit` / manage ACL |
-| **Reader** | Anyone who can query public process state / history |
-| **Factory Process** | Spawns Tree Processes |
-| **Tree Process** | One autonomous AO process per family tree |
-| **Client (UI)** | Signs messages, holds draft, renders versions |
-| **Gateway / HyperBEAM** | Message delivery + HTTP state access (replaceable) |
+Старые wire-форматы, encrypted kits и квитанции сохраняются. Незавершённая прежняя SOL/promo-операция не заменяется новым AR-save автоматически; её исходные ciphertext, подписанные байты и receipt остаются обязательством.
 
----
+## 3. Цена и подпись
 
-## 3. Identifiers
+Создание, редактирование, PDF/JSON и encrypted backup не требуют платы или кошелька. Для новой записи в сеть пользователь выбирает совместимый Arweave-кошелёк и видит текущую стоимость хранения в **AR**, полученную через native price endpoint. Старой фиксированной сервисной цены `0.03 SOL` в этом пути нет.
 
-| ID | Format | Notes |
-|----|--------|-------|
-| `tree_id` | AO process id | Equals `ao.id` of Tree Process after spawn |
-| `commit_id` | `c_<version>_<suffix>` | Unique within tree |
-| `person.id` | opaque string | Stable across commits if same person |
-| `media.tx` | Arweave TX id | 43-char base64url typical |
+Транзакция имеет format 2, пустой `target`, `quantity = 0`, точные bytes/data_root/tags и отдельно согласованный `reward` в winston. Кошелёк получает запрос на подпись, не полномочие скрыто отправлять деньги или автоматически пополнять фонд. После подписи приложение повторно проверяет ID, RSA-PSS подпись, owner, reward, data root, размер и digest.
 
----
+Общий секретный промокод в публичном JavaScript не может безопасно распоряжаться общей казной: данные клиента доступны посетителю, а нативная запись требует действительной подписи плательщика. В текущем Arweave-only выпуске нет фиктивной замены серверного promo-сервиса. Сторонняя спонсорская схема потребовала бы собственного проверенного протокола авторизации и расходования; она не объявляется реализованной этим выпуском.
 
-## 4. Data model
+## 4. Журнал и продолжение той же операции
 
-### 4.1 Person
+Намерение подписи фиксируется в IndexedDB до обращения к кошельку. Окончательный известный отказ отделяется от таймаута/неизвестного результата. Неизвестный результат не разрешает автоматически запросить новую подпись.
 
-See `packages/schema/person-v1.schema.json`.
+Подписанная транзакция сохраняется до сетевой отправки. Повтор и продолжение используют те же bytes, подпись и transaction ID. Заголовок и **все** chunks, включая единственный chunk маленького архива, доставляются через native `/tx` и `/chunk`. Потерянный ответ не является разрешением повторно оплатить другой архив.
 
-Required: `id`, `name`.  
-Optional: `born`, `died`, `place`, `parents[]`, `media[]`, `notes`, `tombstone`.
+Экспорт операции содержит ciphertext и подписанную публичную транзакцию, без слов/приватного ключа. Импорт повторно проверяет криптографию и не принимает сохранённый в файле флаг успеха как сетевое доказательство. Локальные metadata/квитанции сами по себе не являются транзакциями Arweave.
 
-`tombstone: true` means the person is **removed in this version**, not deleted from history.
+## 5. Что означает «сохранено»
 
-### 4.2 Snapshot
+Direct path требует одновременно:
 
-```json
-{ "persons": { "<person_id>": { /* Person */ } } }
-```
+1. Корректного подписанного native header с ожидаемым ID и соответствующим ciphertext.
+2. Отчёта выбранного узла о включении с положительным числом подтверждений.
+3. Фактически скачанных bytes, совпавших по длине и SHA-256 с зашифрованным архивом.
 
-A snapshot is a **complete** tree state at a version (not a delta).  
-Clients MAY compute deltas for UX, but the protocol stores full snapshots.
+HTTP-приём, transaction ID или индекс GraphQL по отдельности недостаточны. Проверка статуса не создаёт новую подпись и не отправляет новый архив.
 
-### 4.3 Commit
+**Граница доверия:** подпись и Merkle root проверяются клиентом; ответ `/status` берётся у узла. Приложение не содержит полноценный consensus/light client, самостоятельно доказывающий каноническое включение блока. Поэтому результат не называется безусловным trustless-доказательством доступности или гарантией хранения через 200 лет. При отсутствии bytes состояние остаётся незавершённым.
 
-See `packages/schema/commit-v1.schema.json`.
+## 6. Узлы, поиск и восстановление
 
-| Field | Rule |
-|-------|------|
-| `schema` | MUST be `sejire/commit/v1` |
-| `parent_commit_id` | MUST equal current HEAD (or `null` for genesis) |
-| `version` | MUST be monotonic integer starting at 1 |
-| `snapshot` | MUST contain full `persons` map |
-| `message` | SHOULD describe the human intent of the change |
+По умолчанию используются native Arweave API на `arweave.net` и `turbo-gateway.com`. Во втором случае используется **gateway**, а не Turbo bundler, credits или аккаунт. Эти домены не являются незаменяемыми: пользователь может явно выбрать свой совместимый публичный HTTPS-узел.
 
-### 4.4 Tree Process State
+При выбранном узле запросы не уходят молча на другой адрес. Настройка живёт в sessionStorage текущей вкладки/origin; самостоятельный файл восстановления от неё не зависит. Наличие двух адресов не доказывает независимость их операторов или текущую работоспособность обоих.
 
-```
-Tree = {
-  id, title, owners{},
-  head,                    -- commit_id | nil
-  commits{commit_id},      -- immutable map
-  versions{n -> commit_id},
-  next_version,            -- integer
-  created_at
-}
-```
+Поиск по словам в независимом приложении обращается к GraphQL native gateways либо явно выбранного узла. Goldsky и внешний каталог peer-узлов не являются его fallback. Индекс помогает найти кандидатов; перед использованием проверяются native signature/ID/data root и расшифровка. Отсутствие записи в индексе не доказывает отсутствия данных в сети и не разрешает новый платёж.
 
----
+Доступны обходные пути без индекса: известный transaction ID, квитанция, encrypted backup и переносимый пакет операции. Автономный decoder из recovery kit работает с локальным ciphertext и словами без сайта SEJIRE, сервера, имени, кошелька и сети. Открытый формат и decoder включаются в статический выпуск.
 
-## 5. Versioning rules (normative)
+## 7. Имена и публикация интерфейса
 
-1. `Commit` MUST NOT mutate an existing commit object.
-2. `Commit` MUST set `parent_commit_id` to current `head` (linear history in v1).
-3. If a **string** `parent_commit_id` is provided and ≠ `head`, process MUST reject with `StaleParent`. Omitting the field or sending JSON `null` means “use current HEAD”.
-4. Soft-delete MUST use `tombstone` inside a new commit.
-5. Clients MUST be able to reconstruct any past version via `GetCommit`.
+Статический сайт и path manifest публикуются в Arweave. Manifest указывает точный `index.html`, assets, recovery files и fallback. Все публичные bytes и MIME сверяются с принятым CI-пакетом до переключения имени.
 
-Forks (branching history) are **out of scope for v1** (see ADR-0004).
+Прямой manifest transaction ID — постоянный идентификатор версии; дружелюбное имя `sejire.ar.io` — отдельная изменяемая ссылка. По [текущей документации ArNS](https://docs.ar.io/learn/arns) реестр и ANTs находятся на Solana. Поэтому «только Arweave» относится к данным, сохранению и запуску по transaction ID; сам существующий ArNS-адрес не описывается как независимый от Solana.
 
----
+Владелец имени может обновить root `@` после проверки новой версии. Это не удаляет старую публикацию и не даёт доступа к словам семей. Перед сменой origin пользователь сохраняет локальный recovery kit: браузерные IndexedDB/localStorage другого origin автоматически не переносятся.
 
-## 6. Storage tiers
+## 8. Управление и прежние admin-ссылки
 
-| Tier | Stores | Must not store |
-|------|--------|----------------|
-| AO Tree Process | graph, commits, ACL, media refs, kinship query results | large binaries |
-| Arweave Permaweb | SPA, photos, scans, encrypted vault envelopes | authoritative graph alone |
-| Client local draft | uncommitted edits | source of truth after commit |
+`#/protocol` объясняет действующую модель. Прежние `#/admin` и `#/fund-admin` ведут к этой странице с явным объяснением отсутствия серверной админки и общей promo-казны. Они не показывают фиктивный пароль, доступ к чужим архивам или неподтверждённые финансовые настройки.
 
----
+Обновление сайта управляется подписью загрузочного кошелька; запись имени — фактическим Owner/Controller ArNS. Изменение этих полномочий не входит автоматически в публикацию новой версии.
 
-## 7. Authorization
+## 9. AO и прежние эксперименты
 
-1. First successful `Init` or `Commit` from address A bootstraps `owners[A]=true` if owners empty.
-2. Subsequent `Commit` / `AddOwner` / `RemoveOwner` MUST require `is_owner(msg.From)`.
-3. `Info`, `GetHead`, `GetCommit`, `History`, `Ping`, `GetAncestors`, `GetJetiAta`, `Relate` MAY be public (v1 default).
+Файлы `ao/` и локальные `LocalTreeProcess`/kinship функции сохранены как исторический эксперимент и локальные вычисления редактора. Они не являются обязательным живым AO-процессом. Публичный независимый bundle не импортирует live AO/HyperBEAM transport. Имя `tree_mirror_*` — локальный идентификатор, не process ID на блокчейне.
 
-Encryption of person names (client-side AES + BIP-39) is the **product vault path** (envelope on Arweave).  
-AO Tree Process v0.3 still stores plaintext snapshots so queries can run on-process; production public trees SHOULD be opt-in, and private trees SHOULD stay in the encrypted envelope until an encrypted-commit profile is specified.
+Ранее описанные plaintext AO snapshots и синтетический Node/SOL executor не используются как источник истины зашифрованного vault. Их локальные тесты не доказывают децентрализованное исполнение в живой сети.
 
----
+## 10. Проверка реализации и статус выпуска
 
-## 8. Message surface
+- Default build выбирает Arweave-only даже без дополнительных environment flags; legacy требует явного `VITE_DECENTRALIZED_MODE=false`.
+- Build gate проверяет все JS chunks, их module graph, hashes, статические HTML/CSS/SVG, recovery kit и отсутствие серверных/платёжных transports.
+- Тесты проверяют криптографию, прежние форматы, запись полного vault, отмены/поздние ответы, журналы продолжения, native chunks, CORS и отсутствие внешних запросов на локальных страницах.
+- Native site-publication preparation не использует ключ. Подпись и загрузка выполняются отдельно на постоянном локальном диске владельца, с явным AR budget и сохранением signed bytes до broadcast.
+- Точный source должен пройти собственный полный CI. Реальный кошелёк, загрузка сайта, публичный manifest/bytes и изменение ArNS проверяются отдельно; до их выполнения утверждается только проверенный объём.
 
-Normative catalog: [`processes/MESSAGE_CATALOG.md`](./processes/MESSAGE_CATALOG.md).
-
-Tree Process actions: `Init`, `Info`, `Commit`, `GetHead`, `GetCommit`, `History`, `AddOwner`, `RemoveOwner`, `Ping`, `GetAncestors`, `GetJetiAta`, `Relate`.  
-Factory Process actions: `SpawnTree`, `RegisterTree`, `ListTrees`, `Info`, `Ping`.
-
-### 8.1 Kinship queries (v0.3)
-
-Queries run against **HEAD** unless tag `Commit-Id` selects a historical commit.  
-They MUST NOT mutate state. Missing `Person-Id` / `Person-A`+`Person-B` → `BadPersonId`. No commits yet → `EmptyTree`.
-
-| Action | Result schema | Meaning |
-|--------|---------------|---------|
-| `GetAncestors` | `sejire/ancestors/v1` | BFS up `parents[]`, self at distance 0; optional `Max-Depth` |
-| `GetJetiAta` | `sejire/jeti-ata/v1` | Paternal line, generation 0 = focus, max 7 people (SPA depth) |
-| `Relate` | `sejire/relate/v1` | Kinship of A **relative to** B; `code` from `packages/schema/kinship-codes.json` |
-
-`Relate.code` is language-neutral. Clients MAY map codes to UI strings.  
-`da` = steps from A to LCA, `db` = steps from B to LCA, `degree` = `da+db`.  
-`unrelated` omits `lca` / `da` / `db` / `degree`.
-
-Father for `GetJetiAta` uses the same split as the SPA (`sex=M`, else first remaining parent).
-
----
-
-## 9. Compatibility
-
-| Version | Notes |
-|---------|-------|
-| `sejire/v0.3` | Kinship queries; `Info.release`; StaleParent only if parent is a string |
-| `sejire/commit/v1` | Current commit payload (unchanged) |
-| `sejire/tree/v1` | Tree data model / Info.protocol |
-| `sejire/v0.2` | Messages without kinship actions |
-
-Clients MUST ignore unknown person fields (forward compatible).  
-v0.2 clients MUST ignore unknown `Info` fields (`release`, `queries`).  
-Process SHOULD reject unknown required schema constants.
-
----
-
-## 10. Reference implementation map
-
-| Concern | Path |
-|---------|------|
-| Tree AO logic | `ao/processes/tree.lua` |
-| Factory AO logic | `ao/processes/factory.lua` |
-| Local Tree/Factory (testable double) | `apps/web/src/lib/ao/treeProcess.ts`, `factoryProcess.ts` |
-| AO client | `apps/web/src/lib/ao/client.ts` |
-| Local engine (draft UX) | `apps/web/src/lib/treeEngine.ts` |
-| JSON Schemas | `packages/schema/` |
-| Process docs | `docs/processes/` |
+Практические команды и приёмка: [INDEPENDENT_RELEASE.md](INDEPENDENT_RELEASE.md). Неизменяемый формат восстановления: [tools/recovery/FORMAT.md](../tools/recovery/FORMAT.md). Официальный native API: [Arweave HTTP API](https://docs.arweave.org/developers/arweave-node-server/http-api).

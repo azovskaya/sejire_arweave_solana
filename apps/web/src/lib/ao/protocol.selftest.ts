@@ -201,11 +201,23 @@ async function main() {
   store = commitDraft(store, "one");
   store = setDraftPerson(store, snapshot().persons.c);
   store = commitDraft(store, "two");
-  const mirrored = await mirrorStoreToProtocol(store);
-  const mirroredHist = parseReplyJson<{ commits: unknown[] }>(
-    await mirrored.client.history(mirrored.processId, "local:draft-author")
-  );
-  assert(mirroredHist.commits.length === 2, "mirror history");
+  const previousFetch = globalThis.fetch;
+  let mirrorNetworkCalls = 0;
+  globalThis.fetch = async () => { mirrorNetworkCalls++; throw new Error("local mirror must not use a network"); };
+  try {
+    const mirrored = await mirrorStoreToProtocol(store);
+    const mirroredHist = parseReplyJson<{ commits: unknown[] }>(
+      mirrored.process.handle({ From: "local:draft-author", Tags: { Action: "History" } })
+    );
+    assert(mirroredHist.commits.length === 2, "mirror history");
+    const repeated = await mirrorStoreToProtocol(store);
+    assert(repeated.process === mirrored.process, "mirror reuses the same local history");
+    const repeatedHist = parseReplyJson<{ commits: unknown[] }>(
+      repeated.process.handle({ From: "local:draft-author", Tags: { Action: "History" } })
+    );
+    assert(repeatedHist.commits.length === 2, "mirror does not duplicate committed versions");
+    assert(mirrorNetworkCalls === 0, "mirror does not contact a hosted process");
+  } finally { globalThis.fetch = previousFetch; }
   const view = await queryPersonFromDraft(store, "c");
   assert(view, "draft query");
   assert(view!.jetiAta.some((x) => x.id === "g"), "draft jeti ata");

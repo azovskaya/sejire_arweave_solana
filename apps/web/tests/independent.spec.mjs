@@ -178,6 +178,29 @@ for (const viewport of [{ width: 1280, height: 900 }, { width: 390, height: 844 
   });
 }
 
+for (const route of ['#/protocol', '#/admin', '#/fund-admin']) {
+  test(`Arweave-only ${route} explains archive ownership without a server login or changing old orders`, async ({ page, context }) => {
+    const state = await install(context, page, { draft: true, wallet: true });
+    const legacyKey = 'sejire.fundAttempt.v1.protocol-route-synthetic';
+    const legacyValue = '{"synthetic":true,"signed":"keep-original-bytes","status":"unknown"}';
+    await context.addInitScript(({ key, value }) => localStorage.setItem(key, value), { key: legacyKey, value: legacyValue });
+    await page.goto('/' + route);
+    await expect(page.getByRole('heading', { name: 'Ваш архив — под вашим управлением', exact: true })).toBeVisible();
+    await expect(page.getByText('Сервисной платы в SOL и сохранения за счёт общего промокода в этой версии нет.', { exact: false })).toBeVisible();
+    await expect(page.locator('input[type="password"]')).toHaveCount(0);
+    await expect(page.getByRole('button', { name: /Подключить кошелёк|Подписать|Войти|Изменить промокод/ })).toHaveCount(0);
+    expect(await page.evaluate(key => localStorage.getItem(key), legacyKey)).toBe(legacyValue);
+    expect(await page.evaluate(() => JSON.parse(localStorage.getItem('sejire.draft.tree.v1')))).toMatchObject(tree);
+    if (route === '#/protocol') {
+      await page.getByRole('button', { name: 'На главную', exact: true }).click();
+      await page.getByRole('button', { name: 'Как работает протокол SEJIRE', exact: true }).click();
+      await expect(page).toHaveURL(/#\/protocol$/);
+      await expect(page.getByRole('heading', { name: 'Ваш архив — под вашим управлением', exact: true })).toBeVisible();
+    }
+    expect(state.signs).toBe(0); expect(state.posts).toEqual([]); expect(state.external).toEqual([]); expect(state.denied).toEqual([]);
+  });
+}
+
 test('direct save resumes one signed transaction after reload and portable import, and restores by known ID', async ({ page, context, browser }) => {
   const state = await install(context, page, { draft: true, wallet: true, unavailable: true });
   const phrase = await prepareNew(page);

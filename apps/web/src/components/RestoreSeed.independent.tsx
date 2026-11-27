@@ -6,7 +6,7 @@ import { openEnvelope, openLocalVault, type VaultV1 } from '../lib/crypto/vault'
 import type { EnvelopeV1 } from '../lib/crypto/encrypt';
 import { parseIndependentBackup, type IndependentBackup } from '../lib/independentBackup';
 import { retrieveDirectReceipt, retrieveDirectTransaction } from '../lib/directArweave';
-import { recoverVaultFromWords } from '../lib/recovery/recover';
+import { recoverIndependentVaultFromWords } from '../lib/recovery/recoverIndependent';
 import { retrieveHistoricalNative, retrieveNativeVault } from '../lib/recovery/historicalNative';
 import { active, scoped } from '../lib/directArweave/network';
 import { listIndependentVaultVersions } from '../lib/independentDiscovery';
@@ -186,7 +186,7 @@ export function RestoreSeed({ onRestored, onBack }: Props) {
         else setError(copy.noArchive);
         return;
       }
-      const found = await recoverVaultFromWords(phrase, { signal: selectedOptions.signal });
+      const found = await recoverIndependentVaultFromWords(phrase, { signal: selectedOptions.signal });
       ensureActive();
       if (found.ok) {
         // Searching can be incomplete or contain forks. The owner chooses the

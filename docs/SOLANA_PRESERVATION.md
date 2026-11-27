@@ -1,5 +1,11 @@
 # Solana preservation implementation
 
+> **Historical compatibility only, 27 November 2026.** The current owner goal is
+> Arweave-only with native AR fees and no mandatory SEJIRE backend. This document
+> preserves earlier SOL operations and their obligations. Follow
+> [PROTOCOL.md](PROTOCOL.md) and [INDEPENDENT_RELEASE.md](INDEPENDENT_RELEASE.md)
+> for the active runtime and publication process.
+
 > **16.11.2026 — подготовка пилотного выпуска:** объединённый пакет 15 ноября дополнен безопасной диагностикой досылки и освобождением lease при отсутствующем payload; SQLite-регрессии воспроизведены и исправлены. Обновлены зависимости, блокировавшие high/critical release audit; в CI добавлена проверка готового ArNS-клиента. Полная приёмка выполняется для итогового SHA ветки `feat/promo-funded-preservation`. Production и восстановление прежнего `Atw…` нельзя считать подтверждёнными только по тестам. См. [отчёт 16 ноября](verification/2026-11-16-pilot-release.md). Новых платежей и пользовательских архивов не создавали.
 
 > **15.11.2026 — подготовка к sejire.ar.io:** `cursor/ario-permaweb-release-5150` объединяет редакторные правки 10.11, исправление `/chunk` для оплаченных архивов и ArNS-сборку с запечённым Fund Worker. Локальные проверки прошли; Worker/ArNS/Pages этой веткой не выпущены. См. [отчёт](verification/2026-11-15-ario-permaweb-release.md).

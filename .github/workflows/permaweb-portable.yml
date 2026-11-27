@@ -115,7 +115,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           PERMAWEB_JWK: ${{ secrets.PERMAWEB_JWK }}
-        run: npm run deploy:permaweb
+        run: npm run deploy:permaweb:legacy
       - name: Preserve accepted release, public receipts and read-only preflight
         if: always()
         uses: actions/upload-artifact@v4

@@ -1317,6 +1317,12 @@ a {
 
 .independent-publish { width: min(660px, 100%); }
 .independent-restore { max-width: 680px; margin: 0 auto; padding: 1.5rem 0; }
+.independent-protocol { max-width: 760px; padding: 2rem 0; }
+.independent-protocol h1 { font: 700 clamp(1.8rem, 4.8vw, 2.8rem)/1.15 var(--font-display); }
+.independent-protocol section { margin-top: 1.8rem; }
+.independent-protocol h2 { font: 700 1.1rem var(--font-display); }
+.independent-protocol p { line-height: 1.65; }
+.independent-protocol a { text-decoration: underline; }
 .independent-restore form, .direct-save { display: grid; gap: .8rem; }
 .independent-restore label, .direct-save label { display: grid; gap: .4rem; }
 .independent-restore input, .independent-restore textarea, .direct-save input {

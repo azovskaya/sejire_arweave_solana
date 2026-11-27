@@ -17,7 +17,9 @@ export const INDEPENDENT_ROOT_FILES = Object.freeze([
 export const INDEPENDENT_PROFILE_DOCUMENT = Object.freeze({
   schema: 'sejire/deployment-profile/v1', profile: INDEPENDENT_PROFILE,
   storageNetwork: 'arweave.N.1', funding: 'owner-ar-wallet',
+  archiveTransport: 'native-arweave', execution: 'browser-local',
   mandatorySejireService: false, mandatorySolana: false, mandatoryBundler: false,
+  mandatoryCloudflare: false, mandatoryHostedExecutor: false, mandatoryAO: false,
   recoveryFormat: 'sejire/envelope/v1',
 });
 
@@ -31,12 +33,13 @@ export function normalizeModuleId(id, root) {
 /** All rendered modules, including lazy chunks, must remain inside the direct path. */
 export function forbiddenIndependentModule(id) {
   return /(?:^|\/)apps\/sponsor\//.test(id) ||
-    /(?:^|\/)node_modules\/(?:@ardrive\/turbo-sdk|@dha-team\/arbundles|@cloudflare\/[^/]+|@solana\/[^/]+)\//.test(id) ||
-    /(?:^|\/)apps\/web\/src\/lib\/(?:checkout|fund|sponsor)\//.test(id) ||
+    /(?:^|\/)node_modules\/(?:@ardrive\/turbo-sdk|@dha-team\/arbundles|@cloudflare\/[^/]+|@solana\/[^/]+|@permaweb\/aoconnect)\//.test(id) ||
+    /(?:^|\/)apps\/web\/src\/lib\/(?:checkout|fund|sponsor|opsDesk)\//.test(id) ||
+    /(?:^|\/)apps\/web\/src\/lib\/ao\/client\./.test(id) ||
     /(?:^|\/)apps\/web\/src\/lib\/solana\/(?:upload|wallet|rpc|quote)\./.test(id) ||
     /(?:^|\/)apps\/web\/src\/lib\/native\/(?:payment|jobs|rpc|audit)\./.test(id) ||
     /(?:^|\/)apps\/web\/src\/lib\/arweave\/(?:publish|wallet)\./.test(id) ||
-    /(?:^|\/)apps\/web\/src\/components\/(?:PaidSolanaFlow|PaidSaveHistory|FundedSaveFlow|FundAdminDesk|NativeAdminDesk|NativeSaveFlow|PreservationV2Flow|SolanaSaveFlow|SolanaSavePanel|SolanaCheckoutPanel)\./.test(id);
+    /(?:^|\/)apps\/web\/src\/components\/(?:PaidSolanaFlow|PaidSaveHistory|FundedSaveFlow|PromoFundedFlow|FundAdmin|FundAdminDesk|AdminDesk|ServerAdminDesk|NativeAdminDesk|NativeSaveFlow|PreservationV2Flow|SolanaSaveFlow|SolanaSavePanel|SolanaCheckoutPanel)\./.test(id);
 }
 
 export function assertIndependentCode(code) {
@@ -45,9 +48,13 @@ export function assertIndependentCode(code) {
   // an unvisited dynamic chunk.
   fail(!/(?:[A-Za-z0-9-]+\.)?(?:workers\.dev|pages\.dev|cloudflareaccess\.com)\b/i.test(code), 'independent_worker_endpoint_in_bundle');
   fail(!/\b(?:[A-Za-z0-9-]+\.)*(?:cloudflare\.com|cloudflareinsights\.com)\b/i.test(code), 'independent_cloudflare_endpoint_in_bundle');
+  fail(!/\b(?:[A-Za-z0-9-]+\.)*prod\.page\b|\bsejire-api\.[A-Za-z0-9.-]+\b/i.test(code), 'independent_hosted_api_in_bundle');
+  fail(!/\b(?:[A-Za-z0-9-]+\.)*goldsky\.com\b/i.test(code), 'independent_indexer_service_in_bundle');
+  fail(!/\b(?:push\.forward\.computer|(?:mu|cu|su)\.ao-testnet\.xyz)\b|~process@1\.0\/compute\//i.test(code), 'independent_ao_transport_in_bundle');
   fail(!/\/(?:api\/)?(?:checkout|fund)\/(?:policy|orders|status|admin|quote|contribution|balance|promo)\b|\/api\/(?:checkout|fund)(?:["'`/]|$)/i.test(code), 'independent_service_route_in_bundle');
   fail(!/(?:upload|payment)(?:[.-](?:devnet|testnet))?\.(?:ardrive\.io|ar\.io)|(?:turbo|devnet)\.ardrive\.io|api\.(?:mainnet-beta|devnet|testnet)\.solana\.com|helius-rpc\.com/i.test(code), 'independent_payment_endpoint_in_bundle');
   fail(!/ARWEAVE_TREASURY_JWK|TURBO_JWK|PROMO_CODE_SECRET|__SEJIRE_[A-Z0-9_]*TEST_DRIVER__|synthetic-browser-test-only/.test(code), 'independent_secret_or_fixture_in_bundle');
+  fail(!/-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----|["']d["']\s*:\s*["'][A-Za-z0-9_-]{100,}["']/.test(code), 'independent_private_key_in_bundle');
 }
 
 export async function staticFiles(root, dir = root) {

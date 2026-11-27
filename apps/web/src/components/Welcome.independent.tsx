@@ -6,9 +6,10 @@ import { LanguageSwitch } from './LanguageSwitch';
 import { clearVaultSession, getSessionMnemonic, getVaultSession } from '../lib/vaultSession/session';
 import { independentMessages } from '../lib/independentMessages';
 import { LegacyPreservationNotice } from './LegacyPreservationNotice';
+import { independentProtocolMessages } from '../lib/independentProtocolMessages';
 
-type Props = { onStartNew: (title: string) => void; onContinueDraft: () => void; onRestoreSeed: () => void; onHistory: () => void; draftWritable?: boolean };
-export function Welcome({ onStartNew, onContinueDraft, onRestoreSeed, onHistory, draftWritable = true }: Props) {
+type Props = { onStartNew: (title: string) => void; onContinueDraft: () => void; onRestoreSeed: () => void; onHistory: () => void; onProtocol: () => void; draftWritable?: boolean };
+export function Welcome({ onStartNew, onContinueDraft, onRestoreSeed, onHistory, onProtocol, draftWritable = true }: Props) {
   const { t, locale } = useI18n();
   const copy = landingMessages[locale], direct = independentMessages[locale];
   const [openVaultId, setOpenVaultId] = useState(() => getSessionMnemonic() ? getVaultSession()?.vaultId ?? null : null);
@@ -35,6 +36,7 @@ export function Welcome({ onStartNew, onContinueDraft, onRestoreSeed, onHistory,
     <ol className="landing-steps">{copy.steps.map(([number, title, detail]) => <li key={number}><span className="landing-number" aria-hidden="true">{number}</span><h2>{title}</h2><p>{detail}</p></li>)}</ol>
     <footer className="landing-footer">
       <button type="button" className="welcome-link-quiet" onClick={onHistory}>{direct.history}</button>
+      <button type="button" className="welcome-link-quiet" onClick={onProtocol}>{independentProtocolMessages[locale].link}</button>
       <a className="welcome-link-quiet" href="./recovery/recovery.html" download="sejire-recovery.html">{direct.offlineTool}</a>
       <p>{copy.heritage}</p><p className="sub">{copy.privacy}</p>
       <LegacyPreservationNotice />

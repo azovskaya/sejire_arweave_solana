@@ -93,7 +93,7 @@ test('changed JS bytes, missing recovery, old UI verifier and absent required ru
   await assert.rejects(verifyPortableFundedBuild(f.dist, API), /required_file_missing/);
 });
 
-test('portable release gets its own exact branch and artifact; independent contract is preserved', () => {
+test('portable release retains its legacy branch; current Arweave-only release has a distinct contract', () => {
   const env = { GITHUB_REPOSITORY:'azovskaya/sejire_arweave_solana', GITHUB_EVENT_NAME:'workflow_dispatch',
     GITHUB_REF:`refs/heads/${PORTABLE_FUNDED_BRANCH}`, GITHUB_SHA:SHA, PERMAWEB_MODE:'prepare',
     PERMAWEB_CONFIRM:'pack-ready', PERMAWEB_CI_RUN_ID:'7', PERMAWEB_CI_ATTEMPT:'1', PERMAWEB_PROFILE:PORTABLE_FUNDED_PROFILE };
@@ -102,7 +102,7 @@ test('portable release gets its own exact branch and artifact; independent contr
   assert.throws(() => permawebRequest({ ...env, PERMAWEB_PROFILE:undefined }), /branch_mismatch/);
   assert.throws(() => permawebRequest({ ...env, GITHUB_REF:'refs/heads/main' }), /branch_mismatch/);
   assert.throws(() => permawebRequest({ ...env, PERMAWEB_PROFILE:'anything' }), /profile_mismatch/);
-  assert.equal(releaseContract().branch, 'feat/decentralized-arweave-20261116');
+  assert.equal(releaseContract().branch, 'feat/arweave-only-protocol-20261127');
   const artifact = { id:1, name:PORTABLE_FUNDED_ARTIFACT, expired:false, workflow_run:{id:7,head_sha:SHA,head_branch:PORTABLE_FUNDED_BRANCH},
     digest:'sha256:'+'b'.repeat(64),size_in_bytes:1024,created_at:'2026-11-25T10:01:00Z' };
   const jobs = [{name:'verify',started_at:'2026-11-25T10:00:00Z',completed_at:'2026-11-25T10:02:00Z'}];

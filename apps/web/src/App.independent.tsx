@@ -3,14 +3,19 @@ import { Welcome } from './components/Welcome.independent';
 import { Workspace } from './components/Workspace';
 import { RestoreSeed } from './components/RestoreSeed.independent';
 import { DirectSaveHistory } from './components/DirectSaveHistory';
+import { IndependentProtocol } from './components/Protocol.independent';
 import { DraftAccessNotice, useDraftAccess, useDraftDocument } from './components/DraftAccess';
 import type { TreeStore } from './lib/types';
 import { loadDraftTree } from './lib/draftStorage';
 import { defaultGuide, loadGuide, startGuidedTree, type GuideState } from './lib/guide';
 import { readLastScreen, rememberScreen, shouldResumeDraft } from './lib/lastScreen';
 
-type Screen = 'welcome' | 'work' | 'restore' | 'saving';
+type Screen = 'welcome' | 'work' | 'restore' | 'saving' | 'protocol';
+function isProtocolRoute(hash: string) {
+  return /^#\/(?:protocol|admin|fund-admin)(?:[/?]|$)/.test(hash);
+}
 function bootApp(): { screen: Screen; store: TreeStore | null; guide: GuideState } {
+  if (isProtocolRoute(location.hash)) return { screen: 'protocol', store: loadDraftTree(), guide: loadGuide() ?? defaultGuide() };
   if (location.hash.startsWith('#/restore')) return { screen: 'restore', store: null, guide: defaultGuide() };
   if (location.hash.startsWith('#/save')) return { screen: 'saving', store: loadDraftTree(), guide: loadGuide() ?? defaultGuide() };
   const draft = loadDraftTree();
@@ -27,13 +32,14 @@ export default function App() {
   const { store, guide } = draft;
 
   function go(next: Screen) {
-    history.replaceState(null, '', location.pathname + location.search + (next === 'restore' ? '#/restore' : next === 'saving' ? '#/save' : ''));
-    rememberScreen(next === 'saving' ? 'welcome' : next);
+    history.replaceState(null, '', location.pathname + location.search + (next === 'restore' ? '#/restore' : next === 'saving' ? '#/save' : next === 'protocol' ? '#/protocol' : ''));
+    rememberScreen(next === 'saving' || next === 'protocol' ? 'welcome' : next);
     setScreen(next);
   }
   useEffect(() => {
     const changed = () => {
-      if (location.hash.startsWith('#/restore')) setScreen('restore');
+      if (isProtocolRoute(location.hash)) setScreen('protocol');
+      else if (location.hash.startsWith('#/restore')) setScreen('restore');
       else if (location.hash.startsWith('#/save')) setScreen('saving');
       else setScreen('welcome');
     };
@@ -54,7 +60,8 @@ export default function App() {
   return <div className={screen === 'work' ? 'app-shell is-work' : 'app-shell'}>
     <DraftAccessNotice access={access} document={draft} onHome={() => go('welcome')} />
     {screen === 'welcome' && <Welcome onStartNew={startNew} onContinueDraft={continueDraft}
-      onRestoreSeed={() => go('restore')} onHistory={() => go('saving')} draftWritable={draft.ready && !draft.pending} />}
+      onRestoreSeed={() => go('restore')} onHistory={() => go('saving')} onProtocol={() => go('protocol')} draftWritable={draft.ready && !draft.pending} />}
+    {screen === 'protocol' && <IndependentProtocol onHome={() => go('welcome')} onRestore={() => go('restore')} canRestore={draft.ready && !draft.pending} />}
     {screen === 'saving' && <main className="landing"><DirectSaveHistory onBack={() => go(store ? 'work' : 'welcome')} /></main>}
     {screen === 'restore' && draft.ready && !draft.pending && <RestoreSeed key={access.token?.epoch} onBack={() => go('welcome')} onRestored={continueDraft} />}
     {screen === 'work' && store && draft.ready && <Workspace key={access.token?.epoch} store={store} guide={guide}

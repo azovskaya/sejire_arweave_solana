@@ -1,5 +1,10 @@
 # SEJIRE sponsor edge + permaweb ops
 
+> **Исторический профиль.** Sponsor edge и Turbo не нужны текущему Arweave-only
+> runtime, выбранному владельцем 27 ноября 2026. Для нового выпуска применять
+> [актуальные инструкции](INDEPENDENT_RELEASE.md); этот текст сохранён для
+> прежних операций и не разрешает загрузку из Actions.
+
 ## Why your scheme works — and what we change
 
 **Your idea:** project wallet funds the network; user pays ~$3 / ₸ to you; you top up Arweave “under the hood”.

@@ -22,7 +22,10 @@ export function releaseRequest(env) {
   return { sha: env.GITHUB_SHA, runId: Number(env.RELEASE_CI_RUN_ID), attempt: Number(env.RELEASE_CI_ATTEMPT) };
 }
 
-export function validateReleaseEvidence(request, run, ref, jobs, { branch = BRANCH } = {}) {
+export function validateReleaseEvidence(request, run, ref, jobs, { branch = BRANCH, allowedSkippedSteps = [] } = {}) {
+  const independentLegacySteps = ['Read-only live Solana requests from public Pages browser', 'Preserve legacy public Solana read diagnostics'];
+  requireCondition(Array.isArray(allowedSkippedSteps) && allowedSkippedSteps.every(name =>
+    branch === 'feat/arweave-only-protocol-20261127' && independentLegacySteps.includes(name)), 'release_skip_policy_invalid');
   requireCondition(run?.id === request.runId, 'release_run_mismatch');
   requireCondition(run?.repository?.full_name === REPOSITORY &&
     run?.head_repository?.full_name === REPOSITORY, 'release_repository_mismatch');
@@ -43,9 +46,11 @@ export function validateReleaseEvidence(request, run, ref, jobs, { branch = BRAN
   }
   requireCondition(Array.isArray(verify[0].steps) && verify[0].steps.length > 0, 'release_steps_missing');
   // Mandatory fresh production dependency audits also run in the deploy job.
-  // The only skipped step permitted here is the failure-only artifact upload.
+  // Historical contracts allow only failure diagnostics to be skipped. The new
+  // Arweave-only contract explicitly excludes two live Solana-only diagnostics.
   for (const step of verify[0].steps) {
     if (step.name === 'Preserve checkout failure diagnostics' && step.status === 'completed' && step.conclusion === 'skipped') continue;
+    if (allowedSkippedSteps.includes(step.name) && step.status === 'completed' && step.conclusion === 'skipped') continue;
     requireCondition(step.status === 'completed' && step.conclusion === 'success', 'release_step_not_successful');
   }
   return { schema: 'sejire/worker-release-gate/v1', sourceCommit: request.sha,

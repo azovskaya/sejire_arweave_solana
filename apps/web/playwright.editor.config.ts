@@ -9,7 +9,7 @@ export default defineConfig({
   webServer: {
     command: 'npm run dev -- --host 127.0.0.1 --port 5186 --strictPort',
     url: 'http://127.0.0.1:5186', reuseExistingServer: false,
-    env: { VITE_NATIVE_AR_ENABLED: '1', VITE_PRESERVATION_V2_ENABLED: '1',
+    env: { VITE_DECENTRALIZED_MODE: 'false', VITE_NATIVE_AR_ENABLED: '1', VITE_PRESERVATION_V2_ENABLED: '1',
       VITE_NATIVE_AR_PILOT: '1', VITE_NATIVE_AR_BROADCAST: '0', VITE_NATIVE_SOL_MAINNET: '0',
       VITE_QA_TOOLS: '0', VITE_PUBLISH_MODE: 'solana', VITE_SOLANA_NETWORK: 'devnet',
       VITE_CHECKOUT_API_URL: 'http://127.0.0.1:5186', VITE_FUND_API_URL: 'http://127.0.0.1:5186' },

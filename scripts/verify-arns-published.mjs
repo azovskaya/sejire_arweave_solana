@@ -15,6 +15,25 @@ const JAVASCRIPT_TYPES = new Set([
 ]);
 const BROWSER_TYPES = { '.html': new Set(['text/html']), '.css': new Set(['text/css']),
   '.js': JAVASCRIPT_TYPES, '.mjs': JAVASCRIPT_TYPES };
+
+export function publicVerificationArguments(args) {
+  const options = { directory: ACCEPTED_DIR, manifestId: null, target: false }, seen = new Set();
+  for (let index = 0; index < args.length; index++) {
+    const name = args[index];
+    requireValue(['--release', '--manifest', '--target'].includes(name) && !seen.has(name), 'permaweb_invalid_verify_arguments');
+    seen.add(name);
+    if (name === '--target') { options.target = true; continue; }
+    const value = args[++index];
+    requireValue(typeof value === 'string' && value.trim().length > 0 && !value.startsWith('--') && !value.includes('\0'),
+      'permaweb_invalid_verify_arguments');
+    if (name === '--manifest') {
+      requireValue(TX.test(value), 'permaweb_invalid_verify_arguments');
+      options.manifestId = value;
+    } else options.directory = value;
+  }
+  return options;
+}
+
 export function verifyPathManifest(manifest, files) {
   requireValue(manifest?.manifest === 'arweave/paths' && manifest.version === '0.2.0' &&
     manifest.index?.path === 'index.html' && manifest.paths && !Array.isArray(manifest.paths), 'permaweb_path_manifest_invalid');
@@ -92,17 +111,13 @@ export async function readPublicManifest(id, fetcher = fetch) {
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   try {
-    const provenance = JSON.parse(await readFile(join(ACCEPTED_DIR, 'build-provenance.json'), 'utf8'));
-    const release = await verifyRelease(ACCEPTED_DIR, provenance.sourceCommit, { provenance: true });
+    // Reject malformed commands before reading any local release or evidence file.
+    const { directory, manifestId: explicitId, target } = publicVerificationArguments(process.argv.slice(2));
+    const provenance = JSON.parse(await readFile(join(directory, 'build-provenance.json'), 'utf8'));
+    const release = await verifyRelease(directory, provenance.sourceCommit, { provenance: true });
     requireValue(provenance.releaseManifestSha256 === release.manifestSha256, 'permaweb_provenance_mismatch');
-    const args = process.argv.slice(2), manifestArg = args.indexOf('--manifest'), target = args.includes('--target');
-    const explicitId = manifestArg === -1 ? null : args[manifestArg + 1];
-    const expectedArgs = (target ? 1 : 0) + (manifestArg === -1 ? 0 : 2);
-    requireValue(args.length === expectedArgs && args.every((arg, index) => arg === '--target' ||
-      arg === '--manifest' && index === manifestArg || manifestArg !== -1 && index === manifestArg + 1 && TX.test(arg)),
-    'permaweb_invalid_verify_arguments');
     let manifestId, manifest;
-    if (manifestArg !== -1) {
+    if (explicitId !== null) {
       manifestId = explicitId; manifest = await readPublicManifest(manifestId);
     } else {
       const uploaded = JSON.parse(await readFile(join(EVIDENCE_DIR, 'upload-result.json'), 'utf8'));
