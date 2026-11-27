@@ -1,0 +1,129 @@
+name: Upload portable SOL and promo SEJIRE site to Arweave (manual)
+
+# This is a separate release contract. The independent app's gate is unchanged.
+# No step edits ArNS. The owner reviews the manifest and switches the name later.
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "prepare creates a reviewable pack and quote; upload spends existing credits"
+        required: true
+        default: prepare
+        type: choice
+        options: [prepare, upload]
+      confirm:
+        description: "Type pack-ready only after reviewing the exact release"
+        required: true
+        type: string
+      ci_run_id:
+        description: "Successful SEJIRE checks run for this exact feature-branch SHA"
+        required: true
+        type: string
+      ci_attempt:
+        description: "Exact successful CI attempt"
+        required: true
+        default: "1"
+        type: string
+      max_quote_winc:
+        description: "Maximum preflight quote in Winston Credits; no automatic top-up"
+        required: true
+        default: "0"
+        type: string
+      service_commit:
+        description: "Full deployed and verified Linux API source commit SHA"
+        required: true
+        type: string
+      migration_reviewed:
+        description: "Owner verified the consistent ledger migration, all old obligations, and a single active executor"
+        required: true
+        default: false
+        type: boolean
+      always_on_restore_verified:
+        description: "Owner verified always-on hosting, persistent disk, off-host backup and restore rehearsal"
+        required: true
+        default: false
+        type: boolean
+      live_save_recovery_verified:
+        description: "Owner verified real Mainnet SOL and promo save, raw bytes, receipts and recovery with synthetic family data"
+        required: true
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: sejire-permaweb-upload
+  cancel-in-progress: false
+jobs:
+  permaweb:
+    if: github.event.inputs.confirm == 'pack-ready' && github.ref == 'refs/heads/feat/funded-portable-release-20261125'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      PERMAWEB_PROFILE: portable-funded-mainnet
+      PERMAWEB_MODE: ${{ inputs.mode }}
+      PERMAWEB_CONFIRM: ${{ inputs.confirm }}
+      PERMAWEB_CI_RUN_ID: ${{ inputs.ci_run_id }}
+      PERMAWEB_CI_ATTEMPT: ${{ inputs.ci_attempt }}
+      PERMAWEB_MAX_QUOTE_WINC: ${{ inputs.max_quote_winc }}
+      SEJIRE_FUNDED_API_ORIGIN: https://sejire-api.azovskaya.prod.page
+      SEJIRE_EXPECTED_SERVICE_COMMIT: ${{ inputs.service_commit }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24.22.3"
+          cache: npm
+          cache-dependency-path: |
+            apps/web/package-lock.json
+            apps/sponsor/package-lock.json
+      - name: Verify exact CI and recover accepted portable release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/permaweb-release.mjs
+      - run: npm ci --prefix apps/web
+      - run: npm ci --prefix apps/sponsor --omit=dev --ignore-scripts
+      - name: Blocking production dependency audits
+        run: |
+          npm audit --prefix apps/web --omit=dev --audit-level=high
+          npm audit --prefix apps/sponsor --omit=dev --audit-level=high
+      - name: Confirm owner acceptance before an irreversible upload
+        if: inputs.mode == 'upload'
+        env:
+          MIGRATION_REVIEWED: ${{ inputs.migration_reviewed }}
+          ALWAYS_ON_RESTORE_VERIFIED: ${{ inputs.always_on_restore_verified }}
+          LIVE_SAVE_RECOVERY_VERIFIED: ${{ inputs.live_save_recovery_verified }}
+        run: |
+          test "$MIGRATION_REVIEWED" = true
+          test "$ALWAYS_ON_RESTORE_VERIFIED" = true
+          test "$LIVE_SAVE_RECOVERY_VERIFIED" = true
+      - name: Validate static release and quote (read-only, no wallet)
+        run: |
+          node scripts/verify-arns-portable-funded.mjs .cache/permaweb-accepted
+          node scripts/upload-permaweb.mjs --plan
+          node scripts/upload-permaweb.mjs --quote
+      - name: Fresh configuration and network preflight of the deployed API
+        if: inputs.mode == 'upload'
+        env:
+          SEJIRE_PREFLIGHT_ADMIN_TOKEN: ${{ secrets.SEJIRE_PREFLIGHT_ADMIN_TOKEN }}
+        run: |
+          test "$SEJIRE_EXPECTED_SERVICE_COMMIT" = "$GITHUB_SHA"
+          node --import ./apps/web/node_modules/tsx/dist/loader.mjs scripts/verify-portable-service.mts
+      - name: Recheck accepted CI, upload with existing credits and verify public bytes
+        if: inputs.mode == 'upload'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PERMAWEB_JWK: ${{ secrets.PERMAWEB_JWK }}
+        run: npm run deploy:permaweb
+      - name: Preserve accepted release, public receipts and read-only preflight
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: portable-permaweb-owner-evidence
+          path: |
+            .cache/permaweb-accepted/
+            .cache/permaweb-upload-evidence/
+            .cache/portable-service/readiness.json
+          include-hidden-files: true
+          retention-days: 30
