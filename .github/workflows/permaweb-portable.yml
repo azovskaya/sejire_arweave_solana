@@ -75,14 +75,19 @@ jobs:
         with:
           node-version: "24.22.3"
           cache: npm
-          cache-dependency-path: apps/web/package-lock.json
+          cache-dependency-path: |
+            apps/web/package-lock.json
+            apps/sponsor/package-lock.json
       - name: Verify exact CI and recover accepted portable release
         env:
           GH_TOKEN: ${{ github.token }}
         run: node scripts/permaweb-release.mjs
       - run: npm ci --prefix apps/web
-      - name: Blocking production dependency audit
-        run: npm audit --prefix apps/web --omit=dev --audit-level=high
+      - run: npm ci --prefix apps/sponsor --omit=dev --ignore-scripts
+      - name: Blocking production dependency audits
+        run: |
+          npm audit --prefix apps/web --omit=dev --audit-level=high
+          npm audit --prefix apps/sponsor --omit=dev --audit-level=high
       - name: Confirm owner acceptance before an irreversible upload
         if: inputs.mode == 'upload'
         env:
